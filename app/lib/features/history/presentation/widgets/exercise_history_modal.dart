@@ -4,8 +4,10 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/extensions/date_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
+import 'package:personal_fitness_os/core/widgets/charts/exercise_load_progression_chart.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
@@ -40,50 +42,38 @@ class ExerciseHistoryModal extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.appColors;
     final fitnessColors = context.fitnessColors;
+    final radius = context.appRadius;
     final historyAsync = ref.watch(exerciseHistoryProvider(exerciseId));
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.75,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      height: MediaQuery.sizeOf(context).height * 0.82,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(context.appRadius.large),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(radius.xl)),
+        border: Border.all(color: colors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Center(
             child: Container(
-              width: 40,
+              width: 38,
               height: 4,
               decoration: BoxDecoration(
                 color: colors.border,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(radius.full),
               ),
             ),
           ),
           const SizedBox(height: 16),
-          Text(
-            'Histórico de Progressão',
-            style: context.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: colors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            exerciseName,
-            style: context.textTheme.bodySmall?.copyWith(
-              color: colors.primary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          Text('EVOLUÇÃO DE FORÇA', style: AppTypography.eyebrow(context)),
+          const SizedBox(height: 4),
+          Text(exerciseName, style: context.textTheme.headlineMedium),
           const SizedBox(height: 16),
           Expanded(
             child: historyAsync.when(
-              loading: () => const Center(child: LoadingWidget()),
+              loading: () => const LiftrScreenSkeleton(showHero: false),
               error: (err, _) => Center(
                 child: Text('Erro ao carregar histórico: $err'),
               ),
@@ -92,77 +82,80 @@ class ExerciseHistoryModal extends ConsumerWidget {
                   return const EmptyStateWidget(
                     icon: Icons.fitness_center_rounded,
                     title: 'Nenhum histórico encontrado',
-                    subtitle: 'Execute este exercício em uma sessão de treino para visualizar seu progresso.',
+                    subtitle:
+                        'Execute este exercício em uma sessão de treino para visualizar seu progresso.',
                   );
                 }
 
-                return ListView.builder(
-                  itemCount: records.length,
-                  itemBuilder: (context, index) {
-                    final rec = records[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: AppCard(
-                        padding: const EdgeInsets.all(12),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: colors.surfaceVariant,
-                                borderRadius: BorderRadius.circular(
-                                    context.appRadius.small),
+                return ListView(
+                  children: [
+                    ExerciseLoadProgressionChart(records: records),
+                    const SizedBox(height: 18),
+                    Text(
+                      'ÚLTIMAS SESSÕES',
+                      style: AppTypography.eyebrow(context),
+                    ),
+                    const SizedBox(height: 10),
+                    ...records.map(
+                      (rec) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: AppCard(
+                          padding: const EdgeInsets.all(14),
+                          backgroundColor: colors.surfaceSubtle,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      rec.sessionName,
+                                      style: context.textTheme.titleSmall,
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      '${rec.setsCount} séries · Top: ${rec.topWeightKg.toStringAsFixed(1)} kg × ${rec.topReps} reps',
+                                      style: context.textTheme.bodySmall
+                                          ?.copyWith(
+                                        color: colors.textSecondary,
+                                        fontFeatures:
+                                            AppTypography.tabularFeatures,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              child: Icon(Icons.fitness_center_rounded,
-                                  size: 18, color: colors.primary),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text(
-                                    rec.sessionName,
-                                    style: context.textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: colors.textPrimary,
+                                    '1RM ${rec.bestEstimated1Rm.toStringAsFixed(1)} kg',
+                                    style: context.textTheme.labelSmall
+                                        ?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: fitnessColors.progressUp,
+                                      fontFeatures:
+                                          AppTypography.tabularFeatures,
                                     ),
                                   ),
-                                  const SizedBox(height: 2),
+                                  const SizedBox(height: 3),
                                   Text(
-                                    '${rec.setsCount} séries • Top: ${rec.topWeightKg.toStringAsFixed(1)} kg × ${rec.topReps} reps',
-                                    style: context.textTheme.bodySmall?.copyWith(
-                                      color: colors.textSecondary,
+                                    rec.date.formatShort(),
+                                    style: context.textTheme.labelSmall
+                                        ?.copyWith(
+                                      color: colors.textTertiary,
+                                      fontFeatures:
+                                          AppTypography.tabularFeatures,
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  '1RM est: ${rec.bestEstimated1Rm.toStringAsFixed(1)} kg',
-                                  style: context.textTheme.labelSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: fitnessColors.progressUp,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  rec.date.formatShort(),
-                                  style: context.textTheme.labelSmall?.copyWith(
-                                    color: colors.textTertiary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    );
-                  },
+                    ),
+                  ],
                 );
               },
             ),
