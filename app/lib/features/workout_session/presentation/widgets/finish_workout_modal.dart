@@ -9,6 +9,10 @@ import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
+import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
+import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
+import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
+import 'package:personal_fitness_os/features/training/presentation/providers/workout_queue_provider.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
 
@@ -61,6 +65,18 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
 
     result.fold(
       (_) {
+        final activePlan = ref.read(activeTrainingPlanProvider) ??
+            ref.read(dashboardDataProvider).asData?.value.activePlan;
+        final completedWorkoutId = widget.session.workoutId;
+        if (activePlan != null && completedWorkoutId != null) {
+          ref.read(workoutQueueProvider.notifier).advanceAfterCompleted(
+                activePlan.id,
+                activePlan.workouts,
+                completedWorkoutId,
+              );
+        }
+        ref.invalidate(dashboardDataProvider);
+        ref.invalidate(historyListProvider);
         Navigator.of(context).pop();
         widget.onFinished();
       },

@@ -57,12 +57,21 @@ class WorkoutQueueNotifier extends StateNotifier<Map<String, List<String>>> {
     }
   }
 
-  List<Workout> orderedWorkouts(String planId, List<Workout> workouts) {
+  List<Workout> orderedWorkouts(
+    String planId,
+    List<Workout> workouts, {
+    String? lastCompletedWorkoutId,
+  }) {
     if (workouts.isEmpty) return const [];
     final customOrder = state[planId];
     if (customOrder == null || customOrder.isEmpty) {
       final sorted = [...workouts]
         ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+      if (sorted.length > 1 &&
+          lastCompletedWorkoutId != null &&
+          sorted.first.id == lastCompletedWorkoutId) {
+        return [...sorted.sublist(1), sorted.first];
+      }
       return sorted;
     }
 
@@ -112,6 +121,24 @@ class WorkoutQueueNotifier extends StateNotifier<Map<String, List<String>>> {
     final selected = list.removeAt(idx);
     list.insert(0, selected);
     _saveAndSync(planId, list.map((w) => w.id).toList());
+  }
+
+  /// Advances the rotating queue so the workout right after [completedWorkoutId]
+  /// becomes the next workout at the front of the queue.
+  void advanceAfterCompleted(
+    String planId,
+    List<Workout> workouts,
+    String completedWorkoutId,
+  ) {
+    if (workouts.length < 2) return;
+    final current = orderedWorkouts(planId, workouts);
+    final idx = current.indexWhere((w) => w.id == completedWorkoutId);
+    if (idx == -1) return;
+    final nextOrder = [
+      ...current.sublist(idx + 1),
+      ...current.sublist(0, idx + 1),
+    ];
+    _saveAndSync(planId, nextOrder.map((w) => w.id).toList());
   }
 }
 

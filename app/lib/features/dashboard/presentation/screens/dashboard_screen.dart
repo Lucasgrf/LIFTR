@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,14 +15,17 @@ import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
+import 'package:personal_fitness_os/features/dashboard/presentation/widgets/last_completed_workout_card.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/widgets/today_exercise_preview_card.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/widgets/today_workout_banner.dart';
 import 'package:personal_fitness_os/features/insights/domain/entities/fitness_insight.dart';
 import 'package:personal_fitness_os/features/insights/presentation/providers/insight_providers.dart';
+import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/workout_queue_provider.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/session_exercise.dart';
+import 'package:personal_fitness_os/features/workout_session/domain/helpers/session_exercise_builder.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -37,29 +43,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     try {
       final useCase = ref.read(startWorkoutSessionUseCaseProvider);
+      final defaultRest = ref.read(userSettingsProvider).defaultRestSeconds;
 
       List<SessionExercise>? initialExercises;
       if (workout != null && workout.exercises.isNotEmpty) {
-        initialExercises = workout.exercises.map((we) {
-          final firstWorking = we.setTemplates
-              .where((s) => s.isWorkingSet)
-              .firstOrNull;
-          return SessionExercise(
-            id: '',
-            sessionId: '',
-            exerciseId: we.exerciseId,
-            sortOrder: we.sortOrder,
-            notes: we.notes,
-            targetRestSeconds: we.setTemplates.isNotEmpty
-                ? we.setTemplates.first.restSeconds
-                : 90,
-            targetSetsCount:
-                we.workingSetsCount > 0 ? we.workingSetsCount : 3,
-            targetRepsMin: firstWorking?.targetRepsMin ?? 8,
-            targetRepsMax: firstWorking?.targetRepsMax ?? 12,
-            targetRir: firstWorking?.targetRirMin ?? 2,
-          );
-        }).toList();
+        initialExercises = buildInitialSessionExercises(
+          workout,
+          defaultRestSeconds: defaultRest,
+        );
       }
 
       final result = await useCase.execute(
@@ -206,6 +197,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final radius = context.appRadius;
+    final settings = ref.watch(userSettingsProvider);
     final dashboardAsync = ref.watch(dashboardDataProvider);
     final insightsAsync = ref.watch(fitnessInsightsProvider);
     ref.watch(workoutQueueProvider);
@@ -227,9 +219,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           final activePlan = data.activePlan;
           final orderedWorkouts = activePlan != null &&
                   activePlan.workouts.isNotEmpty
-              ? ref
-                  .read(workoutQueueProvider.notifier)
-                  .orderedWorkouts(activePlan.id, activePlan.workouts)
+              ? ref.read(workoutQueueProvider.notifier).orderedWorkouts(
+                    activePlan.id,
+                    activePlan.workouts,
+                    lastCompletedWorkoutId: data.lastCompletedSession?.workoutId,
+                  )
               : const <Workout>[];
           final todayWorkout = orderedWorkouts.isNotEmpty
               ? orderedWorkouts.first
@@ -279,6 +273,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               ),
                             ),
                             Semantics(
+                              label: 'Abrir perfil',
+                              button: true,
+                              child: InkWell(
+                                onTap: () => context.push('/profile'),
+                                borderRadius: BorderRadius.circular(999),
+                                child: Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: colors.surface,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: colors.border),
+                                  ),
+                                  child: _HeaderAvatarThumb(
+                                    avatarUrl: settings.avatarUrl,
+                                    storagePath: settings.avatarStoragePath,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Semantics(
                               label: 'Abrir configurações',
                               button: true,
                               child: InkWell(
@@ -307,7 +323,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // 2. Hero Card do Treino do Dia
+                      // 2. Hero Card do Próximo Treino
                       TodayWorkoutBanner(
                         activeSession: data.activeSession,
                         todayWorkout: todayWorkout,
@@ -327,6 +343,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             : null,
                         onStartWorkout: _startWorkout,
                       ),
+
+                      // 2b. Último treino realizado
+                      if (data.lastCompletedSession != null) ...[
+                        const SizedBox(height: 14),
+                        LastCompletedWorkoutCard(
+                          session: data.lastCompletedSession!,
+                        ),
+                      ],
+
                       const SizedBox(height: 24),
 
                       // 3. Exercícios de hoje
@@ -370,6 +395,54 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           );
         },
       ),
+    );
+  }
+}
+
+class _HeaderAvatarThumb extends StatelessWidget {
+  const _HeaderAvatarThumb({
+    required this.avatarUrl,
+    required this.storagePath,
+  });
+
+  final String? avatarUrl;
+  final String? storagePath;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final url = avatarUrl?.trim() ?? '';
+
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: url,
+          cacheKey: (storagePath != null && storagePath!.isNotEmpty)
+              ? storagePath
+              : url,
+          fit: BoxFit.cover,
+          errorWidget: (_, __, ___) => Icon(
+            Icons.person_outline_rounded,
+            color: colors.textSecondary,
+            size: 22,
+          ),
+        ),
+      );
+    }
+
+    if (url.isNotEmpty) {
+      final file = File(url);
+      if (file.existsSync()) {
+        return ClipOval(
+          child: Image.file(file, fit: BoxFit.cover),
+        );
+      }
+    }
+
+    return Icon(
+      Icons.person_outline_rounded,
+      color: colors.textSecondary,
+      size: 22,
     );
   }
 }
