@@ -35,7 +35,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       - uses: subosito/flutter-action@v2
         with:
@@ -129,6 +129,7 @@ jobs:
               "${{ runner.temp }}/liftr-arm64-release.apk" \
               "${{ runner.temp }}/liftr-arm64-release.apk.sha256" \
               --repo "${{ github.repository }}" \
+              --target "${{ github.sha }}" \
               --title "$TITLE" \
               --notes "$CUSTOM_NOTES" \
               --generate-notes
@@ -137,6 +138,7 @@ jobs:
               "${{ runner.temp }}/liftr-arm64-release.apk" \
               "${{ runner.temp }}/liftr-arm64-release.apk.sha256" \
               --repo "${{ github.repository }}" \
+              --target "${{ github.sha }}" \
               --title "$TITLE" \
               --generate-notes
           fi
