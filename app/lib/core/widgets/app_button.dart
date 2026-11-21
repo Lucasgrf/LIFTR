@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 
@@ -35,14 +36,19 @@ class AppButton extends StatelessWidget {
   final IconData? icon;
   final AppButtonType _type;
 
+  void _handleTap() {
+    if (onPressed == null || isLoading) return;
+    HapticFeedback.lightImpact();
+    onPressed!();
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final radius = context.appRadius;
-
     final isDisabled = onPressed == null || isLoading;
 
-    Widget content = Row(
+    final content = Row(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -53,7 +59,9 @@ class AppButton extends StatelessWidget {
             child: CircularProgressIndicator(
               strokeWidth: 2,
               valueColor: AlwaysStoppedAnimation<Color>(
-                _type == AppButtonType.primary ? Colors.white : colors.primary,
+                _type == AppButtonType.primary
+                    ? colors.onPrimary
+                    : colors.primary,
               ),
             ),
           ),
@@ -65,7 +73,11 @@ class AppButton extends StatelessWidget {
         Flexible(
           child: Text(
             label,
-            style: Theme.of(context).textTheme.labelLarge,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: _type == AppButtonType.primary
+                      ? (isDisabled ? colors.textDisabled : colors.onPrimary)
+                      : null,
+                ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -75,18 +87,30 @@ class AppButton extends StatelessWidget {
 
     switch (_type) {
       case AppButtonType.primary:
-        return SizedBox(
+        return Container(
           width: double.infinity,
-          height: 56,
+          height: 54,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(radius.medium),
+            boxShadow: isDisabled
+                ? null
+                : [
+                    BoxShadow(
+                      color: colors.primary.withValues(alpha: 0.24),
+                      blurRadius: 18,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+          ),
           child: ElevatedButton(
-            onPressed: isDisabled ? null : onPressed,
+            onPressed: isDisabled ? null : _handleTap,
             style: ElevatedButton.styleFrom(
               backgroundColor: colors.primary,
-              foregroundColor: Colors.white,
-              disabledBackgroundColor: colors.surfaceVariant,
+              foregroundColor: colors.onPrimary,
+              disabledBackgroundColor: colors.surfaceElevated,
               disabledForegroundColor: colors.textDisabled,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(radius.small),
+                borderRadius: BorderRadius.circular(radius.medium),
               ),
               elevation: 0,
             ),
@@ -96,17 +120,20 @@ class AppButton extends StatelessWidget {
       case AppButtonType.secondary:
         return SizedBox(
           width: double.infinity,
-          height: 56,
+          height: 54,
           child: OutlinedButton(
-            onPressed: isDisabled ? null : onPressed,
+            onPressed: isDisabled ? null : _handleTap,
             style: OutlinedButton.styleFrom(
-              foregroundColor: colors.primary,
+              foregroundColor: colors.primaryLight,
               disabledForegroundColor: colors.textDisabled,
               side: BorderSide(
-                color: isDisabled ? colors.border : colors.primary,
+                color: isDisabled
+                    ? colors.border
+                    : colors.primary.withValues(alpha: 0.5),
               ),
+              backgroundColor: colors.surface,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(radius.small),
+                borderRadius: BorderRadius.circular(radius.medium),
               ),
             ),
             child: content,
@@ -114,9 +141,10 @@ class AppButton extends StatelessWidget {
         );
       case AppButtonType.text:
         return TextButton(
-          onPressed: isDisabled ? null : onPressed,
+          onPressed: isDisabled ? null : _handleTap,
           style: TextButton.styleFrom(
-            foregroundColor: colors.primary,
+            minimumSize: const Size(48, 48),
+            foregroundColor: colors.primaryLight,
             disabledForegroundColor: colors.textDisabled,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(radius.small),
