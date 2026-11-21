@@ -1,5 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 enum UserGoal {
   bulking,
@@ -234,10 +238,123 @@ class UserSettingsState {
       onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'biologicalSex': biologicalSex,
+      'age': age,
+      'heightCm': heightCm,
+      'weightKg': weightKg,
+      'bodyFatPercent': bodyFatPercent,
+      'goal': goal.name,
+      'experience': experience.name,
+      'activityLevel': activityLevel.name,
+      'trainingDaysPerWeek': trainingDaysPerWeek,
+      'selectedSplitName': selectedSplitName,
+      'barbellIncrementKg': barbellIncrementKg,
+      'dumbbellIncrementKg': dumbbellIncrementKg,
+      'machineIncrementKg': machineIncrementKg,
+      'whatsappConnected': whatsappConnected,
+      'whatsappMaskedPhone': whatsappMaskedPhone,
+      'weeklyReportDay': weeklyReportDay,
+      'weeklyReportTime': weeklyReportTime,
+      'quietHoursEnabled': quietHoursEnabled,
+      'quietHoursRange': quietHoursRange,
+      'onboardingCompleted': onboardingCompleted,
+    };
+  }
+
+  static T _parseEnum<T extends Enum>(
+    List<T> values,
+    Object? raw,
+    T fallback,
+  ) {
+    if (raw is! String) return fallback;
+    for (final v in values) {
+      if (v.name == raw) return v;
+    }
+    return fallback;
+  }
+
+  factory UserSettingsState.fromJson(Map<String, dynamic> json) {
+    const defaults = UserSettingsState();
+    return UserSettingsState(
+      biologicalSex:
+          json['biologicalSex'] as String? ?? defaults.biologicalSex,
+      age: (json['age'] as num?)?.toInt() ?? defaults.age,
+      heightCm: (json['heightCm'] as num?)?.toInt() ?? defaults.heightCm,
+      weightKg: (json['weightKg'] as num?)?.toDouble() ?? defaults.weightKg,
+      bodyFatPercent: (json['bodyFatPercent'] as num?)?.toDouble(),
+      goal: _parseEnum(UserGoal.values, json['goal'], defaults.goal),
+      experience: _parseEnum(
+        UserExperience.values,
+        json['experience'],
+        defaults.experience,
+      ),
+      activityLevel: _parseEnum(
+        ActivityLevel.values,
+        json['activityLevel'],
+        defaults.activityLevel,
+      ),
+      trainingDaysPerWeek:
+          (json['trainingDaysPerWeek'] as num?)?.toInt() ??
+              defaults.trainingDaysPerWeek,
+      selectedSplitName:
+          json['selectedSplitName'] as String? ?? defaults.selectedSplitName,
+      barbellIncrementKg:
+          (json['barbellIncrementKg'] as num?)?.toDouble() ??
+              defaults.barbellIncrementKg,
+      dumbbellIncrementKg:
+          (json['dumbbellIncrementKg'] as num?)?.toDouble() ??
+              defaults.dumbbellIncrementKg,
+      machineIncrementKg:
+          (json['machineIncrementKg'] as num?)?.toDouble() ??
+              defaults.machineIncrementKg,
+      whatsappConnected:
+          json['whatsappConnected'] as bool? ?? defaults.whatsappConnected,
+      whatsappMaskedPhone:
+          json['whatsappMaskedPhone'] as String? ??
+              defaults.whatsappMaskedPhone,
+      weeklyReportDay:
+          json['weeklyReportDay'] as String? ?? defaults.weeklyReportDay,
+      weeklyReportTime:
+          json['weeklyReportTime'] as String? ?? defaults.weeklyReportTime,
+      quietHoursEnabled:
+          json['quietHoursEnabled'] as bool? ?? defaults.quietHoursEnabled,
+      quietHoursRange:
+          json['quietHoursRange'] as String? ?? defaults.quietHoursRange,
+      onboardingCompleted:
+          json['onboardingCompleted'] as bool? ?? defaults.onboardingCompleted,
+    );
+  }
 }
 
 class UserSettingsNotifier extends StateNotifier<UserSettingsState> {
-  UserSettingsNotifier() : super(const UserSettingsState());
+  UserSettingsNotifier(this._prefs) : super(_load(_prefs));
+
+  static const String _storageKey = 'liftr_user_settings_v1';
+  final SharedPreferences? _prefs;
+
+  static UserSettingsState _load(SharedPreferences? prefs) {
+    final raw = prefs?.getString(_storageKey);
+    if (raw == null || raw.isEmpty) return const UserSettingsState();
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) {
+        return UserSettingsState.fromJson(decoded);
+      }
+      if (decoded is Map) {
+        return UserSettingsState.fromJson(Map<String, dynamic>.from(decoded));
+      }
+    } catch (_) {
+      return const UserSettingsState();
+    }
+    return const UserSettingsState();
+  }
+
+  void _persist() {
+    _prefs?.setString(_storageKey, jsonEncode(state.toJson()));
+  }
 
   void updateBodyData({
     String? biologicalSex,
@@ -255,18 +372,22 @@ class UserSettingsNotifier extends StateNotifier<UserSettingsState> {
       bodyFatPercent: bodyFatPercent,
       clearBodyFat: clearBodyFat,
     );
+    _persist();
   }
 
   void setGoal(UserGoal goal) {
     state = state.copyWith(goal: goal);
+    _persist();
   }
 
   void setExperience(UserExperience experience) {
     state = state.copyWith(experience: experience);
+    _persist();
   }
 
   void setActivityLevel(ActivityLevel level) {
     state = state.copyWith(activityLevel: level);
+    _persist();
   }
 
   void setSchedule({
@@ -277,6 +398,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettingsState> {
       trainingDaysPerWeek: daysPerWeek,
       selectedSplitName: splitName,
     );
+    _persist();
   }
 
   void setEquipmentIncrement({
@@ -289,18 +411,22 @@ class UserSettingsNotifier extends StateNotifier<UserSettingsState> {
       dumbbellIncrementKg: dumbbell,
       machineIncrementKg: machine,
     );
+    _persist();
   }
 
   void setWhatsappConnected(bool connected) {
     state = state.copyWith(whatsappConnected: connected);
+    _persist();
   }
 
   void setWeeklyReportSchedule(String day, String time) {
     state = state.copyWith(weeklyReportDay: day, weeklyReportTime: time);
+    _persist();
   }
 
   void setQuietHoursEnabled(bool enabled) {
     state = state.copyWith(quietHoursEnabled: enabled);
+    _persist();
   }
 
   void completeOnboarding({bool whatsappConnected = false}) {
@@ -308,10 +434,11 @@ class UserSettingsNotifier extends StateNotifier<UserSettingsState> {
       whatsappConnected: whatsappConnected,
       onboardingCompleted: true,
     );
+    _persist();
   }
 }
 
 final userSettingsProvider =
     StateNotifierProvider<UserSettingsNotifier, UserSettingsState>((ref) {
-  return UserSettingsNotifier();
+  return UserSettingsNotifier(ref.watch(sharedPreferencesProvider));
 });

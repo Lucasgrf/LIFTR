@@ -513,7 +513,7 @@ class SettingsScreen extends ConsumerWidget {
                       ? Icon(Icons.check_rounded, color: colors.primary)
                       : null,
                   onTap: () {
-                    ref.read(themeModeProvider.notifier).state = mode;
+                    ref.read(themeModeProvider.notifier).setThemeMode(mode);
                     Navigator.pop(ctx);
                   },
                 ),
