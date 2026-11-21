@@ -31,6 +31,7 @@ import 'package:personal_fitness_os/features/history/presentation/screens/histor
 import 'package:personal_fitness_os/features/insights/domain/entities/fitness_insight.dart';
 import 'package:personal_fitness_os/features/insights/presentation/providers/insight_providers.dart';
 import 'package:personal_fitness_os/features/onboarding/presentation/screens/onboarding_screen.dart';
+import 'package:personal_fitness_os/features/profile/presentation/screens/profile_screen.dart';
 import 'package:personal_fitness_os/features/progression/domain/entities/exercise_performance_history.dart';
 import 'package:personal_fitness_os/features/progression/domain/repositories/progression_repository.dart';
 import 'package:personal_fitness_os/features/progression/presentation/providers/progression_providers.dart';
@@ -93,7 +94,7 @@ class _FakeSessionRepository implements SessionRepository {
     required String exerciseId,
     int sortOrder = 0,
     String? notes,
-    int targetRestSeconds = 120,
+    int targetRestSeconds = AppConstants.defaultRestSeconds,
     int targetSetsCount = 3,
   }) async {
     return Success(
@@ -173,10 +174,12 @@ class _FakeSessionRepository implements SessionRepository {
     ExecutionQuality? executionQuality,
     bool isWarmup = false,
     String? notes,
+    List<DropSetEntry> dropSets = const [],
+    String? existingSetId,
   }) async {
     return Success(
       LoggedSet(
-        id: 'logged-$setNumber',
+        id: existingSetId ?? 'logged-$setNumber',
         sessionExerciseId: sessionExerciseId,
         setNumber: setNumber,
         setType: setType,
@@ -184,6 +187,7 @@ class _FakeSessionRepository implements SessionRepository {
         repsCompleted: repsCompleted,
         rirActual: rirActual,
         isWarmup: isWarmup,
+        dropSets: dropSets,
       ),
     );
   }
@@ -777,10 +781,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Configurações'), findsOneWidget);
-      expect(find.text('PERFIL & OBJETIVO'), findsOneWidget);
-      expect(find.text('EQUIPAMENTOS & INCREMENTOS'), findsOneWidget);
+      expect(find.text('TREINO & EQUIPAMENTOS'), findsOneWidget);
       expect(find.text('WHATSAPP'), findsOneWidget);
       expect(find.text('SINCRONIZAÇÃO OFFLINE & DADOS'), findsOneWidget);
+      expect(find.text('CONTA'), findsOneWidget);
       expect(find.text('Online · Tudo sincronizado'), findsOneWidget);
 
       await tester.scrollUntilVisible(
@@ -793,6 +797,14 @@ void main() {
       await tester.pump();
       expect(container.read(simulatedOfflineProvider), isTrue);
       expect(find.text('Offline · Salvo localmente'), findsOneWidget);
+    });
+
+    testWidgets('ProfileScreen renders separated profile and body goal sections',
+        (tester) async {
+      await tester.pumpWidget(wrapApp(const ProfileScreen()));
+      await tester.pumpAndSettle();
+      expect(find.text('Perfil'), findsOneWidget);
+      expect(find.text('DADOS CORPORAIS & OBJETIVO'), findsOneWidget);
     });
 
     testWidgets('respects MediaQuery disableAnimations without errors',

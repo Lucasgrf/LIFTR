@@ -117,6 +117,8 @@ void main() {
             executionQuality: any(named: 'executionQuality'),
             isWarmup: any(named: 'isWarmup'),
             notes: any(named: 'notes'),
+            dropSets: any(named: 'dropSets'),
+            existingSetId: any(named: 'existingSetId'),
           )).thenAnswer((_) async => const Success(tLoggedSet));
 
       final useCase = LogSetUseCase(mockRepository);
