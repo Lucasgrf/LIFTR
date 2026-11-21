@@ -107,6 +107,22 @@ class _FakeSessionRepository implements SessionRepository {
   }
 
   @override
+  Future<Result<SessionExercise, Failure>> swapSessionExercise({
+    required String sessionExerciseId,
+    required String newExerciseId,
+    String? replacedExerciseId,
+  }) async {
+    return Success(
+      SessionExercise(
+        id: sessionExerciseId,
+        sessionId: 'sess-1',
+        exerciseId: newExerciseId,
+        replacedExerciseId: replacedExerciseId,
+      ),
+    );
+  }
+
+  @override
   Future<Result<void, Failure>> deleteLoggedSet(String setId) async =>
       const Success(null);
 

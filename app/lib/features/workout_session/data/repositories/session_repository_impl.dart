@@ -172,6 +172,33 @@ class SessionRepositoryImpl implements SessionRepository {
   }
 
   @override
+  Future<Result<SessionExercise, Failure>> swapSessionExercise({
+    required String sessionExerciseId,
+    required String newExerciseId,
+    String? replacedExerciseId,
+  }) async {
+    try {
+      final data = {
+        'exercise_id': newExerciseId,
+        if (replacedExerciseId != null)
+          'replaced_exercise_id': replacedExerciseId,
+      };
+
+      final model = await _remoteDataSource.updateSessionExercise(
+        sessionExerciseId,
+        data,
+      );
+      return Success(model.toDomain());
+    } on PostgrestException catch (e, stack) {
+      return Err(ServerFailure(e.message, stack));
+    } on SocketException catch (e, stack) {
+      return Err(NetworkFailure('Sem conexão com a internet.', stack));
+    } catch (e, stack) {
+      return Err(UnexpectedFailure('Erro ao trocar exercício da sessão: $e', stack));
+    }
+  }
+
+  @override
   Future<Result<WorkoutSession, Failure>> finishSession({
     required String sessionId,
     required int durationSeconds,
