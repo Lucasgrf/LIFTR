@@ -8,6 +8,10 @@ abstract class SessionRemoteDataSource {
   Future<WorkoutSessionModel> fetchSessionById(String id);
   Future<WorkoutSessionModel> insertSession(Map<String, dynamic> data);
   Future<SessionExerciseModel> insertSessionExercise(Map<String, dynamic> data);
+  Future<SessionExerciseModel> updateSessionExercise(
+    String sessionExerciseId,
+    Map<String, dynamic> data,
+  );
   Future<LoggedSetModel> insertLoggedSet(Map<String, dynamic> data);
   Future<void> deleteLoggedSet(String setId);
   Future<WorkoutSessionModel> updateSession(String sessionId, Map<String, dynamic> data);
@@ -78,6 +82,21 @@ class SupabaseSessionRemoteDataSource implements SessionRemoteDataSource {
     final response = await _supabaseClient
         .from('workout_session_exercises')
         .insert(data)
+        .select('*, exercises(*), logged_sets(*)')
+        .single();
+
+    return SessionExerciseModel.fromJson(response);
+  }
+
+  @override
+  Future<SessionExerciseModel> updateSessionExercise(
+    String sessionExerciseId,
+    Map<String, dynamic> data,
+  ) async {
+    final response = await _supabaseClient
+        .from('workout_session_exercises')
+        .update(data)
+        .eq('id', sessionExerciseId)
         .select('*, exercises(*), logged_sets(*)')
         .single();
 

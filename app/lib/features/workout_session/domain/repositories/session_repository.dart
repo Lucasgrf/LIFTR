@@ -48,6 +48,13 @@ abstract class SessionRepository {
     int targetSetsCount = 3,
   });
 
+  /// Replaces the exercise of an active session exercise row, preserving the original exercise ID.
+  Future<Result<SessionExercise, Failure>> swapSessionExercise({
+    required String sessionExerciseId,
+    required String newExerciseId,
+    String? replacedExerciseId,
+  });
+
   /// Finalizes the workout session, computing duration, exertion and mood.
   Future<Result<WorkoutSession, Failure>> finishSession({
     required String sessionId,

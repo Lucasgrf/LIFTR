@@ -16,6 +16,7 @@ import 'package:personal_fitness_os/features/workout_session/domain/usecases/get
 import 'package:personal_fitness_os/features/workout_session/domain/usecases/get_workout_session_by_id.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/usecases/log_set.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/usecases/start_workout_session.dart';
+import 'package:personal_fitness_os/features/workout_session/domain/usecases/swap_session_exercise.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // --- Data Source & Repository Providers ---
@@ -56,6 +57,11 @@ final deleteLoggedSetUseCaseProvider = Provider<DeleteLoggedSetUseCase>((ref) {
 final addExerciseToSessionUseCaseProvider =
     Provider<AddExerciseToSessionUseCase>((ref) {
   return AddExerciseToSessionUseCase(ref.watch(sessionRepositoryProvider));
+});
+
+final swapSessionExerciseUseCaseProvider =
+    Provider<SwapSessionExerciseUseCase>((ref) {
+  return SwapSessionExerciseUseCase(ref.watch(sessionRepositoryProvider));
 });
 
 final finishWorkoutSessionUseCaseProvider =
