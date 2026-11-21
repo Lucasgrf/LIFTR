@@ -27,7 +27,7 @@ class SupabaseSessionRemoteDataSource implements SessionRemoteDataSource {
     workouts (name),
     workout_session_exercises (
       *,
-      exercises (*),
+      exercises!workout_session_exercises_exercise_id_fkey (*),
       logged_sets (*)
     )
   ''';
@@ -82,7 +82,7 @@ class SupabaseSessionRemoteDataSource implements SessionRemoteDataSource {
     final response = await _supabaseClient
         .from('workout_session_exercises')
         .insert(data)
-        .select('*, exercises(*), logged_sets(*)')
+        .select('*, exercises!workout_session_exercises_exercise_id_fkey(*), logged_sets(*)')
         .single();
 
     return SessionExerciseModel.fromJson(response);
@@ -97,7 +97,7 @@ class SupabaseSessionRemoteDataSource implements SessionRemoteDataSource {
         .from('workout_session_exercises')
         .update(data)
         .eq('id', sessionExerciseId)
-        .select('*, exercises(*), logged_sets(*)')
+        .select('*, exercises!workout_session_exercises_exercise_id_fkey(*), logged_sets(*)')
         .single();
 
     return SessionExerciseModel.fromJson(response);

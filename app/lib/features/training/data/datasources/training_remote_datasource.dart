@@ -40,7 +40,7 @@ class SupabaseTrainingRemoteDataSource implements TrainingRemoteDataSource {
       *,
       workout_exercises (
         *,
-        exercises (*),
+        exercises!workout_exercises_exercise_id_fkey (*),
         set_templates (*)
       )
     )
@@ -129,7 +129,7 @@ class SupabaseTrainingRemoteDataSource implements TrainingRemoteDataSource {
     final response = await _supabaseClient
         .from('workouts')
         .insert(data)
-        .select('*, workout_exercises(*, exercises(*), set_templates(*))')
+        .select('*, workout_exercises(*, exercises!workout_exercises_exercise_id_fkey(*), set_templates(*))')
         .single();
 
     return WorkoutModel.fromJson(response);
@@ -140,7 +140,7 @@ class SupabaseTrainingRemoteDataSource implements TrainingRemoteDataSource {
     final response = await _supabaseClient
         .from('workout_exercises')
         .insert(data)
-        .select('*, exercises(*), set_templates(*)')
+        .select('*, exercises!workout_exercises_exercise_id_fkey(*), set_templates(*)')
         .single();
 
     return WorkoutExerciseModel.fromJson(response);
