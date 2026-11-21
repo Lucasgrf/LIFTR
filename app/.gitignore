@@ -49,3 +49,9 @@ supabase/.temp/
 .env*
 !.env.example
 
+# Android release signing
+*.jks
+*.keystore
+android/key.properties
+key.properties
+

@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -25,11 +28,51 @@ android {
         versionName = flutter.versionName
     }
 
+    val keystoreProperties = Properties()
+    val keystorePropertiesFile = rootProject.file("key.properties")
+    if (keystorePropertiesFile.exists()) {
+        FileInputStream(keystorePropertiesFile).use { keystoreProperties.load(it) }
+    }
+
+    val releaseStoreFilePath = System.getenv("ANDROID_KEYSTORE_PATH")
+        ?: keystoreProperties.getProperty("storeFile")
+    val releaseStorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+        ?: keystoreProperties.getProperty("storePassword")
+    val releaseKeyAlias = System.getenv("ANDROID_KEY_ALIAS")
+        ?: keystoreProperties.getProperty("keyAlias")
+    val releaseKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+        ?: keystoreProperties.getProperty("keyPassword")
+
+    val hasReleaseSigning = !releaseStoreFilePath.isNullOrBlank() &&
+        !releaseStorePassword.isNullOrBlank() &&
+        !releaseKeyAlias.isNullOrBlank() &&
+        !releaseKeyPassword.isNullOrBlank() &&
+        file(releaseStoreFilePath).exists()
+
+    if (System.getenv("REQUIRE_RELEASE_SIGNING") == "true" && !hasReleaseSigning) {
+        throw GradleException(
+            "Release signing credentials are required when REQUIRE_RELEASE_SIGNING=true.",
+        )
+    }
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(releaseStoreFilePath!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (hasReleaseSigning) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }
