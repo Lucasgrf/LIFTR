@@ -296,8 +296,8 @@ class SupabaseHistoryRemoteDataSource implements HistoryRemoteDataSource {
             id,
             set_type,
             weight_kg,
-            reps,
-            rir
+            reps_completed,
+            rir_actual
           )
         ''')
         .eq('exercise_id', exerciseId)
@@ -329,7 +329,7 @@ class SupabaseHistoryRemoteDataSource implements HistoryRemoteDataSource {
       for (final s in setsList) {
         final setMap = s as Map<String, dynamic>;
         final w = (setMap['weight_kg'] as num?)?.toDouble() ?? 0.0;
-        final r = (setMap['reps'] as int?) ?? 0;
+        final r = (setMap['reps_completed'] as int?) ?? 0;
         if (w > maxWeight) maxWeight = w;
         if (r > maxReps) maxReps = r;
 

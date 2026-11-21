@@ -25,6 +25,7 @@ class SessionRepositoryImpl implements SessionRepository {
     try {
       final sessionData = {
         if (workoutId != null) 'workout_id': workoutId,
+        if (workoutName != null) 'workout_name': workoutName,
         'started_at': DateTime.now().toIso8601String(),
         'status': 'in_progress',
       };
