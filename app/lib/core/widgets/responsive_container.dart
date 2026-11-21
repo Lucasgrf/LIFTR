@@ -1,0 +1,38 @@
+import 'package:flutter/material.dart';
+
+/// Responsive container enforcing mobile padding (16dp on <= 375pt, 20dp
+/// otherwise) and centering content at 560dp maxWidth on tablets (>= 600dp).
+class ResponsiveContainer extends StatelessWidget {
+  const ResponsiveContainer({
+    super.key,
+    required this.child,
+    this.maxWidth = 560,
+    this.padding,
+  });
+
+  final Widget child;
+  final double maxWidth;
+  final EdgeInsetsGeometry? padding;
+
+  static double horizontalPaddingForWidth(double width) {
+    if (width <= 375) return 16;
+    return 18;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final horizontal = horizontalPaddingForWidth(width);
+
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: Padding(
+          padding: padding ?? EdgeInsets.symmetric(horizontal: horizontal),
+          child: child,
+        ),
+      ),
+    );
+  }
+}

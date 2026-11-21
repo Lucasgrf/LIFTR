@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:personal_fitness_os/routing/app_router.dart';
 import 'package:personal_fitness_os/core/theme/app_theme.dart';
+import 'package:personal_fitness_os/core/theme/theme_provider.dart';
+import 'package:personal_fitness_os/routing/app_router.dart';
 
 class App extends ConsumerWidget {
   const App({super.key});
@@ -10,12 +11,14 @@ class App extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final goRouter = ref.watch(goRouterProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
-      title: 'Personal Fitness OS',
+      title: 'LIFTR',
+      debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      themeMode: ThemeMode.dark,
+      themeMode: themeMode,
       routerConfig: goRouter,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

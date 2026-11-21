@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
-import 'app_button.dart';
+import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/widgets/app_button.dart';
 
 class EmptyStateWidget extends StatelessWidget {
   const EmptyStateWidget({
@@ -21,19 +22,30 @@ class EmptyStateWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final radius = context.appRadius;
 
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 64,
-              color: colors.textTertiary,
+            Container(
+              width: 68,
+              height: 68,
+              decoration: BoxDecoration(
+                color: colors.surface,
+                borderRadius: BorderRadius.circular(radius.xl),
+                border: Border.all(color: colors.border),
+              ),
+              child: Icon(
+                icon,
+                size: 32,
+                color: colors.textTertiary,
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
             Text(
               title,
               style: Theme.of(context).textTheme.titleLarge,
@@ -43,14 +55,14 @@ class EmptyStateWidget extends StatelessWidget {
             Text(
               subtitle,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: colors.textSecondary,
-              ),
+                    color: colors.textSecondary,
+                  ),
               textAlign: TextAlign.center,
             ),
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: 24),
               ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: 200),
+                constraints: const BoxConstraints(maxWidth: 260),
                 child: AppButton.primary(
                   label: actionLabel!,
                   onPressed: onAction,
