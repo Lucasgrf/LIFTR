@@ -16,6 +16,7 @@ import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
+import 'package:personal_fitness_os/features/workout_session/domain/entities/session_exercise.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/finish_workout_modal.dart';
@@ -118,6 +119,43 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
       (failure) {
         context.showSnackBar(
           'Erro ao remover série: ${failure.message}',
+          isError: true,
+        );
+      },
+    );
+  }
+
+  Future<void> _handleSwapExercise(
+    SessionExercise currentSe,
+    Exercise chosen,
+  ) async {
+    final previous = _swappedExercises[currentSe.id];
+    setState(() {
+      _swappedExercises[currentSe.id] = chosen;
+    });
+
+    final useCase = ref.read(swapSessionExerciseUseCaseProvider);
+    final result = await useCase.execute(
+      sessionExerciseId: currentSe.id,
+      newExerciseId: chosen.id,
+      replacedExerciseId: currentSe.replacedExerciseId ?? currentSe.exerciseId,
+    );
+
+    if (!mounted) return;
+    result.fold(
+      (_) {
+        ref.invalidate(liveSessionDetailProvider(widget.sessionId));
+      },
+      (failure) {
+        setState(() {
+          if (previous != null) {
+            _swappedExercises[currentSe.id] = previous;
+          } else {
+            _swappedExercises.remove(currentSe.id);
+          }
+        });
+        context.showSnackBar(
+          'Erro ao trocar exercício: ${failure.message}',
           isError: true,
         );
       },
@@ -421,12 +459,8 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                           SwapExerciseSheet.show(
                                         context,
                                         currentExercise: se.exercise,
-                                        onSelect: (chosen) {
-                                          setState(() {
-                                            _swappedExercises[rawSe.id] =
-                                                chosen;
-                                          });
-                                        },
+                                        onSelect: (chosen) =>
+                                            _handleSwapExercise(rawSe, chosen),
                                       ),
                                       onLogSet: ({
                                         required sessionExerciseId,
