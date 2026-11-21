@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
+import 'package:personal_fitness_os/core/update/app_update_providers.dart';
+import 'package:personal_fitness_os/core/update/app_update_widgets.dart';
 import 'package:personal_fitness_os/core/widgets/offline_banner_widget.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
 
@@ -21,6 +25,23 @@ class AppShell extends ConsumerStatefulWidget {
 class _AppShellState extends ConsumerState<AppShell> {
   bool _bannerDismissed = false;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final isOffline = ref.read(isOfflineModeProvider);
+      final hasActiveSession =
+          ref.read(sessionLocalDataSourceProvider)?.getActiveSession() != null;
+      unawaited(
+        ref.read(appUpdateProvider.notifier).checkSilentlyIfDue(
+              isOffline: isOffline,
+              hasActiveSession: hasActiveSession,
+            ),
+      );
+    });
+  }
+
   void _goBranch(int index) {
     widget.navigationShell.goBranch(
       index,
@@ -34,6 +55,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     ref.watch(sessionAutoSyncProvider);
     final isOfflineMode = ref.watch(isOfflineModeProvider);
     final pendingCount = ref.watch(pendingSyncCountProvider);
+    final updateState = ref.watch(appUpdateProvider);
 
     ref.listen<bool>(isOfflineModeProvider, (previous, next) {
       if (next && previous != next && _bannerDismissed) {
@@ -42,6 +64,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     });
 
     final showOfflineBanner = isOfflineMode && !_bannerDismissed;
+    final showUpdateBanner = !isOfflineMode && updateState.shouldShowBanner;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -53,6 +76,13 @@ class _AppShellState extends ConsumerState<AppShell> {
               OfflineBannerWidget(
                 pendingChangesCount: pendingCount,
                 onDismiss: () => setState(() => _bannerDismissed = true),
+              ),
+            if (showUpdateBanner)
+              AppUpdateBanner(
+                updateInfo: updateState.availableUpdate!,
+                onUpdateTap: () => showAppUpdateSheet(context),
+                onDismiss: () =>
+                    ref.read(appUpdateProvider.notifier).dismissBanner(),
               ),
             Expanded(child: widget.navigationShell),
           ],

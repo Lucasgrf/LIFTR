@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,6 +12,9 @@ import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/theme/theme_provider.dart';
+import 'package:personal_fitness_os/core/update/app_update_providers.dart';
+import 'package:personal_fitness_os/core/update/app_update_service.dart';
+import 'package:personal_fitness_os/core/update/app_update_widgets.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
@@ -19,8 +23,22 @@ import 'package:personal_fitness_os/features/workout_session/presentation/provid
 import 'package:personal_fitness_os/routing/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(ref.read(appUpdateProvider.notifier).loadInstalledVersion());
+    });
+  }
 
   String _formatRestDuration(int seconds) {
     final m = seconds ~/ 60;
@@ -28,8 +46,70 @@ class SettingsScreen extends ConsumerWidget {
     return '$m:${s.toString().padLeft(2, '0')} (${seconds}s)';
   }
 
+  String _updateRowValue(AppUpdateState updateState) {
+    if (updateState.phase == AppUpdatePhase.checking) {
+      return 'Verificando...';
+    }
+    if (updateState.availableUpdate != null) {
+      return 'v${updateState.availableUpdate!.versionName} disponível';
+    }
+    if (updateState.installedVersion != null) {
+      return updateState.installedVersion!.formattedLabel;
+    }
+    return 'Verificar';
+  }
+
+  String _updateRowSubtitle(AppUpdateState updateState) {
+    if (updateState.phase == AppUpdatePhase.checking) {
+      return 'Consultando GitHub Releases';
+    }
+    if (updateState.availableUpdate != null) {
+      return 'Nova versão pronta para instalar';
+    }
+    if (updateState.phase == AppUpdatePhase.upToDate) {
+      return 'Você está na versão mais recente';
+    }
+    return 'Toque para verificar atualizações';
+  }
+
+  Future<void> _handleUpdateCheck(
+    BuildContext context,
+    AppUpdateState current,
+  ) async {
+    if (current.phase == AppUpdatePhase.downloading ||
+        current.phase == AppUpdatePhase.verifying ||
+        current.phase == AppUpdatePhase.permissionRequired ||
+        current.phase == AppUpdatePhase.installing) {
+      await showAppUpdateSheet(context);
+      return;
+    }
+
+    final result = await ref.read(appUpdateProvider.notifier).checkManually();
+    if (!context.mounted) return;
+
+    switch (result.status) {
+      case AppUpdateCheckStatus.available:
+        await showAppUpdateSheet(context);
+        break;
+      case AppUpdateCheckStatus.upToDate:
+        context.showSnackBar('Você já está na versão mais recente.');
+        break;
+      case AppUpdateCheckStatus.unsupported:
+        context.showSnackBar(
+          'Atualizações in-app disponíveis apenas no Android.',
+        );
+        break;
+      case AppUpdateCheckStatus.failed:
+        context.showSnackBar(
+          result.errorMessage ?? 'Não foi possível verificar atualizações.',
+          isError: true,
+        );
+        break;
+    }
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final colors = context.appColors;
     final fitnessColors = context.fitnessColors;
     final settings = ref.watch(userSettingsProvider);
@@ -37,6 +117,7 @@ class SettingsScreen extends ConsumerWidget {
     final simulatedOffline = ref.watch(simulatedOfflineProvider);
     final isOfflineState = ref.watch(isOfflineModeProvider);
     final pendingCount = ref.watch(pendingSyncCountProvider);
+    final updateState = ref.watch(appUpdateProvider);
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -263,6 +344,16 @@ class SettingsScreen extends ConsumerWidget {
                               label: 'Meu Perfil',
                               value: 'Foto, dados e objetivo',
                               onTap: () => context.push('/profile'),
+                            ),
+                            _SettingsRow(
+                              label: 'Atualizações do app',
+                              value: _updateRowValue(updateState),
+                              subtitle: _updateRowSubtitle(updateState),
+                              valueColor: updateState.availableUpdate != null
+                                  ? colors.primaryLight
+                                  : null,
+                              onTap: () =>
+                                  _handleUpdateCheck(context, updateState),
                             ),
                             _SettingsRow(
                               label: 'Sair da conta',

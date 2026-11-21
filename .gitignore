@@ -3,6 +3,13 @@
 .env.*
 !.env.example
 
+# Android release signing
+*.jks
+*.keystore
+app/android/key.properties
+android/key.properties
+key.properties
+
 # Flutter / Dart
 app/.dart_tool/
 app/.flutter-plugins
