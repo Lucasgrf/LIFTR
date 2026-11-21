@@ -15,6 +15,7 @@ import 'package:personal_fitness_os/features/workout_session/domain/usecases/get
 import 'package:personal_fitness_os/features/workout_session/domain/usecases/get_workout_session_by_id.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/usecases/log_set.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/usecases/start_workout_session.dart';
+import 'package:personal_fitness_os/features/workout_session/domain/usecases/swap_session_exercise.dart';
 
 class MockSessionRepository extends Mock implements SessionRepository {}
 
@@ -216,6 +217,43 @@ void main() {
       final result = await useCase.execute('session-1');
 
       expect(result.isSuccess, isTrue);
+    });
+  });
+
+  group('SwapSessionExerciseUseCase', () {
+    test('should return ValidationFailure when newExerciseId is empty', () async {
+      final useCase = SwapSessionExerciseUseCase(mockRepository);
+      final result = await useCase.execute(
+        sessionExerciseId: 'se-1',
+        newExerciseId: '  ',
+      );
+
+      expect(result.isError, isTrue);
+      expect((result as Err).failure, isA<ValidationFailure>());
+    });
+
+    test('should swap exercise via repository when inputs are valid', () async {
+      const swapped = SessionExercise(
+        id: 'se-1',
+        sessionId: 'session-1',
+        exerciseId: 'ex-2',
+        replacedExerciseId: 'ex-1',
+      );
+      when(() => mockRepository.swapSessionExercise(
+            sessionExerciseId: 'se-1',
+            newExerciseId: 'ex-2',
+            replacedExerciseId: 'ex-1',
+          )).thenAnswer((_) async => const Success(swapped));
+
+      final useCase = SwapSessionExerciseUseCase(mockRepository);
+      final result = await useCase.execute(
+        sessionExerciseId: 'se-1',
+        newExerciseId: 'ex-2',
+        replacedExerciseId: 'ex-1',
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect((result as Success).value.exerciseId, 'ex-2');
     });
   });
 }

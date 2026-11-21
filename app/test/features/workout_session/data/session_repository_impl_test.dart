@@ -7,9 +7,11 @@ import 'package:personal_fitness_os/core/errors/failures.dart';
 import 'package:personal_fitness_os/core/errors/result.dart';
 import 'package:personal_fitness_os/features/workout_session/data/datasources/session_remote_datasource.dart';
 import 'package:personal_fitness_os/features/workout_session/data/models/logged_set_model.dart';
+import 'package:personal_fitness_os/features/workout_session/data/models/session_exercise_model.dart';
 import 'package:personal_fitness_os/features/workout_session/data/models/workout_session_model.dart';
 import 'package:personal_fitness_os/features/workout_session/data/repositories/session_repository_impl.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/logged_set.dart';
+import 'package:personal_fitness_os/features/workout_session/domain/entities/session_exercise.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -122,6 +124,47 @@ void main() {
 
       expect(result.isSuccess, isTrue);
       expect((result as Success<WorkoutSession, Failure>).value.isCompleted, isTrue);
+    });
+  });
+
+  group('swapSessionExercise', () {
+    test('should update session exercise and return updated entity', () async {
+      const updatedModel = SessionExerciseModel(
+        id: 'se-1',
+        sessionId: 'session-1',
+        exerciseId: 'ex-2',
+        replacedExerciseId: 'ex-1',
+      );
+
+      when(() => mockDataSource.updateSessionExercise('se-1', any()))
+          .thenAnswer((_) async => updatedModel);
+
+      final result = await repository.swapSessionExercise(
+        sessionExerciseId: 'se-1',
+        newExerciseId: 'ex-2',
+        replacedExerciseId: 'ex-1',
+      );
+
+      expect(result.isSuccess, isTrue);
+      final entity = (result as Success<SessionExercise, Failure>).value;
+      expect(entity.exerciseId, 'ex-2');
+      expect(entity.replacedExerciseId, 'ex-1');
+    });
+
+    test('should return ServerFailure when updateSessionExercise throws PostgrestException',
+        () async {
+      when(() => mockDataSource.updateSessionExercise('se-1', any())).thenThrow(
+        const PostgrestException(message: 'Update failed'),
+      );
+
+      final result = await repository.swapSessionExercise(
+        sessionExerciseId: 'se-1',
+        newExerciseId: 'ex-2',
+        replacedExerciseId: 'ex-1',
+      );
+
+      expect(result.isError, isTrue);
+      expect((result as Err).failure, isA<ServerFailure>());
     });
   });
 }
