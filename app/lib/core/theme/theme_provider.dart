@@ -1,9 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-/// Active theme mode preference for LIFTR (Dark-first by default).
-final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.dark);
+/// Persists the active [ThemeMode] preference for LIFTR (Dark-first by default).
+class ThemeModeNotifier extends StateNotifier<ThemeMode> {
+  ThemeModeNotifier(this._prefs) : super(_load(_prefs));
 
-/// Allows toggling a discrete offline preview banner in Settings without
-/// affecting real connectivity detection.
-final simulatedOfflineProvider = StateProvider<bool>((ref) => false);
+  static const String _storageKey = 'liftr_theme_mode_v1';
+  final SharedPreferences? _prefs;
+
+  static ThemeMode _load(SharedPreferences? prefs) {
+    final raw = prefs?.getString(_storageKey);
+    return switch (raw) {
+      'light' => ThemeMode.light,
+      'system' => ThemeMode.system,
+      _ => ThemeMode.dark,
+    };
+  }
+
+  void setThemeMode(ThemeMode mode) {
+    state = mode;
+    _prefs?.setString(_storageKey, mode.name);
+  }
+}
+
+/// Active theme mode preference provider for LIFTR (Dark-first by default).
+final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>((
+  ref,
+) {
+  return ThemeModeNotifier(ref.watch(sharedPreferencesProvider));
+});

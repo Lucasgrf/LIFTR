@@ -14,3 +14,7 @@ final isOnlineStreamProvider = StreamProvider.autoDispose<bool>((ref) {
   final networkInfo = ref.watch(networkInfoProvider);
   return networkInfo.onConnectivityChanged;
 });
+
+/// Allows toggling a discrete offline preview banner in Settings without
+/// affecting real connectivity detection.
+final simulatedOfflineProvider = StateProvider<bool>((ref) => false);

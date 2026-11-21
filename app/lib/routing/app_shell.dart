@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
-import 'package:personal_fitness_os/core/theme/theme_provider.dart';
 import 'package:personal_fitness_os/core/widgets/offline_banner_widget.dart';
 
 class AppShell extends ConsumerStatefulWidget {
