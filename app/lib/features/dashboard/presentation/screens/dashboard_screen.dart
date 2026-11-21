@@ -1,20 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
+import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
+import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
-import 'package:personal_fitness_os/features/dashboard/presentation/widgets/dashboard_active_goals_card.dart';
-import 'package:personal_fitness_os/features/dashboard/presentation/widgets/dashboard_nutrition_card.dart';
-import 'package:personal_fitness_os/features/dashboard/presentation/widgets/dashboard_stats_grid.dart';
+import 'package:personal_fitness_os/features/dashboard/presentation/widgets/today_exercise_preview_card.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/widgets/today_workout_banner.dart';
-import 'package:personal_fitness_os/features/dashboard/presentation/widgets/weekly_streak_widget.dart';
+import 'package:personal_fitness_os/features/insights/domain/entities/fitness_insight.dart';
 import 'package:personal_fitness_os/features/insights/presentation/providers/insight_providers.dart';
-import 'package:personal_fitness_os/features/insights/presentation/widgets/insight_card.dart';
+import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
+import 'package:personal_fitness_os/features/training/presentation/providers/workout_queue_provider.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/session_exercise.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
 
@@ -37,6 +41,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       List<SessionExercise>? initialExercises;
       if (workout != null && workout.exercises.isNotEmpty) {
         initialExercises = workout.exercises.map((we) {
+          final firstWorking = we.setTemplates
+              .where((s) => s.isWorkingSet)
+              .firstOrNull;
           return SessionExercise(
             id: '',
             sessionId: '',
@@ -46,7 +53,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             targetRestSeconds: we.setTemplates.isNotEmpty
                 ? we.setTemplates.first.restSeconds
                 : 90,
-            targetSetsCount: we.workingSetsCount > 0 ? we.workingSetsCount : 3,
+            targetSetsCount:
+                we.workingSetsCount > 0 ? we.workingSetsCount : 3,
+            targetRepsMin: firstWorking?.targetRepsMin ?? 8,
+            targetRepsMax: firstWorking?.targetRepsMax ?? 12,
+            targetRir: firstWorking?.targetRirMin ?? 2,
           );
         }).toList();
       }
@@ -65,7 +76,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           context.push('/session/${session.id}');
         },
         (failure) {
-          context.showSnackBar('Erro ao iniciar treino: ${failure.message}', isError: true);
+          context.showSnackBar(
+            'Erro ao iniciar treino: ${failure.message}',
+            isError: true,
+          );
         },
       );
     } finally {
@@ -73,125 +87,362 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
   }
 
+  void _openSkipOrSwapSheet(
+    BuildContext context,
+    TrainingPlan plan,
+    List<Workout> orderedWorkouts,
+  ) {
+    final colors = context.appColors;
+    final radius = context.appRadius;
+
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.border,
+                    borderRadius: BorderRadius.circular(radius.full),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text('Fila rotativa · ${plan.name}', style: AppTypography.eyebrow(ctx)),
+              const SizedBox(height: 4),
+              Text('Escolher treino de hoje', style: ctx.textTheme.titleLarge),
+              const SizedBox(height: 14),
+              if (orderedWorkouts.length > 1)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: colors.surfaceElevated,
+                      borderRadius: BorderRadius.circular(radius.small),
+                    ),
+                    child: Icon(
+                      Icons.skip_next_rounded,
+                      color: colors.primaryLight,
+                    ),
+                  ),
+                  title: const Text('Pular treino atual'),
+                  subtitle: Text(
+                    'Move "${orderedWorkouts.first.name}" para o fim da fila',
+                    style: ctx.textTheme.bodySmall?.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    ref
+                        .read(workoutQueueProvider.notifier)
+                        .skipFirstToEnd(plan.id, orderedWorkouts);
+                    Navigator.pop(ctx);
+                  },
+                ),
+              const Divider(),
+              ...orderedWorkouts.asMap().entries.map((entry) {
+                final idx = entry.key;
+                final w = entry.value;
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: idx == 0
+                          ? colors.primaryMuted
+                          : colors.surfaceElevated,
+                      borderRadius: BorderRadius.circular(radius.small),
+                    ),
+                    child: Text(
+                      '${idx + 1}º',
+                      style: ctx.textTheme.labelMedium?.copyWith(
+                        color: idx == 0
+                            ? colors.primaryLight
+                            : colors.textSecondary,
+                        fontFeatures: AppTypography.tabularFeatures,
+                      ),
+                    ),
+                  ),
+                  title: Text(w.name),
+                  subtitle: Text(
+                    '${w.exercises.length} exercícios · ${w.totalWorkingSetsCount} séries',
+                    style: ctx.textTheme.bodySmall?.copyWith(
+                      color: colors.textSecondary,
+                      fontFeatures: AppTypography.tabularFeatures,
+                    ),
+                  ),
+                  trailing: idx == 0
+                      ? Icon(Icons.check_rounded, color: colors.primary)
+                      : null,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    ref
+                        .read(workoutQueueProvider.notifier)
+                        .selectNext(plan.id, orderedWorkouts, w.id);
+                    Navigator.pop(ctx);
+                  },
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final radius = context.appRadius;
     final dashboardAsync = ref.watch(dashboardDataProvider);
     final insightsAsync = ref.watch(fitnessInsightsProvider);
+    ref.watch(workoutQueueProvider);
 
     final now = DateTime.now();
-    final formattedDate = DateFormat("EEEE, d 'de' MMMM", 'pt_BR').format(now);
-    final capitalizedDate = formattedDate[0].toUpperCase() + formattedDate.substring(1);
+    final formattedDate = DateFormat("EEEE, d 'de' MMM", 'pt_BR').format(now);
+    final capitalizedDate =
+        formattedDate[0].toUpperCase() + formattedDate.substring(1);
 
     return Scaffold(
       backgroundColor: colors.background,
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Hoje',
-              style: context.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colors.textPrimary,
-              ),
-            ),
-            Text(
-              capitalizedDate,
-              style: context.textTheme.bodySmall?.copyWith(
-                color: colors.textTertiary,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history_rounded),
-            tooltip: 'Histórico & Timeline',
-            onPressed: () => context.push('/history'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Atualizar',
-            onPressed: () => ref.invalidate(dashboardDataProvider),
-          ),
-        ],
-      ),
       body: dashboardAsync.when(
-        loading: () => const LoadingWidget(),
+        loading: () => const SafeArea(child: LiftrScreenSkeleton()),
         error: (err, _) => ErrorStateWidget(
           message: err.toString(),
           onRetry: () => ref.invalidate(dashboardDataProvider),
         ),
         data: (data) {
+          final activePlan = data.activePlan;
+          final orderedWorkouts = activePlan != null &&
+                  activePlan.workouts.isNotEmpty
+              ? ref
+                  .read(workoutQueueProvider.notifier)
+                  .orderedWorkouts(activePlan.id, activePlan.workouts)
+              : const <Workout>[];
+          final todayWorkout = orderedWorkouts.isNotEmpty
+              ? orderedWorkouts.first
+              : data.todayWorkout;
+
+          final topInsight =
+              insightsAsync.hasValue && insightsAsync.value!.isNotEmpty
+                  ? insightsAsync.value!.first
+                  : null;
+
           return RefreshIndicator(
+            color: colors.primary,
             onRefresh: () => ref.refresh(dashboardDataProvider.future),
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+              padding: const EdgeInsets.fromLTRB(0, 12, 0, 32),
               children: [
-                // 1. Today's Workout Banner (Active Session / Prescribed Workout / Free)
-                TodayWorkoutBanner(
-                  activeSession: data.activeSession,
-                  todayWorkout: data.todayWorkout,
-                  activePlan: data.activePlan,
-                  isLoading: _isStartingWorkout,
-                  onStartWorkout: _startWorkout,
-                ),
-                const SizedBox(height: 16),
-
-                // 2. Today's Nutrition Overview (if available)
-                if (data.todayNutrition != null) ...[
-                  DashboardNutritionCard(nutrition: data.todayNutrition!),
-                  const SizedBox(height: 16),
-                ],
-
-                // 3. Active Goals Overview (if available)
-                if (data.hasActiveGoals) ...[
-                  DashboardActiveGoalsCard(goals: data.activeGoals),
-                  const SizedBox(height: 16),
-                ],
-
-                // 4. Weekly Consistency / Streak Tracker
-                WeeklyStreakWidget(stats: data.weeklyStats),
-                const SizedBox(height: 16),
-
-                // 5. Weekly Volume & Duration Statistics Grid
-                DashboardStatsGrid(stats: data.weeklyStats),
-                const SizedBox(height: 16),
-
-                // 6. Deterministic Insights (if available)
-                if (insightsAsync.hasValue && insightsAsync.value!.isNotEmpty) ...[
-                  ...insightsAsync.value!.map((insight) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: InsightCard(insight: insight),
-                      )),
-                ],
-                const SizedBox(height: 8),
-
-                // 7. Quick Shortcuts Row
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.fitness_center_rounded, size: 18),
-                        label: const Text('Biblioteca'),
-                        onPressed: () => context.push('/exercises'),
+                ResponsiveContainer(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // 1. Compact Header
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'SEU TREINO',
+                                    style: AppTypography.eyebrow(context),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    'Hoje',
+                                    style: context.textTheme.displayMedium,
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    capitalizedDate,
+                                    style: context.textTheme.bodySmall?.copyWith(
+                                      color: colors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Semantics(
+                              label: 'Abrir configurações',
+                              button: true,
+                              child: InkWell(
+                                onTap: () => context.push('/settings'),
+                                borderRadius:
+                                    BorderRadius.circular(radius.medium),
+                                child: Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: colors.surface,
+                                    borderRadius:
+                                        BorderRadius.circular(radius.medium),
+                                    border: Border.all(color: colors.border),
+                                  ),
+                                  child: Icon(
+                                    Icons.settings_outlined,
+                                    color: colors.textSecondary,
+                                    size: 22,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.list_alt_rounded, size: 18),
-                        label: const Text('Programas'),
-                        onPressed: () => context.push('/training'),
+                      const SizedBox(height: 12),
+
+                      // 2. Hero Card do Treino do Dia
+                      TodayWorkoutBanner(
+                        activeSession: data.activeSession,
+                        todayWorkout: todayWorkout,
+                        activePlan: activePlan,
+                        isLoading: _isStartingWorkout,
+                        queuePosition: orderedWorkouts.isNotEmpty ? 1 : null,
+                        queueTotal: orderedWorkouts.isNotEmpty
+                            ? orderedWorkouts.length
+                            : null,
+                        onSkipOrSwap: (activePlan != null &&
+                                orderedWorkouts.length > 1)
+                            ? () => _openSkipOrSwapSheet(
+                                  context,
+                                  activePlan,
+                                  orderedWorkouts,
+                                )
+                            : null,
+                        onStartWorkout: _startWorkout,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 24),
+
+                      // 3. Exercícios de hoje
+                      if (todayWorkout != null &&
+                          todayWorkout.exercises.isNotEmpty) ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Exercícios de hoje',
+                              style: context.textTheme.titleMedium,
+                            ),
+                            Text(
+                              '${todayWorkout.exercises.length} PRESCRITOS',
+                              style: AppTypography.eyebrow(context),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        ...todayWorkout.exercises.asMap().entries.map(
+                              (entry) => Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: TodayExercisePreviewCard(
+                                  index: entry.key,
+                                  workoutExercise: entry.value,
+                                ),
+                              ),
+                            ),
+                      ],
+
+                      // 4. Máximo 1 card de Insight discreto
+                      if (topInsight != null) ...[
+                        const SizedBox(height: 6),
+                        _DashboardSingleInsightCard(insight: topInsight),
+                      ],
+                    ],
+                  ),
                 ),
               ],
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _DashboardSingleInsightCard extends StatelessWidget {
+  const _DashboardSingleInsightCard({required this.insight});
+
+  final FitnessInsight insight;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final radius = context.appRadius;
+    final fitnessColors = context.fitnessColors;
+
+    final Color accent;
+    final IconData icon;
+    switch (insight.severity) {
+      case InsightSeverity.success:
+        accent = fitnessColors.progressUp;
+        icon = Icons.trending_up_rounded;
+        break;
+      case InsightSeverity.warning:
+      case InsightSeverity.alert:
+        accent = fitnessColors.progressStalled;
+        icon = Icons.warning_amber_rounded;
+        break;
+      case InsightSeverity.info:
+        accent = colors.primaryLight;
+        icon = Icons.insights_rounded;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(radius.medium),
+        border: Border.all(color: accent.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 3,
+            height: 36,
+            decoration: BoxDecoration(
+              color: accent,
+              borderRadius: BorderRadius.circular(radius.full),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(radius.small),
+            ),
+            child: Icon(icon, size: 18, color: accent),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '${insight.title}. ${insight.description}',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: context.textTheme.bodySmall?.copyWith(
+                color: colors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

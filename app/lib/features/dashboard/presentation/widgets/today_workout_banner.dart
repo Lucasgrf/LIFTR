@@ -1,11 +1,12 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
-import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
@@ -18,6 +19,9 @@ class TodayWorkoutBanner extends StatelessWidget {
     this.activePlan,
     required this.onStartWorkout,
     this.isLoading = false,
+    this.queuePosition,
+    this.queueTotal,
+    this.onSkipOrSwap,
   });
 
   final WorkoutSession? activeSession;
@@ -25,60 +29,85 @@ class TodayWorkoutBanner extends StatelessWidget {
   final TrainingPlan? activePlan;
   final Future<void> Function(Workout? workout) onStartWorkout;
   final bool isLoading;
+  final int? queuePosition;
+  final int? queueTotal;
+  final VoidCallback? onSkipOrSwap;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final radius = context.appRadius;
     final fitnessColors = context.fitnessColors;
+    final compactHeight = MediaQuery.sizeOf(context).height < 700;
 
-    // 1. If there's an ongoing session
+    // 1. Ongoing active session
     if (activeSession != null) {
-      return AppCard(
-        padding: const EdgeInsets.all(20),
+      return _HeroShell(
+        borderColor: fitnessColors.progressUp.withValues(alpha: 0.45),
+        glowColor: fitnessColors.progressUp,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
-                    color: fitnessColors.progressMaintain.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(context.appRadius.small),
+                    color: fitnessColors.progressUp.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(radius.full),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.timer_rounded, size: 14, color: fitnessColors.progressMaintain),
-                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.timer_rounded,
+                        size: 14,
+                        color: fitnessColors.progressUp,
+                      ),
+                      const SizedBox(width: 5),
                       Text(
                         'EM ANDAMENTO',
                         style: context.textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: fitnessColors.progressMaintain,
+                          fontWeight: FontWeight.w700,
+                          color: fitnessColors.progressUp,
+                          letterSpacing: 0.6,
                         ),
                       ),
                     ],
                   ),
                 ),
+                const Spacer(),
+                Text(
+                  activeSession!.formattedDuration,
+                  style: context.textTheme.labelMedium?.copyWith(
+                    color: colors.textSecondary,
+                    fontFeatures: AppTypography.tabularFeatures,
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
+            Text(
+              'SESSÃO ATIVA',
+              style: AppTypography.eyebrow(context),
+            ),
+            const SizedBox(height: 4),
             Text(
               activeSession!.workoutName,
-              style: context.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colors.textPrimary,
-              ),
+              style: context.textTheme.displayMedium,
             ),
             const SizedBox(height: 6),
             Text(
-              '${activeSession!.totalCompletedSetsCount} séries registradas até o momento.',
+              '${activeSession!.totalCompletedSetsCount} séries registradas até o momento',
               style: context.textTheme.bodyMedium?.copyWith(
                 color: colors.textSecondary,
+                fontFeatures: AppTypography.tabularFeatures,
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
             AppButton.primary(
               label: 'Continuar Treino',
               icon: Icons.play_arrow_rounded,
@@ -89,61 +118,102 @@ class TodayWorkoutBanner extends StatelessWidget {
       );
     }
 
-    // 2. If there is a scheduled workout for today in active plan
+    // 2. Prescribed next workout in rotating queue
     if (todayWorkout != null) {
-      return AppCard(
-        padding: const EdgeInsets.all(20),
+      final pos = queuePosition ?? 1;
+      final total = queueTotal ?? activePlan?.workouts.length ?? 1;
+      final chipText = total > 1
+          ? 'Treino $pos de $total · Próximo'
+          : (activePlan?.name ?? 'Próximo na fila');
+      final durationEst = todayWorkout!.estimatedDurationMinutes ?? 50;
+
+      return _HeroShell(
+        borderColor: colors.primary.withValues(alpha: 0.43),
+        glowColor: colors.primary,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: colors.primary.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(context.appRadius.small),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.fitness_center_rounded, size: 14, color: colors.primary),
-                      const SizedBox(width: 4),
-                      Text(
-                        'TREINO DE HOJE',
-                        style: context.textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colors.primary,
-                        ),
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colors.primaryMuted,
+                      borderRadius: BorderRadius.circular(radius.full),
+                    ),
+                    child: Text(
+                      chipText,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: colors.primaryLight,
+                        fontFeatures: AppTypography.tabularFeatures,
                       ),
-                    ],
+                    ),
                   ),
                 ),
-                const Spacer(),
-                Text(
-                  activePlan?.name ?? '',
-                  style: context.textTheme.labelSmall?.copyWith(
-                    color: colors.textTertiary,
+                const SizedBox(width: 8),
+                if (onSkipOrSwap != null)
+                  Semantics(
+                    label: 'Pular ou trocar treino do dia',
+                    button: true,
+                    child: TextButton(
+                      onPressed: onSkipOrSwap,
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size(48, 40),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        foregroundColor: colors.textSecondary,
+                      ),
+                      child: const Text('Pular / Trocar'),
+                    ),
                   ),
-                ),
               ],
             ),
-            const SizedBox(height: 12),
+            if (!compactHeight) ...[
+              const SizedBox(height: 16),
+              Transform.rotate(
+                angle: -4 * math.pi / 180,
+                child: Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: colors.primaryMuted,
+                    borderRadius: BorderRadius.circular(radius.medium),
+                    border: Border.all(
+                      color: colors.primary.withValues(alpha: 0.28),
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.fitness_center_rounded,
+                    size: 22,
+                    color: colors.primaryLight,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            Text(
+              'TREINO DE HOJE',
+              style: AppTypography.eyebrow(context),
+            ),
+            const SizedBox(height: 4),
             Text(
               todayWorkout!.name,
-              style: context.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colors.textPrimary,
-              ),
+              style: context.textTheme.displayMedium,
             ),
             const SizedBox(height: 6),
             Text(
-              '${todayWorkout!.exercises.length} exercícios • ~${todayWorkout!.totalWorkingSetsCount} séries válidas',
+              '${todayWorkout!.exercises.length} exercícios · ${todayWorkout!.totalWorkingSetsCount} séries · ~$durationEst min',
               style: context.textTheme.bodyMedium?.copyWith(
                 color: colors.textSecondary,
+                fontFeatures: AppTypography.tabularFeatures,
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
             AppButton.primary(
               label: 'Iniciar Treino',
               icon: Icons.play_arrow_rounded,
@@ -155,43 +225,41 @@ class TodayWorkoutBanner extends StatelessWidget {
       );
     }
 
-    // 3. If there is an active plan but no workout scheduled for today
+    // 3. Active plan exists but has no workouts yet
     if (activePlan != null) {
-      return AppCard(
-        padding: const EdgeInsets.all(20),
+      return _HeroShell(
+        borderColor: colors.border,
+        glowColor: fitnessColors.progressNeutral,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: fitnessColors.progressNeutral.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(context.appRadius.small),
+                color: fitnessColors.progressNeutral.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(radius.full),
               ),
               child: Text(
-                'DESCANSO OU LIVRE',
+                'FILA LIVRE',
                 style: context.textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                   color: fitnessColors.progressNeutral,
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Text(
-              'Dia livre na sua divisão',
-              style: context.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colors.textPrimary,
-              ),
+              'Treino avulso pronto',
+              style: context.textTheme.headlineLarge,
             ),
             const SizedBox(height: 6),
             Text(
-              'Aproveite para descansar ou inicie um treino avulso.',
+              'Adicione sessões ao plano ${activePlan!.name} ou comece um treino livre.',
               style: context.textTheme.bodyMedium?.copyWith(
                 color: colors.textSecondary,
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
             AppButton.secondary(
               label: 'Iniciar Treino Avulso',
               icon: Icons.add_rounded,
@@ -203,46 +271,107 @@ class TodayWorkoutBanner extends StatelessWidget {
       );
     }
 
-    // 4. If no active plan exists
-    return AppCard(
-      padding: const EdgeInsets.all(20),
+    // 4. No active plan exists
+    return _HeroShell(
+      borderColor: colors.border,
+      glowColor: colors.primary,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: colors.surfaceVariant,
-              borderRadius: BorderRadius.circular(context.appRadius.small),
+              color: colors.surfaceElevated,
+              borderRadius: BorderRadius.circular(radius.full),
             ),
             child: Text(
-              'BEM-VINDO',
+              'SEM PROGRAMA ATIVO',
               style: context.textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
                 color: colors.textSecondary,
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Text(
-            'Nenhum programa ativo',
-            style: context.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: colors.textPrimary,
-            ),
+            'Monte sua fila rotativa',
+            style: context.textTheme.headlineLarge,
           ),
           const SizedBox(height: 6),
           Text(
-            'Crie ou ative um programa de treino para prescrever sua rotina semanal.',
+            'Ative ou crie um programa para que o LIFTR prescreva seu próximo treino.',
             style: context.textTheme.bodyMedium?.copyWith(
               color: colors.textSecondary,
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 20),
           AppButton.primary(
-            label: 'Explorar Programas',
-            icon: Icons.list_alt_rounded,
-            onPressed: () => context.push('/training'),
+            label: 'Escolher Programa',
+            icon: Icons.fitness_center_rounded,
+            onPressed: () => context.go('/training'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroShell extends StatelessWidget {
+  const _HeroShell({
+    required this.borderColor,
+    required this.glowColor,
+    required this.child,
+  });
+
+  final Color borderColor;
+  final Color glowColor;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final radius = context.appRadius;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius.xl),
+      child: Stack(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(radius.xl),
+              border: Border.all(color: borderColor, width: 1),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  glowColor.withValues(alpha: 0.11),
+                  colors.surface,
+                ],
+                stops: const [0.0, 0.45],
+              ),
+            ),
+            child: child,
+          ),
+          Positioned(
+            top: -55,
+            right: -30,
+            child: IgnorePointer(
+              child: Container(
+                width: 150,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      glowColor.withValues(alpha: 0.16),
+                      glowColor.withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
