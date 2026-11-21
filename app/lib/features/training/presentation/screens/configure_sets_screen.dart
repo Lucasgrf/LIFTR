@@ -44,7 +44,7 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
             setType: SetType.working,
             targetRepsMin: 8,
             targetRepsMax: 12,
-            restSeconds: 120,
+            restSeconds: AppConstants.defaultRestSeconds,
           ),
         );
       }
@@ -62,9 +62,12 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
           setType: type,
           targetRepsMin: type == SetType.warmup ? 12 : 8,
           targetRepsMax: type == SetType.warmup ? 15 : 12,
-          targetRirMin: type == SetType.working ? 1 : null,
-          targetRirMax: type == SetType.working ? 2 : null,
-          restSeconds: type == SetType.warmup ? 60 : 120,
+          targetRirMin:
+              (type == SetType.working || type == SetType.dropSet) ? 1 : null,
+          targetRirMax:
+              (type == SetType.working || type == SetType.dropSet) ? 2 : null,
+          restSeconds:
+              type == SetType.warmup ? 60 : AppConstants.defaultRestSeconds,
         ),
       );
     });
@@ -195,6 +198,10 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                                 child: Text('Válida (Trabalho)'),
                               ),
                               DropdownMenuItem(
+                                value: SetType.dropSet,
+                                child: Text('Drop-set'),
+                              ),
+                              DropdownMenuItem(
                                 value: SetType.mobility,
                                 child: Text('Mobilidade'),
                               ),
@@ -219,9 +226,33 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                         children: [
                           Expanded(
                             child: Text(
-                              'Reps: ${template.repRangeText} · RIR: ${template.rirRangeText} · ${template.restSeconds}s',
+                              'Reps: ${template.repRangeText} · RIR: ${template.rirRangeText}',
                               style: TextStyle(color: context.appColors.textSecondary),
                             ),
+                          ),
+                          DropdownButton<int>(
+                            value: [60, 90, 120, 150, 180, 240]
+                                    .contains(template.restSeconds)
+                                ? template.restSeconds
+                                : AppConstants.defaultRestSeconds,
+                            dropdownColor: context.appColors.surfaceElevated,
+                            isDense: true,
+                            underline: const SizedBox(),
+                            items: const [
+                              DropdownMenuItem(value: 60, child: Text('60s')),
+                              DropdownMenuItem(value: 90, child: Text('90s')),
+                              DropdownMenuItem(value: 120, child: Text('120s')),
+                              DropdownMenuItem(value: 150, child: Text('150s')),
+                              DropdownMenuItem(value: 180, child: Text('180s')),
+                              DropdownMenuItem(value: 240, child: Text('240s')),
+                            ],
+                            onChanged: (v) {
+                              if (v != null) {
+                                setState(() {
+                                  _sets[idx] = template.copyWith(restSeconds: v);
+                                });
+                              }
+                            },
                           ),
                         ],
                       ),

@@ -14,7 +14,7 @@ class SetTemplate {
     this.targetRirMin,
     this.targetRirMax,
     this.targetWeight,
-    this.restSeconds = 120,
+    this.restSeconds = AppConstants.defaultRestSeconds,
     this.notes,
     this.createdAt,
   });
@@ -32,7 +32,10 @@ class SetTemplate {
   final String? notes;
   final DateTime? createdAt;
 
-  bool get isWorkingSet => setType == SetType.working;
+  bool get isWorkingSet =>
+      setType == SetType.working ||
+      setType == SetType.dropSet ||
+      setType == SetType.myoRep;
 
   String get repRangeText {
     if (targetRepsMin != null && targetRepsMax != null) {

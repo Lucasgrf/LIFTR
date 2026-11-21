@@ -44,7 +44,7 @@ class _AddExerciseToWorkoutScreenState
   int _repsMax = 12;
   int _rirMin = 1;
   int _rirMax = 2;
-  int _restSeconds = 120;
+  int _restSeconds = AppConstants.defaultRestSeconds;
   bool _isLoading = false;
 
   @override
@@ -316,6 +316,7 @@ class _AddExerciseToWorkoutScreenState
                         DropdownMenuItem(value: 120, child: Text('120s (2:00)')),
                         DropdownMenuItem(value: 150, child: Text('150s (2:30)')),
                         DropdownMenuItem(value: 180, child: Text('180s (3:00)')),
+                        DropdownMenuItem(value: 240, child: Text('240s (4:00)')),
                       ],
                       onChanged: (v) {
                         if (v != null) setState(() => _restSeconds = v);

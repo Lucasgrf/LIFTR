@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -116,6 +117,9 @@ enum ActivityLevel {
 @immutable
 class UserSettingsState {
   const UserSettingsState({
+    this.displayName,
+    this.avatarUrl,
+    this.avatarStoragePath,
     this.biologicalSex = 'M',
     this.age = 27,
     this.heightCm = 178,
@@ -126,6 +130,7 @@ class UserSettingsState {
     this.activityLevel = ActivityLevel.moderatelyActive,
     this.trainingDaysPerWeek = 4,
     this.selectedSplitName = 'Upper / Lower',
+    this.defaultRestSeconds = AppConstants.defaultRestSeconds,
     this.barbellIncrementKg = 2.5,
     this.dumbbellIncrementKg = 2.0,
     this.machineIncrementKg = 5.0,
@@ -138,6 +143,9 @@ class UserSettingsState {
     this.onboardingCompleted = false,
   });
 
+  final String? displayName;
+  final String? avatarUrl;
+  final String? avatarStoragePath;
   final String biologicalSex;
   final int age;
   final int heightCm;
@@ -148,6 +156,7 @@ class UserSettingsState {
   final ActivityLevel activityLevel;
   final int trainingDaysPerWeek;
   final String selectedSplitName;
+  final int defaultRestSeconds;
   final double barbellIncrementKg;
   final double dumbbellIncrementKg;
   final double machineIncrementKg;
@@ -192,6 +201,10 @@ class UserSettingsState {
   }
 
   UserSettingsState copyWith({
+    String? displayName,
+    String? avatarUrl,
+    String? avatarStoragePath,
+    bool clearAvatar = false,
     String? biologicalSex,
     int? age,
     int? heightCm,
@@ -203,6 +216,7 @@ class UserSettingsState {
     ActivityLevel? activityLevel,
     int? trainingDaysPerWeek,
     String? selectedSplitName,
+    int? defaultRestSeconds,
     double? barbellIncrementKg,
     double? dumbbellIncrementKg,
     double? machineIncrementKg,
@@ -215,6 +229,10 @@ class UserSettingsState {
     bool? onboardingCompleted,
   }) {
     return UserSettingsState(
+      displayName: displayName ?? this.displayName,
+      avatarUrl: clearAvatar ? null : (avatarUrl ?? this.avatarUrl),
+      avatarStoragePath:
+          clearAvatar ? null : (avatarStoragePath ?? this.avatarStoragePath),
       biologicalSex: biologicalSex ?? this.biologicalSex,
       age: age ?? this.age,
       heightCm: heightCm ?? this.heightCm,
@@ -226,6 +244,7 @@ class UserSettingsState {
       activityLevel: activityLevel ?? this.activityLevel,
       trainingDaysPerWeek: trainingDaysPerWeek ?? this.trainingDaysPerWeek,
       selectedSplitName: selectedSplitName ?? this.selectedSplitName,
+      defaultRestSeconds: defaultRestSeconds ?? this.defaultRestSeconds,
       barbellIncrementKg: barbellIncrementKg ?? this.barbellIncrementKg,
       dumbbellIncrementKg: dumbbellIncrementKg ?? this.dumbbellIncrementKg,
       machineIncrementKg: machineIncrementKg ?? this.machineIncrementKg,
@@ -241,6 +260,9 @@ class UserSettingsState {
 
   Map<String, dynamic> toJson() {
     return {
+      'displayName': displayName,
+      'avatarUrl': avatarUrl,
+      'avatarStoragePath': avatarStoragePath,
       'biologicalSex': biologicalSex,
       'age': age,
       'heightCm': heightCm,
@@ -251,6 +273,7 @@ class UserSettingsState {
       'activityLevel': activityLevel.name,
       'trainingDaysPerWeek': trainingDaysPerWeek,
       'selectedSplitName': selectedSplitName,
+      'defaultRestSeconds': defaultRestSeconds,
       'barbellIncrementKg': barbellIncrementKg,
       'dumbbellIncrementKg': dumbbellIncrementKg,
       'machineIncrementKg': machineIncrementKg,
@@ -279,6 +302,9 @@ class UserSettingsState {
   factory UserSettingsState.fromJson(Map<String, dynamic> json) {
     const defaults = UserSettingsState();
     return UserSettingsState(
+      displayName: json['displayName'] as String?,
+      avatarUrl: json['avatarUrl'] as String?,
+      avatarStoragePath: json['avatarStoragePath'] as String?,
       biologicalSex:
           json['biologicalSex'] as String? ?? defaults.biologicalSex,
       age: (json['age'] as num?)?.toInt() ?? defaults.age,
@@ -301,6 +327,9 @@ class UserSettingsState {
               defaults.trainingDaysPerWeek,
       selectedSplitName:
           json['selectedSplitName'] as String? ?? defaults.selectedSplitName,
+      defaultRestSeconds:
+          (json['defaultRestSeconds'] as num?)?.toInt() ??
+              defaults.defaultRestSeconds,
       barbellIncrementKg:
           (json['barbellIncrementKg'] as num?)?.toDouble() ??
               defaults.barbellIncrementKg,
@@ -354,6 +383,26 @@ class UserSettingsNotifier extends StateNotifier<UserSettingsState> {
 
   void _persist() {
     _prefs?.setString(_storageKey, jsonEncode(state.toJson()));
+  }
+
+  void updateProfileIdentity({
+    String? displayName,
+    String? avatarUrl,
+    String? avatarStoragePath,
+    bool clearAvatar = false,
+  }) {
+    state = state.copyWith(
+      displayName: displayName,
+      avatarUrl: avatarUrl,
+      avatarStoragePath: avatarStoragePath,
+      clearAvatar: clearAvatar,
+    );
+    _persist();
+  }
+
+  void setDefaultRestSeconds(int seconds) {
+    state = state.copyWith(defaultRestSeconds: seconds.clamp(30, 600));
+    _persist();
   }
 
   void updateBodyData({

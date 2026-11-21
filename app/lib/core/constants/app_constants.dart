@@ -1,5 +1,5 @@
 class AppConstants {
-  static const int defaultRestSeconds = 90;
+  static const int defaultRestSeconds = 180;
   static const String defaultRirRange = '1-2';
   
   static const double barbellIncrement = 2.5;
