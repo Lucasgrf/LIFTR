@@ -46,7 +46,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: context.appColors.danger),
             child: const Text('Remover'),
           ),
         ],
@@ -313,10 +313,13 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                     top: BorderSide(color: context.appColors.border, width: 1),
                   ),
                 ),
-                child: AppButton.primary(
-                  label: 'Iniciar Este Treino Agora',
-                  icon: Icons.play_arrow_rounded,
-                  onPressed: () => context.push('/session/${workout.id}'),
+                child: SafeArea(
+                  top: false,
+                  child: AppButton.primary(
+                    label: 'Iniciar Este Treino Agora',
+                    icon: Icons.play_arrow_rounded,
+                    onPressed: () => context.push('/session/${workout.id}'),
+                  ),
                 ),
               ),
             ],
