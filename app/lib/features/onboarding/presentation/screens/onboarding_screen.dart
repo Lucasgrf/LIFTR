@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_fitness_os/core/constants/supabase_config.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
@@ -12,6 +13,7 @@ import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 import 'package:personal_fitness_os/routing/app_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class _SplitOption {
   const _SplitOption({
@@ -201,7 +203,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
   }
 
-  void _finish({required bool whatsappConnected}) {
+  Future<void> _finish({required bool whatsappConnected}) async {
     HapticFeedback.mediumImpact();
     final notifier = ref.read(userSettingsProvider.notifier);
     final age = int.tryParse(_ageController.text.trim()) ?? 27;
@@ -231,8 +233,37 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
     notifier.completeOnboarding(whatsappConnected: whatsappConnected);
 
-    ref.read(authStateProvider.notifier).state = true;
-    context.go('/');
+    if (!SupabaseConfig.isConfigured) {
+      ref.read(authStateProvider.notifier).state = true;
+      context.go('/');
+      return;
+    }
+
+    User? user;
+    try {
+      user = Supabase.instance.client.auth.currentUser;
+    } catch (_) {
+      user = null;
+    }
+
+    if (user != null) {
+      final settings = ref.read(userSettingsProvider);
+      try {
+        await Supabase.instance.client.auth.updateUser(
+          UserAttributes(data: settings.toJson()),
+        );
+      } catch (_) {
+        // Best-effort metadata sync; local settings remain persisted.
+      }
+      if (!mounted) return;
+      ref.read(authStateProvider.notifier).state = true;
+      context.go('/');
+      return;
+    }
+
+    if (!mounted) return;
+    context.showSnackBar('Perfil salvo! Entre na sua conta para sincronizar.');
+    context.go('/login');
   }
 
   @override

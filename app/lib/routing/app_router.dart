@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_fitness_os/core/constants/supabase_config.dart';
 import 'package:personal_fitness_os/features/auth/presentation/screens/login_screen.dart';
 import 'package:personal_fitness_os/features/auth/presentation/screens/register_screen.dart';
 import 'package:personal_fitness_os/features/body/presentation/screens/body_measurements_screen.dart';
@@ -28,8 +29,16 @@ import 'package:personal_fitness_os/features/training/presentation/screens/worko
 import 'package:personal_fitness_os/features/workout_session/presentation/screens/session_summary_screen.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/screens/workout_session_screen.dart';
 import 'package:personal_fitness_os/routing/app_shell.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-final authStateProvider = StateProvider<bool>((ref) => false);
+final authStateProvider = StateProvider<bool>((ref) {
+  if (!SupabaseConfig.isConfigured) return false;
+  try {
+    return Supabase.instance.client.auth.currentSession != null;
+  } catch (_) {
+    return false;
+  }
+});
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   final isLoggedIn = ref.watch(authStateProvider);
