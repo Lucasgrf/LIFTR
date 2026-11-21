@@ -8,10 +8,14 @@ import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
+import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
+import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout_exercise.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
 import 'package:personal_fitness_os/features/training/presentation/widgets/workout_exercise_card.dart';
+import 'package:personal_fitness_os/features/workout_session/domain/helpers/session_exercise_builder.dart';
+import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
 
 class WorkoutDetailScreen extends ConsumerStatefulWidget {
   const WorkoutDetailScreen({
@@ -29,6 +33,43 @@ class WorkoutDetailScreen extends ConsumerStatefulWidget {
 
 class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
   bool _isReordering = false;
+  bool _isStartingWorkout = false;
+
+  Future<void> _startWorkout(Workout workout) async {
+    if (_isStartingWorkout) return;
+    setState(() => _isStartingWorkout = true);
+
+    try {
+      final useCase = ref.read(startWorkoutSessionUseCaseProvider);
+      final defaultRest = ref.read(userSettingsProvider).defaultRestSeconds;
+      final initialExercises = buildInitialSessionExercises(
+        workout,
+        defaultRestSeconds: defaultRest,
+      );
+
+      final result = await useCase.execute(
+        workoutId: workout.id,
+        workoutName: workout.name,
+        initialExercises: initialExercises.isNotEmpty ? initialExercises : null,
+      );
+
+      if (!mounted) return;
+      result.fold(
+        (session) {
+          ref.invalidate(dashboardDataProvider);
+          context.push('/session/${session.id}');
+        },
+        (failure) {
+          context.showSnackBar(
+            'Erro ao iniciar treino: ${failure.message}',
+            isError: true,
+          );
+        },
+      );
+    } finally {
+      if (mounted) setState(() => _isStartingWorkout = false);
+    }
+  }
 
   Future<void> _deleteExercise(WorkoutExercise exercise) async {
     final confirmed = await showDialog<bool>(
@@ -318,7 +359,8 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                   child: AppButton.primary(
                     label: 'Iniciar Este Treino Agora',
                     icon: Icons.play_arrow_rounded,
-                    onPressed: () => context.push('/session/${workout.id}'),
+                    isLoading: _isStartingWorkout,
+                    onPressed: () => _startWorkout(workout),
                   ),
                 ),
               ),

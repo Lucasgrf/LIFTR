@@ -20,7 +20,7 @@ abstract class SessionRepository {
   /// Fetches a specific session by its ID with all exercises and logged sets nested.
   Future<Result<WorkoutSession, Failure>> getSessionById(String id);
 
-  /// Logs a completed set within an active session exercise.
+  /// Logs or updates a completed set within an active session exercise.
   Future<Result<LoggedSet, Failure>> logSet({
     required String sessionExerciseId,
     required int setNumber,
@@ -33,6 +33,8 @@ abstract class SessionRepository {
     ExecutionQuality? executionQuality,
     bool isWarmup = false,
     String? notes,
+    List<DropSetEntry> dropSets = const [],
+    String? existingSetId,
   });
 
   /// Deletes a logged set from a session.
@@ -44,7 +46,7 @@ abstract class SessionRepository {
     required String exerciseId,
     int sortOrder = 0,
     String? notes,
-    int targetRestSeconds = 120,
+    int targetRestSeconds = AppConstants.defaultRestSeconds,
     int targetSetsCount = 3,
   });
 

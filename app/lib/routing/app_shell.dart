@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/widgets/offline_banner_widget.dart';
+import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
 
 class AppShell extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -30,18 +31,17 @@ class _AppShellState extends ConsumerState<AppShell> {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final isOnlineAsync = ref.watch(isOnlineStreamProvider);
-    final isOffline = isOnlineAsync.asData?.value == false;
-    final isSimulatedOffline = ref.watch(simulatedOfflineProvider);
+    ref.watch(sessionAutoSyncProvider);
+    final isOfflineMode = ref.watch(isOfflineModeProvider);
+    final pendingCount = ref.watch(pendingSyncCountProvider);
 
-    ref.listen<bool>(simulatedOfflineProvider, (previous, next) {
+    ref.listen<bool>(isOfflineModeProvider, (previous, next) {
       if (next && previous != next && _bannerDismissed) {
         setState(() => _bannerDismissed = false);
       }
     });
 
-    final showOfflineBanner =
-        (isOffline || isSimulatedOffline) && !_bannerDismissed;
+    final showOfflineBanner = isOfflineMode && !_bannerDismissed;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -51,6 +51,7 @@ class _AppShellState extends ConsumerState<AppShell> {
           children: [
             if (showOfflineBanner)
               OfflineBannerWidget(
+                pendingChangesCount: pendingCount,
                 onDismiss: () => setState(() => _bannerDismissed = true),
               ),
             Expanded(child: widget.navigationShell),

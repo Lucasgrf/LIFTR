@@ -13,7 +13,7 @@ class SetTemplateModel {
     this.targetRirMin,
     this.targetRirMax,
     this.targetWeight,
-    this.restSeconds = 120,
+    this.restSeconds = AppConstants.defaultRestSeconds,
     this.notes,
     this.createdAt,
   });
@@ -44,7 +44,7 @@ class SetTemplateModel {
       targetWeight: json['target_weight'] != null
           ? (json['target_weight'] as num).toDouble()
           : null,
-      restSeconds: json['rest_seconds'] as int? ?? 120,
+      restSeconds: json['rest_seconds'] as int? ?? AppConstants.defaultRestSeconds,
       notes: json['notes'] as String?,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'] as String)
@@ -80,6 +80,12 @@ class SetTemplateModel {
         return SetType.rampUp;
       case 'working':
         return SetType.working;
+      case 'drop_set':
+      case 'dropset':
+        return SetType.dropSet;
+      case 'myo_rep':
+      case 'myorep':
+        return SetType.myoRep;
       default:
         return SetType.working;
     }
@@ -96,8 +102,9 @@ class SetTemplateModel {
       case SetType.working:
         return 'working';
       case SetType.dropSet:
+        return 'drop_set';
       case SetType.myoRep:
-        return 'working';
+        return 'myo_rep';
     }
   }
 

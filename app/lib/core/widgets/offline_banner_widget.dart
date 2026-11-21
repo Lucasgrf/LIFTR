@@ -6,13 +6,18 @@ class OfflineBannerWidget extends StatelessWidget {
   const OfflineBannerWidget({
     super.key,
     this.onDismiss,
+    this.pendingChangesCount = 0,
   });
 
   final VoidCallback? onDismiss;
+  final int pendingChangesCount;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final text = pendingChangesCount > 0
+        ? 'Modo Offline • $pendingChangesCount alterações salvas localmente'
+        : 'Modo Offline • Alterações salvas localmente';
 
     return Container(
       width: double.infinity,
@@ -44,7 +49,7 @@ class OfflineBannerWidget extends StatelessWidget {
           const SizedBox(width: 7),
           Flexible(
             child: Text(
-              'Modo Offline • Alterações salvas localmente',
+              text,
               style: context.textTheme.labelSmall?.copyWith(
                 color: colors.warning,
                 fontWeight: FontWeight.w600,

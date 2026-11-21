@@ -14,11 +14,19 @@ import 'package:personal_fitness_os/core/theme/theme_provider.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
+import 'package:personal_fitness_os/features/workout_session/data/repositories/session_repository_impl.dart';
+import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
 import 'package:personal_fitness_os/routing/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
+
+  String _formatRestDuration(int seconds) {
+    final m = seconds ~/ 60;
+    final s = seconds % 60;
+    return '$m:${s.toString().padLeft(2, '0')} (${seconds}s)';
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -27,8 +35,8 @@ class SettingsScreen extends ConsumerWidget {
     final settings = ref.watch(userSettingsProvider);
     final themeMode = ref.watch(themeModeProvider);
     final simulatedOffline = ref.watch(simulatedOfflineProvider);
-    final isOnline = ref.watch(isOnlineStreamProvider).asData?.value ?? true;
-    final isOfflineState = !isOnline || simulatedOffline;
+    final isOfflineState = ref.watch(isOfflineModeProvider);
+    final pendingCount = ref.watch(pendingSyncCountProvider);
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -89,36 +97,20 @@ class SettingsScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const _SectionHeader('PERFIL & OBJETIVO'),
+                        const _SectionHeader('TREINO & EQUIPAMENTOS'),
                         _SettingsCardGroup(
                           children: [
                             _SettingsRow(
-                              label: 'Dados corporais',
-                              value:
-                                  '${settings.weightKg.toStringAsFixed(1).replaceAll('.', ',')} kg · ${settings.heightCm} cm · ${settings.age} anos',
-                              onTap: () =>
-                                  _showBodyDataSheet(context, ref, settings),
+                              label: 'Descanso padrão',
+                              value: _formatRestDuration(
+                                settings.defaultRestSeconds,
+                              ),
+                              onTap: () => _showRestDurationPicker(
+                                context,
+                                ref,
+                                settings.defaultRestSeconds,
+                              ),
                             ),
-                            _SettingsRow(
-                              label: 'Objetivo atual',
-                              value: settings.goal.label,
-                              onTap: () => _showGoalPicker(context, ref, settings),
-                            ),
-                            _SettingsRow(
-                              label: 'Metas calculadas',
-                              value:
-                                  '${settings.estimatedDailyCalories} kcal · ${settings.estimatedDailyProteinGrams} g prot',
-                              subtitle:
-                                  'Acompanhamento diário feito pelo WhatsApp',
-                              showChevron: false,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 22),
-
-                        const _SectionHeader('EQUIPAMENTOS & INCREMENTOS'),
-                        _SettingsCardGroup(
-                          children: [
                             _SettingsRow(
                               label: 'Barra',
                               value:
@@ -218,12 +210,35 @@ class SettingsScreen extends ConsumerWidget {
                             _SettingsRow(
                               label: 'Status local',
                               value: isOfflineState
-                                  ? 'Offline · Salvo localmente'
-                                  : 'Online · Tudo sincronizado',
-                              valueColor: isOfflineState
+                                  ? (pendingCount > 0
+                                      ? 'Offline · $pendingCount pendências'
+                                      : 'Offline · Salvo localmente')
+                                  : (pendingCount > 0
+                                      ? 'Online · $pendingCount para sincronizar'
+                                      : 'Online · Tudo sincronizado'),
+                              valueColor: isOfflineState || pendingCount > 0
                                   ? colors.warning
                                   : fitnessColors.progressUp,
-                              showChevron: false,
+                              showChevron: !isOfflineState && pendingCount > 0,
+                              onTap: (!isOfflineState && pendingCount > 0)
+                                  ? () async {
+                                      final repo = ref.read(
+                                        sessionRepositoryProvider,
+                                      );
+                                      if (repo is SessionRepositoryImpl) {
+                                        final synced = await repo
+                                            .syncPendingOperations();
+                                        if (context.mounted) {
+                                          context.showSnackBar(
+                                            synced
+                                                ? 'Sincronização concluída!'
+                                                : 'Não foi possível sincronizar agora.',
+                                            isError: !synced,
+                                          );
+                                        }
+                                      }
+                                    }
+                                  : null,
                             ),
                             _SettingsRow(
                               label: 'Tema',
@@ -236,6 +251,18 @@ class SettingsScreen extends ConsumerWidget {
                               value: 'CSV / JSON',
                               onTap: () =>
                                   _showExportModal(context, settings),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 22),
+
+                        const _SectionHeader('CONTA'),
+                        _SettingsCardGroup(
+                          children: [
+                            _SettingsRow(
+                              label: 'Meu Perfil',
+                              value: 'Foto, dados e objetivo',
+                              onTap: () => context.push('/profile'),
                             ),
                             _SettingsRow(
                               label: 'Sair da conta',
@@ -277,82 +304,12 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
-  void _showBodyDataSheet(
+  void _showRestDurationPicker(
     BuildContext context,
     WidgetRef ref,
-    UserSettingsState settings,
+    int currentSeconds,
   ) {
-    final weightCtrl = TextEditingController(
-      text: settings.weightKg.toStringAsFixed(1),
-    );
-    final heightCtrl = TextEditingController(text: '${settings.heightCm}');
-    final ageCtrl = TextEditingController(text: '${settings.age}');
-
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            20,
-            20,
-            20,
-            MediaQuery.viewInsetsOf(ctx).bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('Dados corporais', style: ctx.textTheme.titleLarge),
-              const SizedBox(height: 16),
-              TextField(
-                controller: weightCtrl,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(labelText: 'Peso (kg)'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: heightCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Altura (cm)'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: ageCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Idade (anos)'),
-              ),
-              const SizedBox(height: 20),
-              AppButton.primary(
-                label: 'Salvar',
-                onPressed: () {
-                  final w = double.tryParse(
-                    weightCtrl.text.trim().replaceAll(',', '.'),
-                  );
-                  final h = int.tryParse(heightCtrl.text.trim());
-                  final a = int.tryParse(ageCtrl.text.trim());
-                  ref.read(userSettingsProvider.notifier).updateBodyData(
-                        weightKg: w,
-                        heightCm: h,
-                        age: a,
-                      );
-                  Navigator.pop(ctx);
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showGoalPicker(
-    BuildContext context,
-    WidgetRef ref,
-    UserSettingsState settings,
-  ) {
+    const options = [60, 90, 120, 150, 180, 240];
     showModalBottomSheet<void>(
       context: context,
       builder: (ctx) {
@@ -363,28 +320,27 @@ class SettingsScreen extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Objetivo atual', style: ctx.textTheme.titleLarge),
-              const SizedBox(height: 14),
-              ...UserGoal.values.map((goal) {
-                final selected = settings.goal == goal;
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(goal.label, style: ctx.textTheme.titleMedium),
-                  subtitle: Text(
-                    goal.subtitle,
-                    style: ctx.textTheme.bodySmall?.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                  trailing: selected
-                      ? Icon(Icons.check_rounded, color: colors.primary)
-                      : null,
-                  onTap: () {
-                    ref.read(userSettingsProvider.notifier).setGoal(goal);
-                    Navigator.pop(ctx);
-                  },
-                );
-              }),
+              Text('Descanso padrão entre séries',
+                  style: ctx.textTheme.titleLarge),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: options.map((val) {
+                  final selected = currentSeconds == val;
+                  return ChoiceChip(
+                    label: Text(_formatRestDuration(val)),
+                    selected: selected,
+                    selectedColor: colors.primaryMuted,
+                    onSelected: (_) {
+                      ref
+                          .read(userSettingsProvider.notifier)
+                          .setDefaultRestSeconds(val);
+                      Navigator.pop(ctx);
+                    },
+                  );
+                }).toList(),
+              ),
             ],
           ),
         );
@@ -529,12 +485,16 @@ class SettingsScreen extends ConsumerWidget {
       'app': 'LIFTR',
       'exported_at': DateTime.now().toIso8601String(),
       'profile': {
+        'name': settings.displayName,
         'weight_kg': settings.weightKg,
         'height_cm': settings.heightCm,
         'age': settings.age,
         'goal': settings.goal.name,
         'calories_target': settings.estimatedDailyCalories,
         'protein_target_g': settings.estimatedDailyProteinGrams,
+      },
+      'training': {
+        'default_rest_seconds': settings.defaultRestSeconds,
       },
       'increments': {
         'barbell_kg': settings.barbellIncrementKg,
@@ -802,14 +762,8 @@ class _SettingsToggleRow extends StatelessWidget {
           ),
           Switch(
             value: value,
-            activeTrackColor: (activeColor ?? colors.primary).withValues(
-              alpha: 0.35,
-            ),
-            activeThumbColor: activeColor ?? colors.primary,
-            onChanged: (v) {
-              HapticFeedback.selectionClick();
-              onChanged(v);
-            },
+            activeTrackColor: activeColor ?? colors.primary,
+            onChanged: onChanged,
           ),
         ],
       ),

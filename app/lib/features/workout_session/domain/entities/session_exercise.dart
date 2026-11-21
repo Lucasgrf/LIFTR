@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/logged_set.dart';
 
@@ -14,11 +15,12 @@ class SessionExercise {
     this.replacedExerciseId,
     this.exercise,
     this.sets = const [],
-    this.targetRestSeconds = 120,
+    this.targetRestSeconds = AppConstants.defaultRestSeconds,
     this.targetSetsCount = 3,
     this.targetRepsMin = 8,
     this.targetRepsMax = 12,
     this.targetRir = 2,
+    this.prescribedSetTypes = const [],
     this.createdAt,
   });
 
@@ -35,6 +37,7 @@ class SessionExercise {
   final int targetRepsMin;
   final int targetRepsMax;
   final int targetRir;
+  final List<SetType> prescribedSetTypes;
   final DateTime? createdAt;
 
   int get completedSetsCount => sets.length;
@@ -59,6 +62,7 @@ class SessionExercise {
     int? targetRepsMin,
     int? targetRepsMax,
     int? targetRir,
+    List<SetType>? prescribedSetTypes,
     DateTime? createdAt,
   }) {
     return SessionExercise(
@@ -75,6 +79,7 @@ class SessionExercise {
       targetRepsMin: targetRepsMin ?? this.targetRepsMin,
       targetRepsMax: targetRepsMax ?? this.targetRepsMax,
       targetRir: targetRir ?? this.targetRir,
+      prescribedSetTypes: prescribedSetTypes ?? this.prescribedSetTypes,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -95,7 +100,8 @@ class SessionExercise {
         other.targetSetsCount == targetSetsCount &&
         other.targetRepsMin == targetRepsMin &&
         other.targetRepsMax == targetRepsMax &&
-        other.targetRir == targetRir;
+        other.targetRir == targetRir &&
+        listEquals(other.prescribedSetTypes, prescribedSetTypes);
   }
 
   @override
@@ -113,5 +119,6 @@ class SessionExercise {
         targetRepsMin,
         targetRepsMax,
         targetRir,
+        Object.hashAll(prescribedSetTypes),
       );
 }

@@ -12,6 +12,7 @@ import 'package:personal_fitness_os/features/nutrition/domain/repositories/nutri
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
 import 'package:personal_fitness_os/features/training/domain/repositories/training_repository.dart';
+import 'package:personal_fitness_os/features/workout_session/data/datasources/session_local_datasource.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/repositories/session_repository.dart';
 
@@ -22,17 +23,20 @@ class GetDashboardDataUseCase {
     required HistoryRepository historyRepository,
     NutritionRepository? nutritionRepository,
     GoalRepository? goalRepository,
+    SessionLocalDataSource? localSessionDataSource,
   })  : _trainingRepository = trainingRepository,
         _sessionRepository = sessionRepository,
         _historyRepository = historyRepository,
         _nutritionRepository = nutritionRepository,
-        _goalRepository = goalRepository;
+        _goalRepository = goalRepository,
+        _localSessionDataSource = localSessionDataSource;
 
   final TrainingRepository _trainingRepository;
   final SessionRepository _sessionRepository;
   final HistoryRepository _historyRepository;
   final NutritionRepository? _nutritionRepository;
   final GoalRepository? _goalRepository;
+  final SessionLocalDataSource? _localSessionDataSource;
 
   Future<Result<DashboardData, Failure>> execute({DateTime? referenceDate}) async {
     final now = referenceDate ?? DateTime.now();
@@ -71,10 +75,57 @@ class GetDashboardDataUseCase {
       start: startOfWeek,
       end: endOfWeek,
     );
+    List<WorkoutSession> weeklySessions;
     if (historyResult is Err<List<WorkoutSession>, Failure>) {
-      return Err(historyResult.failure);
+      if (_localSessionDataSource == null) {
+        return Err(historyResult.failure);
+      }
+      weeklySessions = _localSessionDataSource
+          .getAllCachedSessions()
+          .map((m) => m.toDomain())
+          .where((s) {
+        if (!s.isCompleted) return false;
+        final d = s.completedAt ?? s.startedAt;
+        return !d.isBefore(startOfWeek) && !d.isAfter(endOfWeek);
+      }).toList();
+    } else {
+      weeklySessions = (historyResult as Success<List<WorkoutSession>, Failure>).value;
     }
-    final weeklySessions = (historyResult as Success<List<WorkoutSession>, Failure>).value;
+
+    // 4b. Determine Last Completed Session (remote + offline local fallback)
+    WorkoutSession? lastCompletedSession;
+    try {
+      final latestResult = await _historyRepository.getCompletedSessions(limit: 1);
+      if (latestResult is Success<List<WorkoutSession>, Failure> &&
+          latestResult.value.isNotEmpty) {
+        lastCompletedSession = latestResult.value.first;
+      }
+    } catch (_) {}
+
+    if (lastCompletedSession == null && weeklySessions.isNotEmpty) {
+      final sorted = [...weeklySessions]
+        ..sort((a, b) {
+          final aDate = a.completedAt ?? a.startedAt;
+          final bDate = b.completedAt ?? b.startedAt;
+          return bDate.compareTo(aDate);
+        });
+      lastCompletedSession = sorted.first;
+    }
+
+    final localCompleted =
+        _localSessionDataSource?.getLastCompletedSession()?.toDomain();
+    if (localCompleted != null) {
+      if (lastCompletedSession == null) {
+        lastCompletedSession = localCompleted;
+      } else {
+        final localDate = localCompleted.completedAt ?? localCompleted.startedAt;
+        final remoteDate =
+            lastCompletedSession.completedAt ?? lastCompletedSession.startedAt;
+        if (localDate.isAfter(remoteDate)) {
+          lastCompletedSession = localCompleted;
+        }
+      }
+    }
 
     // 5. Build 7-day Adherence List
     final days = List.generate(7, (i) {
@@ -134,6 +185,7 @@ class GetDashboardDataUseCase {
         activePlan: activePlan,
         activeSession: activeSession,
         todayWorkout: todayWorkout,
+        lastCompletedSession: lastCompletedSession,
         weeklyStats: weeklyStats,
         todayNutrition: todayNutrition,
         activeGoals: activeGoals,

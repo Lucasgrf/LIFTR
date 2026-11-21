@@ -18,6 +18,7 @@ import 'package:personal_fitness_os/features/goals/presentation/screens/goals_sc
 import 'package:personal_fitness_os/features/history/presentation/screens/history_screen.dart';
 import 'package:personal_fitness_os/features/nutrition/presentation/screens/nutrition_screen.dart';
 import 'package:personal_fitness_os/features/onboarding/presentation/screens/onboarding_screen.dart';
+import 'package:personal_fitness_os/features/profile/presentation/screens/profile_screen.dart';
 import 'package:personal_fitness_os/features/settings/presentation/screens/settings_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/screens/add_exercise_to_workout_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/screens/add_workout_screen.dart';
@@ -71,6 +72,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfileScreen(),
       ),
       GoRoute(
         path: '/settings',

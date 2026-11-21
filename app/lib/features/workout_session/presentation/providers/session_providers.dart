@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
-import 'package:personal_fitness_os/core/errors/result.dart';
+import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
+import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
+import 'package:personal_fitness_os/features/workout_session/data/datasources/session_local_datasource.dart';
 import 'package:personal_fitness_os/features/workout_session/data/datasources/session_remote_datasource.dart';
 import 'package:personal_fitness_os/features/workout_session/data/repositories/session_repository_impl.dart';
-import 'package:personal_fitness_os/features/workout_session/domain/entities/logged_set.dart';
-import 'package:personal_fitness_os/features/workout_session/domain/entities/session_exercise.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/repositories/session_repository.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/usecases/abandon_workout_session.dart';
@@ -25,9 +25,67 @@ final sessionRemoteDataSourceProvider = Provider<SessionRemoteDataSource>((ref) 
   return SupabaseSessionRemoteDataSource(Supabase.instance.client);
 });
 
+final sessionLocalDataSourceProvider = Provider<SessionLocalDataSource?>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  if (prefs == null) return null;
+  return SessionLocalDataSource(prefs);
+});
+
 final sessionRepositoryProvider = Provider<SessionRepository>((ref) {
-  final dataSource = ref.watch(sessionRemoteDataSourceProvider);
-  return SessionRepositoryImpl(dataSource);
+  final remoteDataSource = ref.watch(sessionRemoteDataSourceProvider);
+  final localDataSource = ref.watch(sessionLocalDataSourceProvider);
+  final networkInfo = ref.watch(networkInfoProvider);
+
+  return SessionRepositoryImpl(
+    remoteDataSource,
+    localDataSource: localDataSource,
+    networkInfo: networkInfo,
+    isOfflineMode: () => ref.read(isOfflineModeProvider),
+    onConnectivityFallback: (offline) {
+      Future.microtask(() {
+        ref.read(runtimeOfflineDetectedProvider.notifier).state = offline;
+      });
+    },
+    onPendingCountChanged: (count) {
+      Future.microtask(() {
+        ref.read(pendingSyncCountProvider.notifier).state = count;
+      });
+    },
+  );
+});
+
+/// Watches connectivity and simulated offline changes to flush queued offline
+/// workout operations automatically when connectivity returns.
+final sessionAutoSyncProvider = Provider<void>((ref) {
+  final local = ref.watch(sessionLocalDataSourceProvider);
+  if (local != null) {
+    Future.microtask(() {
+      ref.read(pendingSyncCountProvider.notifier).state = local.pendingCount;
+    });
+  }
+
+  void triggerSyncIfReady() {
+    final repo = ref.read(sessionRepositoryProvider);
+    final isOnline = ref.read(isOnlineStreamProvider).asData?.value ?? true;
+    final simulated = ref.read(simulatedOfflineProvider);
+    if (isOnline && !simulated && repo is SessionRepositoryImpl) {
+      unawaited(repo.syncPendingOperations());
+    }
+  }
+
+  ref.listen<AsyncValue<bool>>(isOnlineStreamProvider, (previous, next) {
+    final online = next.asData?.value;
+    if (online == true) {
+      ref.read(runtimeOfflineDetectedProvider.notifier).state = false;
+      triggerSyncIfReady();
+    }
+  });
+
+  ref.listen<bool>(simulatedOfflineProvider, (previous, next) {
+    if (!next) {
+      triggerSyncIfReady();
+    }
+  });
 });
 
 // --- Use Case Providers ---
@@ -127,11 +185,13 @@ class RestTimerNotifier extends StateNotifier<RestTimerState> {
     String? exerciseName,
     int? setNumber,
   }) {
+    final effectiveSeconds =
+        seconds > 0 ? seconds : AppConstants.defaultRestSeconds;
     _timer?.cancel();
     state = RestTimerState(
       isRunning: true,
-      remainingSeconds: seconds,
-      totalSeconds: seconds,
+      remainingSeconds: effectiveSeconds,
+      totalSeconds: effectiveSeconds,
       exerciseName: exerciseName,
       setNumber: setNumber,
     );

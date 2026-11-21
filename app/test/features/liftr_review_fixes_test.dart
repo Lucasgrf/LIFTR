@@ -105,7 +105,7 @@ class _RecordingSessionRepository implements SessionRepository {
     required String exerciseId,
     int sortOrder = 0,
     String? notes,
-    int targetRestSeconds = 120,
+    int targetRestSeconds = AppConstants.defaultRestSeconds,
     int targetSetsCount = 3,
   }) async {
     return Success(
@@ -147,15 +147,18 @@ class _RecordingSessionRepository implements SessionRepository {
     ExecutionQuality? executionQuality,
     bool isWarmup = false,
     String? notes,
+    List<DropSetEntry> dropSets = const [],
+    String? existingSetId,
   }) async {
     return Success(
       LoggedSet(
-        id: 'logged-$setNumber',
+        id: existingSetId ?? 'logged-$setNumber',
         sessionExerciseId: sessionExerciseId,
         setNumber: setNumber,
         setType: setType,
         weightKg: weightKg,
         repsCompleted: repsCompleted,
+        dropSets: dropSets,
       ),
     );
   }

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/logged_set.dart';
 
@@ -16,8 +18,11 @@ class LoggedSetModel {
     this.executionQuality,
     this.isWarmup = false,
     this.notes,
+    this.dropSets = const [],
     this.completedAt,
   });
+
+  static const String dropMarkerPrefix = '__DROPS__:';
 
   final String id;
   final String sessionExerciseId;
@@ -31,9 +36,77 @@ class LoggedSetModel {
   final String? executionQuality;
   final bool isWarmup;
   final String? notes;
+  final List<DropSetEntry> dropSets;
   final DateTime? completedAt;
 
+  static ({String? cleanNotes, List<DropSetEntry> drops}) extractDropsFromNotes(
+    String? rawNotes,
+  ) {
+    if (rawNotes == null || rawNotes.isEmpty) {
+      return (cleanNotes: rawNotes, drops: const []);
+    }
+    final markerIdx = rawNotes.indexOf(dropMarkerPrefix);
+    if (markerIdx == -1) {
+      return (cleanNotes: rawNotes, drops: const []);
+    }
+    final before = rawNotes.substring(0, markerIdx).trimRight();
+    final afterMarker = rawNotes.substring(markerIdx + dropMarkerPrefix.length);
+    final newlineIdx = afterMarker.indexOf('\n');
+    final jsonPart =
+        (newlineIdx == -1 ? afterMarker : afterMarker.substring(0, newlineIdx))
+            .trim();
+    final trailing =
+        newlineIdx == -1 ? '' : afterMarker.substring(newlineIdx + 1).trim();
+    final combinedClean = [
+      if (before.isNotEmpty) before,
+      if (trailing.isNotEmpty) trailing,
+    ].join('\n');
+
+    try {
+      final decoded = jsonDecode(jsonPart);
+      if (decoded is List) {
+        final drops = decoded
+            .whereType<Map>()
+            .map((e) => DropSetEntry.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+        return (
+          cleanNotes: combinedClean.isEmpty ? null : combinedClean,
+          drops: drops,
+        );
+      }
+    } catch (_) {}
+    return (cleanNotes: rawNotes, drops: const []);
+  }
+
+  static String? attachDropsMarkerToNotes(
+    String? cleanNotes,
+    List<DropSetEntry> drops,
+  ) {
+    final trimmed = cleanNotes?.trim();
+    if (drops.isEmpty) {
+      return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
+    }
+    final encoded = jsonEncode(drops.map((d) => d.toJson()).toList());
+    if (trimmed == null || trimmed.isEmpty) {
+      return '$dropMarkerPrefix$encoded';
+    }
+    return '$trimmed\n$dropMarkerPrefix$encoded';
+  }
+
+  static List<DropSetEntry> _parseDropSets(dynamic raw) {
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((e) => DropSetEntry.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
   factory LoggedSetModel.fromJson(Map<String, dynamic> json) {
+    final columnDrops = _parseDropSets(json['drop_sets']);
+    final notesParsed = extractDropsFromNotes(json['notes'] as String?);
+    final resolvedDrops =
+        columnDrops.isNotEmpty ? columnDrops : notesParsed.drops;
+
     return LoggedSetModel(
       id: json['id'] as String,
       sessionExerciseId: json['session_exercise_id'] as String,
@@ -46,7 +119,8 @@ class LoggedSetModel {
       restSecondsActual: json['rest_seconds_actual'] as int?,
       executionQuality: json['execution_quality'] as String?,
       isWarmup: json['is_warmup'] as bool? ?? false,
-      notes: json['notes'] as String?,
+      notes: notesParsed.cleanNotes,
+      dropSets: resolvedDrops,
       completedAt: json['completed_at'] != null
           ? DateTime.tryParse(json['completed_at'] as String)
           : null,
@@ -67,6 +141,8 @@ class LoggedSetModel {
       if (executionQuality != null) 'execution_quality': executionQuality,
       'is_warmup': isWarmup,
       if (notes != null) 'notes': notes,
+      if (dropSets.isNotEmpty)
+        'drop_sets': dropSets.map((d) => d.toJson()).toList(),
       if (completedAt != null) 'completed_at': completedAt!.toIso8601String(),
     };
   }
@@ -147,6 +223,7 @@ class LoggedSetModel {
       executionQuality: parseExecutionQuality(executionQuality),
       isWarmup: isWarmup,
       notes: notes,
+      dropSets: dropSets,
       completedAt: completedAt,
     );
   }
@@ -165,6 +242,7 @@ class LoggedSetModel {
       executionQuality: executionQualityToString(entity.executionQuality),
       isWarmup: entity.isWarmup,
       notes: entity.notes,
+      dropSets: entity.dropSets,
       completedAt: entity.completedAt,
     );
   }
@@ -182,6 +260,7 @@ class LoggedSetModel {
     String? executionQuality,
     bool? isWarmup,
     String? notes,
+    List<DropSetEntry>? dropSets,
     DateTime? completedAt,
   }) {
     return LoggedSetModel(
@@ -197,6 +276,7 @@ class LoggedSetModel {
       executionQuality: executionQuality ?? this.executionQuality,
       isWarmup: isWarmup ?? this.isWarmup,
       notes: notes ?? this.notes,
+      dropSets: dropSets ?? this.dropSets,
       completedAt: completedAt ?? this.completedAt,
     );
   }

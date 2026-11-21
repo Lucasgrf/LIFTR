@@ -34,6 +34,7 @@ final getDashboardDataUseCaseProvider = Provider<GetDashboardDataUseCase>((ref) 
     historyRepository: ref.watch(historyRepositoryProvider),
     nutritionRepository: ref.watch(nutritionRepositoryProvider),
     goalRepository: ref.watch(goalRepositoryProvider),
+    localSessionDataSource: ref.watch(sessionLocalDataSourceProvider),
   );
 });
 

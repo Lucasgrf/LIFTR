@@ -1,3 +1,4 @@
+import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/errors/failures.dart';
 import 'package:personal_fitness_os/core/errors/result.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/session_exercise.dart';
@@ -13,7 +14,7 @@ class AddExerciseToSessionUseCase {
     required String exerciseId,
     int sortOrder = 0,
     String? notes,
-    int targetRestSeconds = 120,
+    int targetRestSeconds = AppConstants.defaultRestSeconds,
     int targetSetsCount = 3,
   }) {
     if (sessionId.trim().isEmpty) {

@@ -88,6 +88,14 @@ void main() {
 
   group('GetDashboardDataUseCase', () {
     test('should aggregate active plan, session, stats, nutrition and goals correctly', () async {
+      final completedSession = tSession.copyWith(
+        id: 'session-prev',
+        workoutName: 'Treino Anterior',
+        status: SessionStatus.completed,
+        completedAt: DateTime(2026, 8, 21, 18, 0),
+        durationSeconds: 2400,
+      );
+
       when(() => mockTrainingRepo.getActiveTrainingPlan())
           .thenAnswer((_) async => const Success(tPlan));
       when(() => mockSessionRepo.getActiveSession())
@@ -96,6 +104,8 @@ void main() {
             start: any(named: 'start'),
             end: any(named: 'end'),
           )).thenAnswer((_) async => const Success([]));
+      when(() => mockHistoryRepo.getCompletedSessions(limit: 1))
+          .thenAnswer((_) async => Success([completedSession]));
       when(() => mockNutritionRepo.getDailyNutrition(any()))
           .thenAnswer((_) async => Success(tNutrition));
       when(() => mockGoalRepo.getGoals(status: GoalStatus.active))
@@ -117,6 +127,8 @@ void main() {
       final data = (result as Success).value;
       expect(data.activePlan?.id, 'plan-1');
       expect(data.activeSession?.id, 'session-1');
+      expect(data.lastCompletedSession?.id, 'session-prev');
+      expect(data.hasLastCompletedSession, isTrue);
       expect(data.hasActiveSession, isTrue);
       expect(data.hasNutrition, isTrue);
       expect(data.hasActiveGoals, isTrue);

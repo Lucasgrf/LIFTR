@@ -21,6 +21,8 @@ class LogSetUseCase {
     ExecutionQuality? executionQuality,
     bool isWarmup = false,
     String? notes,
+    List<DropSetEntry> dropSets = const [],
+    String? existingSetId,
   }) {
     if (sessionExerciseId.trim().isEmpty) {
       return Future.value(
@@ -50,6 +52,8 @@ class LogSetUseCase {
       executionQuality: executionQuality,
       isWarmup: isWarmup,
       notes: notes?.trim(),
+      dropSets: dropSets,
+      existingSetId: existingSetId,
     );
   }
 }

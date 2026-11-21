@@ -11,13 +11,14 @@ import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
+import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/workout_queue_provider.dart';
 import 'package:personal_fitness_os/features/training/presentation/widgets/switch_program_sheet.dart';
 import 'package:personal_fitness_os/features/training/presentation/widgets/weekly_muscle_volume_card.dart';
-import 'package:personal_fitness_os/features/workout_session/domain/entities/session_exercise.dart';
+import 'package:personal_fitness_os/features/workout_session/domain/helpers/session_exercise_builder.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
 
 class TrainingListScreen extends ConsumerStatefulWidget {
@@ -36,24 +37,11 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
 
     try {
       final useCase = ref.read(startWorkoutSessionUseCaseProvider);
-      final initialExercises = workout.exercises.map((we) {
-        final firstWorking =
-            we.setTemplates.where((s) => s.isWorkingSet).firstOrNull;
-        return SessionExercise(
-          id: '',
-          sessionId: '',
-          exerciseId: we.exerciseId,
-          sortOrder: we.sortOrder,
-          notes: we.notes,
-          targetRestSeconds: we.setTemplates.isNotEmpty
-              ? we.setTemplates.first.restSeconds
-              : 90,
-          targetSetsCount: we.workingSetsCount > 0 ? we.workingSetsCount : 3,
-          targetRepsMin: firstWorking?.targetRepsMin ?? 8,
-          targetRepsMax: firstWorking?.targetRepsMax ?? 12,
-          targetRir: firstWorking?.targetRirMin ?? 2,
-        );
-      }).toList();
+      final defaultRest = ref.read(userSettingsProvider).defaultRestSeconds;
+      final initialExercises = buildInitialSessionExercises(
+        workout,
+        defaultRestSeconds: defaultRest,
+      );
 
       final result = await useCase.execute(
         workoutId: workout.id,
