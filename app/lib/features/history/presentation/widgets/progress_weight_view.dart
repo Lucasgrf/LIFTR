@@ -50,6 +50,17 @@ List<WeightEmaPoint> computeWeightEmaSeries(
   return points;
 }
 
+/// Computes the EMA series across all historical [entries] first, then slices
+/// points on or after [cutoff] so windowed trends preserve prior EMA seed state.
+List<WeightEmaPoint> computeWindowedWeightEmaSeries(
+  List<WeightEntry> entries, {
+  required DateTime cutoff,
+  double alpha = 0.25,
+}) {
+  final fullSeries = computeWeightEmaSeries(entries, alpha: alpha);
+  return fullSeries.where((p) => !p.date.isBefore(cutoff)).toList();
+}
+
 class ProgressWeightView extends ConsumerStatefulWidget {
   const ProgressWeightView({super.key});
 
@@ -83,11 +94,10 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
         final cutoff = _selectedDays > 0
             ? now.subtract(Duration(days: _selectedDays))
             : DateTime.fromMillisecondsSinceEpoch(0);
-        final filtered = entries
-            .where((e) => e.measuredAt.isAfter(cutoff))
-            .toList();
-        final series = computeWeightEmaSeries(filtered);
         final allSeries = computeWeightEmaSeries(entries);
+        final series = _selectedDays > 0
+            ? allSeries.where((p) => !p.date.isBefore(cutoff)).toList()
+            : allSeries;
 
         final currentEma = allSeries.isNotEmpty
             ? allSeries.last.emaKg
