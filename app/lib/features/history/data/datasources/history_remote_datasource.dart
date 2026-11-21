@@ -40,7 +40,7 @@ class SupabaseHistoryRemoteDataSource implements HistoryRemoteDataSource {
     workouts (name),
     workout_session_exercises (
       *,
-      exercises (*),
+      exercises!workout_session_exercises_exercise_id_fkey (*),
       logged_sets (*)
     )
   ''';
