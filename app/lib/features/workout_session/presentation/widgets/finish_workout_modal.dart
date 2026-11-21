@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
+import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
-import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
+import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
@@ -73,49 +74,58 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
   }
 
   Widget _buildMoodSelector(BuildContext context) {
+    final colors = context.appColors;
+    final radius = context.appRadius;
     final moods = [
       (Mood.awful, '😫', 'Péssimo'),
       (Mood.bad, '😕', 'Cansado'),
       (Mood.neutral, '😐', 'Normal'),
       (Mood.good, '😊', 'Bom'),
-      (Mood.excellent, '🔥', 'Excelente'),
+      (Mood.excellent, '🔥', 'Ótimo'),
     ];
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: moods.map((m) {
         final isSelected = _mood == m.$1;
-        return InkWell(
-          onTap: () => setState(() => _mood = m.$1),
-          borderRadius: BorderRadius.circular(context.appRadius.medium),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? context.appColors.primary.withOpacity(0.2)
-                  : context.appColors.surfaceVariant,
-              borderRadius: BorderRadius.circular(context.appRadius.medium),
-              border: Border.all(
-                color: isSelected
-                    ? context.appColors.primary
-                    : Colors.transparent,
-                width: 1.5,
-              ),
-            ),
-            child: Column(
-              children: [
-                Text(m.$2, style: const TextStyle(fontSize: 22)),
-                const SizedBox(height: 4),
-                Text(
-                  m.$3,
-                  style: context.textTheme.labelSmall?.copyWith(
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    color: isSelected
-                        ? context.appColors.primary
-                        : context.appColors.textSecondary,
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: InkWell(
+              onTap: () => setState(() => _mood = m.$1),
+              borderRadius: BorderRadius.circular(radius.medium),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? colors.primaryMuted
+                      : colors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(radius.medium),
+                  border: Border.all(
+                    color: isSelected ? colors.primary : colors.border,
+                    width: isSelected ? 1.5 : 1,
                   ),
                 ),
-              ],
+                child: Column(
+                  children: [
+                    Text(m.$2, style: const TextStyle(fontSize: 20)),
+                    const SizedBox(height: 4),
+                    Text(
+                      m.$3,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.textTheme.labelSmall?.copyWith(
+                        fontSize: 10,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w500,
+                        color: isSelected
+                            ? colors.primaryLight
+                            : colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         );
@@ -127,19 +137,20 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final fitnessColors = context.fitnessColors;
-
+    final radius = context.appRadius;
     final minutes = widget.elapsedSeconds ~/ 60;
 
     return Container(
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(radius.xl)),
+        border: Border.all(color: colors.border),
       ),
       padding: EdgeInsets.fromLTRB(
         20,
-        16,
+        14,
         20,
-        MediaQuery.of(context).viewInsets.bottom + 24,
+        MediaQuery.viewInsetsOf(context).bottom + 24,
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -148,28 +159,20 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
           children: [
             Center(
               child: Container(
-                width: 40,
+                width: 38,
                 height: 4,
                 decoration: BoxDecoration(
                   color: colors.border,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(radius.full),
                 ),
               ),
             ),
             const SizedBox(height: 16),
-
-            Text(
-              'Finalizar Treino',
-              style: context.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colors.textPrimary,
-              ),
-            ),
+            Text('Finalizar treino', style: context.textTheme.headlineMedium),
             const SizedBox(height: 16),
-
-            // Summary metrics grid
             AppCard(
               padding: const EdgeInsets.all(16),
+              backgroundColor: colors.surfaceSubtle,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
@@ -178,8 +181,8 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
                       Text(
                         '${minutes}m',
                         style: context.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colors.primary,
+                          color: colors.primaryLight,
+                          fontFeatures: AppTypography.tabularFeatures,
                         ),
                       ),
                       Text(
@@ -195,12 +198,12 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
                       Text(
                         '${widget.session.totalWorkingSetsCount}',
                         style: context.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
                           color: fitnessColors.progressNeutral,
+                          fontFeatures: AppTypography.tabularFeatures,
                         ),
                       ),
                       Text(
-                        'Séries Válidas',
+                        'Séries válidas',
                         style: context.textTheme.bodySmall?.copyWith(
                           color: colors.textTertiary,
                         ),
@@ -212,12 +215,12 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
                       Text(
                         '${widget.session.totalVolumeKg.toStringAsFixed(0)} kg',
                         style: context.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
                           color: fitnessColors.progressUp,
+                          fontFeatures: AppTypography.tabularFeatures,
                         ),
                       ),
                       Text(
-                        'Tonelagem',
+                        'Volume',
                         style: context.textTheme.bodySmall?.copyWith(
                           color: colors.textTertiary,
                         ),
@@ -228,23 +231,20 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // RPE Slider
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Percepção de Esforço (RPE Geral):',
+                  'Esforço percebido (RPE)',
                   style: context.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: colors.textPrimary,
                   ),
                 ),
                 Text(
                   '${_rpe.toStringAsFixed(1)} / 10',
                   style: context.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colors.primary,
+                    color: colors.primaryLight,
+                    fontFeatures: AppTypography.tabularFeatures,
                   ),
                 ),
               ],
@@ -257,32 +257,26 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
               activeColor: colors.primary,
               onChanged: (val) => setState(() => _rpe = val),
             ),
-            const SizedBox(height: 16),
-
-            // Mood
+            const SizedBox(height: 12),
             Text(
-              'Como você está se sentindo?',
+              'Como você se sentiu?',
               style: context.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w600,
-                color: colors.textPrimary,
               ),
             ),
             const SizedBox(height: 10),
             _buildMoodSelector(context),
             const SizedBox(height: 16),
-
-            // Notes
             AppInput(
-              label: 'Notas do Treino (Opcional)',
-              hint: 'Ex: Treino muito produtivo, bati PR no supino...',
+              label: 'Notas do treino (opcional)',
+              hint: 'Ex: Bati PR no agachamento com boa técnica...',
               controller: _notesController,
               maxLines: 2,
               keyboardType: TextInputType.multiline,
             ),
-            const SizedBox(height: 24),
-
+            const SizedBox(height: 22),
             AppButton.primary(
-              label: 'Salvar e Concluir Treino',
+              label: 'Salvar e concluir treino',
               icon: Icons.check_circle_rounded,
               isLoading: _isLoading,
               onPressed: _submit,
