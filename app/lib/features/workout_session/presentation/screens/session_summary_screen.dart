@@ -12,6 +12,7 @@ import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
+import 'package:personal_fitness_os/core/widgets/offline_banner_widget.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/progression/domain/services/progression_engine.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/session_exercise.dart';
@@ -72,7 +73,9 @@ class SessionSummaryScreen extends ConsumerWidget {
     final radius = context.appRadius;
     final fitnessColors = context.fitnessColors;
     final sessionAsync = ref.watch(liveSessionDetailProvider(sessionId));
-    final isOnline = ref.watch(isOnlineStreamProvider).asData?.value ?? true;
+    final isOffline = ref.watch(isOfflineModeProvider);
+    final isOnline = !isOffline;
+    final pendingCount = ref.watch(pendingSyncCountProvider);
     final disableAnimations = MediaQuery.disableAnimationsOf(context);
 
     return Scaffold(
@@ -124,6 +127,8 @@ class SessionSummaryScreen extends ConsumerWidget {
               SafeArea(
                 child: Column(
                   children: [
+                    if (isOffline)
+                      OfflineBannerWidget(pendingChangesCount: pendingCount),
                     Expanded(
                       child: ListView(
                         padding: const EdgeInsets.fromLTRB(0, 28, 0, 24),

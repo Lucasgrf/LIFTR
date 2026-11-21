@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,6 +41,8 @@ class SessionExerciseCard extends ConsumerStatefulWidget {
     required int repsCompleted,
     int? rirActual,
     int restSeconds,
+    List<DropSetEntry> dropSets,
+    String? existingSetId,
   }) onLogSet;
   final Future<void> Function(String setId)? onDeleteSet;
   final VoidCallback? onAddExtraSet;
@@ -56,14 +60,29 @@ class SessionExerciseCard extends ConsumerStatefulWidget {
 }
 
 class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
-  int _extraSlotsCount = 0;
+  int _minRowCount = 0;
+  final Map<int, SetType> _extraRowTypes = {};
 
   int get _totalRowsCount {
-    final baseCount = widget.sessionExercise.targetSetsCount >
-            widget.sessionExercise.sets.length
-        ? widget.sessionExercise.targetSetsCount
-        : widget.sessionExercise.sets.length;
-    return baseCount + _extraSlotsCount;
+    final se = widget.sessionExercise;
+    final maxLoggedSetNumber = se.sets.fold<int>(
+      0,
+      (m, s) => s.setNumber > m ? s.setNumber : m,
+    );
+    return [
+      se.targetSetsCount,
+      se.prescribedSetTypes.length,
+      se.sets.length,
+      maxLoggedSetNumber,
+      _minRowCount,
+    ].reduce(math.max);
+  }
+
+  LoggedSet? _findLoggedSetForNumber(int setNumber) {
+    for (final s in widget.sessionExercise.sets) {
+      if (s.setNumber == setNumber) return s;
+    }
+    return null;
   }
 
   @override
@@ -358,7 +377,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
 
           // Column Labels
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 5),
             child: Row(
               children: [
                 SizedBox(
@@ -373,9 +392,9 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 4),
                 Expanded(
-                  flex: 13,
+                  flex: 12,
                   child: Text(
                     'KG',
                     textAlign: TextAlign.center,
@@ -386,7 +405,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 4),
                 Expanded(
                   flex: 10,
                   child: Text(
@@ -400,9 +419,9 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                   ),
                 ),
                 if (widget.showRir) ...[
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 4),
                   SizedBox(
-                    width: 60,
+                    width: 58,
                     child: Text(
                       'RIR',
                       textAlign: TextAlign.center,
@@ -414,9 +433,9 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                     ),
                   ),
                 ],
-                const SizedBox(width: 6),
+                const SizedBox(width: 4),
                 SizedBox(
-                  width: 46,
+                  width: 44,
                   child: Text(
                     'FEITO',
                     textAlign: TextAlign.center,
@@ -435,15 +454,21 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
           // Set Rows
           ...List.generate(_totalRowsCount, (idx) {
             final setNumber = idx + 1;
-            final LoggedSet? logged =
-                idx < se.sets.length ? se.sets[idx] : null;
-            final prevWeight = idx > 0 && idx - 1 < se.sets.length
-                ? se.sets[idx - 1].weightKg
+            final LoggedSet? logged = _findLoggedSetForNumber(setNumber);
+            final prevLogged = _findLoggedSetForNumber(setNumber - 1);
+            final prevWeight = idx > 0 && prevLogged != null
+                ? prevLogged.weightKg
                 : defaultWeight;
+
+            final initialType = _extraRowTypes[setNumber] ??
+                (idx < se.prescribedSetTypes.length
+                    ? se.prescribedSetTypes[idx]
+                    : SetType.working);
 
             return LoggedSetRow(
               key: ValueKey('set_${se.id}_$setNumber'),
               setNumber: setNumber,
+              initialType: initialType,
               loggedSet: logged,
               defaultWeight: prevWeight,
               defaultReps: se.targetRepsMin,
@@ -455,6 +480,8 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                 required int repsCompleted,
                 int? rirActual,
                 required SetType setType,
+                List<DropSetEntry> dropSets = const [],
+                String? existingSetId,
               }) =>
                   widget.onLogSet(
                 sessionExerciseId: se.id,
@@ -464,6 +491,8 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                 repsCompleted: repsCompleted,
                 rirActual: rirActual,
                 restSeconds: se.targetRestSeconds,
+                dropSets: dropSets,
+                existingSetId: existingSetId,
               ),
               onDelete: logged != null && widget.onDeleteSet != null
                   ? () => widget.onDeleteSet!(logged.id)
@@ -472,7 +501,10 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
           }),
 
           const SizedBox(height: 6),
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
@@ -489,34 +521,74 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                   ),
                 ),
               ),
-              const SizedBox(width: 6),
-              Expanded(
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: fitnessColors.progressDown.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(radius.xs),
+                ),
                 child: Text(
-                  'Aquecimento não entra na progressão',
+                  'DROP',
                   style: context.textTheme.labelSmall?.copyWith(
-                    color: colors.textTertiary,
-                    fontSize: 11,
+                    color: fitnessColors.progressDown,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
                   ),
+                ),
+              ),
+              Text(
+                'Toque no nº da série para alternar tipo',
+                style: context.textTheme.labelSmall?.copyWith(
+                  color: colors.textTertiary,
+                  fontSize: 11,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 6),
-          SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: TextButton.icon(
-              onPressed: () {
-                HapticFeedback.lightImpact();
-                setState(() => _extraSlotsCount++);
-                widget.onAddExtraSet?.call();
-              },
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Adicionar série'),
-              style: TextButton.styleFrom(
-                foregroundColor: colors.primaryLight,
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 44,
+                  child: TextButton.icon(
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      setState(() {
+                        _minRowCount = _totalRowsCount + 1;
+                      });
+                      widget.onAddExtraSet?.call();
+                    },
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                    label: const Text('Adicionar série'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: colors.primaryLight,
+                    ),
+                  ),
+                ),
               ),
-            ),
+              Expanded(
+                child: SizedBox(
+                  height: 44,
+                  child: TextButton.icon(
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      setState(() {
+                        final nextRow = _totalRowsCount + 1;
+                        _minRowCount = nextRow;
+                        _extraRowTypes[nextRow] = SetType.dropSet;
+                      });
+                      widget.onAddExtraSet?.call();
+                    },
+                    icon: const Icon(Icons.bolt_rounded, size: 17),
+                    label: const Text('Drop-set'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: fitnessColors.progressDown,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

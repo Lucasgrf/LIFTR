@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
+import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
@@ -13,9 +14,11 @@ import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
+import 'package:personal_fitness_os/core/widgets/offline_banner_widget.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
+import 'package:personal_fitness_os/features/workout_session/domain/entities/logged_set.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/session_exercise.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
@@ -76,7 +79,9 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
     required double weightKg,
     required int repsCompleted,
     int? rirActual,
-    int restSeconds = 90,
+    int restSeconds = AppConstants.defaultRestSeconds,
+    List<DropSetEntry> dropSets = const [],
+    String? existingSetId,
     String? exerciseName,
   }) async {
     final useCase = ref.read(logSetUseCaseProvider);
@@ -87,6 +92,9 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
       weightKg: weightKg,
       repsCompleted: repsCompleted,
       rirActual: rirActual,
+      isWarmup: setType == SetType.warmup,
+      dropSets: dropSets,
+      existingSetId: existingSetId,
     );
 
     result.fold(
@@ -262,6 +270,9 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
     final fitnessColors = context.fitnessColors;
     final radius = context.appRadius;
     final settings = ref.watch(userSettingsProvider);
+    ref.watch(sessionAutoSyncProvider);
+    final isOffline = ref.watch(isOfflineModeProvider);
+    final pendingSyncCount = ref.watch(pendingSyncCountProvider);
     final sessionAsync = ref.watch(liveSessionDetailProvider(widget.sessionId));
     final restRunning = ref.watch(
       restTimerNotifierProvider.select((s) => s.isRunning),
@@ -271,14 +282,19 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
       backgroundColor: colors.background,
       body: SafeArea(
         bottom: false,
-        child: sessionAsync.when(
-          loading: () => const LiftrScreenSkeleton(showHero: false),
-          error: (err, _) => ErrorStateWidget(
-            message: err.toString(),
-            onRetry: () =>
-                ref.invalidate(liveSessionDetailProvider(widget.sessionId)),
-          ),
-          data: (session) {
+        child: Column(
+          children: [
+            if (isOffline)
+              OfflineBannerWidget(pendingChangesCount: pendingSyncCount),
+            Expanded(
+              child: sessionAsync.when(
+                loading: () => const LiftrScreenSkeleton(showHero: false),
+                error: (err, _) => ErrorStateWidget(
+                  message: err.toString(),
+                  onRetry: () =>
+                      ref.invalidate(liveSessionDetailProvider(widget.sessionId)),
+                ),
+                data: (session) {
             final totalTargetSets = session.exercises.fold<int>(
               0,
               (sum, e) => sum + e.targetSetsCount,
@@ -469,7 +485,9 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                         required weightKg,
                                         required repsCompleted,
                                         rirActual,
-                                        restSeconds = 90,
+                                        restSeconds = AppConstants.defaultRestSeconds,
+                                        dropSets = const [],
+                                        existingSetId,
                                       }) =>
                                           _handleLogSet(
                                         sessionExerciseId: sessionExerciseId,
@@ -478,7 +496,11 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                         weightKg: weightKg,
                                         repsCompleted: repsCompleted,
                                         rirActual: rirActual,
-                                        restSeconds: restSeconds,
+                                        restSeconds: restSeconds > 0
+                                            ? restSeconds
+                                            : settings.defaultRestSeconds,
+                                        dropSets: dropSets,
+                                        existingSetId: existingSetId,
                                         exerciseName: se.exercise?.name,
                                       ),
                                       onDeleteSet: _handleDeleteSet,
@@ -502,6 +524,9 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
               ],
             );
           },
+              ),
+            ),
+          ],
         ),
       ),
     );
