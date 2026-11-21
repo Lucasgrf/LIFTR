@@ -6,6 +6,7 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
+import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 import 'package:personal_fitness_os/routing/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -48,6 +49,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         }
       }
       if (!mounted) return;
+      ref.read(userSettingsProvider.notifier).updateProfileIdentity(
+            displayName: _nameController.text.trim(),
+          );
       context.go('/onboarding');
     } catch (e) {
       if (!mounted) return;
