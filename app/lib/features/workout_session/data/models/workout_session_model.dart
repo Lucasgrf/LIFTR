@@ -36,11 +36,68 @@ class WorkoutSessionModel {
   final List<SessionExerciseModel> exercises;
   final DateTime? createdAt;
 
+  static Map<String, dynamic>? _matchWorkoutExercise(
+    Map<String, dynamic> seJson,
+    List<Map<String, dynamic>> workoutExercises,
+  ) {
+    if (workoutExercises.isEmpty) return null;
+    final exId = seJson['exercise_id'] as String?;
+    final replacedId = seJson['replaced_exercise_id'] as String?;
+    final sortOrder = seJson['sort_order'] as int?;
+
+    for (final we in workoutExercises) {
+      if (we['exercise_id'] == exId && we['sort_order'] == sortOrder) {
+        return we;
+      }
+    }
+    for (final we in workoutExercises) {
+      if (we['exercise_id'] == exId) {
+        return we;
+      }
+    }
+    if (replacedId != null) {
+      for (final we in workoutExercises) {
+        if (we['exercise_id'] == replacedId) {
+          return we;
+        }
+      }
+    }
+    if (sortOrder != null) {
+      for (final we in workoutExercises) {
+        if (we['sort_order'] == sortOrder) {
+          return we;
+        }
+      }
+    }
+    return null;
+  }
+
   factory WorkoutSessionModel.fromJson(Map<String, dynamic> json) {
     String name = json['workout_name'] as String? ?? 'Treino Avulso';
-    if (json['workouts'] != null && json['workouts'] is Map<String, dynamic>) {
-      name = json['workouts']['name'] as String? ?? name;
+    var workoutExercises = const <Map<String, dynamic>>[];
+
+    final workoutsMap = json['workouts'];
+    if (workoutsMap is Map<String, dynamic>) {
+      name = workoutsMap['name'] as String? ?? name;
+      workoutExercises =
+          (workoutsMap['workout_exercises'] as List<dynamic>?)
+                  ?.whereType<Map<String, dynamic>>()
+                  .toList() ??
+              const [];
     }
+
+    final exercises = (json['workout_session_exercises'] as List<dynamic>?)
+            ?.map((e) {
+              final seJson = e as Map<String, dynamic>;
+              final matchedTemplate =
+                  _matchWorkoutExercise(seJson, workoutExercises);
+              return SessionExerciseModel.fromJson(
+                seJson,
+                workoutExerciseJson: matchedTemplate,
+              );
+            })
+            .toList() ??
+        const [];
 
     return WorkoutSessionModel(
       id: json['id'] as String,
@@ -57,11 +114,7 @@ class WorkoutSessionModel {
       mood: json['mood'] as String?,
       notes: json['notes'] as String?,
       readinessScore: json['readiness_score'] as int?,
-      exercises: (json['workout_session_exercises'] as List<dynamic>?)
-              ?.map((e) =>
-                  SessionExerciseModel.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const [],
+      exercises: exercises,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'] as String)
           : null,
@@ -82,6 +135,15 @@ class WorkoutSessionModel {
       if (notes != null) 'notes': notes,
       if (readinessScore != null) 'readiness_score': readinessScore,
       if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
+    };
+  }
+
+  Map<String, dynamic> toFullJson() {
+    return {
+      ...toJson(),
+      'workout_name': workoutName,
+      'workout_session_exercises':
+          exercises.map((e) => e.toFullJson()).toList(),
     };
   }
 

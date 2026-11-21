@@ -43,7 +43,10 @@ class ExercisePerformanceHistory {
   String get summaryString {
     final sets = workingSets.isNotEmpty ? workingSets : loggedSets;
     if (sets.isEmpty) return 'Nenhum registro anterior';
-    final repsList = sets.map((s) => '${s.repsCompleted}').join(', ');
+    final repsList = sets.map((s) {
+      if (!s.hasDropSets) return '${s.repsCompleted}';
+      return '${s.repsCompleted} (${s.formattedDropSummary})';
+    }).join(', ');
     return '${maxWeightKg.toStringAsFixed(1)} kg × $repsList reps';
   }
 
