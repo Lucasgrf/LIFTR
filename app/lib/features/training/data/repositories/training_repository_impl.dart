@@ -247,6 +247,26 @@ class TrainingRepositoryImpl implements TrainingRepository {
   }
 
   @override
+  Future<Result<void, Failure>> reorderPlanWorkouts({
+    required String trainingPlanId,
+    required List<String> orderedWorkoutIds,
+  }) async {
+    try {
+      await _remoteDataSource.reorderPlanWorkouts(
+        trainingPlanId,
+        orderedWorkoutIds,
+      );
+      return const Success(null);
+    } on PostgrestException catch (e, stack) {
+      return Err(ServerFailure(e.message, stack));
+    } on SocketException catch (e, stack) {
+      return Err(NetworkFailure('Sem conexão com a internet.', stack));
+    } catch (e, stack) {
+      return Err(UnexpectedFailure('Erro ao reordenar fila de treinos: $e', stack));
+    }
+  }
+
+  @override
   Future<Result<void, Failure>> deleteTrainingPlan(String planId) async {
     try {
       await _remoteDataSource.softDeleteTrainingPlan(planId);

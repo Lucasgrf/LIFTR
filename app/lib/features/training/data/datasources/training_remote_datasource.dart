@@ -20,6 +20,10 @@ abstract class TrainingRemoteDataSource {
     String workoutId,
     List<String> orderedIds,
   );
+  Future<void> reorderPlanWorkouts(
+    String trainingPlanId,
+    List<String> orderedIds,
+  );
   Future<void> softDeleteTrainingPlan(String planId);
   Future<void> deleteWorkout(String workoutId);
   Future<void> deleteWorkoutExercise(String workoutExerciseId);
@@ -178,6 +182,20 @@ class SupabaseTrainingRemoteDataSource implements TrainingRemoteDataSource {
           .update({'sort_order': i})
           .eq('id', orderedIds[i])
           .eq('workout_id', workoutId);
+    }
+  }
+
+  @override
+  Future<void> reorderPlanWorkouts(
+    String trainingPlanId,
+    List<String> orderedIds,
+  ) async {
+    for (var i = 0; i < orderedIds.length; i++) {
+      await _supabaseClient
+          .from('workouts')
+          .update({'sort_order': i})
+          .eq('id', orderedIds[i])
+          .eq('training_plan_id', trainingPlanId);
     }
   }
 
