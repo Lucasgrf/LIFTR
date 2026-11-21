@@ -37,7 +37,7 @@ class WorkoutSessionModel {
   final DateTime? createdAt;
 
   factory WorkoutSessionModel.fromJson(Map<String, dynamic> json) {
-    String name = 'Treino Avulso';
+    String name = json['workout_name'] as String? ?? 'Treino Avulso';
     if (json['workouts'] != null && json['workouts'] is Map<String, dynamic>) {
       name = json['workouts']['name'] as String? ?? name;
     }

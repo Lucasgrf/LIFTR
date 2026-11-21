@@ -22,6 +22,21 @@ class SupabaseProgressPhotoRemoteDataSource implements ProgressPhotoRemoteDataSo
 
   final SupabaseClient _client;
 
+  Future<String> _resolveSignedOrFallback(
+    String storagePath, {
+    required int expiresInSeconds,
+    required String fallbackUrl,
+  }) async {
+    if (storagePath.isEmpty) return fallbackUrl;
+    try {
+      return await _client.storage
+          .from('progress-photos')
+          .createSignedUrl(storagePath, expiresInSeconds);
+    } catch (_) {
+      return fallbackUrl;
+    }
+  }
+
   @override
   Future<List<ProgressPhotoModel>> fetchPhotos({String? pose, int limit = 50}) async {
     var query = _client.from('progress_photos').select();
@@ -30,10 +45,29 @@ class SupabaseProgressPhotoRemoteDataSource implements ProgressPhotoRemoteDataSo
     }
 
     final response = await query.order('taken_at', ascending: false).limit(limit);
-
-    return (response as List)
+    final models = (response as List)
         .map((json) => ProgressPhotoModel.fromJson(json as Map<String, dynamic>))
         .toList();
+
+    return Future.wait(
+      models.map((m) async {
+        final refreshedUrl = await _resolveSignedOrFallback(
+          m.storagePath,
+          expiresInSeconds: 60 * 60,
+          fallbackUrl: m.photoUrl,
+        );
+        return ProgressPhotoModel(
+          id: m.id,
+          userId: m.userId,
+          photoUrl: refreshedUrl,
+          storagePath: m.storagePath,
+          takenAt: m.takenAt,
+          pose: m.pose,
+          notes: m.notes,
+          createdAt: m.createdAt,
+        );
+      }),
+    );
   }
 
   @override
@@ -52,8 +86,13 @@ class SupabaseProgressPhotoRemoteDataSource implements ProgressPhotoRemoteDataSo
     final file = File(filePath);
     await _client.storage.from('progress-photos').upload(storagePath, file);
 
-    // 2. Get Public or Signed URL
-    final photoUrl = _client.storage.from('progress-photos').getPublicUrl(storagePath);
+    // 2. Get Signed URL (falls back to public URL if bucket is public)
+    final publicUrl = _client.storage.from('progress-photos').getPublicUrl(storagePath);
+    final photoUrl = await _resolveSignedOrFallback(
+      storagePath,
+      expiresInSeconds: 60 * 60 * 24,
+      fallbackUrl: publicUrl,
+    );
 
     // 3. Insert record into database
     final record = {
