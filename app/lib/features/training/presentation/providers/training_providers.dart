@@ -16,6 +16,7 @@ import 'package:personal_fitness_os/features/training/domain/usecases/delete_tra
 import 'package:personal_fitness_os/features/training/domain/usecases/get_active_training_plan.dart';
 import 'package:personal_fitness_os/features/training/domain/usecases/get_training_plan_by_id.dart';
 import 'package:personal_fitness_os/features/training/domain/usecases/get_training_plans.dart';
+import 'package:personal_fitness_os/features/training/domain/usecases/reorder_plan_workouts.dart';
 import 'package:personal_fitness_os/features/training/domain/usecases/reorder_workout_exercises.dart';
 import 'package:personal_fitness_os/features/training/domain/usecases/set_active_training_plan.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -67,6 +68,10 @@ final configureSetTemplatesUseCaseProvider = Provider<ConfigureSetTemplatesUseCa
 
 final reorderWorkoutExercisesUseCaseProvider = Provider<ReorderWorkoutExercisesUseCase>((ref) {
   return ReorderWorkoutExercisesUseCase(ref.watch(trainingRepositoryProvider));
+});
+
+final reorderPlanWorkoutsUseCaseProvider = Provider<ReorderPlanWorkoutsUseCase>((ref) {
+  return ReorderPlanWorkoutsUseCase(ref.watch(trainingRepositoryProvider));
 });
 
 final deleteTrainingPlanUseCaseProvider = Provider<DeleteTrainingPlanUseCase>((ref) {

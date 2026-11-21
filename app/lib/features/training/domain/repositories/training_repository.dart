@@ -59,6 +59,12 @@ abstract class TrainingRepository {
     required List<String> orderedWorkoutExerciseIds,
   });
 
+  /// Reorders workouts within a training plan based on the given ordered list of workout IDs.
+  Future<Result<void, Failure>> reorderPlanWorkouts({
+    required String trainingPlanId,
+    required List<String> orderedWorkoutIds,
+  });
+
   /// Soft deletes a training plan.
   Future<Result<void, Failure>> deleteTrainingPlan(String planId);
 
