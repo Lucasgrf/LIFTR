@@ -1,9 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-import 'package:personal_fitness_os/routing/app_shell.dart';
+import 'package:personal_fitness_os/features/auth/presentation/screens/login_screen.dart';
+import 'package:personal_fitness_os/features/auth/presentation/screens/register_screen.dart';
+import 'package:personal_fitness_os/features/body/presentation/screens/body_measurements_screen.dart';
+import 'package:personal_fitness_os/features/body/presentation/screens/body_overview_screen.dart';
+import 'package:personal_fitness_os/features/body/presentation/screens/progress_photos_screen.dart';
+import 'package:personal_fitness_os/features/body/presentation/screens/weight_history_screen.dart';
+import 'package:personal_fitness_os/features/calendar/presentation/screens/activity_calendar_screen.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'package:personal_fitness_os/features/exercise_library/presentation/screens/create_custom_exercise_screen.dart';
+import 'package:personal_fitness_os/features/exercise_library/presentation/screens/exercise_detail_screen.dart';
+import 'package:personal_fitness_os/features/exercise_library/presentation/screens/exercise_list_screen.dart';
+import 'package:personal_fitness_os/features/goals/presentation/screens/goal_detail_screen.dart';
+import 'package:personal_fitness_os/features/goals/presentation/screens/goals_screen.dart';
+import 'package:personal_fitness_os/features/history/presentation/screens/history_screen.dart';
+import 'package:personal_fitness_os/features/nutrition/presentation/screens/nutrition_screen.dart';
+import 'package:personal_fitness_os/features/onboarding/presentation/screens/onboarding_screen.dart';
+import 'package:personal_fitness_os/features/settings/presentation/screens/settings_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/screens/add_exercise_to_workout_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/screens/add_workout_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/screens/configure_sets_screen.dart';
@@ -13,20 +27,7 @@ import 'package:personal_fitness_os/features/training/presentation/screens/train
 import 'package:personal_fitness_os/features/training/presentation/screens/workout_detail_screen.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/screens/session_summary_screen.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/screens/workout_session_screen.dart';
-import 'package:personal_fitness_os/features/exercise_library/presentation/screens/create_custom_exercise_screen.dart';
-import 'package:personal_fitness_os/features/exercise_library/presentation/screens/exercise_detail_screen.dart';
-import 'package:personal_fitness_os/features/exercise_library/presentation/screens/exercise_list_screen.dart';
-import 'package:personal_fitness_os/features/body/presentation/screens/body_measurements_screen.dart';
-import 'package:personal_fitness_os/features/body/presentation/screens/body_overview_screen.dart';
-import 'package:personal_fitness_os/features/body/presentation/screens/progress_photos_screen.dart';
-import 'package:personal_fitness_os/features/body/presentation/screens/weight_history_screen.dart';
-import 'package:personal_fitness_os/features/calendar/presentation/screens/activity_calendar_screen.dart';
-import 'package:personal_fitness_os/features/nutrition/presentation/screens/nutrition_screen.dart';
-import 'package:personal_fitness_os/features/goals/presentation/screens/goals_screen.dart';
-import 'package:personal_fitness_os/features/goals/presentation/screens/goal_detail_screen.dart';
-import 'package:personal_fitness_os/features/history/presentation/screens/history_screen.dart';
-import 'package:personal_fitness_os/features/auth/presentation/screens/login_screen.dart';
-import 'package:personal_fitness_os/features/auth/presentation/screens/register_screen.dart';
+import 'package:personal_fitness_os/routing/app_shell.dart';
 
 final authStateProvider = StateProvider<bool>((ref) => false);
 
@@ -36,11 +37,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
     redirect: (context, state) {
-      final isAuthRoute = state.matchedLocation == '/login' || state.matchedLocation == '/register';
+      final location = state.matchedLocation;
+      final isAuthRoute =
+          location == '/login' ||
+          location == '/register' ||
+          location == '/onboarding';
       if (!isLoggedIn && !isAuthRoute) {
         return '/login';
       }
-      if (isLoggedIn && isAuthRoute) {
+      if (isLoggedIn && (location == '/login' || location == '/register')) {
         return '/';
       }
       return null;
@@ -53,6 +58,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
@@ -75,7 +88,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'new',
-                    builder: (context, state) => const CreateTrainingPlanScreen(),
+                    builder: (context, state) =>
+                        const CreateTrainingPlanScreen(),
                   ),
                   GoRoute(
                     path: ':planId',
@@ -106,7 +120,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                             path: 'add-exercise',
                             builder: (context, state) {
                               final planId = state.pathParameters['planId']!;
-                              final workoutId = state.pathParameters['workoutId']!;
+                              final workoutId =
+                                  state.pathParameters['workoutId']!;
                               return AddExerciseToWorkoutScreen(
                                 planId: planId,
                                 workoutId: workoutId,
@@ -117,8 +132,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                             path: 'exercise/:exerciseId/configure-sets',
                             builder: (context, state) {
                               final planId = state.pathParameters['planId']!;
-                              final workoutId = state.pathParameters['workoutId']!;
-                              final exerciseId = state.pathParameters['exerciseId']!;
+                              final workoutId =
+                                  state.pathParameters['workoutId']!;
+                              final exerciseId =
+                                  state.pathParameters['exerciseId']!;
                               return ConfigureSetsScreen(
                                 planId: planId,
                                 workoutId: workoutId,
@@ -151,7 +168,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'meal/:mealId',
             builder: (context, state) => Scaffold(
-              appBar: AppBar(title: Text('Meal ${state.pathParameters['mealId']}')),
+              appBar: AppBar(
+                title: Text('Meal ${state.pathParameters['mealId']}'),
+              ),
             ),
           ),
         ],
