@@ -1,0 +1,138 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:personal_fitness_os/core/errors/failures.dart';
+import 'package:personal_fitness_os/core/errors/result.dart';
+import 'package:personal_fitness_os/features/training/data/datasources/training_remote_datasource.dart';
+import 'package:personal_fitness_os/features/training/data/repositories/training_repository_impl.dart';
+import 'package:personal_fitness_os/features/training/domain/entities/set_template.dart';
+import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
+import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
+import 'package:personal_fitness_os/features/training/domain/entities/workout_exercise.dart';
+import 'package:personal_fitness_os/features/training/domain/repositories/training_repository.dart';
+import 'package:personal_fitness_os/features/training/domain/usecases/add_exercise_to_workout.dart';
+import 'package:personal_fitness_os/features/training/domain/usecases/add_workout_to_plan.dart';
+import 'package:personal_fitness_os/features/training/domain/usecases/configure_set_templates.dart';
+import 'package:personal_fitness_os/features/training/domain/usecases/create_training_plan.dart';
+import 'package:personal_fitness_os/features/training/domain/usecases/delete_training_plan.dart';
+import 'package:personal_fitness_os/features/training/domain/usecases/get_active_training_plan.dart';
+import 'package:personal_fitness_os/features/training/domain/usecases/get_training_plan_by_id.dart';
+import 'package:personal_fitness_os/features/training/domain/usecases/get_training_plans.dart';
+import 'package:personal_fitness_os/features/training/domain/usecases/reorder_workout_exercises.dart';
+import 'package:personal_fitness_os/features/training/domain/usecases/set_active_training_plan.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+// --- INFRASTRUCTURE PROVIDERS ---
+
+final trainingRemoteDataSourceProvider = Provider<TrainingRemoteDataSource>((ref) {
+  return SupabaseTrainingRemoteDataSource(Supabase.instance.client);
+});
+
+final trainingRepositoryProvider = Provider<TrainingRepository>((ref) {
+  final remoteDataSource = ref.watch(trainingRemoteDataSourceProvider);
+  return TrainingRepositoryImpl(remoteDataSource);
+});
+
+// --- USE CASE PROVIDERS ---
+
+final getTrainingPlansUseCaseProvider = Provider<GetTrainingPlansUseCase>((ref) {
+  return GetTrainingPlansUseCase(ref.watch(trainingRepositoryProvider));
+});
+
+final getActiveTrainingPlanUseCaseProvider = Provider<GetActiveTrainingPlanUseCase>((ref) {
+  return GetActiveTrainingPlanUseCase(ref.watch(trainingRepositoryProvider));
+});
+
+final getTrainingPlanByIdUseCaseProvider = Provider<GetTrainingPlanByIdUseCase>((ref) {
+  return GetTrainingPlanByIdUseCase(ref.watch(trainingRepositoryProvider));
+});
+
+final createTrainingPlanUseCaseProvider = Provider<CreateTrainingPlanUseCase>((ref) {
+  return CreateTrainingPlanUseCase(ref.watch(trainingRepositoryProvider));
+});
+
+final setActiveTrainingPlanUseCaseProvider = Provider<SetActiveTrainingPlanUseCase>((ref) {
+  return SetActiveTrainingPlanUseCase(ref.watch(trainingRepositoryProvider));
+});
+
+final addWorkoutToPlanUseCaseProvider = Provider<AddWorkoutToPlanUseCase>((ref) {
+  return AddWorkoutToPlanUseCase(ref.watch(trainingRepositoryProvider));
+});
+
+final addExerciseToWorkoutUseCaseProvider = Provider<AddExerciseToWorkoutUseCase>((ref) {
+  return AddExerciseToWorkoutUseCase(ref.watch(trainingRepositoryProvider));
+});
+
+final configureSetTemplatesUseCaseProvider = Provider<ConfigureSetTemplatesUseCase>((ref) {
+  return ConfigureSetTemplatesUseCase(ref.watch(trainingRepositoryProvider));
+});
+
+final reorderWorkoutExercisesUseCaseProvider = Provider<ReorderWorkoutExercisesUseCase>((ref) {
+  return ReorderWorkoutExercisesUseCase(ref.watch(trainingRepositoryProvider));
+});
+
+final deleteTrainingPlanUseCaseProvider = Provider<DeleteTrainingPlanUseCase>((ref) {
+  return DeleteTrainingPlanUseCase(ref.watch(trainingRepositoryProvider));
+});
+
+// --- STATE NOTIFIERS ---
+
+class TrainingPlansNotifier extends StateNotifier<AsyncValue<List<TrainingPlan>>> {
+  TrainingPlansNotifier(this._ref) : super(const AsyncValue.loading()) {
+    loadPlans();
+  }
+
+  final Ref _ref;
+
+  Future<void> loadPlans() async {
+    state = const AsyncValue.loading();
+    final useCase = _ref.read(getTrainingPlansUseCaseProvider);
+    final result = await useCase.execute();
+
+    result.fold(
+      (plans) => state = AsyncValue.data(plans),
+      (failure) => state = AsyncValue.error(failure.message, failure.stackTrace ?? StackTrace.current),
+    );
+  }
+
+  Future<void> refresh() => loadPlans();
+}
+
+final trainingPlansStateProvider =
+    StateNotifierProvider<TrainingPlansNotifier, AsyncValue<List<TrainingPlan>>>((ref) {
+  return TrainingPlansNotifier(ref);
+});
+
+/// Active training plan provider
+final activeTrainingPlanProvider = Provider<TrainingPlan?>((ref) {
+  final plansAsync = ref.watch(trainingPlansStateProvider);
+  return plansAsync.when(
+    data: (plans) => plans.where((p) => p.isActive).firstOrNull,
+    loading: () => null,
+    error: (_, __) => null,
+  );
+});
+
+/// Training plan detail provider by plan ID
+final trainingPlanDetailProvider =
+    FutureProvider.autoDispose.family<TrainingPlan, String>((ref, planId) async {
+  final useCase = ref.watch(getTrainingPlanByIdUseCaseProvider);
+  final result = await useCase.execute(planId);
+
+  return result.fold(
+    (plan) => plan,
+    (failure) => throw Exception(failure.message),
+  );
+});
+
+/// Workout detail provider by looking inside the active / target plan
+final workoutDetailProvider =
+    FutureProvider.autoDispose.family<Workout, ({String planId, String workoutId})>(
+        (ref, params) async {
+  final plan = await ref.watch(trainingPlanDetailProvider(params.planId).future);
+  final workout = plan.workouts.where((w) => w.id == params.workoutId).firstOrNull;
+
+  if (workout == null) {
+    throw Exception('Treino não encontrado.');
+  }
+
+  return workout;
+});

@@ -1,0 +1,77 @@
+name: personal_fitness_os
+description: "Personal Fitness OS - Sistema pessoal de acompanhamento físico e de treino"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Backend & Auth
+  supabase_flutter: ^2.8.0
+
+  # State Management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # Navigation
+  go_router: ^14.8.1
+
+  # Data Classes & Serialization
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+
+  # Local Database (Cache)
+  drift: ^2.22.1
+  drift_flutter: ^0.2.4
+  sqlite3_flutter_libs: ^0.5.28
+
+  # Charts
+  fl_chart: ^0.70.2
+
+  # UI Utilities
+  flutter_animate: ^4.5.2
+  cached_network_image: ^3.4.1
+  shimmer: ^3.0.0
+  flutter_svg: ^2.0.17
+  gap: ^3.0.1
+
+  # Functionality
+  image_picker: ^1.1.2
+  path_provider: ^2.1.5
+  connectivity_plus: ^6.1.3
+  uuid: ^4.5.1
+  intl: ^0.20.2
+
+  # Image & Icons
+  flutter_launcher_icons: ^0.14.3
+  google_fonts: ^6.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+  # Code Generation
+  build_runner: ^2.4.13
+  freezed: ^2.5.7
+  json_serializable: ^6.8.0
+  riverpod_generator: ^2.6.3
+
+  # Testing
+  mocktail: ^1.0.4
+
+  # Drift code gen
+  drift_dev: ^2.22.1
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/icons/
+    - assets/images/

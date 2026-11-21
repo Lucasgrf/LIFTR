@@ -1,0 +1,33 @@
+{
+  "fatos": {
+    "periodo": "27/10 a 02/11",
+    "objetivo": "bulking",
+    "treino": {
+      "sessoes_feitas": 4,
+      "sessoes_planejadas": 4,
+      "subidas": [{ "exercicio": "Agachamento", "de": 80, "para": 82.5 }],
+      "travados": [{ "exercicio": "Supino reto", "semanas": 3 }]
+    },
+    "dieta": {
+      "dias_registrados": 6,
+      "dias_meta_proteina": 3,
+      "meta_proteina_g": 160,
+      "dias_meta_kcal": 5,
+      "meta_kcal": 2800
+    },
+    "peso": {
+      "tendencia_atual": 80.6,
+      "variacao_semana": 0.4,
+      "ritmo_alvo_semana": "0,2 a 0,3",
+      "status_ritmo": "acima",
+      "confianca": "alta"
+    },
+    "ajuste_meta": { "aplicado": true, "kcal_antes": 2800, "kcal_depois": 2650 }
+  },
+  "acoes_candidatas": [
+    { "id": "A1", "texto_base": "priorizar proteína nos fins de semana", "prioridade": 0.9 },
+    { "id": "A2", "texto_base": "manter o supino e observar após melhorar a proteína", "prioridade": 0.7 },
+    { "id": "A3", "texto_base": "se pesar 3x por semana", "prioridade": 0.3 }
+  ]
+}
+

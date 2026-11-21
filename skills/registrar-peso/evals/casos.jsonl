@@ -1,0 +1,6 @@
+{"id":"peso-01","entrada":{"mensagem_usuario":"me pesei hoje, estou com 80kg","hoje":"2026-11-02"},"esperado":{"peso":80,"unidade":"kg","data":"2026-11-02"}}
+{"id":"peso-02","entrada":{"mensagem_usuario":"ontem deu 80,4 em jejum","hoje":"2026-11-02"},"esperado":{"peso":80.4,"data":"2026-11-01","condicao":"jejum"}}
+{"id":"peso-03","entrada":{"mensagem_usuario":"176 lb","hoje":"2026-11-02"},"esperado":{"peso":176,"unidade":"lb"}}
+{"id":"peso-04","entrada":{"mensagem_usuario":"acho que 80 ou 81, não lembro","hoje":"2026-11-02"},"esperado":{"precisa_esclarecer":true}}
+{"id":"peso-05","entrada":{"mensagem_usuario":"","descricao_imagem":"balança digital marcando 79.8","hoje":"2026-11-02"},"esperado":{"peso":79.8,"data":"2026-11-02"}}
+{"id":"peso-06","entrada":{"mensagem_usuario":"80 e 400","hoje":"2026-11-02"},"esperado":{"peso":80.4}}

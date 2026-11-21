@@ -1,0 +1,290 @@
+import 'dart:io';
+
+import 'package:personal_fitness_os/core/errors/failures.dart';
+import 'package:personal_fitness_os/core/errors/result.dart';
+import 'package:personal_fitness_os/features/training/data/datasources/training_remote_datasource.dart';
+import 'package:personal_fitness_os/features/training/data/models/set_template_model.dart';
+import 'package:personal_fitness_os/features/training/domain/entities/set_template.dart';
+import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
+import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
+import 'package:personal_fitness_os/features/training/domain/entities/workout_exercise.dart';
+import 'package:personal_fitness_os/features/training/domain/repositories/training_repository.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class TrainingRepositoryImpl implements TrainingRepository {
+  const TrainingRepositoryImpl(this._remoteDataSource);
+
+  final TrainingRemoteDataSource _remoteDataSource;
+
+  @override
+  Future<Result<List<TrainingPlan>, Failure>> getTrainingPlans() async {
+    try {
+      final models = await _remoteDataSource.fetchTrainingPlans();
+      return Success(models.map((m) => m.toDomain()).toList());
+    } on PostgrestException catch (e, stack) {
+      return Err(ServerFailure(e.message, stack));
+    } on SocketException catch (e, stack) {
+      return Err(NetworkFailure('Sem conexão com a internet.', stack));
+    } catch (e, stack) {
+      return Err(UnexpectedFailure('Erro ao carregar programas de treino: $e', stack));
+    }
+  }
+
+  @override
+  Future<Result<TrainingPlan?, Failure>> getActiveTrainingPlan() async {
+    try {
+      final model = await _remoteDataSource.fetchActiveTrainingPlan();
+      return Success(model?.toDomain());
+    } on PostgrestException catch (e, stack) {
+      return Err(ServerFailure(e.message, stack));
+    } on SocketException catch (e, stack) {
+      return Err(NetworkFailure('Sem conexão com a internet.', stack));
+    } catch (e, stack) {
+      return Err(UnexpectedFailure('Erro ao buscar programa ativo: $e', stack));
+    }
+  }
+
+  @override
+  Future<Result<TrainingPlan, Failure>> getTrainingPlanById(String id) async {
+    try {
+      final model = await _remoteDataSource.fetchTrainingPlanById(id);
+      return Success(model.toDomain());
+    } on PostgrestException catch (e, stack) {
+      return Err(ServerFailure(e.message, stack));
+    } on SocketException catch (e, stack) {
+      return Err(NetworkFailure('Sem conexão com a internet.', stack));
+    } catch (e, stack) {
+      return Err(UnexpectedFailure('Erro ao carregar programa de treino: $e', stack));
+    }
+  }
+
+  @override
+  Future<Result<TrainingPlan, Failure>> createTrainingPlan({
+    required String name,
+    String? description,
+    bool isActive = false,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    try {
+      final data = {
+        'name': name,
+        if (description != null) 'description': description,
+        'is_active': isActive,
+        if (startDate != null) 'start_date': startDate.toIso8601String().split('T').first,
+        if (endDate != null) 'end_date': endDate.toIso8601String().split('T').first,
+      };
+
+      final model = await _remoteDataSource.insertTrainingPlan(data);
+      return Success(model.toDomain());
+    } on PostgrestException catch (e, stack) {
+      return Err(ServerFailure(e.message, stack));
+    } on SocketException catch (e, stack) {
+      return Err(NetworkFailure('Sem conexão com a internet.', stack));
+    } catch (e, stack) {
+      return Err(UnexpectedFailure('Erro ao criar programa de treino: $e', stack));
+    }
+  }
+
+  @override
+  Future<Result<TrainingPlan, Failure>> setActiveTrainingPlan(String planId) async {
+    try {
+      final model = await _remoteDataSource.setActivePlan(planId);
+      return Success(model.toDomain());
+    } on PostgrestException catch (e, stack) {
+      return Err(ServerFailure(e.message, stack));
+    } on SocketException catch (e, stack) {
+      return Err(NetworkFailure('Sem conexão com a internet.', stack));
+    } catch (e, stack) {
+      return Err(UnexpectedFailure('Erro ao ativar programa de treino: $e', stack));
+    }
+  }
+
+  @override
+  Future<Result<Workout, Failure>> addWorkoutToPlan({
+    required String trainingPlanId,
+    required String name,
+    int? dayOfWeek,
+    int sortOrder = 0,
+    String? notes,
+    int? estimatedDurationMinutes,
+  }) async {
+    try {
+      final data = {
+        'training_plan_id': trainingPlanId,
+        'name': name,
+        if (dayOfWeek != null) 'day_of_week': dayOfWeek,
+        'sort_order': sortOrder,
+        if (notes != null) 'notes': notes,
+        if (estimatedDurationMinutes != null)
+          'estimated_duration_minutes': estimatedDurationMinutes,
+      };
+
+      final model = await _remoteDataSource.insertWorkout(data);
+      return Success(model.toDomain());
+    } on PostgrestException catch (e, stack) {
+      return Err(ServerFailure(e.message, stack));
+    } on SocketException catch (e, stack) {
+      return Err(NetworkFailure('Sem conexão com a internet.', stack));
+    } catch (e, stack) {
+      return Err(UnexpectedFailure('Erro ao adicionar treino: $e', stack));
+    }
+  }
+
+  @override
+  Future<Result<WorkoutExercise, Failure>> addExerciseToWorkout({
+    required String workoutId,
+    required String exerciseId,
+    int sortOrder = 0,
+    String? notes,
+    List<SetTemplate>? initialSetTemplates,
+  }) async {
+    try {
+      final data = {
+        'workout_id': workoutId,
+        'exercise_id': exerciseId,
+        'sort_order': sortOrder,
+        if (notes != null) 'notes': notes,
+      };
+
+      final model = await _remoteDataSource.insertWorkoutExercise(data);
+
+      if (initialSetTemplates != null && initialSetTemplates.isNotEmpty) {
+        final templatePayloads = initialSetTemplates.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final template = entry.value;
+          return {
+            'workout_exercise_id': model.id,
+            'set_number': idx + 1,
+            'set_type': SetTemplateModel.setTypeToString(template.setType),
+            if (template.targetRepsMin != null) 'target_reps_min': template.targetRepsMin,
+            if (template.targetRepsMax != null) 'target_reps_max': template.targetRepsMax,
+            if (template.targetRirMin != null) 'target_rir_min': template.targetRirMin,
+            if (template.targetRirMax != null) 'target_rir_max': template.targetRirMax,
+            if (template.targetWeight != null) 'target_weight': template.targetWeight,
+            'rest_seconds': template.restSeconds,
+            if (template.notes != null) 'notes': template.notes,
+          };
+        }).toList();
+
+        final setModels = await _remoteDataSource.setExerciseTemplates(
+          model.id,
+          templatePayloads,
+        );
+
+        final updatedEntity = model.toDomain().copyWith(
+              setTemplates: setModels.map((s) => s.toDomain()).toList(),
+            );
+        return Success(updatedEntity);
+      }
+
+      return Success(model.toDomain());
+    } on PostgrestException catch (e, stack) {
+      return Err(ServerFailure(e.message, stack));
+    } on SocketException catch (e, stack) {
+      return Err(NetworkFailure('Sem conexão com a internet.', stack));
+    } catch (e, stack) {
+      return Err(UnexpectedFailure('Erro ao adicionar exercício ao treino: $e', stack));
+    }
+  }
+
+  @override
+  Future<Result<List<SetTemplate>, Failure>> configureSetTemplates({
+    required String workoutExerciseId,
+    required List<SetTemplate> setTemplates,
+  }) async {
+    try {
+      final payloads = setTemplates.asMap().entries.map((entry) {
+        final idx = entry.key;
+        final template = entry.value;
+        return {
+          'workout_exercise_id': workoutExerciseId,
+          'set_number': idx + 1,
+          'set_type': SetTemplateModel.setTypeToString(template.setType),
+          if (template.targetRepsMin != null) 'target_reps_min': template.targetRepsMin,
+          if (template.targetRepsMax != null) 'target_reps_max': template.targetRepsMax,
+          if (template.targetRirMin != null) 'target_rir_min': template.targetRirMin,
+          if (template.targetRirMax != null) 'target_rir_max': template.targetRirMax,
+          if (template.targetWeight != null) 'target_weight': template.targetWeight,
+          'rest_seconds': template.restSeconds,
+          if (template.notes != null) 'notes': template.notes,
+        };
+      }).toList();
+
+      final models = await _remoteDataSource.setExerciseTemplates(
+        workoutExerciseId,
+        payloads,
+      );
+
+      return Success(models.map((m) => m.toDomain()).toList());
+    } on PostgrestException catch (e, stack) {
+      return Err(ServerFailure(e.message, stack));
+    } on SocketException catch (e, stack) {
+      return Err(NetworkFailure('Sem conexão com a internet.', stack));
+    } catch (e, stack) {
+      return Err(UnexpectedFailure('Erro ao salvar séries: $e', stack));
+    }
+  }
+
+  @override
+  Future<Result<void, Failure>> reorderWorkoutExercises({
+    required String workoutId,
+    required List<String> orderedWorkoutExerciseIds,
+  }) async {
+    try {
+      await _remoteDataSource.reorderWorkoutExercises(
+        workoutId,
+        orderedWorkoutExerciseIds,
+      );
+      return const Success(null);
+    } on PostgrestException catch (e, stack) {
+      return Err(ServerFailure(e.message, stack));
+    } on SocketException catch (e, stack) {
+      return Err(NetworkFailure('Sem conexão com a internet.', stack));
+    } catch (e, stack) {
+      return Err(UnexpectedFailure('Erro ao reordenar exercícios: $e', stack));
+    }
+  }
+
+  @override
+  Future<Result<void, Failure>> deleteTrainingPlan(String planId) async {
+    try {
+      await _remoteDataSource.softDeleteTrainingPlan(planId);
+      return const Success(null);
+    } on PostgrestException catch (e, stack) {
+      return Err(ServerFailure(e.message, stack));
+    } on SocketException catch (e, stack) {
+      return Err(NetworkFailure('Sem conexão com a internet.', stack));
+    } catch (e, stack) {
+      return Err(UnexpectedFailure('Erro ao deletar plano: $e', stack));
+    }
+  }
+
+  @override
+  Future<Result<void, Failure>> deleteWorkout(String workoutId) async {
+    try {
+      await _remoteDataSource.deleteWorkout(workoutId);
+      return const Success(null);
+    } on PostgrestException catch (e, stack) {
+      return Err(ServerFailure(e.message, stack));
+    } on SocketException catch (e, stack) {
+      return Err(NetworkFailure('Sem conexão com a internet.', stack));
+    } catch (e, stack) {
+      return Err(UnexpectedFailure('Erro ao deletar treino: $e', stack));
+    }
+  }
+
+  @override
+  Future<Result<void, Failure>> deleteWorkoutExercise(String workoutExerciseId) async {
+    try {
+      await _remoteDataSource.deleteWorkoutExercise(workoutExerciseId);
+      return const Success(null);
+    } on PostgrestException catch (e, stack) {
+      return Err(ServerFailure(e.message, stack));
+    } on SocketException catch (e, stack) {
+      return Err(NetworkFailure('Sem conexão com a internet.', stack));
+    } catch (e, stack) {
+      return Err(UnexpectedFailure('Erro ao remover exercício do treino: $e', stack));
+    }
+  }
+}

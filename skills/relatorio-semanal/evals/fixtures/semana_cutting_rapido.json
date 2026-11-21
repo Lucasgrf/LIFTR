@@ -1,0 +1,33 @@
+{
+  "fatos": {
+    "periodo": "27/10 a 02/11",
+    "objetivo": "cutting",
+    "treino": {
+      "sessoes_feitas": 3,
+      "sessoes_planejadas": 4,
+      "subidas": [],
+      "travados": []
+    },
+    "dieta": {
+      "dias_registrados": 7,
+      "dias_meta_proteina": 5,
+      "meta_proteina_g": 170,
+      "dias_meta_kcal": 6,
+      "meta_kcal": 2300
+    },
+    "peso": {
+      "tendencia_atual": 78.4,
+      "variacao_semana": -1.2,
+      "ritmo_alvo_semana": "0,4 a 0,6",
+      "status_ritmo": "rapido_demais",
+      "confianca": "alta"
+    },
+    "ajuste_meta": { "aplicado": false }
+  },
+  "acoes_candidatas": [
+    { "id": "B1", "texto_base": "manter as calorias da meta e segurar novos cortes", "prioridade": 0.9 },
+    { "id": "B2", "texto_base": "priorizar proteína em todas as refeições", "prioridade": 0.6 },
+    { "id": "B3", "texto_base": "se pesar 3x por semana", "prioridade": 0.3 }
+  ]
+}
+

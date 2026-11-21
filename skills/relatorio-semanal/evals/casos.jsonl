@@ -1,0 +1,4 @@
+{"id":"rel-01","entrada":"fixtures/semana_bulking_acima_ritmo.json","esperado":{"propriedades":["numeros_subconjunto_fatos","acoes_escolhidas_subconjunto_candidatas","1<=len(acoes_escolhidas)<=2","len<=900","menciona:2.650 OU 2650"]}}
+{"id":"rel-02","entrada":"fixtures/semana_cutting_rapido.json","esperado":{"propriedades":["numeros_subconjunto_fatos","nao_sugere_mais_deficit","tom_sem_culpa"]}}
+{"id":"rel-03","entrada":"fixtures/semana_poucos_dados.json","esperado":{"propriedades":["menciona_incerteza_tendencia","numeros_subconjunto_fatos"]}}
+{"id":"rel-04","entrada":"fixtures/semana_zero_treinos.json","esperado":{"propriedades":["tom_sem_culpa","nao_inventa_subidas","numeros_subconjunto_fatos"]}}

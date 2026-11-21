@@ -1,0 +1,32 @@
+{
+  "fatos": {
+    "periodo": "27/10 a 02/11",
+    "objetivo": "manutencao",
+    "treino": {
+      "sessoes_feitas": 2,
+      "sessoes_planejadas": 3,
+      "subidas": [],
+      "travados": []
+    },
+    "dieta": {
+      "dias_registrados": 3,
+      "dias_meta_proteina": 1,
+      "meta_proteina_g": 140,
+      "dias_meta_kcal": 2,
+      "meta_kcal": 2400
+    },
+    "peso": {
+      "tendencia_atual": 75.2,
+      "variacao_semana": 0.1,
+      "ritmo_alvo_semana": "estável",
+      "status_ritmo": "indefinido",
+      "confianca": "baixa"
+    },
+    "ajuste_meta": { "aplicado": false }
+  },
+  "acoes_candidatas": [
+    { "id": "C1", "texto_base": "se pesar 3x por semana, de manhã", "prioridade": 0.9 },
+    { "id": "C2", "texto_base": "registrar as refeições todos os dias", "prioridade": 0.7 }
+  ]
+}
+

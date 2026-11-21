@@ -1,0 +1,12 @@
+{
+  "name": "app-academia",
+  "private": true,
+  "description": "Scripts de conveniência do monorepo. O runtime TypeScript é Deno (ver deno.json).",
+  "scripts": {
+    "evals": "deno run --allow-read --allow-env --allow-net evals/runner.ts",
+    "evals:dry": "deno run --allow-read --allow-env evals/runner.ts --dry-run",
+    "test:backend": "deno test --allow-read --allow-env supabase/functions evals",
+    "lint:backend": "deno lint && deno task check"
+  }
+}
+

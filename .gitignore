@@ -1,0 +1,30 @@
+# Secrets & local environment
+.env
+.env.*
+!.env.example
+
+# Flutter / Dart
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/build/
+app/.packages
+app/android/.gradle/
+app/android/captures/
+app/android/local.properties
+app/ios/Pods/
+app/ios/.symlinks/
+*.iml
+*.log
+*.g.dart~
+
+# Supabase & Deno
+supabase/.temp/
+.deno/
+node_modules/
+coverage/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/

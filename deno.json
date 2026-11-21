@@ -1,0 +1,22 @@
+{
+  "nodeModulesDir": "auto",
+  "compilerOptions": {
+    "strict": true
+  },
+  "lint": {
+    "include": ["supabase/functions/", "evals/"],
+    "rules": {
+      "tags": ["recommended"]
+    }
+  },
+  "fmt": {
+    "include": ["supabase/functions/", "evals/"],
+    "lineWidth": 100
+  },
+  "tasks": {
+    "test": "deno test --allow-read --allow-env supabase/functions evals",
+    "evals": "deno run --allow-read --allow-env --allow-net evals/runner.ts",
+    "evals:dry": "deno run --allow-read --allow-env evals/runner.ts --dry-run",
+    "check": "deno check supabase/functions/orquestrador/index.ts supabase/functions/whatsapp-webhook/index.ts supabase/functions/cron-relatorio-semanal/index.ts evals/runner.ts"
+  }
+}
