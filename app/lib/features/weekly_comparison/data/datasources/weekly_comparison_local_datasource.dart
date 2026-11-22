@@ -5,17 +5,42 @@ import 'package:personal_fitness_os/features/weekly_comparison/data/models/cardi
 import 'package:personal_fitness_os/features/weekly_comparison/data/models/weekly_snapshot_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Offline-first local cache for standalone cardio logs and weekly snapshots.
+/// Offline-first local cache for standalone cardio logs and weekly snapshots,
+/// scoped per authenticated [userId] when present.
 class WeeklyComparisonLocalDataSource {
-  WeeklyComparisonLocalDataSource(this._prefs);
+  WeeklyComparisonLocalDataSource(
+    this._prefs, {
+    this.userId,
+  });
 
   static const String _cardioLogsKey = 'liftr_cardio_logs_v1';
   static const String _weeklySnapshotsKey = 'liftr_weekly_snapshots_v1';
 
   final SharedPreferences _prefs;
+  final String? userId;
+
+  String get _effectiveCardioKey {
+    final trimmed = userId?.trim() ?? '';
+    if (trimmed.isEmpty) return _cardioLogsKey;
+    return '${_cardioLogsKey}_$trimmed';
+  }
+
+  String get _effectiveSnapshotsKey {
+    final trimmed = userId?.trim() ?? '';
+    if (trimmed.isEmpty) return _weeklySnapshotsKey;
+    return '${_weeklySnapshotsKey}_$trimmed';
+  }
+
+  bool _belongsToActiveUser(String? ownerId) {
+    final active = userId?.trim() ?? '';
+    if (active.isEmpty) return true;
+    final owner = ownerId?.trim() ?? '';
+    if (owner.isEmpty || owner == 'local_user') return true;
+    return owner == active;
+  }
 
   List<CardioLogModel> getAllCardioLogs() {
-    final raw = _prefs.getString(_cardioLogsKey);
+    final raw = _prefs.getString(_effectiveCardioKey);
     if (raw == null || raw.isEmpty) return const [];
     try {
       final decoded = jsonDecode(raw);
@@ -23,6 +48,7 @@ class WeeklyComparisonLocalDataSource {
       return decoded
           .whereType<Map>()
           .map((e) => CardioLogModel.fromJson(Map<String, dynamic>.from(e)))
+          .where((c) => _belongsToActiveUser(c.userId))
           .toList();
     } catch (_) {
       return const [];
@@ -35,7 +61,7 @@ class WeeklyComparisonLocalDataSource {
     existing.sort((a, b) => b.performedAt.compareTo(a.performedAt));
     final trimmed = existing.take(120).toList();
     await _prefs.setString(
-      _cardioLogsKey,
+      _effectiveCardioKey,
       jsonEncode(trimmed.map((c) => c.toJson()).toList()),
     );
   }
@@ -53,7 +79,7 @@ class WeeklyComparisonLocalDataSource {
     final seen = <String>{};
     final deduped = combined.where((c) => seen.add(c.id)).take(120).toList();
     await _prefs.setString(
-      _cardioLogsKey,
+      _effectiveCardioKey,
       jsonEncode(deduped.map((c) => c.toJson()).toList()),
     );
   }
@@ -61,7 +87,7 @@ class WeeklyComparisonLocalDataSource {
   Future<void> deleteCardioLog(String id) async {
     final filtered = getAllCardioLogs().where((c) => c.id != id).toList();
     await _prefs.setString(
-      _cardioLogsKey,
+      _effectiveCardioKey,
       jsonEncode(filtered.map((c) => c.toJson()).toList()),
     );
   }
@@ -79,7 +105,7 @@ class WeeklyComparisonLocalDataSource {
   }
 
   List<WeeklySnapshotModel> getRecentWeeklySnapshots() {
-    final raw = _prefs.getString(_weeklySnapshotsKey);
+    final raw = _prefs.getString(_effectiveSnapshotsKey);
     if (raw == null || raw.isEmpty) return const [];
     try {
       final decoded = jsonDecode(raw);
@@ -90,6 +116,7 @@ class WeeklyComparisonLocalDataSource {
             (e) =>
                 WeeklySnapshotModel.fromJson(Map<String, dynamic>.from(e)),
           )
+          .where((s) => _belongsToActiveUser(s.userId))
           .toList()
         ..sort((a, b) => b.weekStart.compareTo(a.weekStart));
       return list;
@@ -106,7 +133,7 @@ class WeeklyComparisonLocalDataSource {
     others.add(snapshot);
     others.sort((a, b) => b.weekStart.compareTo(a.weekStart));
     await _prefs.setString(
-      _weeklySnapshotsKey,
+      _effectiveSnapshotsKey,
       jsonEncode(others.take(24).map((s) => s.toJson()).toList()),
     );
   }
@@ -122,7 +149,7 @@ class WeeklyComparisonLocalDataSource {
     final sorted = map.values.toList()
       ..sort((a, b) => b.weekStart.compareTo(a.weekStart));
     await _prefs.setString(
-      _weeklySnapshotsKey,
+      _effectiveSnapshotsKey,
       jsonEncode(sorted.take(24).map((s) => s.toJson()).toList()),
     );
   }

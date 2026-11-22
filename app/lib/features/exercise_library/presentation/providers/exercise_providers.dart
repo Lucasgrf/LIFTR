@@ -10,6 +10,7 @@ import 'package:personal_fitness_os/features/exercise_library/domain/usecases/ge
 import 'package:personal_fitness_os/features/exercise_library/domain/usecases/get_exercises.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/usecases/search_exercises.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/usecases/update_exercise_notes.dart';
+import 'package:personal_fitness_os/routing/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // --- INFRASTRUCTURE PROVIDERS ---
@@ -78,6 +79,7 @@ class ExerciseListNotifier extends StateNotifier<AsyncValue<List<Exercise>>> {
 
 final exerciseListStateProvider =
     StateNotifierProvider<ExerciseListNotifier, AsyncValue<List<Exercise>>>((ref) {
+  ref.watch(activeUserIdProvider);
   return ExerciseListNotifier(ref);
 });
 

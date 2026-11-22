@@ -48,9 +48,13 @@ class SupabaseTrainingRemoteDataSource implements TrainingRemoteDataSource {
 
   @override
   Future<List<TrainingPlanModel>> fetchTrainingPlans() async {
+    final user = _supabaseClient.auth.currentUser;
+    if (user == null) return const [];
+
     final response = await _supabaseClient
         .from('training_plans')
         .select(_nestedQuery)
+        .eq('user_id', user.id)
         .filter('deleted_at', 'is', null)
         .order('is_active', ascending: false)
         .order('created_at', ascending: false);
@@ -62,9 +66,13 @@ class SupabaseTrainingRemoteDataSource implements TrainingRemoteDataSource {
 
   @override
   Future<TrainingPlanModel?> fetchActiveTrainingPlan() async {
+    final user = _supabaseClient.auth.currentUser;
+    if (user == null) return null;
+
     final response = await _supabaseClient
         .from('training_plans')
         .select(_nestedQuery)
+        .eq('user_id', user.id)
         .filter('deleted_at', 'is', null)
         .eq('is_active', true)
         .maybeSingle();

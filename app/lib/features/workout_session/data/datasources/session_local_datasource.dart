@@ -56,17 +56,41 @@ class PendingSessionOp {
 }
 
 /// Offline-first local cache and outbox queue for workout sessions backed by
-/// [SharedPreferences].
+/// [SharedPreferences], scoped per authenticated [userId] when present.
 class SessionLocalDataSource {
-  SessionLocalDataSource(this._prefs);
+  SessionLocalDataSource(
+    this._prefs, {
+    this.userId,
+  });
 
   static const String _sessionsKey = 'liftr_cached_sessions_v1';
   static const String _outboxKey = 'liftr_session_outbox_v1';
 
   final SharedPreferences _prefs;
+  final String? userId;
+
+  String get _effectiveSessionsKey {
+    final trimmed = userId?.trim() ?? '';
+    if (trimmed.isEmpty) return _sessionsKey;
+    return '${_sessionsKey}_$trimmed';
+  }
+
+  String get _effectiveOutboxKey {
+    final trimmed = userId?.trim() ?? '';
+    if (trimmed.isEmpty) return _outboxKey;
+    return '${_outboxKey}_$trimmed';
+  }
+
+  bool _belongsToActiveUser(WorkoutSessionModel session) {
+    final active = userId?.trim() ?? '';
+    if (active.isEmpty) return true;
+    final owner = session.userId.trim();
+    if (owner.isEmpty || owner == 'offline_user') return true;
+    return owner == active;
+  }
 
   Map<String, Map<String, dynamic>> _readSessionsMap() {
-    final raw = _prefs.getString(_sessionsKey);
+    final raw = _prefs.getString(_effectiveSessionsKey);
     if (raw == null || raw.isEmpty) return {};
     try {
       final decoded = jsonDecode(raw);
@@ -95,7 +119,7 @@ class SessionLocalDataSource {
         });
       map = {for (final e in entries.take(20)) e.key: e.value};
     }
-    await _prefs.setString(_sessionsKey, jsonEncode(map));
+    await _prefs.setString(_effectiveSessionsKey, jsonEncode(map));
   }
 
   Future<void> saveSession(WorkoutSessionModel session) async {
@@ -109,7 +133,9 @@ class SessionLocalDataSource {
     final json = map[sessionId];
     if (json == null) return null;
     try {
-      return WorkoutSessionModel.fromJson(json);
+      final model = WorkoutSessionModel.fromJson(json);
+      if (!_belongsToActiveUser(model)) return null;
+      return model;
     } catch (_) {
       return null;
     }
@@ -120,7 +146,10 @@ class SessionLocalDataSource {
     final sessions = <WorkoutSessionModel>[];
     for (final json in map.values) {
       try {
-        sessions.add(WorkoutSessionModel.fromJson(json));
+        final model = WorkoutSessionModel.fromJson(json);
+        if (_belongsToActiveUser(model)) {
+          sessions.add(model);
+        }
       } catch (_) {}
     }
     return sessions;
@@ -147,7 +176,7 @@ class SessionLocalDataSource {
   }
 
   List<PendingSessionOp> getPendingOps() {
-    final raw = _prefs.getString(_outboxKey);
+    final raw = _prefs.getString(_effectiveOutboxKey);
     if (raw == null || raw.isEmpty) return [];
     try {
       final decoded = jsonDecode(raw);
@@ -165,7 +194,7 @@ class SessionLocalDataSource {
 
   Future<void> _writeOps(List<PendingSessionOp> ops) async {
     await _prefs.setString(
-      _outboxKey,
+      _effectiveOutboxKey,
       jsonEncode(ops.map((o) => o.toJson()).toList()),
     );
   }

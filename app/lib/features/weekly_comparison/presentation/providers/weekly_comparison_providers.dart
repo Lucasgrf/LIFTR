@@ -12,6 +12,7 @@ import 'package:personal_fitness_os/features/weekly_comparison/domain/entities/w
 import 'package:personal_fitness_os/features/weekly_comparison/domain/entities/weekly_snapshot.dart';
 import 'package:personal_fitness_os/features/weekly_comparison/domain/repositories/weekly_comparison_repository.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
+import 'package:personal_fitness_os/routing/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class _NoopWeeklyComparisonRemoteDataSource
@@ -72,11 +73,13 @@ final weeklyComparisonLocalDataSourceProvider =
     Provider<WeeklyComparisonLocalDataSource?>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   if (prefs == null) return null;
-  return WeeklyComparisonLocalDataSource(prefs);
+  final userId = ref.watch(activeUserIdProvider);
+  return WeeklyComparisonLocalDataSource(prefs, userId: userId);
 });
 
 final weeklyComparisonRepositoryProvider =
     Provider<WeeklyComparisonRepository>((ref) {
+  ref.watch(activeUserIdProvider);
   return WeeklyComparisonRepositoryImpl(
     historyRepository: ref.watch(historyRepositoryProvider),
     remoteDataSource: ref.watch(weeklyComparisonRemoteDataSourceProvider),
@@ -91,6 +94,7 @@ final weeklyComparisonOffsetProvider =
 
 final weeklyComparisonProvider =
     FutureProvider.autoDispose<WeeklyComparisonData>((ref) async {
+  ref.watch(activeUserIdProvider);
   final offset = ref.watch(weeklyComparisonOffsetProvider);
   final referenceDate =
       DateTime.now().add(Duration(days: offset * 7));
@@ -107,6 +111,7 @@ final weeklyComparisonProvider =
 /// Progresso without throwing when running in isolated widget tests.
 final currentWeekSummaryProvider =
     FutureProvider.autoDispose<WeeklyComparisonData>((ref) async {
+  ref.watch(activeUserIdProvider);
   final now = DateTime.now();
   final weekStart = isoWeekStart(now);
   try {

@@ -43,6 +43,45 @@ final authStateProvider = StateProvider<bool>((ref) {
   }
 });
 
+/// Tracks the currently authenticated Supabase user ID so all user-specific
+/// caches (`SharedPreferences`) and in-memory Riverpod providers automatically
+/// isolate and reset whenever the user logs out or switches accounts.
+final activeUserIdProvider = StateProvider<String?>((ref) {
+  if (!SupabaseConfig.isConfigured) return null;
+  try {
+    final auth = Supabase.instance.client.auth;
+    final sub = auth.onAuthStateChange.listen((data) {
+      final newUserId = data.session?.user.id;
+      ref.controller.state = newUserId;
+      ref.read(authStateProvider.notifier).state = data.session != null;
+    });
+    ref.onDispose(sub.cancel);
+    return auth.currentUser?.id;
+  } catch (_) {
+    return null;
+  }
+});
+
+/// Synchronizes [activeUserIdProvider] and [authStateProvider] after explicit
+/// login, sign-up, onboarding completion, or sign-out.
+void syncActiveAuthSession(
+  WidgetRef ref, {
+  required bool isLoggedIn,
+  String? overrideUserId,
+}) {
+  String? resolvedUserId = overrideUserId;
+  if (resolvedUserId == null && isLoggedIn && SupabaseConfig.isConfigured) {
+    try {
+      resolvedUserId = Supabase.instance.client.auth.currentUser?.id;
+    } catch (_) {
+      resolvedUserId = null;
+    }
+  }
+  ref.read(activeUserIdProvider.notifier).state =
+      isLoggedIn ? resolvedUserId : null;
+  ref.read(authStateProvider.notifier).state = isLoggedIn;
+}
+
 final goRouterProvider = Provider<GoRouter>((ref) {
   final isLoggedIn = ref.watch(authStateProvider);
 

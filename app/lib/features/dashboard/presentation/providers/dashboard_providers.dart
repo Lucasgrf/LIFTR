@@ -9,6 +9,7 @@ import 'package:personal_fitness_os/features/history/domain/usecases/get_workout
 import 'package:personal_fitness_os/features/nutrition/presentation/providers/nutrition_providers.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
+import 'package:personal_fitness_os/routing/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // --- History Providers ---
@@ -40,6 +41,7 @@ final getDashboardDataUseCaseProvider = Provider<GetDashboardDataUseCase>((ref) 
 
 final dashboardDataProvider =
     FutureProvider.autoDispose<DashboardData>((ref) async {
+  ref.watch(activeUserIdProvider);
   final useCase = ref.watch(getDashboardDataUseCaseProvider);
   final result = await useCase.execute();
 

@@ -173,6 +173,8 @@ class WeeklyComparisonRepositoryImpl implements WeeklyComparisonRepository {
 
       if (currentSnap.hasActivity) {
         historyByKey[isoDateKey(currentStart)] = currentSnap;
+      } else {
+        historyByKey.remove(isoDateKey(currentStart));
       }
       if (prevSnapRaw.hasActivity) {
         historyByKey[isoDateKey(prevStart)] = prevSnapRaw;

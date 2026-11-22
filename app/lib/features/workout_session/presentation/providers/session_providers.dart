@@ -19,6 +19,7 @@ import 'package:personal_fitness_os/features/workout_session/domain/usecases/get
 import 'package:personal_fitness_os/features/workout_session/domain/usecases/log_set.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/usecases/start_workout_session.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/usecases/swap_session_exercise.dart';
+import 'package:personal_fitness_os/routing/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // --- Data Source & Repository Providers ---
@@ -30,7 +31,8 @@ final sessionRemoteDataSourceProvider = Provider<SessionRemoteDataSource>((ref) 
 final sessionLocalDataSourceProvider = Provider<SessionLocalDataSource?>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   if (prefs == null) return null;
-  return SessionLocalDataSource(prefs);
+  final userId = ref.watch(activeUserIdProvider);
+  return SessionLocalDataSource(prefs, userId: userId);
 });
 
 final sessionRepositoryProvider = Provider<SessionRepository>((ref) {
