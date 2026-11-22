@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/extensions/date_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
+import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/features/history/domain/entities/exercise_history_record.dart';
@@ -64,116 +65,124 @@ class ExerciseLoadProgressionChart extends StatelessWidget {
     minY = (minY - paddingY).clamp(0.0, double.infinity);
     maxY = maxY + paddingY;
 
-    return AppCard(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(context),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 180,
-            child: LineChart(
-              LineChartData(
-                minY: minY,
-                maxY: maxY,
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: colors.border.withValues(alpha: 0.5),
-                    strokeWidth: 1,
-                    dashArray: [4, 4],
-                  ),
-                ),
-                titlesData: FlTitlesData(
-                  show: true,
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 36,
-                      getTitlesWidget: (value, meta) {
-                        return Text(
-                          '${value.toStringAsFixed(0)}kg',
-                          style: context.textTheme.labelSmall?.copyWith(
-                            color: colors.textTertiary,
-                            fontSize: 9,
-                          ),
-                        );
-                      },
+    return Semantics(
+      container: true,
+      explicitChildNodes: true,
+      label: 'Gráfico de progressão de carga',
+      child: AppCard(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(context),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 180,
+              child: LineChart(
+                LineChartData(
+                  minY: minY,
+                  maxY: maxY,
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    getDrawingHorizontalLine: (value) => FlLine(
+                      color: colors.border.withValues(alpha: 0.5),
+                      strokeWidth: 1,
+                      dashArray: [4, 4],
                     ),
                   ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 22,
-                      interval: math.max(1.0, (sorted.length / 4).floorToDouble()),
-                      getTitlesWidget: (value, meta) {
-                        final idx = value.toInt();
-                        if (idx >= 0 && idx < sorted.length) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              sorted[idx].date.formatShort(),
-                              style: context.textTheme.labelSmall?.copyWith(
-                                color: colors.textTertiary,
-                                fontSize: 9,
-                              ),
+                  titlesData: FlTitlesData(
+                    show: true,
+                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 42,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            '${value.toStringAsFixed(0)}kg',
+                            style: context.textTheme.labelSmall?.copyWith(
+                              color: colors.textTertiary,
+                              fontSize: 11,
+                              fontFeatures: AppTypography.tabularFeatures,
                             ),
                           );
-                        }
-                        return const SizedBox.shrink();
-                      },
+                        },
+                      ),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 24,
+                        interval: math.max(1.0, (sorted.length / 4).floorToDouble()),
+                        getTitlesWidget: (value, meta) {
+                          final idx = value.toInt();
+                          if (idx >= 0 && idx < sorted.length) {
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                sorted[idx].date.formatShort(),
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: colors.textTertiary,
+                                  fontSize: 11,
+                                  fontFeatures: AppTypography.tabularFeatures,
+                                ),
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
                     ),
                   ),
+                  borderData: FlBorderData(show: false),
+                  lineBarsData: [
+                    // 1RM Estimado Line (tracejada)
+                    LineChartBarData(
+                      spots: e1rmSpots,
+                      isCurved: true,
+                      curveSmoothness: 0.35,
+                      color: fitnessColors.progressUp,
+                      barWidth: 2,
+                      dashArray: const [5, 4],
+                      isStrokeCapRound: true,
+                      dotData: FlDotData(
+                        show: e1rmSpots.length <= 15,
+                        getDotPainter: (spot, percent, barData, index) =>
+                            FlDotCirclePainter(
+                          radius: 3,
+                          color: fitnessColors.progressUp,
+                          strokeWidth: 1.5,
+                          strokeColor: colors.surface,
+                        ),
+                      ),
+                    ),
+                    // Carga Máxima Line (sólida)
+                    LineChartBarData(
+                      spots: topWeightSpots,
+                      isCurved: true,
+                      curveSmoothness: 0.35,
+                      color: colors.primary,
+                      barWidth: 2.5,
+                      isStrokeCapRound: true,
+                      dotData: FlDotData(
+                        show: topWeightSpots.length <= 15,
+                        getDotPainter: (spot, percent, barData, index) =>
+                            FlDotCirclePainter(
+                          radius: 3.5,
+                          color: colors.primary,
+                          strokeWidth: 1.5,
+                          strokeColor: colors.surface,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                borderData: FlBorderData(show: false),
-                lineBarsData: [
-                  // 1RM Estimado Line
-                  LineChartBarData(
-                    spots: e1rmSpots,
-                    isCurved: true,
-                    curveSmoothness: 0.35,
-                    color: fitnessColors.progressUp,
-                    barWidth: 2.5,
-                    isStrokeCapRound: true,
-                    dotData: FlDotData(
-                      show: e1rmSpots.length <= 15,
-                      getDotPainter: (spot, percent, barData, index) =>
-                          FlDotCirclePainter(
-                        radius: 3.5,
-                        color: fitnessColors.progressUp,
-                        strokeWidth: 1.5,
-                        strokeColor: colors.surface,
-                      ),
-                    ),
-                  ),
-                  // Carga Máxima Line
-                  LineChartBarData(
-                    spots: topWeightSpots,
-                    isCurved: true,
-                    curveSmoothness: 0.35,
-                    color: colors.primary,
-                    barWidth: 2.5,
-                    isStrokeCapRound: true,
-                    dotData: FlDotData(
-                      show: topWeightSpots.length <= 15,
-                      getDotPainter: (spot, percent, barData, index) =>
-                          FlDotCirclePainter(
-                        radius: 3.5,
-                        color: colors.primary,
-                        strokeWidth: 1.5,
-                        strokeColor: colors.surface,
-                      ),
-                    ),
-                  ),
-                ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -183,44 +192,70 @@ class ExerciseLoadProgressionChart extends StatelessWidget {
     final fitnessColors = context.fitnessColors;
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          'PROGRESSÃO DE CARGA',
-          style: context.textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: colors.textSecondary,
-            letterSpacing: 1.1,
+        Expanded(
+          child: Text(
+            'PROGRESSÃO DE CARGA',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colors.textSecondary,
+              letterSpacing: 1.1,
+            ),
           ),
         ),
+        const SizedBox(width: 8),
         Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             _buildLegendItem(colors.primary, 'Carga máx', context),
-            const SizedBox(width: 8),
-            _buildLegendItem(fitnessColors.progressUp, '1RM est', context),
+            const SizedBox(width: 10),
+            _buildLegendItem(
+              fitnessColors.progressUp,
+              '1RM est',
+              context,
+              dashed: true,
+            ),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildLegendItem(Color color, String label, BuildContext context) {
+  Widget _buildLegendItem(
+    Color color,
+    String label,
+    BuildContext context, {
+    bool dashed = false,
+  }) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
+        if (dashed)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(width: 5, height: 2, color: color),
+              const SizedBox(width: 2),
+              Container(width: 5, height: 2, color: color),
+            ],
+          )
+        else
+          Container(
+            width: 12,
+            height: 2.5,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
-        ),
         const SizedBox(width: 4),
         Text(
           label,
           style: context.textTheme.labelSmall?.copyWith(
-            color: context.appColors.textTertiary,
-            fontSize: 9,
+            color: context.appColors.textSecondary,
+            fontSize: 11,
           ),
         ),
       ],

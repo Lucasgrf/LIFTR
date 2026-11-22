@@ -35,18 +35,20 @@ class SetTemplateRow extends StatelessWidget {
 
   static Color getSetTypeColor(BuildContext context, SetType type) {
     final colors = context.fitnessColors;
+    final appColors = context.appColors;
     switch (type) {
       case SetType.mobility:
         return colors.progressNeutral;
       case SetType.warmup:
         return colors.progressMaintain;
       case SetType.rampUp:
-        return colors.muscleShoulders;
+        return appColors.info;
       case SetType.working:
         return colors.progressUp;
       case SetType.dropSet:
+        return colors.dropSetTag;
       case SetType.myoRep:
-        return colors.progressDown;
+        return appColors.info;
     }
   }
 
@@ -59,10 +61,10 @@ class SetTemplateRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
-        color: context.appColors.surfaceVariant.withOpacity(0.5),
+        color: context.appColors.surfaceVariant.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(context.appRadius.small),
         border: Border.all(
-          color: context.appColors.border.withOpacity(0.5),
+          color: context.appColors.border.withValues(alpha: 0.5),
           width: 0.8,
         ),
       ),
@@ -74,9 +76,12 @@ class SetTemplateRow extends StatelessWidget {
             height: 24,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: badgeColor.withOpacity(0.15),
+              color: badgeColor.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(context.appRadius.small),
-              border: Border.all(color: badgeColor.withOpacity(0.4), width: 0.8),
+              border: Border.all(
+                color: badgeColor.withValues(alpha: 0.4),
+                width: 0.8,
+              ),
             ),
             child: Text(
               badgeText,

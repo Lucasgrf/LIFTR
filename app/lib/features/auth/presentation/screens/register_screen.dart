@@ -5,6 +5,7 @@ import 'package:personal_fitness_os/core/constants/supabase_config.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_brand_mark.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 import 'package:personal_fitness_os/routing/app_router.dart';
@@ -77,25 +78,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          'LIFTR',
-                          style: context.textTheme.displayLarge?.copyWith(
-                            letterSpacing: -1.4,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Container(
-                          width: 9,
-                          height: 9,
-                          margin: const EdgeInsets.only(top: 12),
-                          decoration: BoxDecoration(
-                            color: colors.primary,
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        ),
-                      ],
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: LiftrWordmark(),
                     ),
                     const SizedBox(height: 10),
                     Text(

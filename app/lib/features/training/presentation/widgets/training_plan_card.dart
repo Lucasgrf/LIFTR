@@ -39,9 +39,9 @@ class TrainingPlanCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: activeColor.withOpacity(0.15),
+                      color: activeColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(context.appRadius.small),
-                      border: Border.all(color: activeColor.withOpacity(0.4), width: 0.8),
+                      border: Border.all(color: activeColor.withValues(alpha: 0.4), width: 0.8),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,

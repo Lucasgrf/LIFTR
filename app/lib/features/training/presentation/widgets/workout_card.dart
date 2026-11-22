@@ -29,10 +29,10 @@ class WorkoutCard extends StatelessWidget {
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: context.appColors.primary.withOpacity(0.12),
+                color: context.appColors.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(context.appRadius.small),
                 border: Border.all(
-                  color: context.appColors.primary.withOpacity(0.3),
+                  color: context.appColors.primary.withValues(alpha: 0.3),
                   width: 1,
                 ),
               ),

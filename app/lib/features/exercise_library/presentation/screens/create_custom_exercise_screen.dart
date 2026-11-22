@@ -243,7 +243,9 @@ class _CreateCustomExerciseScreenState
                     selected: isSelected,
                     showCheckmark: false,
                     labelStyle: context.textTheme.labelSmall?.copyWith(
-                      color: isSelected ? Colors.white : context.appColors.textSecondary,
+                      color: isSelected
+                          ? context.appColors.onPrimary
+                          : context.appColors.textSecondary,
                     ),
                     backgroundColor: context.appColors.surfaceVariant,
                     selectedColor: context.appColors.primary,

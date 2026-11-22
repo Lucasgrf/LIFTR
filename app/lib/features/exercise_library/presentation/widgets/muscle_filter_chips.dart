@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
-import 'package:personal_fitness_os/features/exercise_library/presentation/widgets/exercise_card.dart';
 
 class MuscleFilterChips extends ConsumerWidget {
   const MuscleFilterChips({super.key});
@@ -25,10 +25,12 @@ class MuscleFilterChips extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.appColors;
+    final radius = context.appRadius;
     final selectedMuscle = ref.watch(exerciseSelectedMuscleFilterProvider);
 
     return SizedBox(
-      height: 40,
+      height: 48,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -40,29 +42,27 @@ class MuscleFilterChips extends ConsumerWidget {
           final label = option['label']!;
           final isSelected = selectedMuscle == key;
 
-          final chipColor = key == null
-              ? context.appColors.primary
-              : ExerciseCard.getMuscleColor(context, key);
-
           return FilterChip(
             selected: isSelected,
             showCheckmark: false,
+            materialTapTargetSize: MaterialTapTargetSize.padded,
             label: Text(label),
             labelStyle: context.textTheme.labelMedium?.copyWith(
-              color: isSelected ? Colors.white : context.appColors.textSecondary,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              color: isSelected ? colors.onPrimary : colors.textSecondary,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
             ),
-            backgroundColor: context.appColors.surfaceVariant,
-            selectedColor: chipColor,
+            backgroundColor: colors.surfaceElevated,
+            selectedColor: colors.primary,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(context.appRadius.full),
+              borderRadius: BorderRadius.circular(radius.small),
               side: BorderSide(
-                color: isSelected ? chipColor : context.appColors.border,
+                color: isSelected ? colors.primary : colors.border,
                 width: 1,
               ),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-            onSelected: (selected) {
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            onSelected: (_) {
+              HapticFeedback.selectionClick();
               ref.read(exerciseSelectedMuscleFilterProvider.notifier).state =
                   isSelected ? null : key;
             },

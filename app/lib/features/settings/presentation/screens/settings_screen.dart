@@ -16,6 +16,7 @@ import 'package:personal_fitness_os/core/update/app_update_providers.dart';
 import 'package:personal_fitness_os/core/update/app_update_service.dart';
 import 'package:personal_fitness_os/core/update/app_update_widgets.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 import 'package:personal_fitness_os/features/workout_session/data/repositories/session_repository_impl.dart';
@@ -292,7 +293,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               label: 'Status local',
                               value: isOfflineState
                                   ? (pendingCount > 0
-                                      ? 'Offline · $pendingCount pendências'
+                                      ? 'Offline · $pendingCount ${pendingCount == 1 ? 'pendência' : 'pendências'}'
                                       : 'Offline · Salvo localmente')
                                   : (pendingCount > 0
                                       ? 'Online · $pendingCount para sincronizar'
@@ -406,13 +407,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       builder: (ctx) {
         final colors = ctx.appColors;
         return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Descanso padrão entre séries',
-                  style: ctx.textTheme.titleLarge),
+              const LiftrSheetHeader(
+                eyebrow: 'SESSÃO DE TREINO',
+                title: 'Descanso padrão entre séries',
+              ),
               const SizedBox(height: 16),
               Wrap(
                 spacing: 10,
@@ -451,12 +454,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       builder: (ctx) {
         final colors = ctx.appColors;
         return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: ctx.textTheme.titleLarge),
+              LiftrSheetHeader(
+                eyebrow: 'PROGRESSÃO DE CARGA',
+                title: title,
+              ),
               const SizedBox(height: 16),
               Wrap(
                 spacing: 10,
@@ -499,12 +505,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       builder: (ctx) {
         final colors = ctx.appColors;
         return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Relatório semanal', style: ctx.textTheme.titleLarge),
+              const LiftrSheetHeader(
+                eyebrow: 'WHATSAPP COACH',
+                title: 'Relatório semanal',
+              ),
               const SizedBox(height: 12),
               ...schedules.map((item) {
                 final selected =
@@ -541,12 +550,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       builder: (ctx) {
         final colors = ctx.appColors;
         return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Aparência do app', style: ctx.textTheme.titleLarge),
+              const LiftrSheetHeader(
+                eyebrow: 'PREFERÊNCIAS',
+                title: 'Aparência do app',
+              ),
               const SizedBox(height: 12),
               for (final mode in [
                 ThemeMode.dark,
@@ -601,12 +613,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         final colors = ctx.appColors;
         final radius = ctx.appRadius;
         return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Exportar dados', style: ctx.textTheme.titleLarge),
+              const LiftrSheetHeader(
+                eyebrow: 'BACKUP PORTÁTIL',
+                title: 'Exportar dados',
+              ),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(14),

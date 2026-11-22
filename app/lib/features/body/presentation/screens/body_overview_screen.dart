@@ -59,7 +59,7 @@ class BodyOverviewScreen extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: colors.primary.withOpacity(0.12),
+                          color: colors.primary.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(context.appRadius.small),
                         ),
                         child: Icon(Icons.show_chart_rounded, color: colors.primary, size: 22),
@@ -101,7 +101,7 @@ class BodyOverviewScreen extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: colors.primary.withOpacity(0.12),
+                          color: colors.primary.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(context.appRadius.small),
                         ),
                         child: Icon(Icons.straighten_rounded, color: colors.primary, size: 22),

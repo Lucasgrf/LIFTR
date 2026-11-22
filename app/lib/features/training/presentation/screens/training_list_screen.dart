@@ -6,8 +6,10 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
@@ -287,32 +289,17 @@ class _QueueWorkoutCard extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 9),
-      child: InkWell(
+      child: AppCard(
+        variant: isNext ? AppCardVariant.accented : AppCardVariant.raised,
+        accentColor: colors.primary,
+        borderColor: isNext
+            ? colors.primary.withValues(alpha: 0.48)
+            : colors.border,
+        borderRadius: radius.large,
         onTap: onEdit,
-        borderRadius: BorderRadius.circular(radius.large),
-        child: Container(
-          constraints: BoxConstraints(minHeight: isNext ? 86 : 74),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          decoration: BoxDecoration(
-            color: colors.surface,
-            borderRadius: BorderRadius.circular(radius.large),
-            border: Border.all(
-              color: isNext
-                  ? colors.primary.withValues(alpha: 0.48)
-                  : colors.border,
-            ),
-            gradient: isNext
-                ? LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      colors.primary.withValues(alpha: 0.09),
-                      colors.surface,
-                    ],
-                    stops: const [0.0, 0.7],
-                  )
-                : null,
-          ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: isNext ? 62 : 50),
           child: Row(
             children: [
               ReorderableDragStartListener(
@@ -320,8 +307,8 @@ class _QueueWorkoutCard extends StatelessWidget {
                 child: Semantics(
                   label: 'Reordenar ${workout.name}',
                   child: SizedBox(
-                    width: 32,
-                    height: 44,
+                    width: 40,
+                    height: 48,
                     child: Icon(
                       Icons.drag_handle_rounded,
                       color: colors.textTertiary,
@@ -332,23 +319,9 @@ class _QueueWorkoutCard extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               if (isNext)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.primaryMuted,
-                    borderRadius: BorderRadius.circular(radius.full),
-                  ),
-                  child: Text(
-                    'Próximo',
-                    style: context.textTheme.labelSmall?.copyWith(
-                      color: colors.primaryLight,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 10,
-                    ),
-                  ),
+                const LiftrBadge(
+                  label: 'Próximo',
+                  tone: LiftrBadgeTone.brand,
                 )
               else
                 SizedBox(
@@ -388,11 +361,11 @@ class _QueueWorkoutCard extends StatelessWidget {
               if (isNext) ...[
                 const SizedBox(width: 6),
                 SizedBox(
-                  height: 42,
+                  height: 48,
                   child: ElevatedButton(
                     onPressed: isStarting ? null : onStart,
                     style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(64, 42),
+                      minimumSize: const Size(64, 48),
                       padding: const EdgeInsets.symmetric(horizontal: 14),
                       backgroundColor: colors.primary,
                       foregroundColor: colors.onPrimary,

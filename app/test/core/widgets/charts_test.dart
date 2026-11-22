@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_theme.dart';
 import 'package:personal_fitness_os/core/widgets/charts/calorie_macro_history_chart.dart';
 import 'package:personal_fitness_os/core/widgets/charts/exercise_load_progression_chart.dart';
@@ -106,9 +107,9 @@ void main() {
     ),
   ];
 
-  Widget createWidgetUnderTest(Widget child) {
+  Widget createWidgetUnderTest(Widget child, {ThemeData? theme}) {
     return MaterialApp(
-      theme: AppTheme.dark(),
+      theme: theme ?? AppTheme.dark(),
       home: Scaffold(
         body: SingleChildScrollView(child: child),
       ),
@@ -116,17 +117,40 @@ void main() {
   }
 
   group('WeightEvolutionChart Widget Test', () {
-    testWidgets('should render chart and period chips', (tester) async {
-      await tester.pumpWidget(
-        createWidgetUnderTest(
-          WeightEvolutionChart(entries: tEntries),
-        ),
-      );
+    testWidgets('should render chart, semantics and accessible period chips in dark and light themes',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        for (final theme in [AppTheme.dark(), AppTheme.light()]) {
+          await tester.pumpWidget(
+            createWidgetUnderTest(
+              WeightEvolutionChart(entries: tEntries),
+              theme: theme,
+            ),
+          );
+          await tester.pumpAndSettle();
 
-      expect(find.text('EVOLUÇÃO DO PESO'), findsOneWidget);
-      expect(find.text('30d'), findsOneWidget);
-      expect(find.text('60d'), findsOneWidget);
-      expect(find.text('90d'), findsOneWidget);
+          expect(find.text('EVOLUÇÃO DO PESO'), findsOneWidget);
+          expect(find.text('30d'), findsOneWidget);
+          expect(find.text('60d'), findsOneWidget);
+          expect(find.text('90d'), findsOneWidget);
+          expect(
+            find.bySemanticsLabel('Gráfico de evolução de peso corporal'),
+            findsOneWidget,
+          );
+
+          final chip30 = tester.widget<Text>(find.text('30d'));
+          expect(chip30.style?.color, theme.extension<AppColors>()!.onPrimary);
+
+          final chip30Box = tester.getSize(
+            find.ancestor(of: find.text('30d'), matching: find.byType(InkWell)),
+          );
+          expect(chip30Box.width, greaterThanOrEqualTo(44));
+          expect(chip30Box.height, greaterThanOrEqualTo(44));
+        }
+      } finally {
+        semantics.dispose();
+      }
     });
 
     testWidgets('should render fallback when fewer than 2 entries', (tester) async {
@@ -136,21 +160,38 @@ void main() {
         ),
       );
 
-      expect(find.text('Registre pelo menos 2 pesagens no período para visualizar o gráfico.'), findsOneWidget);
+      expect(
+        find.text('Registre pelo menos 2 pesagens no período para visualizar o gráfico.'),
+        findsOneWidget,
+      );
     });
   });
 
   group('ExerciseLoadProgressionChart Widget Test', () {
-    testWidgets('should render chart and legend items', (tester) async {
-      await tester.pumpWidget(
-        createWidgetUnderTest(
-          ExerciseLoadProgressionChart(records: tRecords),
-        ),
-      );
+    testWidgets('should render chart, legend items and semantics in dark and light themes',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        for (final theme in [AppTheme.dark(), AppTheme.light()]) {
+          await tester.pumpWidget(
+            createWidgetUnderTest(
+              ExerciseLoadProgressionChart(records: tRecords),
+              theme: theme,
+            ),
+          );
+          await tester.pumpAndSettle();
 
-      expect(find.text('PROGRESSÃO DE CARGA'), findsOneWidget);
-      expect(find.text('Carga máx'), findsOneWidget);
-      expect(find.text('1RM est'), findsOneWidget);
+          expect(find.text('PROGRESSÃO DE CARGA'), findsOneWidget);
+          expect(find.text('Carga máx'), findsOneWidget);
+          expect(find.text('1RM est'), findsOneWidget);
+          expect(
+            find.bySemanticsLabel('Gráfico de progressão de carga'),
+            findsOneWidget,
+          );
+        }
+      } finally {
+        semantics.dispose();
+      }
     });
   });
 

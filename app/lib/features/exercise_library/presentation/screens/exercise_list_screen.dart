@@ -133,7 +133,7 @@ class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/exercises/new'),
         backgroundColor: context.appColors.primary,
-        foregroundColor: Colors.white,
+        foregroundColor: context.appColors.onPrimary,
         icon: const Icon(Icons.add_rounded),
         label: const Text('Novo Exercício', style: TextStyle(fontWeight: FontWeight.w600)),
       ),

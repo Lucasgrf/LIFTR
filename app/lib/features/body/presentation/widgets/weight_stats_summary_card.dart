@@ -57,9 +57,9 @@ class WeightStatsSummaryCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: trendColor.withOpacity(0.15),
+                  color: trendColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(context.appRadius.small),
-                  border: Border.all(color: trendColor.withOpacity(0.4)),
+                  border: Border.all(color: trendColor.withValues(alpha: 0.4)),
                 ),
                 child: Text(
                   stats.trendLabel,
