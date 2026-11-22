@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/constants/supabase_config.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
+import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
@@ -325,11 +326,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: ResponsiveContainer(
                   child: AnimatedSwitcher(
-                    duration: disableAnimations
-                        ? Duration.zero
-                        : const Duration(milliseconds: 260),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeOutCubic,
+                    duration: context.appMotion.resolve(
+                      context,
+                      context.appMotion.standard,
+                    ),
+                    switchInCurve: context.appMotion.curveStandard,
+                    switchOutCurve: context.appMotion.curveExit,
                     transitionBuilder: (child, animation) {
                       if (disableAnimations) return child;
                       final offsetAnimation = Tween<Offset>(
@@ -845,7 +847,7 @@ class _SelectableOptionCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(radius.large),
             border: Border.all(
               color: selected ? colors.primary : colors.border,
-              width: selected ? 2 : 1,
+              width: selected ? 1.5 : 1,
             ),
           ),
           child: Row(
@@ -968,7 +970,7 @@ class _BulletRow extends StatelessWidget {
           height: 34,
           decoration: BoxDecoration(
             color: fitnessColors.progressUp.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(context.appRadius.small),
           ),
           child: Icon(icon, size: 18, color: fitnessColors.progressUp),
         ),

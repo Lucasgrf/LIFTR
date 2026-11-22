@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
+import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 
 class ProgressSegmentedControl extends StatelessWidget {
@@ -24,12 +25,14 @@ class ProgressSegmentedControl extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final radius = context.appRadius;
+    final motion = context.appMotion;
 
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: colors.surfaceElevated,
+        color: colors.surfaceSubtle,
         borderRadius: BorderRadius.circular(radius.medium),
+        border: Border.all(color: colors.border),
       ),
       child: Row(
         children: List.generate(segments.length, (index) {
@@ -45,22 +48,18 @@ class ProgressSegmentedControl extends StatelessWidget {
                   onChanged(index);
                 },
                 borderRadius: BorderRadius.circular(radius.small),
-                child: Container(
-                  constraints: const BoxConstraints(minHeight: 44),
+                child: AnimatedContainer(
+                  duration: motion.resolve(context, motion.fast),
+                  curve: motion.curveStandard,
+                  constraints: const BoxConstraints(minHeight: 48),
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? colors.surfaceVariant
+                        ? colors.surfaceElevated
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(radius.small),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: colors.background.withValues(alpha: 0.28),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ]
+                    border: isSelected
+                        ? Border.all(color: colors.border)
                         : null,
                   ),
                   child: Text(

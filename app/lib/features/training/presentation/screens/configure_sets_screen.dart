@@ -168,7 +168,7 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: SetTemplateRow.getSetTypeColor(context, template.setType)
-                                  .withOpacity(0.15),
+                                  .withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(context.appRadius.small),
                             ),
                             child: Text(

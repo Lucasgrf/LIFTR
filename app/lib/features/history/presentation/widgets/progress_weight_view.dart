@@ -404,14 +404,7 @@ class _WeightEmaChart extends StatelessWidget {
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  colors.primary.withValues(alpha: 0.24),
-                  colors.primary.withValues(alpha: 0.0),
-                ],
-              ),
+              color: colors.primary.withValues(alpha: 0.08),
             ),
           ),
         ],

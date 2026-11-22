@@ -10,6 +10,8 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/profile/presentation/providers/profile_providers.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
@@ -225,23 +227,10 @@ class ProfileScreen extends ConsumerWidget {
                                 ),
                               ],
                               const SizedBox(height: 10),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colors.primaryMuted,
-                                  borderRadius:
-                                      BorderRadius.circular(radius.full),
-                                ),
-                                child: Text(
-                                  '${settings.goal.label} · ${settings.experience.label}',
-                                  style: context.textTheme.labelSmall?.copyWith(
-                                    color: colors.primaryLight,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
+                              LiftrBadge(
+                                label:
+                                    '${settings.goal.label} · ${settings.experience.label}',
+                                tone: LiftrBadgeTone.brand,
                               ),
                             ],
                           ),
@@ -345,12 +334,15 @@ class ProfileScreen extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Foto de perfil', style: ctx.textTheme.titleLarge),
+            const LiftrSheetHeader(
+              eyebrow: 'ATLETA',
+              title: 'Foto de perfil',
+            ),
             const SizedBox(height: 12),
             ListTile(
               contentPadding: EdgeInsets.zero,
@@ -551,12 +543,15 @@ class ProfileScreen extends ConsumerWidget {
       builder: (ctx) {
         final colors = ctx.appColors;
         return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Objetivo atual', style: ctx.textTheme.titleLarge),
+              const LiftrSheetHeader(
+                eyebrow: 'METAS & NUTRIÇÃO',
+                title: 'Objetivo atual',
+              ),
               const SizedBox(height: 14),
               ...UserGoal.values.map((goal) {
                 final selected = settings.goal == goal;
@@ -598,12 +593,15 @@ class ProfileScreen extends ConsumerWidget {
       builder: (ctx) {
         final colors = ctx.appColors;
         return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Experiência', style: ctx.textTheme.titleLarge),
+              const LiftrSheetHeader(
+                eyebrow: 'HISTÓRICO DE TREINO',
+                title: 'Experiência',
+              ),
               const SizedBox(height: 14),
               ...UserExperience.values.map((exp) {
                 final selected = settings.experience == exp;
@@ -645,12 +643,15 @@ class ProfileScreen extends ConsumerWidget {
       builder: (ctx) {
         final colors = ctx.appColors;
         return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Atividade diária', style: ctx.textTheme.titleLarge),
+              const LiftrSheetHeader(
+                eyebrow: 'GASTO ENERGÉTICO',
+                title: 'Atividade diária',
+              ),
               const SizedBox(height: 14),
               ...ActivityLevel.values.map((lvl) {
                 final selected = settings.activityLevel == lvl;

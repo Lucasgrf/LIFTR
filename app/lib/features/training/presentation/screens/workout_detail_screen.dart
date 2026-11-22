@@ -357,7 +357,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                 child: SafeArea(
                   top: false,
                   child: AppButton.primary(
-                    label: 'Iniciar Este Treino Agora',
+                    label: 'Iniciar treino',
                     icon: Icons.play_arrow_rounded,
                     isLoading: _isStartingWorkout,
                     onPressed: () => _startWorkout(workout),

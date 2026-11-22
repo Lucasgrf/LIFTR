@@ -3,7 +3,6 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
-import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 
@@ -11,12 +10,10 @@ class _MuscleVolumeEntry {
   const _MuscleVolumeEntry({
     required this.label,
     required this.sets,
-    required this.color,
   });
 
   final String label;
   final int sets;
-  final Color color;
 }
 
 class WeeklyMuscleVolumeCard extends StatelessWidget {
@@ -27,11 +24,12 @@ class WeeklyMuscleVolumeCard extends StatelessWidget {
 
   final TrainingPlan plan;
 
+  static const int _targetWeeklySets = 10;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final radius = context.appRadius;
-    final fitnessColors = context.fitnessColors;
 
     final counts = <String, int>{
       'chest': 0,
@@ -55,36 +53,12 @@ class WeeklyMuscleVolumeCard extends StatelessWidget {
     }
 
     final entries = [
-      _MuscleVolumeEntry(
-        label: 'Peito',
-        sets: counts['chest']!,
-        color: fitnessColors.muscleChest,
-      ),
-      _MuscleVolumeEntry(
-        label: 'Costas',
-        sets: counts['back']!,
-        color: fitnessColors.muscleBack,
-      ),
-      _MuscleVolumeEntry(
-        label: 'Pernas',
-        sets: counts['legs']!,
-        color: fitnessColors.muscleLegs,
-      ),
-      _MuscleVolumeEntry(
-        label: 'Ombros',
-        sets: counts['shoulders']!,
-        color: fitnessColors.muscleShoulders,
-      ),
-      _MuscleVolumeEntry(
-        label: 'Braços',
-        sets: counts['arms']!,
-        color: fitnessColors.muscleArms,
-      ),
-      _MuscleVolumeEntry(
-        label: 'Core',
-        sets: counts['core']!,
-        color: fitnessColors.muscleCore,
-      ),
+      _MuscleVolumeEntry(label: 'Peito', sets: counts['chest']!),
+      _MuscleVolumeEntry(label: 'Costas', sets: counts['back']!),
+      _MuscleVolumeEntry(label: 'Pernas', sets: counts['legs']!),
+      _MuscleVolumeEntry(label: 'Ombros', sets: counts['shoulders']!),
+      _MuscleVolumeEntry(label: 'Braços', sets: counts['arms']!),
+      _MuscleVolumeEntry(label: 'Core', sets: counts['core']!),
     ];
 
     final maxSets = entries.fold<int>(
@@ -103,10 +77,27 @@ class WeeklyMuscleVolumeCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Volume semanal', style: context.textTheme.titleMedium),
-              Text('SÉRIES VÁLIDAS', style: AppTypography.eyebrow(context)),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  'Volume semanal',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.textTheme.titleMedium,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                flex: 2,
+                child: Text(
+                  'SÉRIES VÁLIDAS',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: AppTypography.eyebrow(context),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -117,6 +108,7 @@ class WeeklyMuscleVolumeCard extends StatelessWidget {
                   child: _MuscleBarItem(
                     entry: entries[row * 2],
                     maxSets: maxSets,
+                    targetSets: _targetWeeklySets,
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -124,6 +116,7 @@ class WeeklyMuscleVolumeCard extends StatelessWidget {
                   child: _MuscleBarItem(
                     entry: entries[row * 2 + 1],
                     maxSets: maxSets,
+                    targetSets: _targetWeeklySets,
                   ),
                 ),
               ],
@@ -169,46 +162,63 @@ class _MuscleBarItem extends StatelessWidget {
   const _MuscleBarItem({
     required this.entry,
     required this.maxSets,
+    required this.targetSets,
   });
 
   final _MuscleVolumeEntry entry;
   final int maxSets;
+  final int targetSets;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final ratio = maxSets > 0 ? (entry.sets / maxSets).clamp(0.0, 1.0) : 0.0;
+    final barColor = entry.sets >= targetSets
+        ? colors.primary
+        : entry.sets > 0
+            ? colors.textSecondary
+            : colors.textTertiary;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              entry.label,
-              style: context.textTheme.labelSmall?.copyWith(
-                color: colors.textSecondary,
+    return Semantics(
+      container: true,
+      label: '${entry.label}: ${entry.sets} séries válidas na semana',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  entry.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.textTheme.labelSmall?.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
               ),
-            ),
-            Text(
-              '${entry.sets} séries',
-              style: context.textTheme.labelSmall?.copyWith(
-                color: colors.textTertiary,
-                fontWeight: FontWeight.w600,
-                fontFeatures: AppTypography.tabularFeatures,
+              const SizedBox(width: 6),
+              Text(
+                '${entry.sets} séries',
+                style: context.textTheme.labelSmall?.copyWith(
+                  color: entry.sets >= targetSets
+                      ? colors.primaryLight
+                      : colors.textTertiary,
+                  fontWeight: FontWeight.w600,
+                  fontFeatures: AppTypography.tabularFeatures,
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        LiftrProgressBar(
-          progress: ratio,
-          height: 5,
-          color: entry.color,
-          trackColor: colors.surfaceElevated,
-        ),
-      ],
+            ],
+          ),
+          const SizedBox(height: 6),
+          LiftrProgressBar(
+            progress: ratio,
+            height: 5,
+            color: barColor,
+            trackColor: colors.surfaceElevated,
+          ),
+        ],
+      ),
     );
   }
 }

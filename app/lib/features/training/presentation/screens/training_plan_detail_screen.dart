@@ -84,9 +84,9 @@ class _TrainingPlanDetailScreenState
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: activeColor.withOpacity(0.15),
+                              color: activeColor.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(context.appRadius.small),
-                              border: Border.all(color: activeColor.withOpacity(0.4)),
+                              border: Border.all(color: activeColor.withValues(alpha: 0.4)),
                             ),
                             child: Text(
                               'PROGRAMA ATIVO',
@@ -214,9 +214,9 @@ class _TrainingPlanDetailScreenState
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: context.appColors.surfaceVariant.withOpacity(0.5),
+          color: context.appColors.surfaceVariant.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(context.appRadius.small),
-          border: Border.all(color: context.appColors.border.withOpacity(0.5)),
+          border: Border.all(color: context.appColors.border.withValues(alpha: 0.5)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -8,6 +8,7 @@ import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
@@ -176,18 +177,21 @@ class _ProgressExercisesViewState extends ConsumerState<ProgressExercisesView> {
             Text('DUPLA PROGRESSÃO', style: AppTypography.eyebrow(context)),
             const SizedBox(height: 10),
             ...filtered.map((item) {
-              final (badgeText, badgeColor) = switch (item.status) {
+              final (badgeText, badgeTone, badgeIcon) = switch (item.status) {
                 _ExerciseProgressStatus.rising => (
                     'Subindo',
-                    fitnessColors.progressUp,
+                    LiftrBadgeTone.success,
+                    Icons.north_east_rounded,
                   ),
                 _ExerciseProgressStatus.steady => (
                     'Estável',
-                    fitnessColors.progressSteady,
+                    LiftrBadgeTone.neutral,
+                    Icons.trending_flat_rounded,
                   ),
                 _ExerciseProgressStatus.stalled => (
                     'Travado',
-                    fitnessColors.progressStalled,
+                    LiftrBadgeTone.warning,
+                    Icons.priority_high_rounded,
                   ),
               };
               final weightText = item.latestWeightKg == item.latestWeightKg.toInt()
@@ -227,25 +231,10 @@ class _ProgressExercisesViewState extends ConsumerState<ProgressExercisesView> {
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: badgeColor.withValues(alpha: 0.14),
-                                      borderRadius:
-                                          BorderRadius.circular(radius.full),
-                                    ),
-                                    child: Text(
-                                      badgeText,
-                                      style: context.textTheme.labelSmall
-                                          ?.copyWith(
-                                        color: badgeColor,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 10,
-                                      ),
-                                    ),
+                                  LiftrBadge(
+                                    label: badgeText,
+                                    tone: badgeTone,
+                                    icon: badgeIcon,
                                   ),
                                 ],
                               ),

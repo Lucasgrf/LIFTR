@@ -116,72 +116,121 @@ class _ProgressConsistencyViewState
             const SizedBox(height: 18),
 
             // 12-week Heatmap
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: colors.surfaceSubtle,
-                borderRadius: BorderRadius.circular(radius.large),
-                border: Border.all(color: colors.border),
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  const gap = 5.0;
-                  final size =
-                      ((constraints.maxWidth - (totalWeeks - 1) * gap) /
-                              totalWeeks)
-                          .clamp(10.0, 22.0);
+            Semantics(
+              container: true,
+              explicitChildNodes: true,
+              label: 'Mapa de consistência das últimas 12 semanas',
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colors.surfaceSubtle,
+                  borderRadius: BorderRadius.circular(radius.large),
+                  border: Border.all(color: colors.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        const gap = 5.0;
+                        final size =
+                            ((constraints.maxWidth - (totalWeeks - 1) * gap) /
+                                    totalWeeks)
+                                .clamp(10.0, 22.0);
 
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: List.generate(totalWeeks, (weekIdx) {
-                      return Column(
-                        children: List.generate(7, (dayIdx) {
-                          final cellDate = startOfGrid.add(
-                            Duration(days: weekIdx * 7 + dayIdx),
-                          );
-                          final daySessions =
-                              sessionsByDay[cellDate] ?? const [];
-                          final isSelected = cellDate == selectedDay;
-                          final intensity = _cellColor(
-                            context,
-                            daySessions,
-                          );
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: List.generate(totalWeeks, (weekIdx) {
+                            return Column(
+                              children: List.generate(7, (dayIdx) {
+                                final cellDate = startOfGrid.add(
+                                  Duration(days: weekIdx * 7 + dayIdx),
+                                );
+                                final daySessions =
+                                    sessionsByDay[cellDate] ?? const [];
+                                final isSelected = cellDate == selectedDay;
+                                final intensity = _cellColor(
+                                  context,
+                                  daySessions,
+                                );
 
-                          return Padding(
-                            padding: EdgeInsets.only(
-                              bottom: dayIdx < 6 ? gap : 0,
-                            ),
-                            child: Semantics(
-                              label:
-                                  '${DateFormat('d MMM', 'pt_BR').format(cellDate)}, ${daySessions.length} treinos',
-                              button: true,
-                              child: GestureDetector(
-                                onTap: () {
-                                  HapticFeedback.selectionClick();
-                                  setState(() => _selectedDay = cellDate);
-                                },
-                                child: Container(
-                                  width: size,
-                                  height: size,
-                                  decoration: BoxDecoration(
-                                    color: intensity,
-                                    borderRadius: BorderRadius.circular(3),
-                                    border: isSelected
-                                        ? Border.all(
-                                            color: colors.textPrimary,
-                                            width: 1.5,
-                                          )
-                                        : null,
+                                return Padding(
+                                  padding: EdgeInsets.only(
+                                    bottom: dayIdx < 6 ? gap : 0,
                                   ),
-                                ),
-                              ),
+                                  child: Semantics(
+                                    label:
+                                        '${DateFormat('d MMM', 'pt_BR').format(cellDate)}, ${daySessions.length} treinos',
+                                    button: true,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        HapticFeedback.selectionClick();
+                                        setState(() => _selectedDay = cellDate);
+                                      },
+                                      child: Container(
+                                        width: size,
+                                        height: size,
+                                        decoration: BoxDecoration(
+                                          color: intensity,
+                                          borderRadius:
+                                              BorderRadius.circular(radius.xs),
+                                          border: isSelected
+                                              ? Border.all(
+                                                  color: colors.textPrimary,
+                                                  width: 1.5,
+                                                )
+                                              : null,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            );
+                          }),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          'Menos',
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: colors.textTertiary,
+                            fontSize: 10,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        for (final swatchColor in [
+                          colors.surfaceElevated,
+                          colors.primary.withValues(alpha: 0.28),
+                          colors.primary.withValues(alpha: 0.60),
+                          colors.primary,
+                        ]) ...[
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: swatchColor,
+                              borderRadius: BorderRadius.circular(radius.xs),
                             ),
-                          );
-                        }),
-                      );
-                    }),
-                  );
-                },
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        const SizedBox(width: 2),
+                        Text(
+                          'Mais',
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: colors.textTertiary,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 10),
@@ -236,8 +285,8 @@ class _ProgressConsistencyViewState
       (sum, s) => sum + s.totalWorkingSetsCount,
     );
     if (sets >= 14) return colors.primary;
-    if (sets >= 8) return colors.primary.withValues(alpha: 0.68);
-    return colors.primary.withValues(alpha: 0.38);
+    if (sets >= 8) return colors.primary.withValues(alpha: 0.60);
+    return colors.primary.withValues(alpha: 0.28);
   }
 }
 

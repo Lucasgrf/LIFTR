@@ -3,6 +3,7 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/widgets/exercise_card.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout_exercise.dart';
 import 'package:personal_fitness_os/features/training/presentation/widgets/set_template_row.dart';
@@ -25,7 +26,6 @@ class WorkoutExerciseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final exerciseName = workoutExercise.exercise?.name ?? 'Exercício $index';
     final primaryMuscle = workoutExercise.exercise?.primaryMuscleGroup ?? 'Geral';
-    final muscleColor = ExerciseCard.getMuscleColor(context, primaryMuscle);
     final muscleLabel = ExerciseCard.getMuscleLabel(primaryMuscle);
     final equipmentLabel = ExerciseCard.getEquipmentLabel(workoutExercise.exercise?.equipment);
 
@@ -75,20 +75,9 @@ class WorkoutExerciseCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: muscleColor.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(context.appRadius.small),
-                            ),
-                            child: Text(
-                              muscleLabel,
-                              style: context.textTheme.bodySmall?.copyWith(
-                                color: muscleColor,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 10,
-                              ),
-                            ),
+                          LiftrBadge(
+                            label: muscleLabel,
+                            tone: LiftrBadgeTone.neutral,
                           ),
                           if (equipmentLabel.isNotEmpty) ...[
                             const SizedBox(width: 6),
@@ -133,10 +122,10 @@ class WorkoutExerciseCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: context.appColors.surfaceVariant.withOpacity(0.3),
+                  color: context.appColors.surfaceVariant.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(context.appRadius.small),
                   border: Border.all(
-                    color: context.appColors.border.withOpacity(0.5),
+                    color: context.appColors.border.withValues(alpha: 0.5),
                     style: BorderStyle.solid,
                   ),
                 ),

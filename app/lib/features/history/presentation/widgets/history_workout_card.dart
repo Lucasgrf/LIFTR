@@ -71,7 +71,7 @@ class HistoryWorkoutCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: colors.primary.withOpacity(0.15),
+                    color: colors.primary.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(context.appRadius.small),
                   ),
                   child: Text(

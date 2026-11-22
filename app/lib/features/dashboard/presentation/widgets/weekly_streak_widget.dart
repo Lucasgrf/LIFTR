@@ -68,7 +68,11 @@ class WeeklyStreakWidget extends StatelessWidget {
               if (isDone) {
                 bg = fitnessColors.progressUp;
                 border = fitnessColors.progressUp;
-                iconOrText = const Icon(Icons.check_rounded, size: 16, color: Colors.white);
+                iconOrText = Icon(
+                  Icons.check_rounded,
+                  size: 16,
+                  color: fitnessColors.onSuccess,
+                );
               } else if (isToday) {
                 border = colors.primary;
               }

@@ -22,20 +22,20 @@ class ProgressionRecommendationBanner extends StatelessWidget {
     Color borderColor;
     switch (recommendation.type) {
       case ProgressionType.increase:
-        borderColor = fitnessColors.progressUp.withOpacity(0.3);
+        borderColor = fitnessColors.progressUp.withValues(alpha: 0.3);
         break;
       case ProgressionType.maintain:
         borderColor = colors.border;
         break;
       case ProgressionType.decrease:
-        borderColor = fitnessColors.progressDown.withOpacity(0.3);
+        borderColor = fitnessColors.progressDown.withValues(alpha: 0.3);
         break;
     }
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: colors.surfaceVariant.withOpacity(0.5),
+        color: colors.surfaceVariant.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(context.appRadius.medium),
         border: Border.all(color: borderColor),
       ),
