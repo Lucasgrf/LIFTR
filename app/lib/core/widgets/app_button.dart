@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
+import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 
-enum AppButtonType { primary, secondary, text }
+enum AppButtonType { primary, secondary, text, destructive }
 
-class AppButton extends StatelessWidget {
+class AppButton extends StatefulWidget {
   const AppButton.primary({
     super.key,
     required this.label,
@@ -30,53 +31,85 @@ class AppButton extends StatelessWidget {
     this.icon,
   }) : _type = AppButtonType.text;
 
+  const AppButton.destructive({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.isLoading = false,
+    this.icon,
+  }) : _type = AppButtonType.destructive;
+
   final String label;
   final VoidCallback? onPressed;
   final bool isLoading;
   final IconData? icon;
   final AppButtonType _type;
 
+  @override
+  State<AppButton> createState() => _AppButtonState();
+}
+
+class _AppButtonState extends State<AppButton> {
+  bool _isPressed = false;
+
   void _handleTap() {
-    if (onPressed == null || isLoading) return;
+    if (widget.onPressed == null || widget.isLoading) return;
     HapticFeedback.lightImpact();
-    onPressed!();
+    widget.onPressed!();
+  }
+
+  void _setPressed(bool pressed) {
+    if (_isPressed == pressed) return;
+    setState(() => _isPressed = pressed);
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final radius = context.appRadius;
-    final isDisabled = onPressed == null || isLoading;
+    final motion = context.appMotion;
+    final isDisabled = widget.onPressed == null || widget.isLoading;
+    final hasSolidFill =
+        widget._type == AppButtonType.primary ||
+        widget._type == AppButtonType.destructive;
+
+    final Color fgColor;
+    switch (widget._type) {
+      case AppButtonType.primary:
+      case AppButtonType.destructive:
+        fgColor = isDisabled ? colors.textDisabled : colors.onPrimary;
+        break;
+      case AppButtonType.secondary:
+        fgColor = isDisabled ? colors.textDisabled : colors.textPrimary;
+        break;
+      case AppButtonType.text:
+        fgColor = isDisabled ? colors.textDisabled : colors.primaryLight;
+        break;
+    }
 
     final content = Row(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (isLoading) ...[
+        if (widget.isLoading) ...[
           SizedBox(
-            width: 20,
-            height: 20,
+            width: 18,
+            height: 18,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                _type == AppButtonType.primary
-                    ? colors.onPrimary
-                    : colors.primary,
-              ),
+              valueColor: AlwaysStoppedAnimation<Color>(fgColor),
             ),
           ),
           const SizedBox(width: 8),
-        ] else if (icon != null) ...[
-          Icon(icon, size: 20),
+        ] else if (widget.icon != null) ...[
+          Icon(widget.icon, size: 20, color: fgColor),
           const SizedBox(width: 8),
         ],
         Flexible(
           child: Text(
-            label,
+            widget.label,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: _type == AppButtonType.primary
-                      ? (isDisabled ? colors.textDisabled : colors.onPrimary)
-                      : null,
+                  color: hasSolidFill || isDisabled ? fgColor : null,
                 ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -85,23 +118,12 @@ class AppButton extends StatelessWidget {
       ],
     );
 
-    switch (_type) {
+    final Widget button;
+    switch (widget._type) {
       case AppButtonType.primary:
-        return Container(
+        button = SizedBox(
           width: double.infinity,
-          height: 54,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(radius.medium),
-            boxShadow: isDisabled
-                ? null
-                : [
-                    BoxShadow(
-                      color: colors.primary.withValues(alpha: 0.24),
-                      blurRadius: 18,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-          ),
+          height: 52,
           child: ElevatedButton(
             onPressed: isDisabled ? null : _handleTap,
             style: ElevatedButton.styleFrom(
@@ -113,23 +135,44 @@ class AppButton extends StatelessWidget {
                 borderRadius: BorderRadius.circular(radius.medium),
               ),
               elevation: 0,
+              shadowColor: Colors.transparent,
             ),
             child: content,
           ),
         );
-      case AppButtonType.secondary:
-        return SizedBox(
+        break;
+      case AppButtonType.destructive:
+        button = SizedBox(
           width: double.infinity,
-          height: 54,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: isDisabled ? null : _handleTap,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colors.danger,
+              foregroundColor: colors.onPrimary,
+              disabledBackgroundColor: colors.surfaceElevated,
+              disabledForegroundColor: colors.textDisabled,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(radius.medium),
+              ),
+              elevation: 0,
+              shadowColor: Colors.transparent,
+            ),
+            child: content,
+          ),
+        );
+        break;
+      case AppButtonType.secondary:
+        button = SizedBox(
+          width: double.infinity,
+          height: 52,
           child: OutlinedButton(
             onPressed: isDisabled ? null : _handleTap,
             style: OutlinedButton.styleFrom(
-              foregroundColor: colors.primaryLight,
+              foregroundColor: colors.textPrimary,
               disabledForegroundColor: colors.textDisabled,
               side: BorderSide(
-                color: isDisabled
-                    ? colors.border
-                    : colors.primary.withValues(alpha: 0.5),
+                color: isDisabled ? colors.borderSubtle : colors.border,
               ),
               backgroundColor: colors.surface,
               shape: RoundedRectangleBorder(
@@ -139,8 +182,9 @@ class AppButton extends StatelessWidget {
             child: content,
           ),
         );
+        break;
       case AppButtonType.text:
-        return TextButton(
+        button = TextButton(
           onPressed: isDisabled ? null : _handleTap,
           style: TextButton.styleFrom(
             minimumSize: const Size(48, 48),
@@ -152,6 +196,19 @@ class AppButton extends StatelessWidget {
           ),
           child: content,
         );
+        break;
     }
+
+    return Listener(
+      onPointerDown: isDisabled ? null : (_) => _setPressed(true),
+      onPointerUp: (_) => _setPressed(false),
+      onPointerCancel: (_) => _setPressed(false),
+      child: AnimatedScale(
+        scale: (_isPressed && !isDisabled) ? 0.985 : 1.0,
+        duration: motion.resolve(context, motion.fast),
+        curve: motion.curveStandard,
+        child: button,
+      ),
+    );
   }
 }

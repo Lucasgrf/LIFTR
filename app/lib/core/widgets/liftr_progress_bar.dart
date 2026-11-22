@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
+import 'package:personal_fitness_os/core/theme/app_motion.dart';
 
 /// Linear progress bar animated strictly via Transform.scale (no layout thrashing)
 /// and respecting MediaQuery.disableAnimationsOf(context).
@@ -11,7 +12,7 @@ class LiftrProgressBar extends StatelessWidget {
     this.color,
     this.trackColor,
     this.borderRadius = 999,
-    this.duration = const Duration(milliseconds: 240),
+    this.duration,
   });
 
   final double progress;
@@ -19,13 +20,14 @@ class LiftrProgressBar extends StatelessWidget {
   final Color? color;
   final Color? trackColor;
   final double borderRadius;
-  final Duration duration;
+  final Duration? duration;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final motion = context.appMotion;
     final clamped = progress.clamp(0.0, 1.0);
-    final disableAnimations = MediaQuery.disableAnimationsOf(context);
+    final resolvedDuration = motion.resolve(context, duration ?? motion.standard);
     final fillColor = color ?? colors.primary;
     final bgColor = trackColor ?? colors.surfaceElevated;
 
@@ -37,8 +39,8 @@ class LiftrProgressBar extends StatelessWidget {
         color: bgColor,
         child: TweenAnimationBuilder<double>(
           tween: Tween<double>(end: clamped),
-          duration: disableAnimations ? Duration.zero : duration,
-          curve: Curves.easeOutCubic,
+          duration: resolvedDuration,
+          curve: motion.curveStandard,
           builder: (context, value, child) {
             return Transform.scale(
               scaleX: value,

@@ -32,20 +32,20 @@ class EmptyStateWidget extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 68,
-              height: 68,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
                 color: colors.surface,
-                borderRadius: BorderRadius.circular(radius.xl),
+                borderRadius: BorderRadius.circular(radius.medium),
                 border: Border.all(color: colors.border),
               ),
               child: Icon(
                 icon,
-                size: 32,
-                color: colors.textTertiary,
+                size: 26,
+                color: colors.textSecondary,
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
             Text(
               title,
               style: Theme.of(context).textTheme.titleLarge,
@@ -60,7 +60,7 @@ class EmptyStateWidget extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 260),
                 child: AppButton.primary(
