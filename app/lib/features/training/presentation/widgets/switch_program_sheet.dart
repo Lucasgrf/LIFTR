@@ -8,39 +8,13 @@ import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
+import 'package:personal_fitness_os/features/training/domain/constants/split_presets.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
-
-class _ProgramTemplate {
-  const _ProgramTemplate({
-    required this.name,
-    required this.description,
-    required this.sessions,
-  });
-
-  final String name;
-  final String description;
-  final List<String> sessions;
-}
-
-const List<_ProgramTemplate> _templates = [
-  _ProgramTemplate(
-    name: 'Full Body 3×',
-    description: '3 sessões equilibradas de corpo inteiro por semana',
-    sessions: ['Full Body A', 'Full Body B', 'Full Body C'],
-  ),
-  _ProgramTemplate(
-    name: 'Upper / Lower 4×',
-    description: '4 sessões alternando superiores e inferiores',
-    sessions: ['Upper A', 'Lower A', 'Upper B', 'Lower B'],
-  ),
-  _ProgramTemplate(
-    name: 'Push / Pull / Legs 6×',
-    description: '6 sessões divididas por padrão de movimento',
-    sessions: ['Push A', 'Pull A', 'Legs A', 'Push B', 'Pull B', 'Legs B'],
-  ),
-];
+import 'package:personal_fitness_os/features/training/presentation/widgets/export_plan_sheet.dart';
+import 'package:personal_fitness_os/features/training/presentation/widgets/import_plan_sheet.dart';
 
 class SwitchProgramSheet extends ConsumerStatefulWidget {
   const SwitchProgramSheet({
@@ -92,15 +66,15 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
     );
   }
 
-  Future<void> _createFromTemplate(_ProgramTemplate template) async {
+  Future<void> _createFromTemplate(SplitPreset template) async {
     if (_busyKey != null) return;
-    setState(() => _busyKey = template.name);
+    setState(() => _busyKey = template.id);
 
     final createResult = await ref
         .read(createTrainingPlanUseCaseProvider)
         .execute(
           name: template.name,
-          description: template.description,
+          description: template.queueDescription,
           isActive: true,
         );
 
@@ -138,9 +112,10 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
     final colors = context.appColors;
     final radius = context.appRadius;
     final fitnessColors = context.fitnessColors;
+    final templates = SplitPresets.featuredTemplates;
 
     return Container(
-      height: MediaQuery.sizeOf(context).height * 0.78,
+      height: MediaQuery.sizeOf(context).height * 0.84,
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(radius.xl)),
@@ -223,10 +198,120 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 16),
+
+                  // Quick AI + Import actions
+                  Text(
+                    'CRIAR COM IA OU IMPORTAR',
+                    style: AppTypography.eyebrow(context),
+                  ),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      Navigator.pop(context);
+                      context.push('/training/ai-generator');
+                    },
+                    borderRadius: BorderRadius.circular(radius.large),
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(radius.large),
+                        border: Border.all(
+                          color: colors.primary.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.auto_awesome_rounded,
+                            color: colors.primaryLight,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Montar treino com IA',
+                                  style: context.textTheme.titleSmall,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Estudo rápido com Gemini para criar as sessões e séries no seu perfil',
+                                  style: context.textTheme.labelSmall?.copyWith(
+                                    color: colors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            color: colors.primaryLight,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      Navigator.pop(context);
+                      ImportPlanSheet.show(context);
+                    },
+                    borderRadius: BorderRadius.circular(radius.large),
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceElevated,
+                        borderRadius: BorderRadius.circular(radius.large),
+                        border: Border.all(color: colors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.qr_code_scanner_rounded,
+                            color: colors.textSecondary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Importar treino por código',
+                                  style: context.textTheme.titleSmall,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Cole um código LIFTR-PLAN-V1 compartilhado com você',
+                                  style: context.textTheme.labelSmall?.copyWith(
+                                    color: colors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            color: colors.textTertiary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 18),
 
                   if (widget.plans.isNotEmpty) ...[
-                    Text('SEUS PROGRAMAS', style: AppTypography.eyebrow(context)),
+                    Text(
+                      'SEUS PROGRAMAS',
+                      style: AppTypography.eyebrow(context),
+                    ),
                     const SizedBox(height: 8),
                     ...widget.plans.map((plan) {
                       final busy = _busyKey == plan.id;
@@ -244,13 +329,12 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
                           },
                           borderRadius: BorderRadius.circular(radius.large),
                           child: Container(
-                            padding: const EdgeInsets.all(14),
+                            padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
                             decoration: BoxDecoration(
                               color: plan.isActive
                                   ? colors.primary.withValues(alpha: 0.1)
                                   : colors.surfaceElevated,
-                              borderRadius:
-                                  BorderRadius.circular(radius.large),
+                              borderRadius: BorderRadius.circular(radius.large),
                               border: Border.all(
                                 color: plan.isActive
                                     ? colors.primary.withValues(alpha: 0.5)
@@ -316,6 +400,28 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
                                     style: context.textTheme.labelMedium
                                         ?.copyWith(color: colors.primaryLight),
                                   ),
+                                Semantics(
+                                  label: 'Compartilhar ${plan.name}',
+                                  button: true,
+                                  child: IconButton(
+                                    onPressed: () {
+                                      HapticFeedback.selectionClick();
+                                      ExportPlanSheet.show(
+                                        context,
+                                        plan: plan,
+                                      );
+                                    },
+                                    constraints: const BoxConstraints(
+                                      minWidth: 48,
+                                      minHeight: 48,
+                                    ),
+                                    icon: Icon(
+                                      Icons.ios_share_rounded,
+                                      size: 18,
+                                      color: colors.textSecondary,
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -326,12 +432,12 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
                   ],
 
                   Text(
-                    'MODELOS PRONTOS',
+                    'MODELOS PRONTOS (2 A 6 DIAS)',
                     style: AppTypography.eyebrow(context),
                   ),
                   const SizedBox(height: 8),
-                  ..._templates.map((tpl) {
-                    final busy = _busyKey == tpl.name;
+                  ...templates.map((tpl) {
+                    final busy = _busyKey == tpl.id;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: InkWell(
@@ -350,13 +456,30 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      tpl.name,
-                                      style: context.textTheme.titleSmall,
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 4,
+                                      crossAxisAlignment:
+                                          WrapCrossAlignment.center,
+                                      children: [
+                                        Text(
+                                          tpl.name,
+                                          style: context.textTheme.titleSmall,
+                                        ),
+                                        LiftrBadge(
+                                          label: '${tpl.daysPerWeek}×/sem',
+                                          tone: LiftrBadgeTone.neutral,
+                                        ),
+                                        if (tpl.focusTag != null)
+                                          LiftrBadge(
+                                            label: tpl.focusTag!,
+                                            tone: LiftrBadgeTone.brand,
+                                          ),
+                                      ],
                                     ),
-                                    const SizedBox(height: 3),
+                                    const SizedBox(height: 4),
                                     Text(
-                                      tpl.description,
+                                      tpl.queueDescription,
                                       style: context.textTheme.labelSmall
                                           ?.copyWith(
                                         color: colors.textSecondary,
@@ -365,6 +488,7 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
                                   ],
                                 ),
                               ),
+                              const SizedBox(width: 8),
                               if (busy)
                                 const SizedBox(
                                   width: 20,

@@ -18,6 +18,8 @@ import 'package:personal_fitness_os/features/training/domain/entities/training_p
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/workout_queue_provider.dart';
+import 'package:personal_fitness_os/features/training/presentation/widgets/export_plan_sheet.dart';
+import 'package:personal_fitness_os/features/training/presentation/widgets/import_plan_sheet.dart';
 import 'package:personal_fitness_os/features/training/presentation/widgets/switch_program_sheet.dart';
 import 'package:personal_fitness_os/features/training/presentation/widgets/weekly_muscle_volume_card.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/helpers/session_exercise_builder.dart';
@@ -83,13 +85,57 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
         ),
         data: (plans) {
           if (plans.isEmpty) {
-            return EmptyStateWidget(
-              icon: Icons.fitness_center_rounded,
-              title: 'Nenhum programa cadastrado',
-              subtitle:
-                  'Crie seu primeiro programa para organizar sua fila rotativa de treinos.',
-              actionLabel: 'Criar Programa',
-              onAction: () => context.push('/training/new'),
+            return SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      EmptyStateWidget(
+                        icon: Icons.fitness_center_rounded,
+                        title: 'Nenhum programa cadastrado',
+                        subtitle:
+                            'Crie seu programa com IA, importe o treino de alguém ou monte manualmente.',
+                        actionLabel: 'Criar Programa',
+                        onAction: () => context.push('/training/new'),
+                      ),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 280),
+                        child: Column(
+                          children: [
+                            TextButton.icon(
+                              onPressed: () =>
+                                  context.push('/training/ai-generator'),
+                              style: TextButton.styleFrom(
+                                minimumSize: const Size(48, 48),
+                                foregroundColor: colors.primaryLight,
+                              ),
+                              icon: const Icon(
+                                Icons.auto_awesome_rounded,
+                                size: 18,
+                              ),
+                              label: const Text('Montar treino com IA'),
+                            ),
+                            TextButton.icon(
+                              onPressed: () => ImportPlanSheet.show(context),
+                              style: TextButton.styleFrom(
+                                minimumSize: const Size(48, 48),
+                                foregroundColor: colors.textSecondary,
+                              ),
+                              icon: const Icon(
+                                Icons.qr_code_scanner_rounded,
+                                size: 18,
+                              ),
+                              label: const Text('Importar treino por código'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             );
           }
 
@@ -233,12 +279,30 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
                         ),
 
                       const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 4,
                         children: [
+                          TextButton.icon(
+                            onPressed: () => ExportPlanSheet.show(
+                              context,
+                              plan: activePlan,
+                            ),
+                            style: TextButton.styleFrom(
+                              minimumSize: const Size(48, 48),
+                              foregroundColor: colors.textSecondary,
+                            ),
+                            icon: const Icon(Icons.ios_share_rounded, size: 17),
+                            label: const Text('Compartilhar plano'),
+                          ),
                           TextButton.icon(
                             onPressed: () => context.push(
                               '/training/${activePlan.id}/add-workout',
+                            ),
+                            style: TextButton.styleFrom(
+                              minimumSize: const Size(48, 48),
                             ),
                             icon: const Icon(Icons.add_rounded, size: 18),
                             label: const Text('Adicionar sessão'),

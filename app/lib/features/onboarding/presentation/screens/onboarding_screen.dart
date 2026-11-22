@@ -13,83 +13,9 @@ import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
+import 'package:personal_fitness_os/features/training/domain/constants/split_presets.dart';
 import 'package:personal_fitness_os/routing/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-class _SplitOption {
-  const _SplitOption({
-    required this.name,
-    required this.queueDescription,
-    required this.sessions,
-  });
-
-  final String name;
-  final String queueDescription;
-  final List<String> sessions;
-}
-
-const Map<int, List<_SplitOption>> _splitSuggestions = {
-  2: [
-    _SplitOption(
-      name: 'Full Body 2×',
-      queueDescription: 'Fila de 2 treinos equilibrados',
-      sessions: ['Full Body A', 'Full Body B'],
-    ),
-    _SplitOption(
-      name: 'Upper / Lower 2×',
-      queueDescription: 'Fila alternando superiores e inferiores',
-      sessions: ['Upper A', 'Lower A'],
-    ),
-  ],
-  3: [
-    _SplitOption(
-      name: 'Full Body 3×',
-      queueDescription: 'Fila de 3 treinos completos',
-      sessions: ['Full Body A', 'Full Body B', 'Full Body C'],
-    ),
-    _SplitOption(
-      name: 'Push / Pull / Legs',
-      queueDescription: 'Fila rotativa de 3 padrões',
-      sessions: ['Push', 'Pull', 'Legs'],
-    ),
-  ],
-  4: [
-    _SplitOption(
-      name: 'Upper / Lower',
-      queueDescription: 'Fila de 4 treinos',
-      sessions: ['Upper A', 'Lower A', 'Upper B', 'Lower B'],
-    ),
-    _SplitOption(
-      name: 'Torso / Membros',
-      queueDescription: 'Fila de 4 sessões equilibradas',
-      sessions: ['Torso A', 'Membros A', 'Torso B', 'Membros B'],
-    ),
-  ],
-  5: [
-    _SplitOption(
-      name: 'Upper / Lower + Full',
-      queueDescription: 'Fila de 5 sessões semanais',
-      sessions: ['Upper A', 'Lower A', 'Upper B', 'Lower B', 'Full Body'],
-    ),
-    _SplitOption(
-      name: 'PPL + Upper / Lower',
-      queueDescription: 'Fila híbrida de 5 treinos',
-      sessions: ['Push', 'Pull', 'Legs', 'Upper', 'Lower'],
-    ),
-  ],
-  6: [
-    _SplitOption(
-      name: 'Push / Pull / Legs 2×',
-      queueDescription: 'Fila de 6 treinos de alta frequência',
-      sessions: ['Push A', 'Pull A', 'Legs A', 'Push B', 'Pull B', 'Legs B'],
-    ),
-    _SplitOption(
-      name: 'Upper / Lower 3×',
-      queueDescription: 'Fila rotativa de 6 sessões',
-      sessions: ['Upper A', 'Lower A', 'Upper B', 'Lower B', 'Upper C', 'Lower C'],
-    ),
-  ],
-};
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -153,10 +79,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     super.dispose();
   }
 
-  List<_SplitOption> get _currentSplitOptions =>
-      _splitSuggestions[_daysPerWeek] ?? _splitSuggestions[4]!;
+  List<SplitPreset> get _currentSplitOptions =>
+      SplitPresets.forDays(_daysPerWeek);
 
-  _SplitOption get _selectedSplit =>
+  SplitPreset get _selectedSplit =>
       _currentSplitOptions[_splitOptionIndex % _currentSplitOptions.length];
 
   bool get _isCurrentStepValid {
@@ -204,7 +130,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
   }
 
-  Future<void> _finish({required bool whatsappConnected}) async {
+  Future<void> _finish({
+    required bool whatsappConnected,
+    bool openAiGenerator = false,
+  }) async {
     HapticFeedback.mediumImpact();
     final notifier = ref.read(userSettingsProvider.notifier);
     final age = int.tryParse(_ageController.text.trim()) ?? 27;
@@ -234,9 +163,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
     notifier.completeOnboarding(whatsappConnected: whatsappConnected);
 
+    final targetRoute = openAiGenerator ? '/training/ai-generator' : '/';
+
     if (!SupabaseConfig.isConfigured) {
       ref.read(authStateProvider.notifier).state = true;
-      context.go('/');
+      context.go(targetRoute);
       return;
     }
 
@@ -258,7 +189,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       }
       if (!mounted) return;
       ref.read(authStateProvider.notifier).state = true;
-      context.go('/');
+      context.go(targetRoute);
       return;
     }
 
@@ -720,6 +651,57 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   );
                 }).toList(),
               ),
+              const SizedBox(height: 16),
+              Text(
+                'DIVISÕES DISPONÍVEIS PARA $_daysPerWeek DIAS',
+                style: AppTypography.eyebrow(context),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: List.generate(_currentSplitOptions.length, (idx) {
+                  final option = _currentSplitOptions[idx];
+                  final isSelected =
+                      (_splitOptionIndex % _currentSplitOptions.length) == idx;
+                  return Semantics(
+                    label: 'Divisão ${option.name}',
+                    selected: isSelected,
+                    button: true,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _splitOptionIndex = idx);
+                      },
+                      borderRadius: BorderRadius.circular(radius.medium),
+                      child: Container(
+                        constraints: const BoxConstraints(minHeight: 44),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? colors.primary
+                              : colors.surfaceElevated,
+                          borderRadius: BorderRadius.circular(radius.medium),
+                          border: Border.all(
+                            color: isSelected ? colors.primary : colors.border,
+                          ),
+                        ),
+                        child: Text(
+                          option.shortLabel,
+                          style: context.textTheme.labelMedium?.copyWith(
+                            color: isSelected
+                                ? colors.onPrimary
+                                : colors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
             ],
           ),
         ),
@@ -801,7 +783,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           icon: Icons.link_rounded,
           onPressed: () => _finish(whatsappConnected: true),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
+        AppButton.secondary(
+          label: 'Montar meu treino com IA',
+          icon: Icons.auto_awesome_rounded,
+          onPressed: () => _finish(
+            whatsappConnected: false,
+            openAiGenerator: true,
+          ),
+        ),
+        const SizedBox(height: 10),
         AppButton.text(
           label: 'Pular e fazer depois',
           onPressed: () => _finish(whatsappConnected: false),
