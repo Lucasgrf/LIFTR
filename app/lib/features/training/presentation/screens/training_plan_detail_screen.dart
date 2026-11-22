@@ -12,6 +12,7 @@ import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
+import 'package:personal_fitness_os/features/training/presentation/widgets/export_plan_sheet.dart';
 import 'package:personal_fitness_os/features/training/presentation/widgets/workout_card.dart';
 
 class TrainingPlanDetailScreen extends ConsumerStatefulWidget {
@@ -59,6 +60,21 @@ class _TrainingPlanDetailScreenState
       backgroundColor: context.appColors.background,
       appBar: AppBar(
         title: const Text('Detalhes do Programa'),
+        actions: [
+          if (planAsync.asData?.value != null)
+            Semantics(
+              label: 'Compartilhar programa',
+              button: true,
+              child: IconButton(
+                onPressed: () => ExportPlanSheet.show(
+                  context,
+                  plan: planAsync.asData!.value,
+                ),
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                icon: const Icon(Icons.ios_share_rounded),
+              ),
+            ),
+        ],
       ),
       body: planAsync.when(
         loading: () => const LoadingWidget(),

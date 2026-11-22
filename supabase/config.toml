@@ -43,3 +43,7 @@ verify_jwt = true
 [functions.cron-relatorio-semanal]
 verify_jwt = true
 
+[functions.generate-workout-plan]
+verify_jwt = true
+
+

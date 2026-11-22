@@ -22,6 +22,7 @@ import 'package:personal_fitness_os/features/profile/presentation/screens/profil
 import 'package:personal_fitness_os/features/settings/presentation/screens/settings_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/screens/add_exercise_to_workout_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/screens/add_workout_screen.dart';
+import 'package:personal_fitness_os/features/training/presentation/screens/ai_workout_generator_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/screens/configure_sets_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/screens/create_training_plan_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/screens/training_list_screen.dart';
@@ -105,6 +106,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                     path: 'new',
                     builder: (context, state) =>
                         const CreateTrainingPlanScreen(),
+                  ),
+                  GoRoute(
+                    path: 'ai-generator',
+                    builder: (context, state) =>
+                        const AiWorkoutGeneratorScreen(),
                   ),
                   GoRoute(
                     path: ':planId',
