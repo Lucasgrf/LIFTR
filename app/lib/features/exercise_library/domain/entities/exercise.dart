@@ -37,6 +37,25 @@ class Exercise {
 
   bool get isGlobal => userId == null && !isCustom;
 
+  /// Identifies cardio exercises tracked by duration rather than weight/reps.
+  bool get isCardio {
+    final pattern = movementPattern?.toLowerCase().trim() ?? '';
+    final muscle = primaryMuscleGroup.toLowerCase().trim();
+    final lowerName = name.toLowerCase().trim();
+    return pattern == 'cardio' ||
+        muscle == 'cardio' ||
+        lowerName == 'cardio' ||
+        lowerName.contains('esteira') ||
+        lowerName.contains('bicicleta') ||
+        lowerName.contains('ergométrica') ||
+        lowerName.contains('ergometrica') ||
+        lowerName.contains('elíptico') ||
+        lowerName.contains('eliptico') ||
+        lowerName.contains('escada') ||
+        lowerName.contains('corrida') ||
+        lowerName.contains('caminhada');
+  }
+
   Exercise copyWith({
     String? id,
     String? userId,

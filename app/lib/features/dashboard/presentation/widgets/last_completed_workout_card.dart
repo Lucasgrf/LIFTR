@@ -9,6 +9,7 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
 
@@ -132,6 +133,15 @@ class LastCompletedWorkoutCard extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(emoji, style: const TextStyle(fontSize: 16)),
                 ],
+                if (session.executionScore != null) ...[
+                  const SizedBox(width: 6),
+                  LiftrBadge(
+                    label: '${session.executionScore}%',
+                    tone: session.executionScore! >= 85
+                        ? LiftrBadgeTone.success
+                        : LiftrBadgeTone.neutral,
+                  ),
+                ],
                 if (session.perceivedExertion != null) ...[
                   const SizedBox(width: 6),
                   LiftrBadge(
@@ -162,6 +172,14 @@ class LastCompletedWorkoutCard extends StatelessWidget {
                   label: '$volumeFormatted kg',
                   color: fitnessColors.progressUp,
                 ),
+                if (session.totalCardioDurationSeconds > 0)
+                  _MetricPill(
+                    icon: Icons.directions_run_rounded,
+                    label: formatCardioSeconds(
+                      session.totalCardioDurationSeconds,
+                    ),
+                    color: colors.primaryLight,
+                  ),
                 if (session.totalExercisesCount > 0)
                   _MetricPill(
                     icon: Icons.layers_outlined,

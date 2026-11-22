@@ -12,6 +12,7 @@ class LoggedSetModel {
     this.setType = 'working',
     required this.weightKg,
     required this.repsCompleted,
+    this.durationSeconds,
     this.rirActual,
     this.rpeActual,
     this.restSecondsActual,
@@ -23,6 +24,7 @@ class LoggedSetModel {
   });
 
   static const String dropMarkerPrefix = '__DROPS__:';
+  static const String durationMarkerPrefix = '__DUR_SEC__:';
 
   final String id;
   final String sessionExerciseId;
@@ -30,6 +32,7 @@ class LoggedSetModel {
   final String setType;
   final double weightKg;
   final int repsCompleted;
+  final int? durationSeconds;
   final int? rirActual;
   final double? rpeActual;
   final int? restSecondsActual;
@@ -93,6 +96,53 @@ class LoggedSetModel {
     return '$trimmed\n$dropMarkerPrefix$encoded';
   }
 
+  static ({String? cleanNotes, int? durationSeconds}) extractDurationFromNotes(
+    String? rawNotes,
+  ) {
+    if (rawNotes == null || rawNotes.isEmpty) {
+      return (cleanNotes: rawNotes, durationSeconds: null);
+    }
+    final markerIdx = rawNotes.indexOf(durationMarkerPrefix);
+    if (markerIdx == -1) {
+      return (cleanNotes: rawNotes, durationSeconds: null);
+    }
+    final before = rawNotes.substring(0, markerIdx).trimRight();
+    final afterMarker =
+        rawNotes.substring(markerIdx + durationMarkerPrefix.length);
+    final newlineIdx = afterMarker.indexOf('\n');
+    final numPart =
+        (newlineIdx == -1 ? afterMarker : afterMarker.substring(0, newlineIdx))
+            .trim();
+    final trailing =
+        newlineIdx == -1 ? '' : afterMarker.substring(newlineIdx + 1).trim();
+    final parsed = int.tryParse(numPart);
+    if (parsed == null || parsed < 0) {
+      return (cleanNotes: rawNotes, durationSeconds: null);
+    }
+    final combinedClean = [
+      if (before.isNotEmpty) before,
+      if (trailing.isNotEmpty) trailing,
+    ].join('\n');
+    return (
+      cleanNotes: combinedClean.isEmpty ? null : combinedClean,
+      durationSeconds: parsed,
+    );
+  }
+
+  static String? attachDurationMarkerToNotes(
+    String? cleanNotes,
+    int? durationSeconds,
+  ) {
+    final trimmed = cleanNotes?.trim();
+    if (durationSeconds == null || durationSeconds <= 0) {
+      return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
+    }
+    if (trimmed == null || trimmed.isEmpty) {
+      return '$durationMarkerPrefix$durationSeconds';
+    }
+    return '$trimmed\n$durationMarkerPrefix$durationSeconds';
+  }
+
   static List<DropSetEntry> _parseDropSets(dynamic raw) {
     if (raw is! List) return const [];
     return raw
@@ -104,8 +154,12 @@ class LoggedSetModel {
   factory LoggedSetModel.fromJson(Map<String, dynamic> json) {
     final columnDrops = _parseDropSets(json['drop_sets']);
     final notesParsed = extractDropsFromNotes(json['notes'] as String?);
+    final durationParsed = extractDurationFromNotes(notesParsed.cleanNotes);
     final resolvedDrops =
         columnDrops.isNotEmpty ? columnDrops : notesParsed.drops;
+    final resolvedDuration =
+        (json['duration_seconds'] as num?)?.toInt() ??
+        durationParsed.durationSeconds;
 
     return LoggedSetModel(
       id: json['id'] as String,
@@ -114,12 +168,13 @@ class LoggedSetModel {
       setType: json['set_type'] as String? ?? 'working',
       weightKg: (json['weight_kg'] as num?)?.toDouble() ?? 0.0,
       repsCompleted: json['reps_completed'] as int? ?? 0,
+      durationSeconds: resolvedDuration,
       rirActual: json['rir_actual'] as int?,
       rpeActual: (json['rpe_actual'] as num?)?.toDouble(),
       restSecondsActual: json['rest_seconds_actual'] as int?,
       executionQuality: json['execution_quality'] as String?,
       isWarmup: json['is_warmup'] as bool? ?? false,
-      notes: notesParsed.cleanNotes,
+      notes: durationParsed.cleanNotes,
       dropSets: resolvedDrops,
       completedAt: json['completed_at'] != null
           ? DateTime.tryParse(json['completed_at'] as String)
@@ -135,6 +190,7 @@ class LoggedSetModel {
       'set_type': setType,
       'weight_kg': weightKg,
       'reps_completed': repsCompleted,
+      if (durationSeconds != null) 'duration_seconds': durationSeconds,
       if (rirActual != null) 'rir_actual': rirActual,
       if (rpeActual != null) 'rpe_actual': rpeActual,
       if (restSecondsActual != null) 'rest_seconds_actual': restSecondsActual,
@@ -217,6 +273,7 @@ class LoggedSetModel {
       setType: parseSetType(setType),
       weightKg: weightKg,
       repsCompleted: repsCompleted,
+      durationSeconds: durationSeconds,
       rirActual: rirActual,
       rpeActual: rpeActual,
       restSecondsActual: restSecondsActual,
@@ -236,6 +293,7 @@ class LoggedSetModel {
       setType: setTypeToString(entity.setType),
       weightKg: entity.weightKg,
       repsCompleted: entity.repsCompleted,
+      durationSeconds: entity.durationSeconds,
       rirActual: entity.rirActual,
       rpeActual: entity.rpeActual,
       restSecondsActual: entity.restSecondsActual,
@@ -254,6 +312,7 @@ class LoggedSetModel {
     String? setType,
     double? weightKg,
     int? repsCompleted,
+    int? durationSeconds,
     int? rirActual,
     double? rpeActual,
     int? restSecondsActual,
@@ -270,6 +329,7 @@ class LoggedSetModel {
       setType: setType ?? this.setType,
       weightKg: weightKg ?? this.weightKg,
       repsCompleted: repsCompleted ?? this.repsCompleted,
+      durationSeconds: durationSeconds ?? this.durationSeconds,
       rirActual: rirActual ?? this.rirActual,
       rpeActual: rpeActual ?? this.rpeActual,
       restSecondsActual: restSecondsActual ?? this.restSecondsActual,

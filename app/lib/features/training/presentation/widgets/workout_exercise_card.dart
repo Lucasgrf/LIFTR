@@ -138,7 +138,10 @@ class WorkoutExerciseCard extends StatelessWidget {
               )
             else
               ...workoutExercise.setTemplates.map(
-                (template) => SetTemplateRow(template: template),
+                (template) => SetTemplateRow(
+                  template: template,
+                  isCardio: workoutExercise.isCardio,
+                ),
               ),
 
             const SizedBox(height: 10),

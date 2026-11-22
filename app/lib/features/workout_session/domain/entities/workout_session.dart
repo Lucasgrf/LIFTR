@@ -17,6 +17,7 @@ class WorkoutSession {
     this.durationSeconds = 0,
     this.status = SessionStatus.inProgress,
     this.perceivedExertion,
+    this.executionScore,
     this.mood,
     this.notes,
     this.readinessScore,
@@ -33,6 +34,7 @@ class WorkoutSession {
   final int durationSeconds;
   final SessionStatus status;
   final double? perceivedExertion; // 1 to 10 RPE
+  final int? executionScore; // 0 to 100 automatic adherence score
   final Mood? mood;
   final String? notes;
   final int? readinessScore;
@@ -47,11 +49,16 @@ class WorkoutSession {
   int get totalCompletedSetsCount =>
       exercises.fold(0, (sum, e) => sum + e.completedSetsCount);
 
-  int get totalWorkingSetsCount =>
-      exercises.fold(0, (sum, e) => sum + e.completedWorkingSetsCount);
+  int get totalWorkingSetsCount => exercises
+      .where((e) => !e.isCardio)
+      .fold(0, (sum, e) => sum + e.completedWorkingSetsCount);
 
-  double get totalVolumeKg =>
-      exercises.fold(0.0, (sum, e) => sum + e.totalVolumeKg);
+  int get totalCardioDurationSeconds =>
+      exercises.fold(0, (sum, e) => sum + e.totalCardioDurationSeconds);
+
+  double get totalVolumeKg => exercises
+      .where((e) => !e.isCardio)
+      .fold(0.0, (sum, e) => sum + e.totalVolumeKg);
 
   String get formattedDuration {
     final minutes = durationSeconds ~/ 60;
@@ -69,6 +76,7 @@ class WorkoutSession {
     int? durationSeconds,
     SessionStatus? status,
     double? perceivedExertion,
+    int? executionScore,
     Mood? mood,
     String? notes,
     int? readinessScore,
@@ -85,6 +93,7 @@ class WorkoutSession {
       durationSeconds: durationSeconds ?? this.durationSeconds,
       status: status ?? this.status,
       perceivedExertion: perceivedExertion ?? this.perceivedExertion,
+      executionScore: executionScore ?? this.executionScore,
       mood: mood ?? this.mood,
       notes: notes ?? this.notes,
       readinessScore: readinessScore ?? this.readinessScore,
@@ -106,6 +115,7 @@ class WorkoutSession {
         other.durationSeconds == durationSeconds &&
         other.status == status &&
         other.perceivedExertion == perceivedExertion &&
+        other.executionScore == executionScore &&
         other.mood == mood &&
         other.notes == notes &&
         other.readinessScore == readinessScore &&
@@ -123,6 +133,7 @@ class WorkoutSession {
         durationSeconds,
         status,
         perceivedExertion,
+        executionScore,
         mood,
         notes,
         readinessScore,

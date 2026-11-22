@@ -14,6 +14,7 @@ class WorkoutSessionModel {
     this.durationSeconds = 0,
     this.status = 'in_progress',
     this.perceivedExertion,
+    this.executionScore,
     this.mood,
     this.notes,
     this.readinessScore,
@@ -30,6 +31,7 @@ class WorkoutSessionModel {
   final int durationSeconds;
   final String status;
   final double? perceivedExertion;
+  final int? executionScore;
   final String? mood;
   final String? notes;
   final int? readinessScore;
@@ -111,6 +113,7 @@ class WorkoutSessionModel {
       durationSeconds: json['duration_seconds'] as int? ?? 0,
       status: json['status'] as String? ?? 'in_progress',
       perceivedExertion: (json['perceived_exertion'] as num?)?.toDouble(),
+      executionScore: (json['execution_score'] as num?)?.toInt(),
       mood: json['mood'] as String?,
       notes: json['notes'] as String?,
       readinessScore: json['readiness_score'] as int?,
@@ -131,6 +134,7 @@ class WorkoutSessionModel {
       'duration_seconds': durationSeconds,
       'status': status,
       if (perceivedExertion != null) 'perceived_exertion': perceivedExertion,
+      if (executionScore != null) 'execution_score': executionScore,
       if (mood != null) 'mood': mood,
       if (notes != null) 'notes': notes,
       if (readinessScore != null) 'readiness_score': readinessScore,
@@ -209,6 +213,7 @@ class WorkoutSessionModel {
       durationSeconds: durationSeconds,
       status: parseStatus(status),
       perceivedExertion: perceivedExertion,
+      executionScore: executionScore,
       mood: parseMood(mood),
       notes: notes,
       readinessScore: readinessScore,
@@ -228,6 +233,7 @@ class WorkoutSessionModel {
       durationSeconds: entity.durationSeconds,
       status: statusToString(entity.status),
       perceivedExertion: entity.perceivedExertion,
+      executionScore: entity.executionScore,
       mood: moodToString(entity.mood),
       notes: entity.notes,
       readinessScore: entity.readinessScore,
@@ -248,6 +254,7 @@ class WorkoutSessionModel {
     int? durationSeconds,
     String? status,
     double? perceivedExertion,
+    int? executionScore,
     String? mood,
     String? notes,
     int? readinessScore,
@@ -264,6 +271,7 @@ class WorkoutSessionModel {
       durationSeconds: durationSeconds ?? this.durationSeconds,
       status: status ?? this.status,
       perceivedExertion: perceivedExertion ?? this.perceivedExertion,
+      executionScore: executionScore ?? this.executionScore,
       mood: mood ?? this.mood,
       notes: notes ?? this.notes,
       readinessScore: readinessScore ?? this.readinessScore,

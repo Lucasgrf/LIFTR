@@ -1,20 +1,27 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
+import 'package:personal_fitness_os/core/constants/supabase_config.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/workout_queue_provider.dart';
+import 'package:personal_fitness_os/features/weekly_comparison/presentation/providers/weekly_comparison_providers.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
+import 'package:personal_fitness_os/features/workout_session/domain/services/session_performance_calculator.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
 
 class FinishWorkoutModal extends ConsumerStatefulWidget {
@@ -34,7 +41,6 @@ class FinishWorkoutModal extends ConsumerStatefulWidget {
 }
 
 class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
-  double _rpe = 8.0;
   Mood _mood = Mood.good;
   final TextEditingController _notesController = TextEditingController();
   bool _isLoading = false;
@@ -45,7 +51,8 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
+  Future<void> _submit(SessionPerformanceSummary perf) async {
+    if (_isLoading) return;
     setState(() => _isLoading = true);
 
     final useCase = ref.read(finishWorkoutSessionUseCaseProvider);
@@ -54,7 +61,8 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
       durationSeconds: widget.elapsedSeconds > 0
           ? widget.elapsedSeconds
           : widget.session.durationSeconds,
-      perceivedExertion: _rpe,
+      perceivedExertion: perf.autoRpe,
+      executionScore: perf.executionScore,
       mood: _mood,
       notes: _notesController.text.trim().isNotEmpty
           ? _notesController.text.trim()
@@ -66,18 +74,36 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
 
     result.fold(
       (_) {
-        final activePlan = ref.read(activeTrainingPlanProvider) ??
-            ref.read(dashboardDataProvider).asData?.value.activePlan;
-        final completedWorkoutId = widget.session.workoutId;
-        if (activePlan != null && completedWorkoutId != null) {
-          ref.read(workoutQueueProvider.notifier).advanceAfterCompleted(
-                activePlan.id,
-                activePlan.workouts,
-                completedWorkoutId,
-              );
-        }
+        try {
+          final activePlan =
+              ref.read(dashboardDataProvider).asData?.value.activePlan ??
+                  (SupabaseConfig.isConfigured
+                      ? ref.read(activeTrainingPlanProvider)
+                      : null);
+          final completedWorkoutId = widget.session.workoutId;
+          if (activePlan != null && completedWorkoutId != null) {
+            ref.read(workoutQueueProvider.notifier).advanceAfterCompleted(
+                  activePlan.id,
+                  activePlan.workouts,
+                  completedWorkoutId,
+                );
+          }
+        } catch (_) {}
+        ref.invalidate(liveSessionDetailProvider(widget.session.id));
         ref.invalidate(dashboardDataProvider);
         ref.invalidate(historyListProvider);
+        ref.invalidate(currentWeekSummaryProvider);
+        ref.invalidate(weeklyComparisonProvider);
+        if (SupabaseConfig.isConfigured) {
+          try {
+            unawaited(
+              ref
+                  .read(weeklyComparisonRepositoryProvider)
+                  .syncWeekSnapshot(DateTime.now())
+                  .then((_) {}),
+            );
+          } catch (_) {}
+        }
         Navigator.of(context).pop();
         widget.onFinished();
       },
@@ -156,6 +182,21 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
     final fitnessColors = context.fitnessColors;
     final radius = context.appRadius;
     final minutes = widget.elapsedSeconds ~/ 60;
+    final cardioSeconds = widget.session.totalCardioDurationSeconds;
+
+    final prevWeightsAsync =
+        ref.watch(sessionPreviousWeightsProvider(widget.session.id));
+    final prevWeights = prevWeightsAsync.asData?.value ?? const <String, double>{};
+    final perf = SessionPerformanceCalculator.evaluate(
+      widget.session,
+      previousMaxWeightByExerciseId: prevWeights,
+    );
+
+    final scoreTone = perf.executionScore >= 85
+        ? LiftrBadgeTone.success
+        : (perf.executionScore >= 65
+            ? LiftrBadgeTone.brand
+            : LiftrBadgeTone.warning);
 
     return Container(
       decoration: BoxDecoration(
@@ -183,90 +224,138 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
               padding: const EdgeInsets.all(16),
               backgroundColor: colors.surfaceSubtle,
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  Column(
+                  Expanded(
+                    child: _FinishMetricItem(
+                      value: '${minutes}m',
+                      label: 'Duração',
+                      valueColor: colors.primaryLight,
+                    ),
+                  ),
+                  Expanded(
+                    child: _FinishMetricItem(
+                      value: '${widget.session.totalWorkingSetsCount}',
+                      label: 'Séries válidas',
+                      valueColor: fitnessColors.progressNeutral,
+                    ),
+                  ),
+                  if (cardioSeconds > 0)
+                    Expanded(
+                      child: _FinishMetricItem(
+                        value: formatCardioSeconds(cardioSeconds),
+                        label: 'Cardio',
+                        valueColor: colors.primaryLight,
+                      ),
+                    )
+                  else
+                    Expanded(
+                      child: _FinishMetricItem(
+                        value: '${widget.session.totalVolumeKg.toStringAsFixed(0)} kg',
+                        label: 'Volume',
+                        valueColor: fitnessColors.progressUp,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            // Automatic RPE & Execution Score card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: colors.surfaceElevated,
+                borderRadius: BorderRadius.circular(radius.large),
+                border: Border.all(color: colors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Text(
-                        '${minutes}m',
-                        style: context.textTheme.titleLarge?.copyWith(
-                          color: colors.primaryLight,
-                          fontFeatures: AppTypography.tabularFeatures,
+                      Expanded(
+                        child: Text(
+                          'AVALIAÇÃO AUTOMÁTICA',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.eyebrow(context),
                         ),
                       ),
-                      Text(
-                        'Duração',
-                        style: context.textTheme.bodySmall?.copyWith(
-                          color: colors.textTertiary,
+                      const SizedBox(width: 8),
+                      LiftrBadge(
+                        label: perf.scoreLabel,
+                        tone: scoreTone,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'RPE estimado',
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: colors.textTertiary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              perf.autoRpe
+                                  .toStringAsFixed(1)
+                                  .replaceAll('.', ','),
+                              style: context.textTheme.headlineMedium?.copyWith(
+                                color: colors.primaryLight,
+                                fontFeatures: AppTypography.tabularFeatures,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        width: 1,
+                        height: 36,
+                        color: colors.divider,
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Execução',
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: colors.textTertiary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${perf.executionScore}%',
+                              style: context.textTheme.headlineMedium?.copyWith(
+                                color: fitnessColors.progressUp,
+                                fontFeatures: AppTypography.tabularFeatures,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  Column(
-                    children: [
-                      Text(
-                        '${widget.session.totalWorkingSetsCount}',
-                        style: context.textTheme.titleLarge?.copyWith(
-                          color: fitnessColors.progressNeutral,
-                          fontFeatures: AppTypography.tabularFeatures,
-                        ),
-                      ),
-                      Text(
-                        'Séries válidas',
-                        style: context.textTheme.bodySmall?.copyWith(
-                          color: colors.textTertiary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    children: [
-                      Text(
-                        '${widget.session.totalVolumeKg.toStringAsFixed(0)} kg',
-                        style: context.textTheme.titleLarge?.copyWith(
-                          color: fitnessColors.progressUp,
-                          fontFeatures: AppTypography.tabularFeatures,
-                        ),
-                      ),
-                      Text(
-                        'Volume',
-                        style: context.textTheme.bodySmall?.copyWith(
-                          color: colors.textTertiary,
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 10),
+                  Text(
+                    perf.rationale,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.bodySmall?.copyWith(
+                      color: colors.textSecondary,
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Esforço percebido (RPE)',
-                  style: context.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  '${_rpe.toStringAsFixed(1)} / 10',
-                  style: context.textTheme.titleMedium?.copyWith(
-                    color: colors.primaryLight,
-                    fontFeatures: AppTypography.tabularFeatures,
-                  ),
-                ),
-              ],
-            ),
-            Slider(
-              value: _rpe,
-              min: 1.0,
-              max: 10.0,
-              divisions: 18,
-              activeColor: colors.primary,
-              onChanged: (val) => setState(() => _rpe = val),
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Text(
               'Como você se sentiu?',
               style: context.textTheme.bodyMedium?.copyWith(
@@ -288,11 +377,49 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
               label: 'Salvar e concluir treino',
               icon: Icons.check_circle_rounded,
               isLoading: _isLoading,
-              onPressed: _submit,
+              onPressed: () => _submit(perf),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _FinishMetricItem extends StatelessWidget {
+  const _FinishMetricItem({
+    required this.value,
+    required this.label,
+    required this.valueColor,
+  });
+
+  final String value;
+  final String label;
+  final Color valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    return Column(
+      children: [
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: context.textTheme.titleLarge?.copyWith(
+            color: valueColor,
+            fontFeatures: AppTypography.tabularFeatures,
+          ),
+        ),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: context.textTheme.bodySmall?.copyWith(
+            color: colors.textTertiary,
+          ),
+        ),
+      ],
     );
   }
 }

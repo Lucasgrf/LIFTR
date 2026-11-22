@@ -13,6 +13,7 @@ class FinishWorkoutSessionUseCase {
     required String sessionId,
     required int durationSeconds,
     double? perceivedExertion,
+    int? executionScore,
     Mood? mood,
     String? notes,
   }) {
@@ -26,11 +27,17 @@ class FinishWorkoutSessionUseCase {
         const Err(ValidationFailure('A duração não pode ser negativa.')),
       );
     }
+    if (executionScore != null && (executionScore < 0 || executionScore > 100)) {
+      return Future.value(
+        const Err(ValidationFailure('O score de execução deve estar entre 0 e 100.')),
+      );
+    }
 
     return _repository.finishSession(
       sessionId: sessionId.trim(),
       durationSeconds: durationSeconds,
       perceivedExertion: perceivedExertion,
+      executionScore: executionScore,
       mood: mood,
       notes: notes?.trim(),
     );

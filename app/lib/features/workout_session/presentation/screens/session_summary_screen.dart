@@ -11,6 +11,7 @@ import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
@@ -46,6 +47,7 @@ class SessionSummaryScreen extends ConsumerWidget {
   List<_PromotedExercise> _detectPromotions(WorkoutSession session) {
     final promoted = <_PromotedExercise>[];
     for (final SessionExercise se in session.exercises) {
+      if (se.isCardio) continue;
       final workingSets = se.sets.where((s) => s.isWorkingSet).toList();
       if (workingSets.isEmpty) continue;
       final hitMaxOnAll =
@@ -91,16 +93,19 @@ class SessionSummaryScreen extends ConsumerWidget {
         ),
         data: (session) {
           final minutes = math.max(1, session.durationSeconds ~/ 60);
-          final targetSets = session.exercises.fold<int>(
-            0,
-            (sum, e) => sum + e.targetSetsCount,
-          );
+          final targetSets = session.exercises
+              .where((e) => !e.isCardio)
+              .fold<int>(0, (sum, e) => sum + e.targetSetsCount);
           final setsLabel = targetSets > 0
               ? '${session.totalWorkingSetsCount}/$targetSets'
               : '${session.totalWorkingSetsCount}';
           final volumeFormatted = NumberFormat('#,##0', 'pt_BR').format(
             session.totalVolumeKg.round(),
           );
+          final cardioSeconds = session.totalCardioDurationSeconds;
+          final hasSecondaryStrip = session.perceivedExertion != null ||
+              session.executionScore != null ||
+              cardioSeconds > 0;
           final dateObj = session.completedAt ?? session.startedAt;
           final dateLabel =
               DateFormat('EEEE, d MMM', 'pt_BR').format(dateObj);
@@ -203,6 +208,63 @@ class SessionSummaryScreen extends ConsumerWidget {
                                     ),
                                   ),
                                 ),
+
+                                if (hasSecondaryStrip) ...[
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                      horizontal: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.surfaceSubtle,
+                                      borderRadius:
+                                          BorderRadius.circular(radius.large),
+                                      border: Border.all(color: colors.border),
+                                    ),
+                                    child: IntrinsicHeight(
+                                      child: Row(
+                                        children: [
+                                          if (session.perceivedExertion !=
+                                              null) ...[
+                                            _SummaryMetricCol(
+                                              value: session.perceivedExertion!
+                                                  .toStringAsFixed(1)
+                                                  .replaceAll('.', ','),
+                                              label: 'RPE auto',
+                                            ),
+                                          ],
+                                          if (session.perceivedExertion !=
+                                                  null &&
+                                              (session.executionScore != null ||
+                                                  cardioSeconds > 0))
+                                            VerticalDivider(
+                                              width: 1,
+                                              color: colors.divider,
+                                            ),
+                                          if (session.executionScore != null)
+                                            _SummaryMetricCol(
+                                              value: '${session.executionScore}%',
+                                              label: 'Execução',
+                                            ),
+                                          if (session.executionScore != null &&
+                                              cardioSeconds > 0)
+                                            VerticalDivider(
+                                              width: 1,
+                                              color: colors.divider,
+                                            ),
+                                          if (cardioSeconds > 0)
+                                            _SummaryMetricCol(
+                                              value: formatCardioSeconds(
+                                                cardioSeconds,
+                                              ),
+                                              label: 'Cardio',
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
 
                                 // Unlocked load progressions (SUBIR)
                                 if (promoted.isNotEmpty) ...[

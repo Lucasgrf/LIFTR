@@ -34,6 +34,8 @@ class WorkoutExercise {
 
   int get totalSetsCount => setTemplates.length;
 
+  bool get isCardio => exercise?.isCardio ?? false;
+
   WorkoutExercise copyWith({
     String? id,
     String? workoutId,

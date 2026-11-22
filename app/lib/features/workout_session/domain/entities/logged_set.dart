@@ -60,6 +60,7 @@ class LoggedSet {
     this.setType = SetType.working,
     required this.weightKg,
     required this.repsCompleted,
+    this.durationSeconds,
     this.rirActual,
     this.rpeActual,
     this.restSecondsActual,
@@ -76,6 +77,7 @@ class LoggedSet {
   final SetType setType;
   final double weightKg;
   final int repsCompleted;
+  final int? durationSeconds;
   final int? rirActual;
   final double? rpeActual;
   final int? restSecondsActual;
@@ -84,6 +86,12 @@ class LoggedSet {
   final String? notes;
   final List<DropSetEntry> dropSets;
   final DateTime? completedAt;
+
+  bool get isTimedSet => durationSeconds != null && durationSeconds! > 0;
+
+  int get effectiveDurationSeconds => durationSeconds ?? 0;
+
+  int get durationMinutes => (effectiveDurationSeconds / 60).round();
 
   bool get isWorkingSet =>
       !isWarmup &&
@@ -104,7 +112,7 @@ class LoggedSet {
   }
 
   double get volumeKg {
-    if (!isWorkingSet) return 0.0;
+    if (isTimedSet || !isWorkingSet) return 0.0;
     final dropsVolume =
         dropSets.fold(0.0, (sum, d) => sum + d.weightKg * d.repsCompleted);
     return (weightKg * repsCompleted) + dropsVolume;
@@ -117,6 +125,7 @@ class LoggedSet {
     SetType? setType,
     double? weightKg,
     int? repsCompleted,
+    int? durationSeconds,
     int? rirActual,
     double? rpeActual,
     int? restSecondsActual,
@@ -133,6 +142,7 @@ class LoggedSet {
       setType: setType ?? this.setType,
       weightKg: weightKg ?? this.weightKg,
       repsCompleted: repsCompleted ?? this.repsCompleted,
+      durationSeconds: durationSeconds ?? this.durationSeconds,
       rirActual: rirActual ?? this.rirActual,
       rpeActual: rpeActual ?? this.rpeActual,
       restSecondsActual: restSecondsActual ?? this.restSecondsActual,
@@ -154,6 +164,7 @@ class LoggedSet {
         other.setType == setType &&
         other.weightKg == weightKg &&
         other.repsCompleted == repsCompleted &&
+        other.durationSeconds == durationSeconds &&
         other.rirActual == rirActual &&
         other.rpeActual == rpeActual &&
         other.restSecondsActual == restSecondsActual &&
@@ -172,6 +183,7 @@ class LoggedSet {
         setType,
         weightKg,
         repsCompleted,
+        durationSeconds,
         rirActual,
         rpeActual,
         restSecondsActual,

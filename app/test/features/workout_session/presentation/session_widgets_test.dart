@@ -87,6 +87,7 @@ void main() {
             onSave: ({
               required weightKg,
               required repsCompleted,
+              durationSeconds,
               rirActual,
               required setType,
               dropSets = const [],
@@ -115,6 +116,7 @@ void main() {
               required setType,
               required weightKg,
               required repsCompleted,
+              durationSeconds,
               rirActual,
               restSeconds = 180,
               dropSets = const [],

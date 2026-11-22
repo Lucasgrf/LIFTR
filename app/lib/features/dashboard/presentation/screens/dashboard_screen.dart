@@ -27,6 +27,9 @@ import 'package:personal_fitness_os/features/settings/presentation/providers/set
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/workout_queue_provider.dart';
+import 'package:personal_fitness_os/features/weekly_comparison/presentation/providers/weekly_comparison_providers.dart';
+import 'package:personal_fitness_os/features/weekly_comparison/presentation/widgets/log_cardio_modal.dart';
+import 'package:personal_fitness_os/features/weekly_comparison/presentation/widgets/weekly_summary_card.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/session_exercise.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/helpers/session_exercise_builder.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
@@ -192,6 +195,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final radius = context.appRadius;
     final settings = ref.watch(userSettingsProvider);
     final dashboardAsync = ref.watch(dashboardDataProvider);
+    final weekSummaryAsync = ref.watch(currentWeekSummaryProvider);
     final insightsAsync = ref.watch(fitnessInsightsProvider);
     ref.watch(workoutQueueProvider);
 
@@ -229,7 +233,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
           return RefreshIndicator(
             color: colors.primary,
-            onRefresh: () => ref.refresh(dashboardDataProvider.future),
+            onRefresh: () async {
+              ref.invalidate(currentWeekSummaryProvider);
+              await ref.refresh(dashboardDataProvider.future);
+            },
             child: ListView(
               padding: const EdgeInsets.fromLTRB(0, 12, 0, 32),
               children: [
@@ -352,6 +359,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         const SizedBox(height: 14),
                         LastCompletedWorkoutCard(
                           session: data.lastCompletedSession!,
+                        ),
+                      ],
+
+                      // 2c. Resumo semanal compacto (Cardio + Treinos)
+                      if (weekSummaryAsync.hasValue) ...[
+                        const SizedBox(height: 14),
+                        WeeklySummaryCard(
+                          data: weekSummaryAsync.value!,
+                          onOpenComparison: () =>
+                              context.push('/weekly-comparison'),
+                          onLogCardio: () => LogCardioModal.show(context),
                         ),
                       ],
 

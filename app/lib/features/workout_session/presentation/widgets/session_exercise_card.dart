@@ -10,6 +10,7 @@ import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/features/progression/domain/entities/progression_recommendation.dart';
@@ -41,6 +42,7 @@ class SessionExerciseCard extends ConsumerStatefulWidget {
     required SetType setType,
     required double weightKg,
     required int repsCompleted,
+    int? durationSeconds,
     int? rirActual,
     int restSeconds,
     List<DropSetEntry> dropSets,
@@ -94,14 +96,25 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
     final radius = context.appRadius;
     final motion = context.appMotion;
     final se = widget.sessionExercise;
+    final isCardio = se.isCardio;
     final exerciseName = se.exercise?.name ?? 'Exercício';
     final muscle = se.exercise?.primaryMuscleGroup;
-    final isAllDone = se.completedWorkingSetsCount >= se.targetSetsCount;
+    final isAllDone = isCardio
+        ? se.totalCardioDurationSeconds >= math.max(1, se.targetRepsMin) * 60
+        : se.completedWorkingSetsCount >= se.targetSetsCount;
 
     if (!widget.isExpanded) {
       final idxLabel = ((widget.exerciseIndex ?? 0) + 1)
           .toString()
           .padLeft(2, '0');
+      final collapsedSubtitle = isCardio
+          ? (se.totalCardioDurationSeconds > 0
+              ? '${formatCardioSeconds(se.totalCardioDurationSeconds)} concluído ✓'
+              : 'Meta ${se.targetRepsMin == se.targetRepsMax ? '${se.targetRepsMin}' : '${se.targetRepsMin}–${se.targetRepsMax}'} min')
+          : (isAllDone
+              ? '${se.completedWorkingSetsCount}/${se.targetSetsCount} concluídas ✓'
+              : '${se.completedWorkingSetsCount}/${se.targetSetsCount} séries');
+
       return InkWell(
         onTap: () {
           HapticFeedback.selectionClick();
@@ -147,9 +160,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      isAllDone
-                          ? '${se.completedWorkingSetsCount}/${se.targetSetsCount} concluídas ✓'
-                          : '${se.completedWorkingSetsCount}/${se.targetSetsCount} séries',
+                      collapsedSubtitle,
                       style: context.textTheme.labelSmall?.copyWith(
                         color: isAllDone
                             ? fitnessColors.progressUp
@@ -175,19 +186,23 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
       );
     }
 
-    final progressionAsync = ref.watch(
-      exerciseProgressionProvider(
-        ExerciseProgressionParams(
-          exerciseId: se.exerciseId,
-          targetRepsMin: se.targetRepsMin,
-          targetRepsMax: se.targetRepsMax,
-          targetRir: se.targetRir,
-          equipment: se.exercise?.equipment,
-        ),
-      ),
-    );
+    final ProgressionRecommendation? rec = isCardio
+        ? null
+        : ref
+            .watch(
+              exerciseProgressionProvider(
+                ExerciseProgressionParams(
+                  exerciseId: se.exerciseId,
+                  targetRepsMin: se.targetRepsMin,
+                  targetRepsMax: se.targetRepsMax,
+                  targetRir: se.targetRir,
+                  equipment: se.exercise?.equipment,
+                ),
+              ),
+            )
+            .asData
+            ?.value;
 
-    final rec = progressionAsync.asData?.value;
     final defaultWeight =
         (rec != null && rec.suggestedWeightKg > 0) ? rec.suggestedWeightKg : 0.0;
     final targetWeightText =
@@ -198,9 +213,22 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
         .where((s) => s.isWorkingSet)
         .fold(0, (sum, s) => sum + s.repsCompleted);
     final repsRemaining = (totalTargetReps - loggedWorkingReps).clamp(0, 999);
-    final progressRatio = totalTargetReps > 0
-        ? (loggedWorkingReps / totalTargetReps).clamp(0.0, 1.0)
-        : 0.0;
+    final cardioLoggedMin = (se.totalCardioDurationSeconds / 60).round();
+    final cardioTargetMin = math.max(1, se.targetRepsMin);
+    final cardioRangeLabel = se.targetRepsMin == se.targetRepsMax
+        ? '${se.targetRepsMin} min'
+        : '${se.targetRepsMin}–${se.targetRepsMax} min';
+    final progressRatio = isCardio
+        ? (cardioLoggedMin / cardioTargetMin).clamp(0.0, 1.0)
+        : (totalTargetReps > 0
+            ? (loggedWorkingReps / totalTargetReps).clamp(0.0, 1.0)
+            : 0.0);
+
+    final badgeLabel = isCardio
+        ? (se.totalCardioDurationSeconds > 0
+            ? formatCardioSeconds(se.totalCardioDurationSeconds)
+            : 'Cardio')
+        : '${se.completedWorkingSetsCount}/${se.targetSetsCount} séries';
 
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 16, 14, 12),
@@ -250,13 +278,16 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Alvo: $targetWeightText${se.targetRepsMin}–${se.targetRepsMax} reps · ${se.targetRestSeconds}s',
+                        isCardio
+                            ? 'Meta: $cardioRangeLabel · registro por tempo'
+                            : 'Alvo: $targetWeightText${se.targetRepsMin}–${se.targetRepsMax} reps · ${se.targetRestSeconds}s',
                         style: context.textTheme.bodySmall?.copyWith(
                           color: colors.textSecondary,
                           fontFeatures: AppTypography.tabularFeatures,
                         ),
                       ),
-                      if (rec?.previousSummary != null &&
+                      if (!isCardio &&
+                          rec?.previousSummary != null &&
                           rec!.previousSummary!.isNotEmpty) ...[
                         const SizedBox(height: 2),
                         Text(
@@ -320,7 +351,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                     ),
                   const SizedBox(height: 6),
                   LiftrBadge(
-                    label: '${se.completedWorkingSetsCount}/${se.targetSetsCount} séries',
+                    label: badgeLabel,
                     tone: isAllDone
                         ? LiftrBadgeTone.success
                         : LiftrBadgeTone.neutral,
@@ -331,23 +362,32 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
           ),
           const SizedBox(height: 14),
 
-          // Double progression micro bar
+          // Double progression or Cardio target bar
           LiftrProgressBar(
-            progress: progressRatio > 0
+            progress: isCardio
                 ? progressRatio
-                : (rec?.type == ProgressionType.increase ? 1.0 : 0.15),
+                : (progressRatio > 0
+                    ? progressRatio
+                    : (rec?.type == ProgressionType.increase ? 1.0 : 0.15)),
             height: 5,
-            color: (repsRemaining == 0 || rec?.type == ProgressionType.increase)
+            color: (isCardio
+                    ? isAllDone
+                    : (repsRemaining == 0 ||
+                        rec?.type == ProgressionType.increase))
                 ? fitnessColors.progressUp
                 : colors.primary,
           ),
           const SizedBox(height: 6),
           Text(
-            repsRemaining == 0
-                ? 'Meta da faixa batida · pronto para subir na próxima!'
-                : '$loggedWorkingReps/$totalTargetReps reps · faltam $repsRemaining para o topo da faixa',
+            isCardio
+                ? (cardioLoggedMin >= cardioTargetMin
+                    ? 'Meta de cardio concluída ($cardioLoggedMin min)!'
+                    : '$cardioLoggedMin/$cardioTargetMin min registrados')
+                : (repsRemaining == 0
+                    ? 'Meta da faixa batida · pronto para subir na próxima!'
+                    : '$loggedWorkingReps/$totalTargetReps reps · faltam $repsRemaining para o topo da faixa'),
             style: context.textTheme.labelSmall?.copyWith(
-              color: repsRemaining == 0
+              color: (isCardio ? isAllDone : repsRemaining == 0)
                   ? fitnessColors.progressUp
                   : colors.textTertiary,
               fontFeatures: AppTypography.tabularFeatures,
@@ -358,76 +398,118 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
           // Column Labels
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 5),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 34,
-                  child: Text(
-                    'SÉRIE',
-                    textAlign: TextAlign.center,
-                    style: context.textTheme.labelSmall?.copyWith(
-                      color: colors.textTertiary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  flex: 12,
-                  child: Text(
-                    'KG',
-                    textAlign: TextAlign.center,
-                    style: context.textTheme.labelSmall?.copyWith(
-                      color: colors.textTertiary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  flex: 10,
-                  child: Text(
-                    'REPS',
-                    textAlign: TextAlign.center,
-                    style: context.textTheme.labelSmall?.copyWith(
-                      color: colors.textTertiary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                if (widget.showRir) ...[
-                  const SizedBox(width: 4),
-                  SizedBox(
-                    width: 58,
-                    child: Text(
-                      'RIR',
-                      textAlign: TextAlign.center,
-                      style: context.textTheme.labelSmall?.copyWith(
-                        color: colors.textTertiary,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
+            child: isCardio
+                ? Row(
+                    children: [
+                      SizedBox(
+                        width: 34,
+                        child: Text(
+                          'BLOCO',
+                          textAlign: TextAlign.center,
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: colors.textTertiary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'TEMPO (MIN)',
+                          textAlign: TextAlign.center,
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: colors.textTertiary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 48,
+                        child: Text(
+                          'FEITO',
+                          textAlign: TextAlign.center,
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: colors.textTertiary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      SizedBox(
+                        width: 34,
+                        child: Text(
+                          'SÉRIE',
+                          textAlign: TextAlign.center,
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: colors.textTertiary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        flex: 12,
+                        child: Text(
+                          'KG',
+                          textAlign: TextAlign.center,
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: colors.textTertiary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        flex: 10,
+                        child: Text(
+                          'REPS',
+                          textAlign: TextAlign.center,
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: colors.textTertiary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      if (widget.showRir) ...[
+                        const SizedBox(width: 4),
+                        SizedBox(
+                          width: 58,
+                          child: Text(
+                            'RIR',
+                            textAlign: TextAlign.center,
+                            style: context.textTheme.labelSmall?.copyWith(
+                              color: colors.textTertiary,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(width: 4),
+                      SizedBox(
+                        width: 44,
+                        child: Text(
+                          'FEITO',
+                          textAlign: TextAlign.center,
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: colors.textTertiary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-                const SizedBox(width: 4),
-                SizedBox(
-                  width: 44,
-                  child: Text(
-                    'FEITO',
-                    textAlign: TextAlign.center,
-                    style: context.textTheme.labelSmall?.copyWith(
-                      color: colors.textTertiary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
           ),
           const SizedBox(height: 8),
 
@@ -452,12 +534,16 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
               loggedSet: logged,
               defaultWeight: prevWeight,
               defaultReps: se.targetRepsMin,
+              defaultDurationMinutes:
+                  se.targetRepsMin > 0 ? se.targetRepsMin : 15,
               defaultRir: se.targetRir,
               weightIncrement: widget.weightIncrement,
               showRir: widget.showRir,
+              isCardio: isCardio,
               onSave: ({
                 required double weightKg,
                 required int repsCompleted,
+                int? durationSeconds,
                 int? rirActual,
                 required SetType setType,
                 List<DropSetEntry> dropSets = const [],
@@ -469,8 +555,9 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                 setType: setType,
                 weightKg: weightKg,
                 repsCompleted: repsCompleted,
+                durationSeconds: durationSeconds,
                 rirActual: rirActual,
-                restSeconds: se.targetRestSeconds,
+                restSeconds: isCardio ? 0 : se.targetRestSeconds,
                 dropSets: dropSets,
                 existingSetId: existingSetId,
               ),
@@ -481,75 +568,97 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
           }),
 
           const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              const LiftrBadge(
-                label: 'AQ',
-                tone: LiftrBadgeTone.warning,
-              ),
-              const LiftrBadge(
-                label: 'DROP',
-                tone: LiftrBadgeTone.dropSet,
-              ),
-              Text(
-                'Toque no nº da série para alternar tipo',
-                style: context.textTheme.labelSmall?.copyWith(
-                  color: colors.textTertiary,
-                  fontSize: 11,
+          if (!isCardio) ...[
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                const LiftrBadge(
+                  label: 'AQ',
+                  tone: LiftrBadgeTone.warning,
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 48,
-                  child: TextButton.icon(
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      setState(() {
-                        _minRowCount = _totalRowsCount + 1;
-                      });
-                      widget.onAddExtraSet?.call();
-                    },
-                    icon: const Icon(Icons.add_rounded, size: 18),
-                    label: const Text('Adicionar série'),
-                    style: TextButton.styleFrom(
-                      minimumSize: const Size(48, 48),
-                      foregroundColor: colors.primaryLight,
+                const LiftrBadge(
+                  label: 'DROP',
+                  tone: LiftrBadgeTone.dropSet,
+                ),
+                Text(
+                  'Toque no nº da série para alternar tipo',
+                  style: context.textTheme.labelSmall?.copyWith(
+                    color: colors.textTertiary,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: TextButton.icon(
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        setState(() {
+                          _minRowCount = _totalRowsCount + 1;
+                        });
+                        widget.onAddExtraSet?.call();
+                      },
+                      icon: const Icon(Icons.add_rounded, size: 18),
+                      label: const Text('Adicionar série'),
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size(48, 48),
+                        foregroundColor: colors.primaryLight,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              Expanded(
-                child: SizedBox(
-                  height: 48,
-                  child: TextButton.icon(
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      setState(() {
-                        final nextRow = _totalRowsCount + 1;
-                        _minRowCount = nextRow;
-                        _extraRowTypes[nextRow] = SetType.dropSet;
-                      });
-                      widget.onAddExtraSet?.call();
-                    },
-                    icon: const Icon(Icons.bolt_rounded, size: 17),
-                    label: const Text('Drop-set'),
-                    style: TextButton.styleFrom(
-                      minimumSize: const Size(48, 48),
-                      foregroundColor: fitnessColors.dropSetTag,
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: TextButton.icon(
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        setState(() {
+                          final nextRow = _totalRowsCount + 1;
+                          _minRowCount = nextRow;
+                          _extraRowTypes[nextRow] = SetType.dropSet;
+                        });
+                        widget.onAddExtraSet?.call();
+                      },
+                      icon: const Icon(Icons.bolt_rounded, size: 17),
+                      label: const Text('Drop-set'),
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size(48, 48),
+                        foregroundColor: fitnessColors.dropSetTag,
+                      ),
                     ),
                   ),
                 ),
+              ],
+            ),
+          ] else ...[
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: TextButton.icon(
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  setState(() {
+                    _minRowCount = _totalRowsCount + 1;
+                  });
+                  widget.onAddExtraSet?.call();
+                },
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Adicionar bloco de cardio'),
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(48, 48),
+                  foregroundColor: colors.primaryLight,
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ],
       ),
     );

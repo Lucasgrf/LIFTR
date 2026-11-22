@@ -17,8 +17,12 @@ List<SessionExercise> buildInitialSessionExercises(
     final SetTemplate? primaryTemplate =
         workingTemplates.firstOrNull ?? sortedTemplates.firstOrNull;
 
+    final bool isCardio = we.isCardio;
+
     final int targetSetsCount;
-    if (workingTemplates.isNotEmpty) {
+    if (isCardio) {
+      targetSetsCount = sortedTemplates.isNotEmpty ? sortedTemplates.length : 1;
+    } else if (workingTemplates.isNotEmpty) {
       targetSetsCount = workingTemplates.length;
     } else if (sortedTemplates.isNotEmpty) {
       targetSetsCount = sortedTemplates.length;
@@ -27,7 +31,9 @@ List<SessionExercise> buildInitialSessionExercises(
     }
 
     final int restSeconds;
-    if (primaryTemplate != null && primaryTemplate.restSeconds > 0) {
+    if (isCardio) {
+      restSeconds = 0;
+    } else if (primaryTemplate != null && primaryTemplate.restSeconds > 0) {
       restSeconds = primaryTemplate.restSeconds;
     } else {
       restSeconds = defaultRestSeconds;
@@ -42,8 +48,8 @@ List<SessionExercise> buildInitialSessionExercises(
       exercise: we.exercise,
       targetRestSeconds: restSeconds,
       targetSetsCount: targetSetsCount,
-      targetRepsMin: primaryTemplate?.targetRepsMin ?? 8,
-      targetRepsMax: primaryTemplate?.targetRepsMax ?? 12,
+      targetRepsMin: primaryTemplate?.targetRepsMin ?? (isCardio ? 15 : 8),
+      targetRepsMax: primaryTemplate?.targetRepsMax ?? (isCardio ? 20 : 12),
       targetRir: primaryTemplate?.targetRirMin ?? 2,
       prescribedSetTypes: sortedTemplates.map((t) => t.setType).toList(),
     );

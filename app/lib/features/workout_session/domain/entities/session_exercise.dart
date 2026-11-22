@@ -40,13 +40,32 @@ class SessionExercise {
   final List<SetType> prescribedSetTypes;
   final DateTime? createdAt;
 
+  bool get isCardio => exercise?.isCardio ?? false;
+
   int get completedSetsCount => sets.length;
 
-  int get completedWorkingSetsCount =>
-      sets.where((s) => s.isWorkingSet).length;
+  int get completedWorkingSetsCount {
+    if (isCardio) {
+      return sets.where((s) => s.isTimedSet || s.repsCompleted > 0).length;
+    }
+    return sets.where((s) => s.isWorkingSet).length;
+  }
+
+  int get totalCardioDurationSeconds {
+    if (!isCardio) return 0;
+    return sets.fold<int>(0, (sum, s) {
+      if (s.durationSeconds != null && s.durationSeconds! > 0) {
+        return sum + s.durationSeconds!;
+      }
+      if (s.repsCompleted > 0) {
+        return sum + (s.repsCompleted * 60);
+      }
+      return sum;
+    });
+  }
 
   double get totalVolumeKg =>
-      sets.fold(0.0, (sum, set) => sum + set.volumeKg);
+      isCardio ? 0.0 : sets.fold(0.0, (sum, set) => sum + set.volumeKg);
 
   SessionExercise copyWith({
     String? id,

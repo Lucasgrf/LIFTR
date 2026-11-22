@@ -10,6 +10,7 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
@@ -79,11 +80,13 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
     required SetType setType,
     required double weightKg,
     required int repsCompleted,
+    int? durationSeconds,
     int? rirActual,
     int restSeconds = AppConstants.defaultRestSeconds,
     List<DropSetEntry> dropSets = const [],
     String? existingSetId,
     String? exerciseName,
+    bool isCardio = false,
   }) async {
     final useCase = ref.read(logSetUseCaseProvider);
     final result = await useCase.execute(
@@ -92,6 +95,7 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
       setType: setType,
       weightKg: weightKg,
       repsCompleted: repsCompleted,
+      durationSeconds: durationSeconds,
       rirActual: rirActual,
       isWarmup: setType == SetType.warmup,
       dropSets: dropSets,
@@ -101,11 +105,13 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
     result.fold(
       (_) {
         ref.invalidate(liveSessionDetailProvider(widget.sessionId));
-        ref.read(restTimerNotifierProvider.notifier).start(
-              restSeconds,
-              exerciseName: exerciseName,
-              setNumber: setNumber,
-            );
+        if (!isCardio && restSeconds > 0) {
+          ref.read(restTimerNotifierProvider.notifier).start(
+                restSeconds,
+                exerciseName: exerciseName,
+                setNumber: setNumber,
+              );
+        }
       },
       (failure) {
         context.showSnackBar(
@@ -285,16 +291,31 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                       ref.invalidate(liveSessionDetailProvider(widget.sessionId)),
                 ),
                 data: (session) {
-            final totalTargetSets = session.exercises.fold<int>(
-              0,
-              (sum, e) => sum + e.targetSetsCount,
-            );
+            final totalTargetSets = session.exercises
+                .where((e) => !e.isCardio)
+                .fold<int>(0, (sum, e) => sum + e.targetSetsCount);
             final completedSets = session.totalWorkingSetsCount;
-            final sessionProgress = totalTargetSets > 0
-                ? (completedSets / totalTargetSets).clamp(0.0, 1.0)
+            final cardioExercises =
+                session.exercises.where((e) => e.isCardio).toList();
+            final cardioCompleted = cardioExercises.where(
+              (e) => e.totalCardioDurationSeconds > 0,
+            ).length;
+            final totalProgressUnits =
+                totalTargetSets + cardioExercises.length;
+            final completedProgressUnits = completedSets + cardioCompleted;
+            final sessionProgress = totalProgressUnits > 0
+                ? (completedProgressUnits / totalProgressUnits).clamp(0.0, 1.0)
                 : 0.0;
-            final allCompleted =
-                totalTargetSets > 0 && completedSets >= totalTargetSets;
+            final allCompleted = totalProgressUnits > 0 &&
+                completedProgressUnits >= totalProgressUnits;
+            final cardioSeconds = session.totalCardioDurationSeconds;
+            final subtitleText = [
+              _formatElapsed(_elapsedSeconds),
+              if (totalTargetSets > 0 || completedSets > 0)
+                '$completedSets/$totalTargetSets séries',
+              if (cardioSeconds > 0)
+                '${formatCardioSeconds(cardioSeconds)} cardio',
+            ].join(' · ');
 
             return Column(
               children: [
@@ -336,7 +357,9 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    '${_formatElapsed(_elapsedSeconds)} · $completedSets/$totalTargetSets séries',
+                                    subtitleText,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                     style: context.textTheme.labelSmall
                                         ?.copyWith(
                                       color: colors.textSecondary,
@@ -474,6 +497,7 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                         required setType,
                                         required weightKg,
                                         required repsCompleted,
+                                        durationSeconds,
                                         rirActual,
                                         restSeconds = AppConstants.defaultRestSeconds,
                                         dropSets = const [],
@@ -485,13 +509,17 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                         setType: setType,
                                         weightKg: weightKg,
                                         repsCompleted: repsCompleted,
+                                        durationSeconds: durationSeconds,
                                         rirActual: rirActual,
-                                        restSeconds: restSeconds > 0
-                                            ? restSeconds
-                                            : settings.defaultRestSeconds,
+                                        restSeconds: se.isCardio
+                                            ? 0
+                                            : (restSeconds > 0
+                                                ? restSeconds
+                                                : settings.defaultRestSeconds),
                                         dropSets: dropSets,
                                         existingSetId: existingSetId,
                                         exerciseName: se.exercise?.name,
+                                        isCardio: se.isCardio,
                                       ),
                                       onDeleteSet: _handleDeleteSet,
                                     ),
