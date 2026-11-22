@@ -415,18 +415,20 @@ void main() {
 
       expect(darkColors.background, const Color(0xFF0D0D0F));
       expect(darkColors.surface, const Color(0xFF1A1A1F));
-      expect(darkColors.primary, const Color(0xFF6C63FF));
-      expect(darkColors.danger, const Color(0xFFFF4D5E));
-      expect(darkFitness.progressUp, const Color(0xFF22C55E));
-      expect(darkFitness.warmupTag, const Color(0xFF38BDF8));
-      expect(darkRadius.xl, 24);
+      expect(darkColors.primary, const Color(0xFF72A987));
+      expect(darkColors.onPrimary, const Color(0xFF0D0D0F));
+      expect(darkColors.danger, const Color(0xFFD96B6B));
+      expect(darkFitness.progressUp, const Color(0xFF72A987));
+      expect(darkFitness.warmupTag, const Color(0xFF6E9EC7));
+      expect(darkRadius.xl, 16);
       expect(darkSpacing.space16, 16);
-      expect(dark.colorScheme.primary, const Color(0xFF6C63FF));
+      expect(dark.colorScheme.primary, const Color(0xFF72A987));
       expect(dark.colorScheme.primary == Colors.blue, isFalse);
 
       final lightColors = light.extension<AppColors>()!;
-      expect(lightColors.background, const Color(0xFFF6F6F9));
-      expect(lightColors.primary, const Color(0xFF5B52F0));
+      expect(lightColors.background, const Color(0xFFF5F5F3));
+      expect(lightColors.primary, const Color(0xFF315B43));
+      expect(lightColors.onPrimary, const Color(0xFFF2F2F0));
     });
   });
 

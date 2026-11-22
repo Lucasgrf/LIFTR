@@ -12,11 +12,12 @@ class FitnessColors extends ThemeExtension<FitnessColors> {
     required this.muscleShoulders,
     required this.muscleArms,
     required this.muscleCore,
-    this.progressSteady = const Color(0xFF8B8B99),
-    this.progressStalled = const Color(0xFFF59E0B),
-    this.warmupTag = const Color(0xFF38BDF8),
-    this.timerActive = const Color(0xFF6C63FF),
-    this.onSuccess = const Color(0xFF08120C),
+    this.progressSteady = const Color(0xFF8E8E98),
+    this.progressStalled = const Color(0xFFD4A154),
+    this.warmupTag = const Color(0xFF6E9EC7),
+    this.dropSetTag = const Color(0xFFC98A5B),
+    this.timerActive = const Color(0xFF72A987),
+    this.onSuccess = const Color(0xFF0D0D0F),
   });
 
   final Color progressUp;
@@ -26,6 +27,7 @@ class FitnessColors extends ThemeExtension<FitnessColors> {
   final Color progressSteady;
   final Color progressStalled;
   final Color warmupTag;
+  final Color dropSetTag;
   final Color timerActive;
   final Color onSuccess;
 
@@ -45,6 +47,7 @@ class FitnessColors extends ThemeExtension<FitnessColors> {
     Color? progressSteady,
     Color? progressStalled,
     Color? warmupTag,
+    Color? dropSetTag,
     Color? timerActive,
     Color? onSuccess,
     Color? muscleChest,
@@ -62,6 +65,7 @@ class FitnessColors extends ThemeExtension<FitnessColors> {
       progressSteady: progressSteady ?? this.progressSteady,
       progressStalled: progressStalled ?? this.progressStalled,
       warmupTag: warmupTag ?? this.warmupTag,
+      dropSetTag: dropSetTag ?? this.dropSetTag,
       timerActive: timerActive ?? this.timerActive,
       onSuccess: onSuccess ?? this.onSuccess,
       muscleChest: muscleChest ?? this.muscleChest,
@@ -92,6 +96,7 @@ class FitnessColors extends ThemeExtension<FitnessColors> {
           Color.lerp(progressStalled, other.progressStalled, t) ??
           progressStalled,
       warmupTag: Color.lerp(warmupTag, other.warmupTag, t) ?? warmupTag,
+      dropSetTag: Color.lerp(dropSetTag, other.dropSetTag, t) ?? dropSetTag,
       timerActive: Color.lerp(timerActive, other.timerActive, t) ?? timerActive,
       onSuccess: Color.lerp(onSuccess, other.onSuccess, t) ?? onSuccess,
       muscleChest: Color.lerp(muscleChest, other.muscleChest, t) ?? muscleChest,
@@ -105,23 +110,45 @@ class FitnessColors extends ThemeExtension<FitnessColors> {
     );
   }
 
-  static const defaults = FitnessColors(
-    progressUp: Color(0xFF22C55E),
-    progressDown: Color(0xFFFF4D5E),
-    progressMaintain: Color(0xFFF59E0B),
-    progressNeutral: Color(0xFF38BDF8),
-    progressSteady: Color(0xFF8B8B99),
-    progressStalled: Color(0xFFF59E0B),
-    warmupTag: Color(0xFF38BDF8),
-    timerActive: Color(0xFF6C63FF),
-    onSuccess: Color(0xFF08120C),
-    muscleChest: Color(0xFFF43F5E),
-    muscleBack: Color(0xFF3B82F6),
-    muscleLegs: Color(0xFF10B981),
-    muscleShoulders: Color(0xFFF59E0B),
-    muscleArms: Color(0xFFA855F7),
-    muscleCore: Color(0xFF14B8A6),
+  static const dark = FitnessColors(
+    progressUp: Color(0xFF72A987),
+    progressDown: Color(0xFFC98A5B),
+    progressMaintain: Color(0xFFD4A154),
+    progressNeutral: Color(0xFF6E9EC7),
+    progressSteady: Color(0xFF8E8E98),
+    progressStalled: Color(0xFFD4A154),
+    warmupTag: Color(0xFF6E9EC7),
+    dropSetTag: Color(0xFFC98A5B),
+    timerActive: Color(0xFF72A987),
+    onSuccess: Color(0xFF0D0D0F),
+    muscleChest: Color(0xFF72A987),
+    muscleBack: Color(0xFF8E8E98),
+    muscleLegs: Color(0xFF7C9286),
+    muscleShoulders: Color(0xFF9A9AA6),
+    muscleArms: Color(0xFF6E8C7D),
+    muscleCore: Color(0xFF7D8590),
   );
+
+  static const light = FitnessColors(
+    progressUp: Color(0xFF315B43),
+    progressDown: Color(0xFF9A5528),
+    progressMaintain: Color(0xFF9A6700),
+    progressNeutral: Color(0xFF2B5E8A),
+    progressSteady: Color(0xFF52525B),
+    progressStalled: Color(0xFF9A6700),
+    warmupTag: Color(0xFF2B5E8A),
+    dropSetTag: Color(0xFF9A5528),
+    timerActive: Color(0xFF315B43),
+    onSuccess: Color(0xFFF2F2F0),
+    muscleChest: Color(0xFF315B43),
+    muscleBack: Color(0xFF52525B),
+    muscleLegs: Color(0xFF476354),
+    muscleShoulders: Color(0xFF64646E),
+    muscleArms: Color(0xFF3F5E4D),
+    muscleCore: Color(0xFF525C68),
+  );
+
+  static const defaults = dark;
 }
 
 extension FitnessColorsExtension on BuildContext {
