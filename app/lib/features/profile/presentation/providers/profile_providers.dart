@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/constants/supabase_config.dart';
 import 'package:personal_fitness_os/features/profile/data/datasources/profile_remote_datasource.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
+import 'package:personal_fitness_os/routing/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final profileRemoteDataSourceProvider = Provider<ProfileRemoteDataSource?>((ref) {
@@ -63,10 +64,13 @@ class ProfileController extends StateNotifier<ProfileControllerState> {
       if (profile != null) {
         state = state.copyWith(isLoading: false, email: profile.email);
         final settingsNotifier = _ref.read(userSettingsProvider.notifier);
+        final hasAvatar =
+            profile.avatarUrl != null && profile.avatarUrl!.trim().isNotEmpty;
         settingsNotifier.updateProfileIdentity(
           displayName: profile.displayName,
-          avatarUrl: profile.avatarUrl,
-          avatarStoragePath: profile.avatarStoragePath,
+          avatarUrl: hasAvatar ? profile.avatarUrl : null,
+          avatarStoragePath: hasAvatar ? profile.avatarStoragePath : null,
+          clearAvatar: !hasAvatar,
         );
         if (profile.biologicalSex != null ||
             profile.age != null ||
@@ -167,5 +171,6 @@ class ProfileController extends StateNotifier<ProfileControllerState> {
 
 final profileControllerProvider =
     StateNotifierProvider<ProfileController, ProfileControllerState>((ref) {
+  ref.watch(activeUserIdProvider);
   return ProfileController(ref, ref.watch(profileRemoteDataSourceProvider));
 });

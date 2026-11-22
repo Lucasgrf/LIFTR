@@ -4,13 +4,14 @@ import {
   type CatalogExercise,
   CatalogExerciseSchema,
   extractJsonObject,
+  type GeminiModelDescriptor,
   GenerateWorkoutRequestSchema,
   type GroundedPlan,
+  rankGeminiCandidateModels,
   validateAndGroundPlan,
 } from "./grounding.ts";
 
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
-const GEMINI_MODEL = "gemini-2.5-flash";
 
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
@@ -24,10 +25,24 @@ const GeminiApiResponseSchema = z.object({
   candidates: z.array(
     z.object({
       content: z.object({
-        parts: z.array(z.object({ text: z.string().optional() })),
+        parts: z.array(
+          z.object({
+            text: z.string().optional(),
+            thought: z.boolean().optional(),
+          }),
+        ),
       }),
     }),
   ).min(1),
+});
+
+const GeminiModelsListSchema = z.object({
+  models: z.array(
+    z.object({
+      name: z.string(),
+      supportedGenerationMethods: z.array(z.string()).optional(),
+    }),
+  ).optional(),
 });
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -35,6 +50,14 @@ function jsonResponse(body: unknown, status = 200): Response {
     status,
     headers: CORS_HEADERS,
   });
+}
+
+function sanitizeApiKey(raw: string): string {
+  return raw
+    .trim()
+    .replace(/^Bearer\s+/i, "")
+    .replace(/^["']+|["']+$/g, "")
+    .trim();
 }
 
 async function verifyAuthenticatedUser(
@@ -87,47 +110,152 @@ async function fetchUserVisibleCatalog(
   return parsed.data;
 }
 
-async function callGeminiOnce(params: {
+async function discoverModelsForKey(
+  apiKey: string,
+): Promise<GeminiModelDescriptor[]> {
+  try {
+    const url =
+      `${GEMINI_BASE_URL}/models?pageSize=100&key=${encodeURIComponent(apiKey)}`;
+    const resp = await fetch(url, {
+      method: "GET",
+      headers: { "x-goog-api-key": apiKey },
+    });
+    if (!resp.ok) return [];
+    const raw = await resp.json() as unknown;
+    const parsed = GeminiModelsListSchema.safeParse(raw);
+    return parsed.success ? (parsed.data.models ?? []) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function callGeminiModelOnce(params: {
   apiKey: string;
+  modelId: string;
   system: string;
   user: string;
   temperature: number;
+  useJsonMimeType: boolean;
   catalog: readonly CatalogExercise[];
 }): Promise<GroundedPlan> {
-  const resp = await fetch(
-    `${GEMINI_BASE_URL}/models/${GEMINI_MODEL}:generateContent`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": params.apiKey,
-      },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: params.system }] },
-        contents: [{ role: "user", parts: [{ text: params.user }] }],
-        generationConfig: {
-          temperature: params.temperature,
-          responseMimeType: "application/json",
-        },
-      }),
+  const cleanModel = params.modelId.replace(/^models\//i, "");
+  const url =
+    `${GEMINI_BASE_URL}/models/${cleanModel}:generateContent` +
+    `?key=${encodeURIComponent(params.apiKey)}`;
+
+  const generationConfig: Record<string, unknown> = {
+    temperature: params.temperature,
+  };
+  if (params.useJsonMimeType) {
+    generationConfig.responseMimeType = "application/json";
+  }
+
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": params.apiKey,
     },
-  );
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: params.system }] },
+      contents: [{ role: "user", parts: [{ text: params.user }] }],
+      generationConfig,
+    }),
+  });
 
   if (!resp.ok) {
-    throw new Error(`Gemini retornou HTTP ${resp.status}.`);
+    let detail = "";
+    try {
+      const errBody = await resp.json() as {
+        error?: { message?: string; status?: string };
+      };
+      if (errBody?.error?.message) {
+        detail = `: ${errBody.error.message}`;
+      }
+    } catch {
+      // Ignore non-JSON error body
+    }
+    throw new Error(
+      `Gemini (${cleanModel}) retornou HTTP ${resp.status}${detail}`,
+    );
   }
 
   const rawBody = await resp.json() as unknown;
   const parsedEnvelope = GeminiApiResponseSchema.safeParse(rawBody);
   if (!parsedEnvelope.success) {
-    throw new Error("Resposta do Gemini sem conteúdo utilizável.");
+    throw new Error(`Resposta do modelo ${cleanModel} sem conteúdo utilizável.`);
   }
 
-  const rawText = parsedEnvelope.data.candidates[0].content.parts
-    .map((p) => p.text ?? "")
-    .join("");
+  const parts = parsedEnvelope.data.candidates[0].content.parts;
+  const nonThoughtParts = parts.filter((p) => p.thought !== true);
+  const effectiveParts = nonThoughtParts.length > 0 ? nonThoughtParts : parts;
+
+  const rawText = effectiveParts.map((p) => p.text ?? "").join("\n");
   const decoded = extractJsonObject(rawText);
   return validateAndGroundPlan(decoded, params.catalog);
+}
+
+async function generateWithFallbackModels(params: {
+  apiKey: string;
+  system: string;
+  user: string;
+  catalog: readonly CatalogExercise[];
+}): Promise<{ plan: GroundedPlan; model: string }> {
+  const discovered = await discoverModelsForKey(params.apiKey);
+  const candidates = rankGeminiCandidateModels(discovered).slice(0, 5);
+  const errors: string[] = [];
+
+  for (const modelId of candidates) {
+    try {
+      const plan = await callGeminiModelOnce({
+        apiKey: params.apiKey,
+        modelId,
+        system: params.system,
+        user: params.user,
+        temperature: 0.2,
+        useJsonMimeType: true,
+        catalog: params.catalog,
+      });
+      return { plan, model: modelId };
+    } catch (firstErr) {
+      const firstMsg = firstErr instanceof Error
+        ? firstErr.message
+        : String(firstErr);
+
+      // If the model exists (not 404/401/403) but rejected responseMimeType
+      // or produced a transient schema mismatch, retry once on the same model.
+      const isNotFoundOrAuth =
+        firstMsg.includes("HTTP 404") ||
+        firstMsg.includes("HTTP 401") ||
+        firstMsg.includes("HTTP 403");
+
+      if (!isNotFoundOrAuth) {
+        try {
+          const plan = await callGeminiModelOnce({
+            apiKey: params.apiKey,
+            modelId,
+            system: params.system,
+            user: params.user,
+            temperature: 0.1,
+            useJsonMimeType: !firstMsg.includes("HTTP 400"),
+            catalog: params.catalog,
+          });
+          return { plan, model: modelId };
+        } catch (retryErr) {
+          errors.push(
+            retryErr instanceof Error ? retryErr.message : String(retryErr),
+          );
+          continue;
+        }
+      }
+
+      errors.push(firstMsg);
+    }
+  }
+
+  throw new Error(
+    errors[0] ?? "Não foi possível gerar o treino com os modelos Gemini.",
+  );
 }
 
 Deno.serve(async (req: Request): Promise<Response> => {
@@ -184,7 +312,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     );
   }
 
-  const geminiKey = Deno.env.get("GEMINI_API_KEY")?.trim() ?? "";
+  const geminiKey = sanitizeApiKey(Deno.env.get("GEMINI_API_KEY") ?? "");
   if (!geminiKey) {
     return jsonResponse(
       {
@@ -243,26 +371,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
   const prompts = buildGeminiPrompts(reqParsed.data, catalog);
 
   try {
-    let plan: GroundedPlan;
-    try {
-      plan = await callGeminiOnce({
-        apiKey: geminiKey,
-        system: prompts.system,
-        user: prompts.user,
-        temperature: 0.25,
-        catalog,
-      });
-    } catch {
-      plan = await callGeminiOnce({
-        apiKey: geminiKey,
-        system: prompts.system,
-        user: prompts.user,
-        temperature: 0.1,
-        catalog,
-      });
-    }
-
-    return jsonResponse({ plan, model: GEMINI_MODEL }, 200);
+    const result = await generateWithFallbackModels({
+      apiKey: geminiKey,
+      system: prompts.system,
+      user: prompts.user,
+      catalog,
+    });
+    return jsonResponse({ plan: result.plan, model: result.model }, 200);
   } catch (err) {
     const message = err instanceof Error
       ? err.message

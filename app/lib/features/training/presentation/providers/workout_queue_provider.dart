@@ -6,6 +6,7 @@ import 'package:personal_fitness_os/core/constants/supabase_config.dart';
 import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
+import 'package:personal_fitness_os/routing/app_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Holds custom rotating queue order per training plan ID.
@@ -14,19 +15,30 @@ import 'package:shared_preferences/shared_preferences.dart';
 class WorkoutQueueNotifier extends StateNotifier<Map<String, List<String>>> {
   WorkoutQueueNotifier({
     SharedPreferences? prefs,
+    this.userId,
     Future<void> Function(String planId, List<String> orderedIds)? onRemoteSync,
   }) : _prefs = prefs,
        _onRemoteSync = onRemoteSync,
-       super(_load(prefs));
+       super(_load(prefs, userId: userId));
 
   static const String _storageKey = 'liftr_workout_queue_v1';
 
   final SharedPreferences? _prefs;
+  final String? userId;
   final Future<void> Function(String planId, List<String> orderedIds)?
       _onRemoteSync;
 
-  static Map<String, List<String>> _load(SharedPreferences? prefs) {
-    final raw = prefs?.getString(_storageKey);
+  static String _keyForUser(String? userId) {
+    final trimmed = userId?.trim() ?? '';
+    if (trimmed.isEmpty) return _storageKey;
+    return '${_storageKey}_$trimmed';
+  }
+
+  static Map<String, List<String>> _load(
+    SharedPreferences? prefs, {
+    String? userId,
+  }) {
+    final raw = prefs?.getString(_keyForUser(userId));
     if (raw == null || raw.isEmpty) return const {};
     try {
       final decoded = jsonDecode(raw);
@@ -50,7 +62,7 @@ class WorkoutQueueNotifier extends StateNotifier<Map<String, List<String>>> {
       ...state,
       planId: orderedIds,
     };
-    _prefs?.setString(_storageKey, jsonEncode(state));
+    _prefs?.setString(_keyForUser(userId), jsonEncode(state));
     final sync = _onRemoteSync;
     if (sync != null) {
       unawaited(sync(planId, orderedIds).catchError((_) {}));
@@ -146,8 +158,10 @@ final workoutQueueProvider =
     StateNotifierProvider<WorkoutQueueNotifier, Map<String, List<String>>>(
         (ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
+  final userId = ref.watch(activeUserIdProvider);
   return WorkoutQueueNotifier(
     prefs: prefs,
+    userId: userId,
     onRemoteSync: SupabaseConfig.isConfigured
         ? (planId, orderedIds) => ref
             .read(reorderPlanWorkoutsUseCaseProvider)

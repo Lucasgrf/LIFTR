@@ -36,6 +36,108 @@ export const CatalogExerciseSchema = z.object({
 
 export type CatalogExercise = z.infer<typeof CatalogExerciseSchema>;
 
+export type GeminiModelDescriptor = {
+  name: string;
+  supportedGenerationMethods?: readonly string[];
+};
+
+export const FALLBACK_GEMINI_MODELS: readonly string[] = [
+  "gemini-4-argon",
+  "gemini-4-carbon",
+  "gemini-3.8-flash",
+  "gemini-3-flash-preview",
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
+];
+
+const EXCLUDED_MODEL_SUBSTRINGS = [
+  "embedding",
+  "imagen",
+  "veo",
+  "tts",
+  "audio",
+  "aqa",
+  "robotics",
+  "computer-use",
+  "learnlm",
+  "image-generation",
+  "live",
+  "bisect",
+];
+
+function scoreGeminiModelId(id: string): number {
+  const lower = id.toLowerCase();
+  let score = 0;
+
+  if (lower.startsWith("gemini-4")) score += 5000;
+  else if (lower.startsWith("gemini-3.8")) score += 4300;
+  else if (lower.startsWith("gemini-3.7")) score += 4200;
+  else if (lower.startsWith("gemini-3.5")) score += 4000;
+  else if (lower.startsWith("gemini-3")) score += 3800;
+  else if (lower.startsWith("gemini-2.5")) score += 3000;
+  else if (lower.startsWith("gemini-2.0")) score += 2500;
+  else if (lower.startsWith("gemini-1.5")) score += 2000;
+  else if (lower.startsWith("gemini-")) score += 1000;
+
+  if (lower.includes("argon")) score += 140;
+  else if (lower.includes("flash") && !lower.includes("lite")) score += 120;
+  else if (lower.includes("carbon") || lower.includes("pro")) score += 100;
+  else if (lower.includes("neon") || lower.includes("hydrogen")) score += 90;
+  else if (lower.includes("lite")) score += 70;
+
+  if (lower.includes("latest")) score += 15;
+  if (lower.includes("exp")) score -= 40;
+
+  return score;
+}
+
+/**
+ * Ranks available Gemini models returned by `GET /v1beta/models`, prioritizing
+ * Gemini 4 (`gemini-4-argon`, `gemini-4-carbon`) followed by the newest
+ * available Flash/Pro models supporting `generateContent`.
+ */
+export function rankGeminiCandidateModels(
+  discovered: readonly GeminiModelDescriptor[],
+): string[] {
+  const validDiscovered: string[] = [];
+
+  for (const item of discovered) {
+    const cleanId = item.name.trim().replace(/^models\//i, "");
+    const lower = cleanId.toLowerCase();
+    if (!lower.startsWith("gemini-")) continue;
+
+    if (
+      item.supportedGenerationMethods &&
+      !item.supportedGenerationMethods.includes("generateContent")
+    ) {
+      continue;
+    }
+
+    if (EXCLUDED_MODEL_SUBSTRINGS.some((sub) => lower.includes(sub))) {
+      continue;
+    }
+
+    validDiscovered.push(cleanId);
+  }
+
+  validDiscovered.sort((a, b) => scoreGeminiModelId(b) - scoreGeminiModelId(a));
+
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  // If discovery succeeded, prioritize the models confirmed to exist on this key,
+  // while still keeping static Gemini 4 / fallback IDs at the tail.
+  for (const id of [...validDiscovered, ...FALLBACK_GEMINI_MODELS]) {
+    if (!seen.has(id)) {
+      seen.add(id);
+      result.push(id);
+    }
+  }
+
+  return result;
+}
+
 const AiRawExerciseSchema = z.object({
   exercise_id: z.string().min(1),
   exercise_name: z.string().min(1),
@@ -135,8 +237,17 @@ export function extractJsonObject(rawText: string): unknown {
     throw new Error("Resposta vazia recebida do modelo.");
   }
   const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const jsonCandidate = fenceMatch ? fenceMatch[1].trim() : trimmed;
-  return JSON.parse(jsonCandidate) as unknown;
+  const candidate = fenceMatch ? fenceMatch[1].trim() : trimmed;
+  try {
+    return JSON.parse(candidate) as unknown;
+  } catch {
+    const firstBrace = candidate.indexOf("{");
+    const lastBrace = candidate.lastIndexOf("}");
+    if (firstBrace >= 0 && lastBrace > firstBrace) {
+      return JSON.parse(candidate.slice(firstBrace, lastBrace + 1)) as unknown;
+    }
+    throw new Error("Resposta do modelo não contém JSON válido.");
+  }
 }
 
 export function validateAndGroundPlan(

@@ -119,19 +119,26 @@ class SupabaseProfileRemoteDataSource implements ProfileRemoteDataSource {
 
     return UserProfileData(
       displayName: (row?['display_name'] as String?) ??
+          (meta['displayName'] as String?) ??
           (meta['name'] as String?) ??
           (meta['full_name'] as String?),
       email: user.email,
       avatarUrl: avatarUrl,
       avatarStoragePath: storagePath,
-      biologicalSex: row?['biological_sex'] as String?,
-      age: (row?['age'] as num?)?.toInt(),
-      heightCm: (row?['height_cm'] as num?)?.toInt(),
-      weightKg: (row?['weight_kg'] as num?)?.toDouble(),
-      bodyFatPercent: (row?['body_fat_percent'] as num?)?.toDouble(),
-      goal: row?['goal'] as String?,
-      experience: row?['experience'] as String?,
-      activityLevel: row?['activity_level'] as String?,
+      biologicalSex: (row?['biological_sex'] as String?) ??
+          (meta['biologicalSex'] as String?),
+      age: (row?['age'] as num?)?.toInt() ?? (meta['age'] as num?)?.toInt(),
+      heightCm: (row?['height_cm'] as num?)?.toInt() ??
+          (meta['heightCm'] as num?)?.toInt(),
+      weightKg: (row?['weight_kg'] as num?)?.toDouble() ??
+          (meta['weightKg'] as num?)?.toDouble(),
+      bodyFatPercent: (row?['body_fat_percent'] as num?)?.toDouble() ??
+          (meta['bodyFatPercent'] as num?)?.toDouble(),
+      goal: (row?['goal'] as String?) ?? (meta['goal'] as String?),
+      experience: (row?['experience'] as String?) ??
+          (meta['experience'] as String?),
+      activityLevel: (row?['activity_level'] as String?) ??
+          (meta['activityLevel'] as String?),
     );
   }
 

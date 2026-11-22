@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +14,7 @@ import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
+import 'package:personal_fitness_os/features/profile/presentation/providers/profile_providers.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 import 'package:personal_fitness_os/features/training/domain/constants/split_presets.dart';
 import 'package:personal_fitness_os/routing/app_router.dart';
@@ -166,7 +169,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final targetRoute = openAiGenerator ? '/training/ai-generator' : '/';
 
     if (!SupabaseConfig.isConfigured) {
-      ref.read(authStateProvider.notifier).state = true;
+      syncActiveAuthSession(ref, isLoggedIn: true);
       context.go(targetRoute);
       return;
     }
@@ -187,8 +190,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       } catch (_) {
         // Best-effort metadata sync; local settings remain persisted.
       }
+      unawaited(
+        ref.read(profileControllerProvider.notifier).syncSettingsToRemote(),
+      );
       if (!mounted) return;
-      ref.read(authStateProvider.notifier).state = true;
+      syncActiveAuthSession(
+        ref,
+        isLoggedIn: true,
+        overrideUserId: user.id,
+      );
       context.go(targetRoute);
       return;
     }

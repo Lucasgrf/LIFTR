@@ -39,18 +39,28 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     setState(() => _isLoading = true);
     try {
+      String? registeredUserId;
+      var hasSession = false;
       if (SupabaseConfig.isConfigured) {
         final authResponse = await Supabase.instance.client.auth.signUp(
           email: _emailController.text.trim(),
           password: _passwordController.text,
           data: {'name': _nameController.text.trim()},
         );
-        if (authResponse.session != null && mounted) {
-          ref.read(authStateProvider.notifier).state = true;
-        }
+        registeredUserId = authResponse.user?.id;
+        hasSession = authResponse.session != null;
       }
       if (!mounted) return;
-      ref.read(userSettingsProvider.notifier).updateProfileIdentity(
+      if (hasSession || !SupabaseConfig.isConfigured) {
+        syncActiveAuthSession(
+          ref,
+          isLoggedIn: hasSession,
+          overrideUserId: registeredUserId,
+        );
+      } else if (registeredUserId != null) {
+        ref.read(activeUserIdProvider.notifier).state = registeredUserId;
+      }
+      ref.read(userSettingsProvider.notifier).resetForAccount(
             displayName: _nameController.text.trim(),
           );
       context.go('/onboarding');

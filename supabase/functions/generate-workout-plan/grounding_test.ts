@@ -4,6 +4,7 @@ import {
   type CatalogExercise,
   extractJsonObject,
   GenerateWorkoutRequestSchema,
+  rankGeminiCandidateModels,
   validateAndGroundPlan,
 } from "./grounding.ts";
 
@@ -165,13 +166,49 @@ Deno.test("grounding: fails if workout ends up with zero valid exercises", () =>
   assertThrows(() => validateAndGroundPlan(raw, SAMPLE_CATALOG));
 });
 
-Deno.test("extractJsonObject parses markdown-fenced json and buildGeminiPrompts serializes catalog", () => {
+Deno.test("rankGeminiCandidateModels prioritizes Gemini 4 Argon/Carbon and filters embeddings", () => {
+  const ranked = rankGeminiCandidateModels([
+    {
+      name: "models/text-embedding-004",
+      supportedGenerationMethods: ["embedContent"],
+    },
+    {
+      name: "models/gemini-2.0-flash",
+      supportedGenerationMethods: ["generateContent"],
+    },
+    {
+      name: "models/gemini-4-carbon",
+      supportedGenerationMethods: ["generateContent"],
+    },
+    {
+      name: "models/gemini-4-argon",
+      supportedGenerationMethods: ["generateContent"],
+    },
+    {
+      name: "models/gemini-3.8-flash",
+      supportedGenerationMethods: ["generateContent"],
+    },
+  ]);
+
+  assertEquals(ranked[0], "gemini-4-argon");
+  assertEquals(ranked[1], "gemini-4-carbon");
+  assertEquals(ranked[2], "gemini-3.8-flash");
+  assertEquals(ranked.includes("text-embedding-004"), false);
+});
+
+Deno.test("extractJsonObject parses markdown-fenced or preamble-wrapped json", () => {
   const decoded = extractJsonObject('```json\n{"ok":true,"n":2}\n```') as {
     ok: boolean;
     n: number;
   };
   assertEquals(decoded.ok, true);
   assertEquals(decoded.n, 2);
+
+  const wrapped = extractJsonObject('Aqui está o JSON:\n{"ok":true,"n":4}\nFim.') as {
+    ok: boolean;
+    n: number;
+  };
+  assertEquals(wrapped.n, 4);
 
   const req = GenerateWorkoutRequestSchema.parse({
     goal: "hypertrophy",

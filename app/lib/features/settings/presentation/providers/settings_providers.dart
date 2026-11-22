@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
+import 'package:personal_fitness_os/routing/app_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum UserGoal {
@@ -359,13 +360,26 @@ class UserSettingsState {
 }
 
 class UserSettingsNotifier extends StateNotifier<UserSettingsState> {
-  UserSettingsNotifier(this._prefs) : super(_load(_prefs));
+  UserSettingsNotifier(
+    this._prefs, {
+    this.userId,
+  }) : super(_load(_prefs, userId: userId));
 
   static const String _storageKey = 'liftr_user_settings_v1';
   final SharedPreferences? _prefs;
+  final String? userId;
 
-  static UserSettingsState _load(SharedPreferences? prefs) {
-    final raw = prefs?.getString(_storageKey);
+  static String storageKeyForUser(String? userId) {
+    final trimmed = userId?.trim() ?? '';
+    if (trimmed.isEmpty) return _storageKey;
+    return '${_storageKey}_$trimmed';
+  }
+
+  static UserSettingsState _load(
+    SharedPreferences? prefs, {
+    String? userId,
+  }) {
+    final raw = prefs?.getString(storageKeyForUser(userId));
     if (raw == null || raw.isEmpty) return const UserSettingsState();
     try {
       final decoded = jsonDecode(raw);
@@ -382,7 +396,22 @@ class UserSettingsNotifier extends StateNotifier<UserSettingsState> {
   }
 
   void _persist() {
-    _prefs?.setString(_storageKey, jsonEncode(state.toJson()));
+    _prefs?.setString(
+      storageKeyForUser(userId),
+      jsonEncode(state.toJson()),
+    );
+  }
+
+  /// Resets settings to clean defaults for a newly registered account so data
+  /// from any previously logged-in account on the device never leaks over.
+  void resetForAccount({String? displayName}) {
+    state = UserSettingsState(
+      displayName:
+          (displayName != null && displayName.trim().isNotEmpty)
+              ? displayName.trim()
+              : null,
+    );
+    _persist();
   }
 
   void updateProfileIdentity({
@@ -489,5 +518,9 @@ class UserSettingsNotifier extends StateNotifier<UserSettingsState> {
 
 final userSettingsProvider =
     StateNotifierProvider<UserSettingsNotifier, UserSettingsState>((ref) {
-  return UserSettingsNotifier(ref.watch(sharedPreferencesProvider));
+  final userId = ref.watch(activeUserIdProvider);
+  return UserSettingsNotifier(
+    ref.watch(sharedPreferencesProvider),
+    userId: userId,
+  );
 });

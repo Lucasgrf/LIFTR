@@ -6,6 +6,7 @@ import 'package:personal_fitness_os/features/history/domain/entities/timeline_ev
 import 'package:personal_fitness_os/features/history/domain/usecases/get_exercise_history.dart';
 import 'package:personal_fitness_os/features/history/domain/usecases/get_unified_timeline.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
+import 'package:personal_fitness_os/routing/app_router.dart';
 
 final getUnifiedTimelineUseCaseProvider =
     Provider<GetUnifiedTimelineUseCase>((ref) {
@@ -25,6 +26,7 @@ final timelineFilterDaysProvider =
 
 final unifiedTimelineProvider =
     FutureProvider.autoDispose<List<TimelineEvent>>((ref) async {
+  ref.watch(activeUserIdProvider);
   final type = ref.watch(timelineFilterTypeProvider);
   final days = ref.watch(timelineFilterDaysProvider);
 
@@ -48,6 +50,7 @@ final unifiedTimelineProvider =
 
 final exerciseHistoryProvider = FutureProvider.autoDispose
     .family<List<ExerciseHistoryRecord>, String>((ref, exerciseId) async {
+  ref.watch(activeUserIdProvider);
   final useCase = ref.watch(getExerciseHistoryUseCaseProvider);
   final result = await useCase.execute(exerciseId);
 
@@ -59,6 +62,7 @@ final exerciseHistoryProvider = FutureProvider.autoDispose
 
 final historyListProvider =
     FutureProvider.autoDispose<List<WorkoutSession>>((ref) async {
+  ref.watch(activeUserIdProvider);
   final useCase = ref.watch(getWorkoutHistoryUseCaseProvider);
   final result = await useCase.execute(limit: 50);
 

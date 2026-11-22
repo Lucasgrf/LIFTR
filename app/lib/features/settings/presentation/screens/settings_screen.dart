@@ -679,10 +679,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
 
     if (confirmed == true) {
+      ref.read(restTimerNotifierProvider.notifier).stop();
       if (SupabaseConfig.isConfigured) {
-        await Supabase.instance.client.auth.signOut();
+        try {
+          await Supabase.instance.client.auth.signOut();
+        } catch (_) {}
       }
-      ref.read(authStateProvider.notifier).state = false;
+      syncActiveAuthSession(ref, isLoggedIn: false);
       if (context.mounted) {
         context.go('/login');
       }

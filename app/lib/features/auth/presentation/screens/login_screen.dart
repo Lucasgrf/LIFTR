@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +10,7 @@ import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_brand_mark.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
+import 'package:personal_fitness_os/features/profile/presentation/providers/profile_providers.dart';
 import 'package:personal_fitness_os/routing/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -37,14 +40,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     setState(() => _isLoading = true);
     try {
+      String? signedInUserId;
       if (SupabaseConfig.isConfigured) {
-        await Supabase.instance.client.auth.signInWithPassword(
+        final response = await Supabase.instance.client.auth.signInWithPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
+        signedInUserId = response.user?.id;
       }
       if (!mounted) return;
-      ref.read(authStateProvider.notifier).state = true;
+      syncActiveAuthSession(
+        ref,
+        isLoggedIn: true,
+        overrideUserId: signedInUserId,
+      );
+      unawaited(ref.read(profileControllerProvider.notifier).loadProfile());
       context.go('/');
     } catch (e) {
       if (!mounted) return;

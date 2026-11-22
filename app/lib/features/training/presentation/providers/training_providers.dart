@@ -19,6 +19,7 @@ import 'package:personal_fitness_os/features/training/domain/usecases/get_traini
 import 'package:personal_fitness_os/features/training/domain/usecases/reorder_plan_workouts.dart';
 import 'package:personal_fitness_os/features/training/domain/usecases/reorder_workout_exercises.dart';
 import 'package:personal_fitness_os/features/training/domain/usecases/set_active_training_plan.dart';
+import 'package:personal_fitness_os/routing/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // --- INFRASTRUCTURE PROVIDERS ---
@@ -103,6 +104,7 @@ class TrainingPlansNotifier extends StateNotifier<AsyncValue<List<TrainingPlan>>
 
 final trainingPlansStateProvider =
     StateNotifierProvider<TrainingPlansNotifier, AsyncValue<List<TrainingPlan>>>((ref) {
+  ref.watch(activeUserIdProvider);
   return TrainingPlansNotifier(ref);
 });
 
