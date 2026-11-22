@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 
 class AppTypography {
+  static const fontFamily = 'Geist';
   static const tabularFeatures = <FontFeature>[FontFeature.tabularFigures()];
 
   static TextStyle eyebrow(BuildContext context) {
     final colors = context.appColors;
     return TextStyle(
-      fontFamily: 'Inter',
-      fontSize: 10,
-      height: 1.4,
-      fontWeight: FontWeight.w700,
-      letterSpacing: 1.4,
+      fontFamily: fontFamily,
+      fontSize: 11,
+      height: 1.35,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 1.2,
       color: colors.textTertiary,
     );
   }
@@ -22,7 +23,7 @@ class AppTypography {
 
     return TextTheme(
       displayLarge: TextStyle(
-        fontFamily: 'Inter',
+        fontFamily: fontFamily,
         fontSize: 36,
         height: 40 / 36,
         fontWeight: FontWeight.w700,
@@ -31,7 +32,7 @@ class AppTypography {
         color: textColor,
       ),
       displayMedium: TextStyle(
-        fontFamily: 'Inter',
+        fontFamily: fontFamily,
         fontSize: 30,
         height: 34 / 30,
         fontWeight: FontWeight.w700,
@@ -40,7 +41,7 @@ class AppTypography {
         color: textColor,
       ),
       headlineLarge: TextStyle(
-        fontFamily: 'Inter',
+        fontFamily: fontFamily,
         fontSize: 28,
         height: 34 / 28,
         fontWeight: FontWeight.w700,
@@ -48,7 +49,7 @@ class AppTypography {
         color: textColor,
       ),
       headlineMedium: TextStyle(
-        fontFamily: 'Inter',
+        fontFamily: fontFamily,
         fontSize: 22,
         height: 28 / 22,
         fontWeight: FontWeight.w600,
@@ -57,7 +58,7 @@ class AppTypography {
         color: textColor,
       ),
       titleLarge: TextStyle(
-        fontFamily: 'Inter',
+        fontFamily: fontFamily,
         fontSize: 18,
         height: 24 / 18,
         fontWeight: FontWeight.w600,
@@ -66,7 +67,7 @@ class AppTypography {
         color: textColor,
       ),
       titleMedium: TextStyle(
-        fontFamily: 'Inter',
+        fontFamily: fontFamily,
         fontSize: 16,
         height: 22 / 16,
         fontWeight: FontWeight.w600,
@@ -75,7 +76,7 @@ class AppTypography {
         color: textColor,
       ),
       titleSmall: TextStyle(
-        fontFamily: 'Inter',
+        fontFamily: fontFamily,
         fontSize: 14,
         height: 20 / 14,
         fontWeight: FontWeight.w600,
@@ -84,14 +85,14 @@ class AppTypography {
         color: textColor,
       ),
       bodyLarge: TextStyle(
-        fontFamily: 'Inter',
+        fontFamily: fontFamily,
         fontSize: 16,
         height: 24 / 16,
         fontWeight: FontWeight.w400,
         color: textColor,
       ),
       bodyMedium: TextStyle(
-        fontFamily: 'Inter',
+        fontFamily: fontFamily,
         fontSize: 14,
         height: 20 / 14,
         fontWeight: FontWeight.w500,
@@ -99,7 +100,7 @@ class AppTypography {
         color: textColor,
       ),
       bodySmall: TextStyle(
-        fontFamily: 'Inter',
+        fontFamily: fontFamily,
         fontSize: 12,
         height: 16 / 12,
         fontWeight: FontWeight.w400,
@@ -107,7 +108,7 @@ class AppTypography {
         color: textColor,
       ),
       labelLarge: TextStyle(
-        fontFamily: 'Inter',
+        fontFamily: fontFamily,
         fontSize: 15,
         height: 20 / 15,
         fontWeight: FontWeight.w600,
@@ -115,7 +116,7 @@ class AppTypography {
         color: textColor,
       ),
       labelMedium: TextStyle(
-        fontFamily: 'Inter',
+        fontFamily: fontFamily,
         fontSize: 12,
         height: 16 / 12,
         fontWeight: FontWeight.w600,
@@ -124,11 +125,11 @@ class AppTypography {
         color: textColor,
       ),
       labelSmall: TextStyle(
-        fontFamily: 'Inter',
+        fontFamily: fontFamily,
         fontSize: 11,
         height: 14 / 11,
         fontWeight: FontWeight.w500,
-        letterSpacing: 0.33,
+        letterSpacing: 0.3,
         fontFeatures: tabularFeatures,
         color: textColor,
       ),

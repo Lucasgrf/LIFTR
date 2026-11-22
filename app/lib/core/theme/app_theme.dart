@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
+import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
@@ -14,7 +15,8 @@ class AppTheme {
     final colors = isDark ? AppColors.dark : AppColors.light;
     const radius = AppRadius.defaults;
     const spacing = AppSpacing.defaults;
-    const fitness = FitnessColors.defaults;
+    const motion = AppMotion.defaults;
+    final fitness = isDark ? FitnessColors.dark : FitnessColors.light;
     final textTheme = AppTypography.textTheme(isDark: isDark);
 
     final colorScheme =
@@ -43,7 +45,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: isDark ? Brightness.dark : Brightness.light,
-      fontFamily: 'Inter',
+      fontFamily: AppTypography.fontFamily,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: colors.background,
       textTheme: textTheme,
@@ -51,6 +53,7 @@ class AppTheme {
         colors,
         radius,
         spacing,
+        motion,
         fitness,
       ],
       appBarTheme: AppBarTheme(
@@ -63,12 +66,14 @@ class AppTheme {
         titleTextStyle: textTheme.titleLarge,
       ),
       navigationBarTheme: NavigationBarThemeData(
-        height: 68,
+        height: 64,
         backgroundColor: colors.surfaceSubtle,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        indicatorColor: colors.primary.withValues(alpha: 0.15),
-        indicatorShape: const StadiumBorder(),
+        indicatorColor: colors.primaryMuted,
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radius.small),
+        ),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final isSelected = states.contains(WidgetState.selected);
@@ -84,6 +89,19 @@ class AppTheme {
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           );
         }),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: colors.surfaceVariant,
+        selectedColor: colors.primaryMuted,
+        checkmarkColor: colors.primaryLight,
+        labelStyle: textTheme.labelMedium?.copyWith(color: colors.textPrimary),
+        secondaryLabelStyle: textTheme.labelMedium?.copyWith(
+          color: colors.primaryLight,
+        ),
+        side: BorderSide(color: colors.border),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radius.small),
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
