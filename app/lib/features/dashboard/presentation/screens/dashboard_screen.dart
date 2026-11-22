@@ -11,7 +11,10 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_brand_mark.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
@@ -95,20 +98,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Container(
-                  width: 38,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: colors.border,
-                    borderRadius: BorderRadius.circular(radius.full),
-                  ),
-                ),
+              LiftrSheetHeader(
+                eyebrow: 'Fila rotativa · ${plan.name}',
+                title: 'Escolher treino de hoje',
               ),
-              const SizedBox(height: 16),
-              Text('Fila rotativa · ${plan.name}', style: AppTypography.eyebrow(ctx)),
-              const SizedBox(height: 4),
-              Text('Escolher treino de hoje', style: ctx.textTheme.titleLarge),
               const SizedBox(height: 14),
               if (orderedWorkouts.length > 1)
                 ListTile(
@@ -253,9 +246,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    'SEU TREINO',
-                                    style: AppTypography.eyebrow(context),
+                                  Row(
+                                    children: [
+                                      const LiftrBrandMark(size: 16),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          'LIFTR · HOJE',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: AppTypography.eyebrow(context),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   const SizedBox(height: 3),
                                   Text(
@@ -358,28 +361,56 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       if (todayWorkout != null &&
                           todayWorkout.exercises.isNotEmpty) ...[
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Exercícios de hoje',
-                              style: context.textTheme.titleMedium,
+                            Expanded(
+                              flex: 3,
+                              child: Text(
+                                'Exercícios de hoje',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: context.textTheme.titleMedium,
+                              ),
                             ),
-                            Text(
-                              '${todayWorkout.exercises.length} PRESCRITOS',
-                              style: AppTypography.eyebrow(context),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              flex: 2,
+                              child: Text(
+                                '${todayWorkout.exercises.length} PRESCRITOS',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.end,
+                                style: AppTypography.eyebrow(context),
+                              ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 10),
-                        ...todayWorkout.exercises.asMap().entries.map(
-                              (entry) => Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: TodayExercisePreviewCard(
-                                  index: entry.key,
-                                  workoutExercise: entry.value,
+                        Container(
+                          decoration: BoxDecoration(
+                            color: colors.surface,
+                            borderRadius: BorderRadius.circular(radius.large),
+                            border: Border.all(color: colors.border),
+                          ),
+                          child: Column(
+                            children: [
+                              for (var i = 0;
+                                  i < todayWorkout.exercises.length;
+                                  i++) ...[
+                                if (i > 0)
+                                  Divider(
+                                    height: 1,
+                                    thickness: 1,
+                                    color: colors.borderSubtle,
+                                  ),
+                                TodayExercisePreviewCard(
+                                  index: i,
+                                  workoutExercise: todayWorkout.exercises[i],
+                                  embedded: true,
                                 ),
-                              ),
-                            ),
+                              ],
+                            ],
+                          ),
+                        ),
                       ],
 
                       // 4. Máximo 1 card de Insight discreto
@@ -476,29 +507,17 @@ class _DashboardSingleInsightCard extends StatelessWidget {
         break;
     }
 
-    return Container(
+    return AppCard(
+      variant: AppCardVariant.accented,
+      accentColor: accent,
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(radius.medium),
-        border: Border.all(color: accent.withValues(alpha: 0.2)),
-      ),
       child: Row(
         children: [
-          Container(
-            width: 3,
-            height: 36,
-            decoration: BoxDecoration(
-              color: accent,
-              borderRadius: BorderRadius.circular(radius.full),
-            ),
-          ),
-          const SizedBox(width: 12),
           Container(
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.14),
+              color: colors.surfaceElevated,
               borderRadius: BorderRadius.circular(radius.small),
             ),
             child: Icon(icon, size: 18, color: accent),

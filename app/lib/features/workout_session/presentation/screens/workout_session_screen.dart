@@ -10,6 +10,7 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
@@ -205,20 +206,9 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: () => Navigator.of(ctx).pop(true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colors.danger,
-                  foregroundColor: colors.onPrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(radius.medium),
-                  ),
-                ),
-                child: const Text('Descartar treino'),
-              ),
+            AppButton.destructive(
+              label: 'Descartar treino',
+              onPressed: () => Navigator.of(ctx).pop(true),
             ),
             const SizedBox(height: 6),
             SizedBox(
@@ -274,8 +264,8 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
     final isOffline = ref.watch(isOfflineModeProvider);
     final pendingSyncCount = ref.watch(pendingSyncCountProvider);
     final sessionAsync = ref.watch(liveSessionDetailProvider(widget.sessionId));
-    final restRunning = ref.watch(
-      restTimerNotifierProvider.select((s) => s.isRunning),
+    final restVisible = ref.watch(
+      restTimerNotifierProvider.select((s) => s.isVisible),
     );
 
     return Scaffold(
@@ -370,8 +360,8 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                     BorderRadius.circular(radius.small),
                                 child: Container(
                                   constraints: const BoxConstraints(
-                                    minHeight: 44,
-                                    minWidth: 78,
+                                    minHeight: 48,
+                                    minWidth: 82,
                                   ),
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 14,
@@ -440,7 +430,7 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                 0,
                                 12,
                                 0,
-                                restRunning ? 156 : 40,
+                                restVisible ? 172 : 40,
                               ),
                               itemCount: session.exercises.length,
                               itemBuilder: (context, index) {

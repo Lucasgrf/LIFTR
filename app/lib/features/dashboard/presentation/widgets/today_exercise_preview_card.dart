@@ -15,10 +15,12 @@ class TodayExercisePreviewCard extends ConsumerWidget {
     super.key,
     required this.index,
     required this.workoutExercise,
+    this.embedded = false,
   });
 
   final int index;
   final WorkoutExercise workoutExercise;
+  final bool embedded;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -73,87 +75,105 @@ class TodayExercisePreviewCard extends ConsumerWidget {
     final indexLabel = (index + 1).toString().padLeft(2, '0');
     final exerciseName = workoutExercise.exercise?.name ?? 'Exercício ${index + 1}';
 
+    final content = ConstrainedBox(
+      constraints: BoxConstraints(minHeight: embedded ? 80 : 88),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 26,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  indexLabel,
+                  style: context.textTheme.labelSmall?.copyWith(
+                    color: colors.textTertiary,
+                    fontWeight: FontWeight.w700,
+                    fontFeatures: AppTypography.tabularFeatures,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          exerciseName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.textTheme.titleSmall?.copyWith(
+                            color: colors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        flex: 2,
+                        child: Text(
+                          targetSummary,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: colors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                            fontFeatures: AppTypography.tabularFeatures,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 11),
+                  LiftrProgressBar(
+                    progress: progressValue,
+                    height: 5,
+                    color: isIncrease ? fitnessColors.progressUp : colors.primary,
+                    trackColor: colors.surfaceElevated,
+                  ),
+                  const SizedBox(height: 7),
+                  Text(
+                    noteText,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.labelSmall?.copyWith(
+                      color: isIncrease
+                          ? fitnessColors.progressUp
+                          : colors.textTertiary,
+                      fontWeight:
+                          isIncrease ? FontWeight.w600 : FontWeight.w500,
+                      fontFeatures: AppTypography.tabularFeatures,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (embedded) {
+      return content;
+    }
+
     return Container(
-      constraints: const BoxConstraints(minHeight: 88),
-      padding: const EdgeInsets.fromLTRB(12, 14, 14, 12),
       decoration: BoxDecoration(
         color: colors.surfacePreview,
         borderRadius: BorderRadius.circular(radius.large),
         border: Border.all(color: colors.border),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 26,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text(
-                indexLabel,
-                style: context.textTheme.labelSmall?.copyWith(
-                  color: colors.textTertiary,
-                  fontWeight: FontWeight.w700,
-                  fontFeatures: AppTypography.tabularFeatures,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        exerciseName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.textTheme.titleSmall?.copyWith(
-                          color: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      targetSummary,
-                      style: context.textTheme.labelSmall?.copyWith(
-                        color: colors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                        fontFeatures: AppTypography.tabularFeatures,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 11),
-                LiftrProgressBar(
-                  progress: progressValue,
-                  height: 5,
-                  color: isIncrease ? fitnessColors.progressUp : colors.primary,
-                  trackColor: colors.surfaceElevated,
-                ),
-                const SizedBox(height: 7),
-                Text(
-                  noteText,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.textTheme.labelSmall?.copyWith(
-                    color: isIncrease
-                        ? fitnessColors.progressUp
-                        : colors.textTertiary,
-                    fontWeight: isIncrease ? FontWeight.w600 : FontWeight.w500,
-                    fontFeatures: AppTypography.tabularFeatures,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      child: content,
     );
   }
 

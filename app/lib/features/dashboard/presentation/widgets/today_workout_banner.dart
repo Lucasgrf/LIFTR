@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
@@ -7,6 +6,8 @@ import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
@@ -38,7 +39,6 @@ class TodayWorkoutBanner extends StatelessWidget {
     final colors = context.appColors;
     final radius = context.appRadius;
     final fitnessColors = context.fitnessColors;
-    final compactHeight = MediaQuery.sizeOf(context).height < 700;
 
     // 1. Ongoing active session
     if (activeSession != null) {
@@ -133,68 +133,35 @@ class TodayWorkoutBanner extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Flexible(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.primaryMuted,
-                      borderRadius: BorderRadius.circular(radius.full),
-                    ),
-                    child: Text(
-                      chipText,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: colors.primaryLight,
-                        fontFeatures: AppTypography.tabularFeatures,
+            SizedBox(
+              width: double.infinity,
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  LiftrBadge(
+                    label: chipText,
+                    tone: LiftrBadgeTone.brand,
+                  ),
+                  if (onSkipOrSwap != null)
+                    Semantics(
+                      label: 'Pular ou trocar treino do dia',
+                      button: true,
+                      child: TextButton(
+                        onPressed: onSkipOrSwap,
+                        style: TextButton.styleFrom(
+                          minimumSize: const Size(48, 48),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          foregroundColor: colors.textSecondary,
+                        ),
+                        child: const Text('Pular / Trocar'),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                if (onSkipOrSwap != null)
-                  Semantics(
-                    label: 'Pular ou trocar treino do dia',
-                    button: true,
-                    child: TextButton(
-                      onPressed: onSkipOrSwap,
-                      style: TextButton.styleFrom(
-                        minimumSize: const Size(48, 40),
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        foregroundColor: colors.textSecondary,
-                      ),
-                      child: const Text('Pular / Trocar'),
-                    ),
-                  ),
-              ],
-            ),
-            if (!compactHeight) ...[
-              const SizedBox(height: 16),
-              Transform.rotate(
-                angle: -4 * math.pi / 180,
-                child: Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: colors.primaryMuted,
-                    borderRadius: BorderRadius.circular(radius.medium),
-                    border: Border.all(
-                      color: colors.primary.withValues(alpha: 0.28),
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.fitness_center_rounded,
-                    size: 22,
-                    color: colors.primaryLight,
-                  ),
-                ),
+                ],
               ),
-            ],
+            ),
             const SizedBox(height: 16),
             Text(
               'TREINO DE HOJE',
@@ -233,19 +200,9 @@ class TodayWorkoutBanner extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: fitnessColors.progressNeutral.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(radius.full),
-              ),
-              child: Text(
-                'FILA LIVRE',
-                style: context.textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: fitnessColors.progressNeutral,
-                ),
-              ),
+            const LiftrBadge(
+              label: 'FILA LIVRE',
+              tone: LiftrBadgeTone.neutral,
             ),
             const SizedBox(height: 14),
             Text(
@@ -278,19 +235,9 @@ class TodayWorkoutBanner extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: colors.surfaceElevated,
-              borderRadius: BorderRadius.circular(radius.full),
-            ),
-            child: Text(
-              'SEM PROGRAMA ATIVO',
-              style: context.textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: colors.textSecondary,
-              ),
-            ),
+          const LiftrBadge(
+            label: 'SEM PROGRAMA ATIVO',
+            tone: LiftrBadgeTone.neutral,
           ),
           const SizedBox(height: 14),
           Text(
@@ -329,52 +276,15 @@ class _HeroShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.appColors;
     final radius = context.appRadius;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(radius.xl),
-      child: Stack(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: colors.surface,
-              borderRadius: BorderRadius.circular(radius.xl),
-              border: Border.all(color: borderColor, width: 1),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  glowColor.withValues(alpha: 0.11),
-                  colors.surface,
-                ],
-                stops: const [0.0, 0.45],
-              ),
-            ),
-            child: child,
-          ),
-          Positioned(
-            top: -55,
-            right: -30,
-            child: IgnorePointer(
-              child: Container(
-                width: 150,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      glowColor.withValues(alpha: 0.16),
-                      glowColor.withValues(alpha: 0.0),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+    return AppCard(
+      variant: AppCardVariant.accented,
+      accentColor: glowColor,
+      borderColor: borderColor,
+      borderRadius: radius.xl,
+      padding: const EdgeInsets.all(20),
+      child: child,
     );
   }
 }

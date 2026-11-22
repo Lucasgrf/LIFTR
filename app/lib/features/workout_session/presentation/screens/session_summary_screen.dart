@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,11 +7,14 @@ import 'package:intl/intl.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
+import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_brand_mark.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/core/widgets/offline_banner_widget.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
@@ -76,7 +80,6 @@ class SessionSummaryScreen extends ConsumerWidget {
     final isOffline = ref.watch(isOfflineModeProvider);
     final isOnline = !isOffline;
     final pendingCount = ref.watch(pendingSyncCountProvider);
-    final disableAnimations = MediaQuery.disableAnimationsOf(context);
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -105,75 +108,50 @@ class SessionSummaryScreen extends ConsumerWidget {
               dateLabel[0].toUpperCase() + dateLabel.substring(1);
           final promoted = _detectPromotions(session);
 
-          return Stack(
-            children: [
-              // Emerald radial top glow
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: RadialGradient(
-                        center: const Alignment(0, -1.0),
-                        radius: 0.9,
-                        colors: [
-                          fitnessColors.progressUp.withValues(alpha: 0.12),
-                          colors.background.withValues(alpha: 0.0),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              SafeArea(
-                child: Column(
-                  children: [
-                    if (isOffline)
-                      OfflineBannerWidget(pendingChangesCount: pendingCount),
-                    Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.fromLTRB(0, 28, 0, 24),
-                        children: [
-                          ResponsiveContainer(
-                            child: Column(
-                              children: [
-                                // Celebration Halo
-                                Transform.rotate(
-                                  angle: -3 * math.pi / 180,
-                                  child: Container(
-                                    width: 72,
-                                    height: 72,
-                                    decoration: BoxDecoration(
-                                      color: fitnessColors.progressUp,
-                                      borderRadius: BorderRadius.circular(
-                                        radius.xl,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: fitnessColors.progressUp
-                                              .withValues(alpha: 0.22),
-                                          blurRadius: 30,
-                                          spreadRadius: 4,
-                                        ),
-                                      ],
-                                    ),
-                                    child: Icon(
-                                      Icons.check_rounded,
-                                      size: 36,
-                                      color: fitnessColors.onSuccess,
-                                    ),
-                                  ),
+          final motion = context.appMotion;
+          return SafeArea(
+            child: Column(
+              children: [
+                if (isOffline)
+                  OfflineBannerWidget(pendingChangesCount: pendingCount),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(0, 28, 0, 24),
+                    children: [
+                      ResponsiveContainer(
+                        child: Column(
+                          children: [
+                            const LiftrBrandMark(size: 18),
+                            const SizedBox(height: 14),
+                            Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: colors.primaryMuted,
+                                borderRadius:
+                                    BorderRadius.circular(radius.large),
+                                border: Border.all(
+                                  color: fitnessColors.progressUp,
+                                  width: 1.5,
                                 ),
-                                const SizedBox(height: 20),
-                                Text(
-                                  'SESSÃO FINALIZADA',
-                                  style: AppTypography.eyebrow(context),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  'Treino concluído!',
-                                  style: context.textTheme.displayMedium,
-                                  textAlign: TextAlign.center,
-                                ),
+                              ),
+                              child: Icon(
+                                Icons.check_rounded,
+                                size: 28,
+                                color: fitnessColors.progressUp,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            Text(
+                              'SESSÃO FINALIZADA',
+                              style: AppTypography.eyebrow(context),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Treino concluído',
+                              style: context.textTheme.displayMedium,
+                              textAlign: TextAlign.center,
+                            ),
                                 const SizedBox(height: 6),
                                 Text(
                                   '${session.workoutName} · $capitalizedDate',
@@ -304,13 +282,17 @@ class SessionSummaryScreen extends ConsumerWidget {
                                           return TweenAnimationBuilder<double>(
                                             tween:
                                                 Tween(begin: 0.0, end: 1.0),
-                                            duration: disableAnimations
-                                                ? Duration.zero
-                                                : Duration(
-                                                    milliseconds:
-                                                        280 + (idx * 60),
-                                                  ),
-                                            curve: Curves.easeOutQuart,
+                                            duration: motion.resolve(
+                                              context,
+                                              Duration(
+                                                milliseconds: (motion
+                                                            .standard
+                                                            .inMilliseconds +
+                                                        idx * 35)
+                                                    .clamp(0, 260),
+                                              ),
+                                            ),
+                                            curve: motion.curveStandard,
                                             builder: (ctx, val, child) {
                                               return Opacity(
                                                 opacity: val,
@@ -373,35 +355,12 @@ class SessionSummaryScreen extends ConsumerWidget {
                                                       ],
                                                     ),
                                                   ),
-                                                  Container(
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                      horizontal: 10,
-                                                      vertical: 6,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      color: fitnessColors
-                                                          .progressUp
-                                                          .withValues(
-                                                        alpha: 0.14,
-                                                      ),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                        radius.full,
-                                                      ),
-                                                    ),
-                                                    child: Text(
-                                                      '+${_formatKg(item.deltaKg)} kg',
-                                                      style: context
-                                                          .textTheme.labelMedium
-                                                          ?.copyWith(
-                                                        color: fitnessColors
-                                                            .progressUp,
-                                                        fontFeatures:
-                                                            AppTypography
-                                                                .tabularFeatures,
-                                                      ),
-                                                    ),
+                                                  LiftrBadge(
+                                                    label:
+                                                        '+${_formatKg(item.deltaKg)} kg',
+                                                    tone: LiftrBadgeTone.success,
+                                                    icon: Icons
+                                                        .north_east_rounded,
                                                   ),
                                                 ],
                                               ),
@@ -472,9 +431,7 @@ class SessionSummaryScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-              ),
-            ],
-          );
+              );
         },
       ),
     );

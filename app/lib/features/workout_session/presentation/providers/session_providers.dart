@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
@@ -134,20 +135,36 @@ final abandonWorkoutSessionUseCaseProvider =
 
 // --- Rest Timer State & Notifier ---
 
+enum RestTimerStatus {
+  idle,
+  running,
+  paused,
+  completed,
+  dismissed,
+}
+
 class RestTimerState {
   const RestTimerState({
-    this.isRunning = false,
+    this.status = RestTimerStatus.idle,
     this.remainingSeconds = 0,
     this.totalSeconds = 0,
     this.exerciseName,
     this.setNumber,
   });
 
-  final bool isRunning;
+  final RestTimerStatus status;
   final int remainingSeconds;
   final int totalSeconds;
   final String? exerciseName;
   final int? setNumber;
+
+  bool get isRunning => status == RestTimerStatus.running;
+  bool get isPaused => status == RestTimerStatus.paused;
+  bool get isCompleted => status == RestTimerStatus.completed;
+  bool get isVisible =>
+      status == RestTimerStatus.running ||
+      status == RestTimerStatus.paused ||
+      status == RestTimerStatus.completed;
 
   double get progress =>
       totalSeconds > 0 ? (totalSeconds - remainingSeconds) / totalSeconds : 0.0;
@@ -159,14 +176,14 @@ class RestTimerState {
   }
 
   RestTimerState copyWith({
-    bool? isRunning,
+    RestTimerStatus? status,
     int? remainingSeconds,
     int? totalSeconds,
     String? exerciseName,
     int? setNumber,
   }) {
     return RestTimerState(
-      isRunning: isRunning ?? this.isRunning,
+      status: status ?? this.status,
       remainingSeconds: remainingSeconds ?? this.remainingSeconds,
       totalSeconds: totalSeconds ?? this.totalSeconds,
       exerciseName: exerciseName ?? this.exerciseName,
@@ -179,6 +196,7 @@ class RestTimerNotifier extends StateNotifier<RestTimerState> {
   RestTimerNotifier() : super(const RestTimerState());
 
   Timer? _timer;
+  Timer? _autoDismissTimer;
 
   void start(
     int seconds, {
@@ -188,42 +206,92 @@ class RestTimerNotifier extends StateNotifier<RestTimerState> {
     final effectiveSeconds =
         seconds > 0 ? seconds : AppConstants.defaultRestSeconds;
     _timer?.cancel();
+    _autoDismissTimer?.cancel();
     state = RestTimerState(
-      isRunning: true,
+      status: RestTimerStatus.running,
       remainingSeconds: effectiveSeconds,
       totalSeconds: effectiveSeconds,
       exerciseName: exerciseName,
       setNumber: setNumber,
     );
+    _startTicker();
+  }
 
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+  void _startTicker() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (state.remainingSeconds > 1) {
         state = state.copyWith(remainingSeconds: state.remainingSeconds - 1);
       } else {
-        stop();
+        _complete();
       }
     });
   }
 
-  void addSeconds(int seconds) {
+  void _complete() {
+    _timer?.cancel();
+    _timer = null;
+    _autoDismissTimer?.cancel();
+    state = state.copyWith(
+      status: RestTimerStatus.completed,
+      remainingSeconds: 0,
+    );
+    _autoDismissTimer = Timer(const Duration(seconds: 4), stop);
+  }
+
+  void pause() {
     if (!state.isRunning) return;
-    final newRemaining = (state.remainingSeconds + seconds).clamp(1, 600);
-    final newTotal = (state.totalSeconds + seconds).clamp(1, 600);
+    _timer?.cancel();
+    _timer = null;
+    state = state.copyWith(status: RestTimerStatus.paused);
+  }
+
+  void resume() {
+    if (!state.isPaused) return;
+    state = state.copyWith(status: RestTimerStatus.running);
+    _startTicker();
+  }
+
+  void togglePauseResume() {
+    if (state.isRunning) {
+      pause();
+    } else if (state.isPaused) {
+      resume();
+    }
+  }
+
+  void addSeconds(int seconds) {
+    if (!state.isRunning && !state.isPaused) return;
+    final newRemaining = (state.remainingSeconds + seconds).clamp(1, 600).toInt();
+    final newTotal = (state.totalSeconds + seconds)
+        .clamp(math.max(1, newRemaining), 600)
+        .toInt();
     state = state.copyWith(
       remainingSeconds: newRemaining,
       totalSeconds: newTotal,
     );
   }
 
+  void dismissCompleted() {
+    _timer?.cancel();
+    _timer = null;
+    _autoDismissTimer?.cancel();
+    _autoDismissTimer = null;
+    state = const RestTimerState(status: RestTimerStatus.dismissed);
+  }
+
   void stop() {
     _timer?.cancel();
     _timer = null;
+    _autoDismissTimer?.cancel();
+    _autoDismissTimer = null;
     state = const RestTimerState();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _autoDismissTimer?.cancel();
     super.dispose();
   }
 }

@@ -6,9 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
+import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/features/progression/domain/entities/progression_recommendation.dart';
 import 'package:personal_fitness_os/features/progression/presentation/providers/progression_providers.dart';
@@ -90,7 +92,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
     final colors = context.appColors;
     final fitnessColors = context.fitnessColors;
     final radius = context.appRadius;
-    final disableAnimations = MediaQuery.disableAnimationsOf(context);
+    final motion = context.appMotion;
     final se = widget.sessionExercise;
     final exerciseName = se.exercise?.name ?? 'Exercício';
     final muscle = se.exercise?.primaryMuscleGroup;
@@ -160,9 +162,8 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
               ),
               AnimatedRotation(
                 turns: 0,
-                duration: disableAnimations
-                    ? Duration.zero
-                    : const Duration(milliseconds: 240),
+                duration: motion.resolve(context, motion.standard),
+                curve: motion.curveStandard,
                 child: Icon(
                   Icons.chevron_right_rounded,
                   color: colors.textTertiary,
@@ -207,17 +208,8 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
         color: colors.surface,
         borderRadius: BorderRadius.circular(radius.xl),
         border: Border.all(
-          color: colors.primary.withValues(alpha: 0.47),
+          color: colors.primary.withValues(alpha: 0.45),
           width: 1,
-        ),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            colors.primary.withValues(alpha: 0.06),
-            colors.surface,
-          ],
-          stops: const [0.0, 0.35],
         ),
       ),
       child: Column(
@@ -245,24 +237,9 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                               style: AppTypography.eyebrow(context),
                             ),
                           if (muscle != null)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.surfaceElevated,
-                                borderRadius:
-                                    BorderRadius.circular(radius.xs),
-                              ),
-                              child: Text(
-                                muscle.toUpperCase(),
-                                style: context.textTheme.labelSmall?.copyWith(
-                                  color: colors.textSecondary,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 10,
-                                ),
-                              ),
+                            LiftrBadge(
+                              label: muscle.toUpperCase(),
+                              tone: LiftrBadgeTone.neutral,
                             ),
                         ],
                       ),
@@ -279,6 +256,19 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                           fontFeatures: AppTypography.tabularFeatures,
                         ),
                       ),
+                      if (rec?.previousSummary != null &&
+                          rec!.previousSummary!.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'Última: ${rec.previousSummary}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: colors.textTertiary,
+                            fontFeatures: AppTypography.tabularFeatures,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -289,61 +279,51 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                 children: [
                   if (widget.onSwapExercise != null)
                     Semantics(
+                      container: true,
                       label: 'Trocar exercício',
                       button: true,
                       child: InkWell(
                         onTap: widget.onSwapExercise,
                         borderRadius: BorderRadius.circular(radius.medium),
-                        child: Container(
-                          height: 42,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: colors.primaryMuted,
-                            borderRadius:
-                                BorderRadius.circular(radius.medium),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.swap_horiz_rounded,
-                                size: 17,
-                                color: colors.primaryLight,
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                'Trocar',
-                                style: context.textTheme.labelMedium?.copyWith(
+                        child: ExcludeSemantics(
+                          child: Container(
+                            constraints: const BoxConstraints(
+                              minWidth: 48,
+                              minHeight: 48,
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: colors.primaryMuted,
+                              borderRadius:
+                                  BorderRadius.circular(radius.medium),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.swap_horiz_rounded,
+                                  size: 17,
                                   color: colors.primaryLight,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 5),
+                                Text(
+                                  'Trocar',
+                                  style: context.textTheme.labelMedium?.copyWith(
+                                    color: colors.primaryLight,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
                   const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isAllDone
-                          ? fitnessColors.progressUp.withValues(alpha: 0.15)
-                          : colors.surfaceElevated,
-                      borderRadius: BorderRadius.circular(radius.xs),
-                    ),
-                    child: Text(
-                      '${se.completedWorkingSetsCount}/${se.targetSetsCount} séries',
-                      style: context.textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: isAllDone
-                            ? fitnessColors.progressUp
-                            : colors.textSecondary,
-                        fontFeatures: AppTypography.tabularFeatures,
-                      ),
-                    ),
+                  LiftrBadge(
+                    label: '${se.completedWorkingSetsCount}/${se.targetSetsCount} séries',
+                    tone: isAllDone
+                        ? LiftrBadgeTone.success
+                        : LiftrBadgeTone.neutral,
                   ),
                 ],
               ),
@@ -506,35 +486,13 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
             runSpacing: 4,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                decoration: BoxDecoration(
-                  color: fitnessColors.warmupTag.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(radius.xs),
-                ),
-                child: Text(
-                  'AQ',
-                  style: context.textTheme.labelSmall?.copyWith(
-                    color: fitnessColors.warmupTag,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+              const LiftrBadge(
+                label: 'AQ',
+                tone: LiftrBadgeTone.warning,
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                decoration: BoxDecoration(
-                  color: fitnessColors.progressDown.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(radius.xs),
-                ),
-                child: Text(
-                  'DROP',
-                  style: context.textTheme.labelSmall?.copyWith(
-                    color: fitnessColors.progressDown,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+              const LiftrBadge(
+                label: 'DROP',
+                tone: LiftrBadgeTone.dropSet,
               ),
               Text(
                 'Toque no nº da série para alternar tipo',
@@ -550,7 +508,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
             children: [
               Expanded(
                 child: SizedBox(
-                  height: 44,
+                  height: 48,
                   child: TextButton.icon(
                     onPressed: () {
                       HapticFeedback.lightImpact();
@@ -562,6 +520,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                     icon: const Icon(Icons.add_rounded, size: 18),
                     label: const Text('Adicionar série'),
                     style: TextButton.styleFrom(
+                      minimumSize: const Size(48, 48),
                       foregroundColor: colors.primaryLight,
                     ),
                   ),
@@ -569,7 +528,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
               ),
               Expanded(
                 child: SizedBox(
-                  height: 44,
+                  height: 48,
                   child: TextButton.icon(
                     onPressed: () {
                       HapticFeedback.lightImpact();
@@ -583,7 +542,8 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                     icon: const Icon(Icons.bolt_rounded, size: 17),
                     label: const Text('Drop-set'),
                     style: TextButton.styleFrom(
-                      foregroundColor: fitnessColors.progressDown,
+                      minimumSize: const Size(48, 48),
+                      foregroundColor: fitnessColors.dropSetTag,
                     ),
                   ),
                 ),

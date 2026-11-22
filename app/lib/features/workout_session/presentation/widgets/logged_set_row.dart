@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
+import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/logged_set.dart';
 
 class LoggedSetRow extends StatefulWidget {
@@ -179,28 +181,18 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
 
   Future<void> _showSetTypePicker() async {
     final colors = context.appColors;
-    final radius = context.appRadius;
     final chosen = await showModalBottomSheet<SetType>(
       context: context,
       builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: Container(
-                width: 38,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colors.border,
-                  borderRadius: BorderRadius.circular(radius.full),
-                ),
-              ),
+            LiftrSheetHeader(
+              eyebrow: 'SÉRIE ${widget.setNumber}',
+              title: 'Tipo da série ${widget.setNumber}',
             ),
-            const SizedBox(height: 16),
-            Text('Tipo da série ${widget.setNumber}',
-                style: ctx.textTheme.titleLarge),
             const SizedBox(height: 12),
             ListTile(
               contentPadding: EdgeInsets.zero,
@@ -349,7 +341,7 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     final colors = context.appColors;
     final fitnessColors = context.fitnessColors;
     final radius = context.appRadius;
-    final disableAnimations = MediaQuery.disableAnimationsOf(context);
+    final motion = context.appMotion;
 
     final String label;
     final Color bg;
@@ -373,13 +365,13 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
         break;
       case SetType.dropSet:
         label = 'DROP';
-        bg = fitnessColors.progressDown.withValues(alpha: 0.16);
-        fg = fitnessColors.progressDown;
+        bg = fitnessColors.dropSetTag.withValues(alpha: 0.16);
+        fg = fitnessColors.dropSetTag;
         break;
       case SetType.myoRep:
         label = 'MYO';
-        bg = fitnessColors.muscleShoulders.withValues(alpha: 0.16);
-        fg = fitnessColors.muscleShoulders;
+        bg = colors.info.withValues(alpha: 0.16);
+        fg = colors.info;
         break;
       case SetType.working:
         label = '${widget.setNumber}';
@@ -402,11 +394,9 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
         onLongPress: _showSetTypePicker,
         borderRadius: BorderRadius.circular(radius.small),
         child: AnimatedScale(
-          scale: _setType == SetType.warmup ? 0.96 : 1.0,
-          duration: disableAnimations
-              ? Duration.zero
-              : const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
+          scale: 1.0,
+          duration: motion.resolve(context, motion.fast),
+          curve: motion.curveStandard,
           child: Container(
             width: 34,
             height: 34,
@@ -439,7 +429,7 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     final colors = context.appColors;
     final fitnessColors = context.fitnessColors;
     final radius = context.appRadius;
-    final disableAnimations = MediaQuery.disableAnimationsOf(context);
+    final motion = context.appMotion;
     final isDone = _isCompleted;
     final isDropSet = _setType == SetType.dropSet;
 
@@ -453,14 +443,14 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
           color: isDone
               ? fitnessColors.progressUp.withValues(alpha: 0.08)
               : isDropSet
-                  ? fitnessColors.progressDown.withValues(alpha: 0.04)
+                  ? fitnessColors.dropSetTag.withValues(alpha: 0.05)
                   : Colors.transparent,
           borderRadius: BorderRadius.circular(radius.medium),
           border: Border.all(
             color: isDone
                 ? fitnessColors.progressUp.withValues(alpha: 0.28)
                 : isDropSet
-                    ? fitnessColors.progressDown.withValues(alpha: 0.32)
+                    ? fitnessColors.dropSetTag.withValues(alpha: 0.34)
                     : colors.border.withValues(alpha: 0.6),
           ),
         ),
@@ -571,15 +561,13 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                     onLongPress: isDone ? widget.onDelete : null,
                     borderRadius: BorderRadius.circular(radius.medium),
                     child: SizedBox(
-                      width: 44,
-                      height: 44,
+                      width: 48,
+                      height: 48,
                       child: Center(
                         child: AnimatedScale(
-                          scale: isDone ? 1.03 : 1.0,
-                          duration: disableAnimations
-                              ? Duration.zero
-                              : const Duration(milliseconds: 220),
-                          curve: Curves.easeOutBack,
+                          scale: 1.0,
+                          duration: motion.resolve(context, motion.fast),
+                          curve: motion.curveStandard,
                           child: Container(
                             width: 42,
                             height: 42,
@@ -634,12 +622,12 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                             Icon(
                               Icons.subdirectory_arrow_right_rounded,
                               size: 14,
-                              color: fitnessColors.progressDown,
+                              color: fitnessColors.dropSetTag,
                             ),
                             Text(
                               _dropSets.length > 1 ? 'D${i + 1}' : '',
                               style: context.textTheme.labelSmall?.copyWith(
-                                color: fitnessColors.progressDown,
+                                color: fitnessColors.dropSetTag,
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -744,13 +732,13 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                           Icon(
                             Icons.add_rounded,
                             size: 14,
-                            color: fitnessColors.progressDown,
+                            color: fitnessColors.dropSetTag,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             'Outro drop',
                             style: context.textTheme.labelSmall?.copyWith(
-                              color: fitnessColors.progressDown,
+                              color: fitnessColors.dropSetTag,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -798,71 +786,78 @@ class _TactileStepper extends StatelessWidget {
         color: colors.surfaceElevated,
         borderRadius: BorderRadius.circular(radius.small),
       ),
-      child: Row(
-        children: [
-          Semantics(
-            label: decrementLabel,
-            button: true,
-            child: InkWell(
-              onTap: onDecrement,
-              borderRadius: BorderRadius.horizontal(
-                left: Radius.circular(radius.small),
-              ),
-              child: SizedBox(
-                width: 26,
-                height: height,
-                child: Icon(
-                  Icons.remove_rounded,
-                  size: 16,
-                  color: colors.textSecondary,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final buttonWidth = (constraints.maxWidth * 0.26).clamp(12.0, 26.0);
+          final iconSize = constraints.maxWidth < 68 ? 14.0 : 16.0;
+          final horizPad = constraints.maxWidth < 68 ? 1.0 : 2.0;
+          return Row(
+            children: [
+              Semantics(
+                label: decrementLabel,
+                button: true,
+                child: InkWell(
+                  onTap: onDecrement,
+                  borderRadius: BorderRadius.horizontal(
+                    left: Radius.circular(radius.small),
+                  ),
+                  child: SizedBox(
+                    width: buttonWidth,
+                    height: height,
+                    child: Icon(
+                      Icons.remove_rounded,
+                      size: iconSize,
+                      color: colors.textSecondary,
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-          Expanded(
-            child: InkWell(
-              onTap: onTapValue,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: Center(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      valueText,
-                      maxLines: 1,
-                      softWrap: false,
-                      style: context.textTheme.titleMedium?.copyWith(
-                        fontSize: height < 42 ? 13 : 14,
-                        fontWeight: FontWeight.w700,
-                        color: colors.textPrimary,
-                        fontFeatures: AppTypography.tabularFeatures,
+              Expanded(
+                child: InkWell(
+                  onTap: onTapValue,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: horizPad),
+                    child: Center(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          valueText,
+                          maxLines: 1,
+                          softWrap: false,
+                          style: context.textTheme.titleMedium?.copyWith(
+                            fontSize: height < 42 ? 13 : 14,
+                            fontWeight: FontWeight.w700,
+                            color: colors.textPrimary,
+                            fontFeatures: AppTypography.tabularFeatures,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
-          Semantics(
-            label: incrementLabel,
-            button: true,
-            child: InkWell(
-              onTap: onIncrement,
-              borderRadius: BorderRadius.horizontal(
-                right: Radius.circular(radius.small),
-              ),
-              child: SizedBox(
-                width: 26,
-                height: height,
-                child: Icon(
-                  Icons.add_rounded,
-                  size: 16,
-                  color: colors.textSecondary,
+              Semantics(
+                label: incrementLabel,
+                button: true,
+                child: InkWell(
+                  onTap: onIncrement,
+                  borderRadius: BorderRadius.horizontal(
+                    right: Radius.circular(radius.small),
+                  ),
+                  child: SizedBox(
+                    width: buttonWidth,
+                    height: height,
+                    child: Icon(
+                      Icons.add_rounded,
+                      size: iconSize,
+                      color: colors.textSecondary,
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
