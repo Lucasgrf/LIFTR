@@ -27,6 +27,7 @@ import 'package:personal_fitness_os/features/training/presentation/screens/creat
 import 'package:personal_fitness_os/features/training/presentation/screens/training_list_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/screens/training_plan_detail_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/screens/workout_detail_screen.dart';
+import 'package:personal_fitness_os/features/weekly_comparison/presentation/screens/weekly_comparison_screen.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/screens/session_summary_screen.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/screens/workout_session_screen.dart';
 import 'package:personal_fitness_os/routing/app_shell.dart';
@@ -239,6 +240,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/calendar',
         builder: (context, state) => const ActivityCalendarScreen(),
+      ),
+      GoRoute(
+        path: '/weekly-comparison',
+        builder: (context, state) => const WeeklyComparisonScreen(),
       ),
       GoRoute(
         path: '/exercises',

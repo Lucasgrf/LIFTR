@@ -111,6 +111,7 @@ void main() {
             setType: SetType.working,
             weightKg: 80.0,
             repsCompleted: 10,
+            durationSeconds: any(named: 'durationSeconds'),
             rirActual: any(named: 'rirActual'),
             rpeActual: any(named: 'rpeActual'),
             restSecondsActual: any(named: 'restSecondsActual'),
@@ -193,6 +194,7 @@ void main() {
             sessionId: 'session-1',
             durationSeconds: 3600,
             perceivedExertion: 8.5,
+            executionScore: any(named: 'executionScore'),
             mood: Mood.good,
             notes: any(named: 'notes'),
           )).thenAnswer((_) async => Success(completedSession));

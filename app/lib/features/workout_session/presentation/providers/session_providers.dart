@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
+import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:personal_fitness_os/features/workout_session/data/datasources/session_local_datasource.dart';
 import 'package:personal_fitness_os/features/workout_session/data/datasources/session_remote_datasource.dart';
 import 'package:personal_fitness_os/features/workout_session/data/repositories/session_repository_impl.dart';
@@ -312,4 +313,63 @@ final liveSessionDetailProvider = FutureProvider.autoDispose
     (session) => session,
     (failure) => throw Exception(failure.message),
   );
+});
+
+/// Resolves the most recent working max weight per `exerciseId` from completed
+/// sessions prior to [currentSessionId], used for automatic Execution Score / RPE.
+final sessionPreviousWeightsProvider = FutureProvider.autoDispose
+    .family<Map<String, double>, String>((ref, currentSessionId) async {
+  final sessions = <WorkoutSession>[];
+
+  try {
+    final historyRepo = ref.watch(historyRepositoryProvider);
+    final result = await historyRepo.getCompletedSessions(limit: 25);
+    result.fold(
+      sessions.addAll,
+      (_) {},
+    );
+  } catch (_) {}
+
+  try {
+    final local = ref.watch(sessionLocalDataSourceProvider);
+    if (local != null) {
+      final cached = local
+          .getAllCachedSessions()
+          .where((s) => s.status == 'completed')
+          .map((m) => m.toDomain());
+      final seenIds = sessions.map((s) => s.id).toSet();
+      for (final s in cached) {
+        if (seenIds.add(s.id)) {
+          sessions.add(s);
+        }
+      }
+    }
+  } catch (_) {}
+
+  final completed = sessions
+      .where((s) => s.id != currentSessionId && s.isCompleted)
+      .toList()
+    ..sort((a, b) {
+      final aDate = a.completedAt ?? a.startedAt;
+      final bDate = b.completedAt ?? b.startedAt;
+      return bDate.compareTo(aDate);
+    });
+
+  final weightsByExercise = <String, double>{};
+  for (final session in completed) {
+    for (final se in session.exercises) {
+      if (se.isCardio || weightsByExercise.containsKey(se.exerciseId)) {
+        continue;
+      }
+      final workingWeights = se.sets
+          .where((s) => s.isWorkingSet && s.weightKg > 0)
+          .map((s) => s.weightKg);
+      if (workingWeights.isEmpty) continue;
+      final maxWeight = workingWeights.reduce(math.max);
+      if (maxWeight > 0) {
+        weightsByExercise[se.exerciseId] = maxWeight;
+      }
+    }
+  }
+  return weightsByExercise;
 });

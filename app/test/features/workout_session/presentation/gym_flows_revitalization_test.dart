@@ -333,6 +333,7 @@ void main() {
                                   required setType,
                                   required weightKg,
                                   required repsCompleted,
+                                  durationSeconds,
                                   rirActual,
                                   restSeconds = 180,
                                   dropSets = const [],

@@ -132,6 +132,7 @@ class _FakeSessionRepository implements SessionRepository {
     required String sessionId,
     required int durationSeconds,
     double? perceivedExertion,
+    int? executionScore,
     Mood? mood,
     String? notes,
   }) async {
@@ -142,6 +143,8 @@ class _FakeSessionRepository implements SessionRepository {
         startedAt: DateTime(2026, 11, 20),
         status: SessionStatus.completed,
         durationSeconds: durationSeconds,
+        perceivedExertion: perceivedExertion,
+        executionScore: executionScore,
       ),
     );
   }
@@ -168,6 +171,7 @@ class _FakeSessionRepository implements SessionRepository {
     SetType setType = SetType.working,
     required double weightKg,
     required int repsCompleted,
+    int? durationSeconds,
     int? rirActual,
     double? rpeActual,
     int? restSecondsActual,
@@ -185,6 +189,7 @@ class _FakeSessionRepository implements SessionRepository {
         setType: setType,
         weightKg: weightKg,
         repsCompleted: repsCompleted,
+        durationSeconds: durationSeconds,
         rirActual: rirActual,
         isWarmup: isWarmup,
         dropSets: dropSets,

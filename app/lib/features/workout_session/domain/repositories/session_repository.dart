@@ -27,6 +27,7 @@ abstract class SessionRepository {
     SetType setType = SetType.working,
     required double weightKg,
     required int repsCompleted,
+    int? durationSeconds,
     int? rirActual,
     double? rpeActual,
     int? restSecondsActual,
@@ -57,11 +58,12 @@ abstract class SessionRepository {
     String? replacedExerciseId,
   });
 
-  /// Finalizes the workout session, computing duration, exertion and mood.
+  /// Finalizes the workout session, computing duration, exertion, execution score and mood.
   Future<Result<WorkoutSession, Failure>> finishSession({
     required String sessionId,
     required int durationSeconds,
     double? perceivedExertion,
+    int? executionScore,
     Mood? mood,
     String? notes,
   });

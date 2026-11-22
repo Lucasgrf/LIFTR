@@ -75,6 +75,21 @@ class SupabaseSessionRemoteDataSource implements SessionRemoteDataSource {
     }..remove('drop_sets');
   }
 
+  Map<String, dynamic> _fallbackDurationPayload(Map<String, dynamic> data) {
+    final duration = (data['duration_seconds'] as num?)?.toInt();
+    final cleanNotes = LoggedSetModel.extractDurationFromNotes(
+      data['notes'] as String?,
+    ).cleanNotes;
+    final encodedNotes = LoggedSetModel.attachDurationMarkerToNotes(
+      cleanNotes,
+      duration,
+    );
+    return {
+      ...data,
+      if (encodedNotes != null) 'notes': encodedNotes else 'notes': null,
+    }..remove('duration_seconds');
+  }
+
   @override
   Future<WorkoutSessionModel?> fetchActiveSession() async {
     final user = _supabaseClient.auth.currentUser;
@@ -172,27 +187,34 @@ class SupabaseSessionRemoteDataSource implements SessionRemoteDataSource {
 
   @override
   Future<LoggedSetModel> insertLoggedSet(Map<String, dynamic> data) async {
-    try {
+    Future<LoggedSetModel> runInsert(Map<String, dynamic> payload) async {
       final response = await _supabaseClient
           .from('logged_sets')
-          .insert(data)
-          .select()
-          .single();
-
-      return LoggedSetModel.fromJson(response);
-    } on PostgrestException catch (e) {
-      if (!data.containsKey('drop_sets') ||
-          !_isMissingColumnError(e, 'drop_sets')) {
-        rethrow;
-      }
-      final fallback = _fallbackDropsPayload(data);
-      final response = await _supabaseClient
-          .from('logged_sets')
-          .insert(fallback)
+          .insert(payload)
           .select()
           .single();
       return LoggedSetModel.fromJson(response);
     }
+
+    var current = Map<String, dynamic>.from(data);
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await runInsert(current);
+      } on PostgrestException catch (e) {
+        if (current.containsKey('drop_sets') &&
+            _isMissingColumnError(e, 'drop_sets')) {
+          current = _fallbackDropsPayload(current);
+          continue;
+        }
+        if (current.containsKey('duration_seconds') &&
+            _isMissingColumnError(e, 'duration_seconds')) {
+          current = _fallbackDurationPayload(current);
+          continue;
+        }
+        rethrow;
+      }
+    }
+    return runInsert(current);
   }
 
   @override
@@ -200,30 +222,35 @@ class SupabaseSessionRemoteDataSource implements SessionRemoteDataSource {
     String setId,
     Map<String, dynamic> data,
   ) async {
-    final updatePayload = Map<String, dynamic>.from(data)..remove('id');
-    try {
+    Future<LoggedSetModel> runUpdate(Map<String, dynamic> payload) async {
       final response = await _supabaseClient
           .from('logged_sets')
-          .update(updatePayload)
-          .eq('id', setId)
-          .select()
-          .single();
-
-      return LoggedSetModel.fromJson(response);
-    } on PostgrestException catch (e) {
-      if (!updatePayload.containsKey('drop_sets') ||
-          !_isMissingColumnError(e, 'drop_sets')) {
-        rethrow;
-      }
-      final fallback = _fallbackDropsPayload(updatePayload);
-      final response = await _supabaseClient
-          .from('logged_sets')
-          .update(fallback)
+          .update(payload)
           .eq('id', setId)
           .select()
           .single();
       return LoggedSetModel.fromJson(response);
     }
+
+    var current = Map<String, dynamic>.from(data)..remove('id');
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await runUpdate(current);
+      } on PostgrestException catch (e) {
+        if (current.containsKey('drop_sets') &&
+            _isMissingColumnError(e, 'drop_sets')) {
+          current = _fallbackDropsPayload(current);
+          continue;
+        }
+        if (current.containsKey('duration_seconds') &&
+            _isMissingColumnError(e, 'duration_seconds')) {
+          current = _fallbackDurationPayload(current);
+          continue;
+        }
+        rethrow;
+      }
+    }
+    return runUpdate(current);
   }
 
   @override
@@ -236,13 +263,26 @@ class SupabaseSessionRemoteDataSource implements SessionRemoteDataSource {
     String sessionId,
     Map<String, dynamic> data,
   ) async {
-    final response = await _supabaseClient
-        .from('workout_sessions')
-        .update(data)
-        .eq('id', sessionId)
-        .select(_nestedQuery)
-        .single();
+    Future<WorkoutSessionModel> runUpdate(Map<String, dynamic> payload) async {
+      final response = await _supabaseClient
+          .from('workout_sessions')
+          .update(payload)
+          .eq('id', sessionId)
+          .select(_nestedQuery)
+          .single();
+      return WorkoutSessionModel.fromJson(response);
+    }
 
-    return WorkoutSessionModel.fromJson(response);
+    try {
+      return await runUpdate(data);
+    } on PostgrestException catch (e) {
+      if (data.containsKey('execution_score') &&
+          _isMissingColumnError(e, 'execution_score')) {
+        final stripped = Map<String, dynamic>.from(data)
+          ..remove('execution_score');
+        return await runUpdate(stripped);
+      }
+      rethrow;
+    }
   }
 }

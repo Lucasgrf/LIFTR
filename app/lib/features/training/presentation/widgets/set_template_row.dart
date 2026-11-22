@@ -9,11 +9,13 @@ import 'package:personal_fitness_os/features/training/domain/entities/set_templa
 class SetTemplateRow extends StatelessWidget {
   const SetTemplateRow({
     required this.template,
+    this.isCardio = false,
     this.onDelete,
     super.key,
   });
 
   final SetTemplate template;
+  final bool isCardio;
   final VoidCallback? onDelete;
 
   static String getSetTypeBadge(SetTemplate template) {
@@ -94,20 +96,22 @@ class SetTemplateRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
 
-          // Target Reps
+          // Target Reps / Minutes
           Expanded(
             flex: 3,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${template.repRangeText} reps',
+                  isCardio
+                      ? '${template.repRangeText} min'
+                      : '${template.repRangeText} reps',
                   style: context.textTheme.bodyMedium?.copyWith(
                     color: context.appColors.textPrimary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                if (template.targetRirMin != null)
+                if (!isCardio && template.targetRirMin != null)
                   Text(
                     'RIR ${template.rirRangeText}',
                     style: context.textTheme.bodySmall?.copyWith(
@@ -120,24 +124,25 @@ class SetTemplateRow extends StatelessWidget {
           ),
 
           // Rest time
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.timer_outlined,
-                size: 14,
-                color: context.appColors.textTertiary,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '${template.restSeconds}s',
-                style: context.textTheme.bodySmall?.copyWith(
-                  color: context.appColors.textSecondary,
-                  fontWeight: FontWeight.w500,
+          if (!isCardio && template.restSeconds > 0)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.timer_outlined,
+                  size: 14,
+                  color: context.appColors.textTertiary,
                 ),
-              ),
-            ],
-          ),
+                const SizedBox(width: 4),
+                Text(
+                  '${template.restSeconds}s',
+                  style: context.textTheme.bodySmall?.copyWith(
+                    color: context.appColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
 
           // Target Weight if present
           if (template.targetWeight != null && template.targetWeight! > 0) ...[

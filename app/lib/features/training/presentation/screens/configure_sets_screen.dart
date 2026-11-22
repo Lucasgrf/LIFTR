@@ -52,22 +52,27 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
     }
   }
 
-  void _addSet(SetType type) {
+  void _addSet(SetType type, {bool isCardio = false}) {
     setState(() {
       _sets.add(
         SetTemplate(
           id: '',
           workoutExerciseId: widget.workoutExerciseId,
           setNumber: _sets.length + 1,
-          setType: type,
-          targetRepsMin: type == SetType.warmup ? 12 : 8,
-          targetRepsMax: type == SetType.warmup ? 15 : 12,
-          targetRirMin:
-              (type == SetType.working || type == SetType.dropSet) ? 1 : null,
-          targetRirMax:
-              (type == SetType.working || type == SetType.dropSet) ? 2 : null,
-          restSeconds:
-              type == SetType.warmup ? 60 : AppConstants.defaultRestSeconds,
+          setType: isCardio ? SetType.working : type,
+          targetRepsMin: isCardio ? 15 : (type == SetType.warmup ? 12 : 8),
+          targetRepsMax: isCardio ? 20 : (type == SetType.warmup ? 15 : 12),
+          targetRirMin: !isCardio &&
+                  (type == SetType.working || type == SetType.dropSet)
+              ? 1
+              : null,
+          targetRirMax: !isCardio &&
+                  (type == SetType.working || type == SetType.dropSet)
+              ? 2
+              : null,
+          restSeconds: isCardio
+              ? 0
+              : (type == SetType.warmup ? 60 : AppConstants.defaultRestSeconds),
         ),
       );
     });
@@ -140,6 +145,7 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
           }
 
           _initSets(exercise.setTemplates);
+          final isCardio = exercise.isCardio;
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
@@ -226,19 +232,22 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                         children: [
                           Expanded(
                             child: Text(
-                              'Reps: ${template.repRangeText} · RIR: ${template.rirRangeText}',
+                              isCardio
+                                  ? 'Tempo: ${template.repRangeText} min'
+                                  : 'Reps: ${template.repRangeText} · RIR: ${template.rirRangeText}',
                               style: TextStyle(color: context.appColors.textSecondary),
                             ),
                           ),
                           DropdownButton<int>(
-                            value: [60, 90, 120, 150, 180, 240]
+                            value: [0, 60, 90, 120, 150, 180, 240]
                                     .contains(template.restSeconds)
                                 ? template.restSeconds
-                                : AppConstants.defaultRestSeconds,
+                                : (isCardio ? 0 : AppConstants.defaultRestSeconds),
                             dropdownColor: context.appColors.surfaceElevated,
                             isDense: true,
                             underline: const SizedBox(),
                             items: const [
+                              DropdownMenuItem(value: 0, child: Text('Sem descanso')),
                               DropdownMenuItem(value: 60, child: Text('60s')),
                               DropdownMenuItem(value: 90, child: Text('90s')),
                               DropdownMenuItem(value: 120, child: Text('120s')),
@@ -263,25 +272,32 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
               const SizedBox(height: 16),
 
               // Add set actions
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _addSet(SetType.warmup),
-                      icon: const Icon(Icons.add_rounded, size: 16),
-                      label: const Text('+ Aquecimento'),
+              if (isCardio)
+                OutlinedButton.icon(
+                  onPressed: () => _addSet(SetType.working, isCardio: true),
+                  icon: const Icon(Icons.add_rounded, size: 16),
+                  label: const Text('+ Bloco de cardio'),
+                )
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _addSet(SetType.warmup),
+                        icon: const Icon(Icons.add_rounded, size: 16),
+                        label: const Text('+ Aquecimento'),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _addSet(SetType.working),
-                      icon: const Icon(Icons.add_rounded, size: 16),
-                      label: const Text('+ Série Válida'),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _addSet(SetType.working),
+                        icon: const Icon(Icons.add_rounded, size: 16),
+                        label: const Text('+ Série Válida'),
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
               const SizedBox(height: 32),
 
               AppButton.primary(

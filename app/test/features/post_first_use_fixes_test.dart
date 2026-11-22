@@ -93,6 +93,7 @@ class _NoopSessionRepo implements SessionRepository {
     required String sessionId,
     required int durationSeconds,
     double? perceivedExertion,
+    int? executionScore,
     Mood? mood,
     String? notes,
   }) async =>
@@ -113,6 +114,7 @@ class _NoopSessionRepo implements SessionRepository {
     SetType setType = SetType.working,
     required double weightKg,
     required int repsCompleted,
+    int? durationSeconds,
     int? rirActual,
     double? rpeActual,
     int? restSecondsActual,
@@ -130,6 +132,7 @@ class _NoopSessionRepo implements SessionRepository {
           setType: setType,
           weightKg: weightKg,
           repsCompleted: repsCompleted,
+          durationSeconds: durationSeconds,
           dropSets: dropSets,
         ),
       );
@@ -201,6 +204,7 @@ void main() {
               onSave: ({
                 required weightKg,
                 required repsCompleted,
+                durationSeconds,
                 rirActual,
                 required setType,
                 dropSets = const [],
@@ -516,6 +520,7 @@ void main() {
               onSave: ({
                 required weightKg,
                 required repsCompleted,
+                durationSeconds,
                 rirActual,
                 required setType,
                 dropSets = const [],
@@ -689,6 +694,7 @@ void main() {
                   required setType,
                   required weightKg,
                   required repsCompleted,
+                  durationSeconds,
                   rirActual,
                   restSeconds = 180,
                   dropSets = const [],

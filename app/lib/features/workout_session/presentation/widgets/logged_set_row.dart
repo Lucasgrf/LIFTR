@@ -18,9 +18,11 @@ class LoggedSetRow extends StatefulWidget {
     this.loggedSet,
     this.defaultWeight = 0.0,
     this.defaultReps = 10,
+    this.defaultDurationMinutes = 15,
     this.defaultRir = 2,
     this.weightIncrement = 2.5,
     this.showRir = true,
+    this.isCardio = false,
     required this.onSave,
     this.onDelete,
     this.onToggleWarmup,
@@ -31,12 +33,15 @@ class LoggedSetRow extends StatefulWidget {
   final LoggedSet? loggedSet;
   final double defaultWeight;
   final int defaultReps;
+  final int defaultDurationMinutes;
   final int defaultRir;
   final double weightIncrement;
   final bool showRir;
+  final bool isCardio;
   final Future<void> Function({
     required double weightKg,
     required int repsCompleted,
+    int? durationSeconds,
     int? rirActual,
     required SetType setType,
     List<DropSetEntry> dropSets,
@@ -54,6 +59,7 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
   late TextEditingController _repsController;
   late double _weight;
   late int _reps;
+  late int _durationMinutes;
   late int? _rir;
   late SetType _setType;
   late List<DropSetEntry> _dropSets;
@@ -61,11 +67,23 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
 
   bool get _isCompleted => widget.loggedSet != null;
 
+  int _resolveDurationMinutes() {
+    final logged = widget.loggedSet;
+    if (logged != null) {
+      if (logged.durationMinutes > 0) return logged.durationMinutes;
+      if (logged.repsCompleted > 0) return logged.repsCompleted;
+    }
+    return widget.defaultDurationMinutes > 0
+        ? widget.defaultDurationMinutes
+        : 15;
+  }
+
   @override
   void initState() {
     super.initState();
     _weight = widget.loggedSet?.weightKg ?? widget.defaultWeight;
     _reps = widget.loggedSet?.repsCompleted ?? widget.defaultReps;
+    _durationMinutes = _resolveDurationMinutes();
     _weightController = TextEditingController(text: _formatWeight(_weight));
     _repsController = TextEditingController(text: _reps > 0 ? '$_reps' : '');
     _rir = widget.loggedSet?.rirActual ?? widget.defaultRir;
@@ -84,9 +102,10 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     if (oldWidget.loggedSet != widget.loggedSet && widget.loggedSet != null) {
       _weight = widget.loggedSet!.weightKg;
       _reps = widget.loggedSet!.repsCompleted;
+      _durationMinutes = _resolveDurationMinutes();
       _weightController.text = _formatWeight(_weight);
       _repsController.text = '$_reps';
-      _rir = widget.loggedSet!.rirActual;
+      _rir = widget.loggedSet!.rirActual ?? widget.defaultRir;
       _setType = widget.loggedSet!.setType;
       _dropSets = List<DropSetEntry>.from(widget.loggedSet!.dropSets);
     } else if (widget.loggedSet == null &&
@@ -136,6 +155,13 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     setState(() {
       _reps = (_reps + delta).clamp(0, 999);
       _repsController.text = '$_reps';
+    });
+  }
+
+  void _stepDuration(int delta) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _durationMinutes = (_durationMinutes + delta).clamp(1, 300);
     });
   }
 
@@ -304,6 +330,32 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
   }
 
   Future<void> _handleSave() async {
+    if (widget.isCardio) {
+      if (_durationMinutes <= 0) {
+        context.showSnackBar(
+          'Informe o tempo do cardio em minutos.',
+          isError: true,
+        );
+        return;
+      }
+      HapticFeedback.mediumImpact();
+      setState(() => _isSaving = true);
+      try {
+        await widget.onSave(
+          weightKg: 0.0,
+          repsCompleted: 0,
+          durationSeconds: _durationMinutes * 60,
+          rirActual: null,
+          setType: SetType.working,
+          dropSets: const <DropSetEntry>[],
+          existingSetId: widget.loggedSet?.id,
+        );
+      } finally {
+        if (mounted) setState(() => _isSaving = false);
+      }
+      return;
+    }
+
     if (_reps <= 0) {
       context.showSnackBar('Informe o número de repetições.', isError: true);
       return;
@@ -327,7 +379,7 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
       await widget.onSave(
         weightKg: _weight,
         repsCompleted: _reps,
-        rirActual: _rir,
+        rirActual: widget.showRir ? _rir : widget.loggedSet?.rirActual,
         setType: _setType,
         dropSets: List<DropSetEntry>.unmodifiable(validDrops),
         existingSetId: widget.loggedSet?.id,
@@ -431,6 +483,122 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     final radius = context.appRadius;
     final motion = context.appMotion;
     final isDone = _isCompleted;
+
+    if (widget.isCardio) {
+      return Container(
+        constraints: const BoxConstraints(minHeight: 58),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        margin: const EdgeInsets.only(bottom: 7),
+        decoration: BoxDecoration(
+          color: isDone
+              ? fitnessColors.progressUp.withValues(alpha: 0.08)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(radius.medium),
+          border: Border.all(
+            color: isDone
+                ? fitnessColors.progressUp.withValues(alpha: 0.28)
+                : colors.border.withValues(alpha: 0.6),
+          ),
+        ),
+        child: Row(
+          children: [
+            Semantics(
+              label: 'Bloco de cardio ${widget.setNumber}',
+              child: Container(
+                width: 34,
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isDone
+                      ? fitnessColors.progressUp.withValues(alpha: 0.18)
+                      : colors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(radius.small),
+                ),
+                child: Icon(
+                  Icons.directions_run_rounded,
+                  size: 18,
+                  color: isDone
+                      ? fitnessColors.progressUp
+                      : colors.textSecondary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _TactileStepper(
+                valueText: '$_durationMinutes min',
+                decrementLabel: 'Diminuir tempo de cardio',
+                incrementLabel: 'Aumentar tempo de cardio',
+                onDecrement: () => _stepDuration(-5),
+                onIncrement: () => _stepDuration(5),
+                onTapValue: () => _editNumericDialog(
+                  title: 'Tempo de cardio (min)',
+                  initialValue: '$_durationMinutes',
+                  decimal: false,
+                  onConfirm: (val) {
+                    final parsed = int.tryParse(val.trim());
+                    if (parsed != null && parsed > 0) {
+                      setState(() {
+                        _durationMinutes = parsed.clamp(1, 300);
+                      });
+                    }
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Semantics(
+              label:
+                  'Marcar bloco de cardio ${widget.setNumber} como concluído',
+              button: true,
+              selected: isDone,
+              child: InkWell(
+                onTap: _isSaving ? null : _handleSave,
+                onLongPress: isDone ? widget.onDelete : null,
+                borderRadius: BorderRadius.circular(radius.medium),
+                child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: Center(
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: isDone
+                            ? fitnessColors.progressUp
+                            : colors.surfaceElevated,
+                        borderRadius: BorderRadius.circular(radius.medium),
+                        border: Border.all(
+                          color: isDone
+                              ? fitnessColors.progressUp
+                              : colors.border,
+                        ),
+                      ),
+                      child: _isSaving
+                          ? Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: colors.onPrimary,
+                              ),
+                            )
+                          : Icon(
+                              Icons.check_rounded,
+                              size: 21,
+                              color: isDone
+                                  ? fitnessColors.onSuccess
+                                  : colors.textTertiary,
+                            ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     final isDropSet = _setType == SetType.dropSet;
 
     return GestureDetector(

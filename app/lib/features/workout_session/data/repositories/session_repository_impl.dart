@@ -537,6 +537,7 @@ class SessionRepositoryImpl implements SessionRepository {
     SetType setType = SetType.working,
     required double weightKg,
     required int repsCompleted,
+    int? durationSeconds,
     int? rirActual,
     double? rpeActual,
     int? restSecondsActual,
@@ -559,6 +560,7 @@ class SessionRepositoryImpl implements SessionRepository {
       'set_type': LoggedSetModel.setTypeToString(setType),
       'weight_kg': weightKg,
       'reps_completed': repsCompleted,
+      if (durationSeconds != null) 'duration_seconds': durationSeconds,
       if (rirActual != null) 'rir_actual': rirActual,
       if (rpeActual != null) 'rpe_actual': rpeActual,
       if (restSecondsActual != null) 'rest_seconds_actual': restSecondsActual,
@@ -581,6 +583,7 @@ class SessionRepositoryImpl implements SessionRepository {
       setType: LoggedSetModel.setTypeToString(setType),
       weightKg: weightKg,
       repsCompleted: repsCompleted,
+      durationSeconds: durationSeconds,
       rirActual: rirActual,
       rpeActual: rpeActual,
       restSecondsActual: restSecondsActual,
@@ -892,6 +895,7 @@ class SessionRepositoryImpl implements SessionRepository {
     required String sessionId,
     required int durationSeconds,
     double? perceivedExertion,
+    int? executionScore,
     Mood? mood,
     String? notes,
   }) async {
@@ -902,6 +906,7 @@ class SessionRepositoryImpl implements SessionRepository {
       'completed_at': completedAt.toIso8601String(),
       'duration_seconds': durationSeconds,
       if (perceivedExertion != null) 'perceived_exertion': perceivedExertion,
+      if (executionScore != null) 'execution_score': executionScore,
       if (mood != null) 'mood': mood.name,
       if (notes != null) 'notes': notes,
     };
@@ -921,6 +926,7 @@ class SessionRepositoryImpl implements SessionRepository {
         completedAt: completedAt,
         durationSeconds: durationSeconds,
         perceivedExertion: perceivedExertion,
+        executionScore: executionScore,
         mood: mood?.name,
         notes: notes,
       );

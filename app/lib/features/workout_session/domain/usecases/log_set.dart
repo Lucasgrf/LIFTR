@@ -15,6 +15,7 @@ class LogSetUseCase {
     SetType setType = SetType.working,
     required double weightKg,
     required int repsCompleted,
+    int? durationSeconds,
     int? rirActual,
     double? rpeActual,
     int? restSecondsActual,
@@ -34,6 +35,11 @@ class LogSetUseCase {
         const Err(ValidationFailure('O número de repetições não pode ser negativo.')),
       );
     }
+    if (durationSeconds != null && durationSeconds < 0) {
+      return Future.value(
+        const Err(ValidationFailure('A duração não pode ser negativa.')),
+      );
+    }
     if (weightKg < 0) {
       return Future.value(
         const Err(ValidationFailure('A carga não pode ser negativa.')),
@@ -46,6 +52,7 @@ class LogSetUseCase {
       setType: setType,
       weightKg: weightKg,
       repsCompleted: repsCompleted,
+      durationSeconds: durationSeconds,
       rirActual: rirActual,
       rpeActual: rpeActual,
       restSecondsActual: restSecondsActual,

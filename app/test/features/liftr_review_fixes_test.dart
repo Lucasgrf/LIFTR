@@ -126,6 +126,7 @@ class _RecordingSessionRepository implements SessionRepository {
     required String sessionId,
     required int durationSeconds,
     double? perceivedExertion,
+    int? executionScore,
     Mood? mood,
     String? notes,
   }) async => Success(_session);
@@ -141,6 +142,7 @@ class _RecordingSessionRepository implements SessionRepository {
     SetType setType = SetType.working,
     required double weightKg,
     required int repsCompleted,
+    int? durationSeconds,
     int? rirActual,
     double? rpeActual,
     int? restSecondsActual,
@@ -158,6 +160,7 @@ class _RecordingSessionRepository implements SessionRepository {
         setType: setType,
         weightKg: weightKg,
         repsCompleted: repsCompleted,
+        durationSeconds: durationSeconds,
         dropSets: dropSets,
       ),
     );

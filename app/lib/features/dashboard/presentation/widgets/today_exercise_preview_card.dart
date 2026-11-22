@@ -32,26 +32,33 @@ class TodayExercisePreviewCard extends ConsumerWidget {
         .where((s) => s.isWorkingSet)
         .toList();
     final firstWorking =
-        workingSets.isNotEmpty ? workingSets.first : null;
+        workingSets.isNotEmpty
+            ? workingSets.first
+            : workoutExercise.setTemplates.firstOrNull;
+    final isCardio = workoutExercise.isCardio;
     final setsCount =
         workingSets.isNotEmpty ? workingSets.length : 3;
-    final repsMin = firstWorking?.targetRepsMin ?? 8;
-    final repsMax = firstWorking?.targetRepsMax ?? 12;
+    final repsMin = firstWorking?.targetRepsMin ?? (isCardio ? 15 : 8);
+    final repsMax = firstWorking?.targetRepsMax ?? (isCardio ? 20 : 12);
     final targetRir = firstWorking?.targetRirMin ?? 2;
 
-    final progressionAsync = ref.watch(
-      exerciseProgressionProvider(
-        ExerciseProgressionParams(
-          exerciseId: workoutExercise.exerciseId,
-          targetRepsMin: repsMin,
-          targetRepsMax: repsMax,
-          targetRir: targetRir,
-          equipment: workoutExercise.exercise?.equipment,
-        ),
-      ),
-    );
+    final ProgressionRecommendation? rec = isCardio
+        ? null
+        : ref
+            .watch(
+              exerciseProgressionProvider(
+                ExerciseProgressionParams(
+                  exerciseId: workoutExercise.exerciseId,
+                  targetRepsMin: repsMin,
+                  targetRepsMax: repsMax,
+                  targetRir: targetRir,
+                  equipment: workoutExercise.exercise?.equipment,
+                ),
+              ),
+            )
+            .asData
+            ?.value;
 
-    final rec = progressionAsync.asData?.value;
     final suggestedWeight =
         (rec != null && rec.suggestedWeightKg > 0)
             ? rec.suggestedWeightKg
@@ -60,17 +67,28 @@ class TodayExercisePreviewCard extends ConsumerWidget {
     final weightText = suggestedWeight > 0
         ? '${_formatWeight(suggestedWeight)} kg · '
         : '';
-    final targetSummary = '$weightText$setsCount×$repsMin–$repsMax';
+    final String targetSummary;
+    final double progressValue;
+    final String noteText;
+    final bool isIncrease;
 
-    final isIncrease = rec?.type == ProgressionType.increase;
-    final progressValue = isIncrease
-        ? 1.0
-        : (rec != null && rec.suggestedWeightKg > 0 ? 0.78 : 0.45);
-    final noteText = isIncrease
-        ? 'Meta batida · +${_formatWeight(rec!.weightDeltaKg)} kg hoje'
-        : (rec?.previousSummary != null && rec!.previousSummary!.isNotEmpty
-            ? 'Última: ${rec.previousSummary}'
-            : '$setsCount séries válidas · alvo $repsMin–$repsMax reps');
+    if (isCardio) {
+      targetSummary = repsMin == repsMax ? '$repsMin min' : '$repsMin–$repsMax min';
+      progressValue = 0.5;
+      noteText = 'Cardio por tempo · Meta $targetSummary';
+      isIncrease = false;
+    } else {
+      targetSummary = '$weightText$setsCount×$repsMin–$repsMax';
+      isIncrease = rec?.type == ProgressionType.increase;
+      progressValue = isIncrease
+          ? 1.0
+          : (rec != null && rec.suggestedWeightKg > 0 ? 0.78 : 0.45);
+      noteText = isIncrease
+          ? 'Meta batida · +${_formatWeight(rec!.weightDeltaKg)} kg hoje'
+          : (rec?.previousSummary != null && rec!.previousSummary!.isNotEmpty
+              ? 'Última: ${rec.previousSummary}'
+              : '$setsCount séries válidas · alvo $repsMin–$repsMax reps');
+    }
 
     final indexLabel = (index + 1).toString().padLeft(2, '0');
     final exerciseName = workoutExercise.exercise?.name ?? 'Exercício ${index + 1}';

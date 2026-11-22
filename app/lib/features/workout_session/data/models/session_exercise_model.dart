@@ -63,9 +63,17 @@ class SessionExerciseModel {
     final primaryTemplate =
         workingTemplates.firstOrNull ?? sortedTemplates.firstOrNull;
 
+    final exerciseModel = json['exercises'] != null
+        ? ExerciseModel.fromJson(json['exercises'] as Map<String, dynamic>)
+        : null;
+    final isCardio = exerciseModel?.toDomain().isCardio ?? false;
+
     final int resolvedTargetSetsCount;
     if (json['target_sets_count'] != null) {
       resolvedTargetSetsCount = (json['target_sets_count'] as num).toInt();
+    } else if (isCardio) {
+      resolvedTargetSetsCount =
+          sortedTemplates.isNotEmpty ? sortedTemplates.length : 1;
     } else if (workingTemplates.isNotEmpty) {
       resolvedTargetSetsCount = workingTemplates.length;
     } else if (sortedTemplates.isNotEmpty) {
@@ -75,7 +83,9 @@ class SessionExerciseModel {
     }
 
     final int resolvedRestSeconds;
-    if (json['target_rest_seconds'] != null) {
+    if (isCardio) {
+      resolvedRestSeconds = 0;
+    } else if (json['target_rest_seconds'] != null) {
       resolvedRestSeconds = (json['target_rest_seconds'] as num).toInt();
     } else if (primaryTemplate != null && primaryTemplate.restSeconds > 0) {
       resolvedRestSeconds = primaryTemplate.restSeconds;
@@ -85,10 +95,10 @@ class SessionExerciseModel {
 
     final resolvedRepsMin = (json['target_reps_min'] as num?)?.toInt() ??
         primaryTemplate?.targetRepsMin ??
-        8;
+        (isCardio ? 15 : 8);
     final resolvedRepsMax = (json['target_reps_max'] as num?)?.toInt() ??
         primaryTemplate?.targetRepsMax ??
-        12;
+        (isCardio ? 20 : 12);
     final resolvedRir = (json['target_rir'] as num?)?.toInt() ??
         primaryTemplate?.targetRirMin ??
         2;
@@ -113,9 +123,7 @@ class SessionExerciseModel {
       sortOrder: json['sort_order'] as int? ?? 0,
       notes: json['notes'] as String?,
       replacedExerciseId: json['replaced_exercise_id'] as String?,
-      exercise: json['exercises'] != null
-          ? ExerciseModel.fromJson(json['exercises'] as Map<String, dynamic>)
-          : null,
+      exercise: exerciseModel,
       sets: (json['logged_sets'] as List<dynamic>?)
               ?.map((e) => LoggedSetModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
