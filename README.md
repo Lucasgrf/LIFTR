@@ -33,18 +33,20 @@ graph LR
 
 ```text
 LIFTR/
-├── app/                     # Flutter mobile client (Clean Architecture, Drift, Riverpod, Freezed, 225+ tests)
+├── AGENTS.md                # Agent engineering instructions & frontend design guardrails
+├── app/                     # Flutter mobile client (Clean Architecture, Drift, Riverpod, Freezed, 275+ tests)
 ├── supabase/
 │   ├── migrations/          # Postgres schema & RLS migrations
 │   ├── seed/                # Initial exercise catalog seed
 │   └── functions/           # Deno Edge Functions (whatsapp-webhook, orquestrador, cron-relatorio-semanal)
-├── skills/                  # Modular AI skill prompts & shared domain templates
+├── skills/                  # Modular AI skill prompts & shared domain templates (WhatsApp Deno runtime)
 ├── evals/                   # Automated evaluator runner and assertions for LLM pipelines
 ├── docs/
 │   ├── PRD.md               # Product Requirements Document
 │   ├── adr/                 # Architecture Decision Records (001–005)
 │   ├── architecture/        # Mobile architecture docs
 │   ├── database/            # Data modeling docs
+│   ├── design/              # LIFTR Brand Guide v2, Anti-AI-Slop Playbook & Design QA Checklist
 │   └── sdd/                 # Software Design Documents
 ├── deno.json                # Deno tasks (lint, check, test, evals)
 └── .github/workflows/ci.yml # CI pipeline for Flutter + Deno
