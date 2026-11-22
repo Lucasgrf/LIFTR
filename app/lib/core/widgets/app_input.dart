@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_typography.dart';
 
 class AppInput extends StatelessWidget {
   const AppInput({
@@ -35,7 +37,9 @@ class AppInput extends StatelessWidget {
         if (label != null) ...[
           Text(
             label!,
-            style: Theme.of(context).textTheme.labelMedium,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: context.appColors.textSecondary,
+                ),
           ),
           const SizedBox(height: 8),
         ],
@@ -78,12 +82,14 @@ class AppNumericInput extends StatelessWidget {
 
   void _increment() {
     if (value + step <= max) {
+      HapticFeedback.selectionClick();
       onChanged(value + step);
     }
   }
 
   void _decrement() {
     if (value - step >= min) {
+      HapticFeedback.selectionClick();
       onChanged(value - step);
     }
   }
@@ -92,6 +98,9 @@ class AppNumericInput extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final radius = context.appRadius;
+    final formattedValue =
+        value == value.toInt() ? value.toInt().toString() : value.toStringAsFixed(1);
+    final displayText = '$formattedValue${unit != null ? ' $unit' : ''}';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,11 +108,13 @@ class AppNumericInput extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.labelMedium,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: colors.textSecondary,
+              ),
         ),
         const SizedBox(height: 8),
         Container(
-          height: 48,
+          constraints: const BoxConstraints(minHeight: 48),
           decoration: BoxDecoration(
             color: colors.surfaceVariant,
             borderRadius: BorderRadius.circular(radius.small),
@@ -111,27 +122,43 @@ class AppNumericInput extends StatelessWidget {
           ),
           child: Row(
             children: [
-              IconButton(
-                onPressed: _decrement,
-                icon: const Icon(Icons.remove, size: 20),
-                color: colors.textPrimary,
-                splashRadius: 20,
+              Semantics(
+                label: 'Diminuir $label',
+                button: true,
+                child: IconButton(
+                  onPressed: value - step >= min ? _decrement : null,
+                  constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                  icon: const Icon(Icons.remove_rounded, size: 20),
+                  color: colors.textPrimary,
+                  disabledColor: colors.textDisabled,
+                ),
               ),
               Expanded(
-                child: Center(
-                  child: Text(
-                    '${value == value.toInt() ? value.toInt() : value.toStringAsFixed(1)}${unit != null ? ' $unit' : ''}',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
+                child: Semantics(
+                  label: '$label: $displayText',
+                  child: Center(
+                    child: Text(
+                      displayText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontFeatures: AppTypography.tabularFeatures,
+                          ),
                     ),
                   ),
                 ),
               ),
-              IconButton(
-                onPressed: _increment,
-                icon: const Icon(Icons.add, size: 20),
-                color: colors.textPrimary,
-                splashRadius: 20,
+              Semantics(
+                label: 'Aumentar $label',
+                button: true,
+                child: IconButton(
+                  onPressed: value + step <= max ? _increment : null,
+                  constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                  icon: const Icon(Icons.add_rounded, size: 20),
+                  color: colors.textPrimary,
+                  disabledColor: colors.textDisabled,
+                ),
               ),
             ],
           ),

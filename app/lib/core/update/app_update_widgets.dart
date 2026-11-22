@@ -9,6 +9,7 @@ import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/update/app_update_info.dart';
 import 'package:personal_fitness_os/core/update/app_update_providers.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
 
 class AppUpdateBanner extends StatelessWidget {
   const AppUpdateBanner({
@@ -29,8 +30,8 @@ class AppUpdateBanner extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 34),
-      padding: const EdgeInsets.only(left: 12, right: 4, top: 4, bottom: 4),
+      constraints: const BoxConstraints(minHeight: 44),
+      padding: const EdgeInsets.only(left: 12),
       decoration: BoxDecoration(
         color: colors.primaryMuted,
         border: Border(
@@ -54,21 +55,28 @@ class AppUpdateBanner extends StatelessWidget {
               style: context.textTheme.labelSmall?.copyWith(
                 color: colors.textPrimary,
                 fontWeight: FontWeight.w600,
+                fontFeatures: AppTypography.tabularFeatures,
               ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(width: 6),
-          InkWell(
-            onTap: onUpdateTap,
-            borderRadius: BorderRadius.circular(radius.small),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              child: Text(
-                'Atualizar',
-                style: context.textTheme.labelSmall?.copyWith(
-                  color: colors.primaryLight,
-                  fontWeight: FontWeight.w700,
+          const SizedBox(width: 4),
+          Semantics(
+            label: 'Atualizar aplicativo',
+            button: true,
+            child: InkWell(
+              onTap: onUpdateTap,
+              borderRadius: BorderRadius.circular(radius.small),
+              child: Container(
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 44),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                alignment: Alignment.center,
+                child: Text(
+                  'Atualizar',
+                  style: context.textTheme.labelSmall?.copyWith(
+                    color: colors.primaryLight,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),
@@ -78,13 +86,12 @@ class AppUpdateBanner extends StatelessWidget {
             button: true,
             child: InkWell(
               onTap: onDismiss,
-              borderRadius: BorderRadius.circular(999),
               child: SizedBox(
-                width: 28,
-                height: 28,
+                width: 48,
+                height: 44,
                 child: Icon(
                   Icons.close_rounded,
-                  size: 15,
+                  size: 16,
                   color: colors.textTertiary,
                 ),
               ),
@@ -187,52 +194,23 @@ class _AppUpdateSheetState extends ConsumerState<AppUpdateSheet>
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(
-            child: Container(
-              width: 38,
-              height: 4,
+          LiftrSheetHeader(
+            eyebrow: 'Atualização do app',
+            title: 'Nova versão do LIFTR',
+            subtitle: '$remoteLabel · ${update.formattedSize}',
+            trailing: Container(
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: colors.border,
-                borderRadius: BorderRadius.circular(radius.full),
+                color: colors.primaryMuted,
+                borderRadius: BorderRadius.circular(radius.small),
+              ),
+              child: Icon(
+                Icons.system_update_rounded,
+                size: 20,
+                color: colors.primaryLight,
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: colors.primaryMuted,
-                  borderRadius: BorderRadius.circular(radius.medium),
-                ),
-                child: Icon(
-                  Icons.system_update_rounded,
-                  color: colors.primaryLight,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Nova versão do LIFTR',
-                      style: context.textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$remoteLabel · ${update.formattedSize}',
-                      style: context.textTheme.labelMedium?.copyWith(
-                        color: colors.primaryLight,
-                        fontFeatures: AppTypography.tabularFeatures,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ),
           const SizedBox(height: 12),
           Text(

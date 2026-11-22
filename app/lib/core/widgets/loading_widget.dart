@@ -40,7 +40,7 @@ class LiftrShimmerBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: colors.border),
+        border: Border.all(color: colors.borderSubtle),
       ),
     );
 
@@ -78,7 +78,7 @@ class LiftrScreenSkeleton extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (showHero) ...[
-            LiftrShimmerBox(height: 210, borderRadius: radius.xl),
+            LiftrShimmerBox(height: 200, borderRadius: radius.large),
             const SizedBox(height: 22),
             LiftrShimmerBox(width: 140, height: 18, borderRadius: radius.xs),
             const SizedBox(height: 12),
@@ -87,7 +87,7 @@ class LiftrScreenSkeleton extends StatelessWidget {
             itemCount,
             (index) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: LiftrShimmerBox(height: 84, borderRadius: radius.large),
+              child: LiftrShimmerBox(height: 80, borderRadius: radius.medium),
             ),
           ),
         ],
