@@ -9,6 +9,7 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
 
 class LastCompletedWorkoutCard extends StatelessWidget {
@@ -91,16 +92,27 @@ class LastCompletedWorkoutCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'ÚLTIMO TREINO REALIZADO',
-                  style: AppTypography.eyebrow(context),
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    'ÚLTIMO TREINO REALIZADO',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.eyebrow(context),
+                  ),
                 ),
-                const Spacer(),
-                Text(
-                  _formatDateLabel(completedAt),
-                  style: context.textTheme.labelSmall?.copyWith(
-                    color: colors.textTertiary,
-                    fontFeatures: AppTypography.tabularFeatures,
+                const SizedBox(width: 8),
+                Flexible(
+                  flex: 2,
+                  child: Text(
+                    _formatDateLabel(completedAt),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                    style: context.textTheme.labelSmall?.copyWith(
+                      color: colors.textTertiary,
+                      fontFeatures: AppTypography.tabularFeatures,
+                    ),
                   ),
                 ),
               ],
@@ -122,24 +134,9 @@ class LastCompletedWorkoutCard extends StatelessWidget {
                 ],
                 if (session.perceivedExertion != null) ...[
                   const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.primaryMuted,
-                      borderRadius: BorderRadius.circular(radius.full),
-                    ),
-                    child: Text(
-                      'RPE ${session.perceivedExertion!.toStringAsFixed(1)}',
-                      style: context.textTheme.labelSmall?.copyWith(
-                        color: colors.primaryLight,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 10,
-                        fontFeatures: AppTypography.tabularFeatures,
-                      ),
-                    ),
+                  LiftrBadge(
+                    label: 'RPE ${session.perceivedExertion!.toStringAsFixed(1)}',
+                    tone: LiftrBadgeTone.brand,
                   ),
                 ],
               ],

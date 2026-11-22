@@ -9,6 +9,7 @@ import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
@@ -173,18 +174,10 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: Container(
-                width: 38,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colors.border,
-                  borderRadius: BorderRadius.circular(radius.full),
-                ),
-              ),
+            const LiftrSheetHeader(
+              eyebrow: 'ENCERRAMENTO',
+              title: 'Finalizar treino',
             ),
-            const SizedBox(height: 16),
-            Text('Finalizar treino', style: context.textTheme.headlineMedium),
             const SizedBox(height: 16),
             AppCard(
               padding: const EdgeInsets.all(16),

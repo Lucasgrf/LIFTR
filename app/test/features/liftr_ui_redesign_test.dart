@@ -642,7 +642,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Treino concluído!'), findsOneWidget);
+      expect(find.text('Treino concluído'), findsOneWidget);
       expect(find.text('Duração'), findsOneWidget);
       expect(find.text('Séries'), findsOneWidget);
       expect(find.text('Volume'), findsOneWidget);
@@ -823,7 +823,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Treino concluído!'), findsOneWidget);
+      expect(find.text('Treino concluído'), findsOneWidget);
       expect(find.text('Sincronizado com o WhatsApp ✓'), findsOneWidget);
     });
   });
