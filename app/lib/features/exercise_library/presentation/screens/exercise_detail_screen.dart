@@ -9,10 +9,12 @@ import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/charts/exercise_load_progression_chart.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/widgets/exercise_card.dart';
+import 'package:personal_fitness_os/features/exercise_library/presentation/widgets/exercise_diagram.dart';
 import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -104,7 +106,6 @@ class _ExerciseDetailScreenState extends ConsumerState<ExerciseDetailScreen> {
         ),
         data: (exercise) {
           _initializeNotes(exercise.personalNotes);
-          final muscleColor = ExerciseCard.getMuscleColor(context, exercise.primaryMuscleGroup);
           final primaryMuscleLabel = ExerciseCard.getMuscleLabel(exercise.primaryMuscleGroup);
           final equipmentLabel = ExerciseCard.getEquipmentLabel(exercise.equipment);
 
@@ -121,41 +122,27 @@ class _ExerciseDetailScreenState extends ConsumerState<ExerciseDetailScreen> {
                     children: [
                       Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: muscleColor.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(context.appRadius.small),
-                            ),
-                            child: Text(
-                              primaryMuscleLabel,
-                              style: context.textTheme.labelMedium?.copyWith(
-                                color: muscleColor,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                          LiftrBadge(
+                            label: primaryMuscleLabel,
+                            tone: LiftrBadgeTone.brand,
                           ),
                           const Spacer(),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: context.appColors.surfaceVariant,
-                              borderRadius: BorderRadius.circular(context.appRadius.small),
-                              border: Border.all(color: context.appColors.border),
-                            ),
-                            child: Text(
-                              exercise.isCustom ? 'Personalizado' : 'Biblioteca Padrão',
-                              style: context.textTheme.labelSmall?.copyWith(
-                                color: exercise.isCustom
-                                     ? context.appColors.primary
-                                    : context.appColors.textSecondary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                          LiftrBadge(
+                            label: exercise.isCustom ? 'Personalizado' : 'Biblioteca Padrão',
+                            tone: exercise.isCustom
+                                ? LiftrBadgeTone.brand
+                                : LiftrBadgeTone.neutral,
                           ),
                         ],
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 16),
+                      Center(
+                        child: ExerciseDiagram(
+                          exercise: exercise,
+                          size: 120,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       Text(
                         exercise.name,
                         style: context.textTheme.headlineMedium?.copyWith(
