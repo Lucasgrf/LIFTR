@@ -9,6 +9,7 @@ import 'package:personal_fitness_os/features/training/domain/entities/training_p
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout_exercise.dart';
 import 'package:personal_fitness_os/features/training/domain/repositories/training_repository.dart';
+import 'package:personal_fitness_os/features/workout_session/domain/services/rest_duration_resolver.dart';
 
 /// Persists a [GeneratedTrainingPlan] (from Gemini AI or imported share code)
 /// into the user's account, resolving existing catalog exercises and
@@ -285,9 +286,14 @@ class PlanPersisterService {
     final repsMax = spec.targetRepsMax ?? (repsMin < 12 ? 12 : repsMin);
     final rirMin = spec.targetRirMin ?? 1;
     final rirMax = spec.targetRirMax ?? 2;
-    final rest = spec.restSeconds > 0
-        ? spec.restSeconds
-        : AppConstants.defaultRestSeconds;
+    final rest = RestDurationResolver.resolve(
+      targetRepsMin: repsMin,
+      targetRepsMax: repsMax,
+      movementPattern: spec.movementPattern,
+      primaryMuscleGroup: spec.primaryMuscleGroup,
+      equipment: spec.equipment,
+      explicitTemplateRestSeconds: spec.restSeconds > 0 ? spec.restSeconds : null,
+    );
 
     return List.generate(
       count,

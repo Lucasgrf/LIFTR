@@ -48,7 +48,8 @@ enum UserGoal {
 
 enum UserExperience {
   beginner,
-  intermediate;
+  intermediate,
+  advanced;
 
   String get label {
     switch (this) {
@@ -56,6 +57,8 @@ enum UserExperience {
         return 'Iniciante';
       case UserExperience.intermediate:
         return 'Intermediário';
+      case UserExperience.advanced:
+        return 'Avançado';
     }
   }
 
@@ -64,7 +67,9 @@ enum UserExperience {
       case UserExperience.beginner:
         return 'Menos de 1 ano treinando com consistência';
       case UserExperience.intermediate:
-        return 'Mais de 1 ano, já controla técnica e cargas';
+        return '1 a 3 anos, já controla técnica e cargas';
+      case UserExperience.advanced:
+        return 'Mais de 3 anos, domínio técnico e cargas altas';
     }
   }
 }

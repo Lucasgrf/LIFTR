@@ -10,6 +10,7 @@ import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/set_template.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
 import 'package:personal_fitness_os/features/training/presentation/widgets/set_template_row.dart';
+import 'package:personal_fitness_os/features/workout_session/domain/services/rest_duration_resolver.dart';
 
 class ConfigureSetsScreen extends ConsumerStatefulWidget {
   const ConfigureSetsScreen({
@@ -52,7 +53,25 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
     }
   }
 
-  void _addSet(SetType type, {bool isCardio = false}) {
+  void _addSet(
+    SetType type, {
+    bool isCardio = false,
+    String? movementPattern,
+    String? primaryMuscleGroup,
+    String? equipment,
+  }) {
+    final repsMin = isCardio ? 15 : (type == SetType.warmup ? 12 : 8);
+    final repsMax = isCardio ? 20 : (type == SetType.warmup ? 15 : 12);
+    final rest = isCardio
+        ? 0
+        : RestDurationResolver.resolve(
+            targetRepsMin: repsMin,
+            targetRepsMax: repsMax,
+            movementPattern: movementPattern,
+            primaryMuscleGroup: primaryMuscleGroup,
+            equipment: equipment,
+            setType: type,
+          );
     setState(() {
       _sets.add(
         SetTemplate(
@@ -60,8 +79,8 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
           workoutExerciseId: widget.workoutExerciseId,
           setNumber: _sets.length + 1,
           setType: isCardio ? SetType.working : type,
-          targetRepsMin: isCardio ? 15 : (type == SetType.warmup ? 12 : 8),
-          targetRepsMax: isCardio ? 20 : (type == SetType.warmup ? 15 : 12),
+          targetRepsMin: repsMin,
+          targetRepsMax: repsMax,
           targetRirMin: !isCardio &&
                   (type == SetType.working || type == SetType.dropSet)
               ? 1
@@ -70,9 +89,7 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                   (type == SetType.working || type == SetType.dropSet)
               ? 2
               : null,
-          restSeconds: isCardio
-              ? 0
-              : (type == SetType.warmup ? 60 : AppConstants.defaultRestSeconds),
+          restSeconds: rest,
         ),
       );
     });
@@ -291,7 +308,12 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () => _addSet(SetType.working),
+                        onPressed: () => _addSet(
+                          SetType.working,
+                          movementPattern: exercise.exercise?.movementPattern,
+                          primaryMuscleGroup: exercise.exercise?.primaryMuscleGroup,
+                          equipment: exercise.exercise?.equipment,
+                        ),
                         icon: const Icon(Icons.add_rounded, size: 16),
                         label: const Text('+ Série Válida'),
                       ),
