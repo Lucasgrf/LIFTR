@@ -62,7 +62,8 @@ class ProgressionRepositoryImpl implements ProgressionRepository {
     final results = <ExercisePerformanceHistory>[];
     for (final session in completed) {
       for (final se in session.exercises) {
-        if (se.exerciseId == exerciseId && se.sets.isNotEmpty) {
+        if (se.exerciseId == exerciseId &&
+            se.sets.any((s) => s.isWorkingSet)) {
           results.add(
             ExercisePerformanceHistory(
               exerciseId: exerciseId,

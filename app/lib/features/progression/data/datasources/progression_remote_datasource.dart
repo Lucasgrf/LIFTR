@@ -58,7 +58,7 @@ class SupabaseProgressionRemoteDataSource
         .eq('workout_sessions.user_id', user.id)
         .eq('workout_sessions.status', 'completed')
         .order('completed_at', referencedTable: 'workout_sessions', ascending: false)
-        .limit(limit + 3);
+        .limit(limit + 8);
 
     final rows = response as List<dynamic>;
     final results = <ExercisePerformanceHistory>[];
@@ -79,20 +79,19 @@ class SupabaseProgressionRemoteDataSource
           .map((s) => LoggedSetModel.fromJson(s as Map<String, dynamic>).toDomain())
           .toList();
 
-      if (sets.isEmpty) continue;
-
-      results.add(
-        ExercisePerformanceHistory(
-          exerciseId: exerciseId,
-          workoutSessionId: row['session_id'] as String? ?? '',
-          workoutName: workoutName,
-          date: date,
-          loggedSets: sets,
-        ),
+      final history = ExercisePerformanceHistory(
+        exerciseId: exerciseId,
+        workoutSessionId: row['session_id'] as String? ?? '',
+        workoutName: workoutName,
+        date: date,
+        loggedSets: sets,
       );
-      if (results.length >= limit) break;
+      if (history.workingSets.isEmpty) continue;
+
+      results.add(history);
     }
 
-    return results;
+    results.sort((a, b) => b.date.compareTo(a.date));
+    return results.take(limit).toList();
   }
 }
