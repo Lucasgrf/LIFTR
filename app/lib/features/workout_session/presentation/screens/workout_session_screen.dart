@@ -23,6 +23,7 @@ import 'package:personal_fitness_os/features/settings/presentation/providers/set
 import 'package:personal_fitness_os/features/workout_session/domain/entities/logged_set.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/session_exercise.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
+import 'package:personal_fitness_os/features/workout_session/domain/services/rest_duration_resolver.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/finish_workout_modal.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/rest_timer_widget.dart';
@@ -122,18 +123,29 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
     );
   }
 
-  Future<void> _handleDeleteSet(String setId) async {
+  Future<void> _handleDeleteSet(
+    String setId, {
+    String? exerciseName,
+    int? setNumber,
+  }) async {
     final useCase = ref.read(deleteLoggedSetUseCaseProvider);
     final result = await useCase.execute(setId);
 
     result.fold(
       (_) {
         ref.invalidate(liveSessionDetailProvider(widget.sessionId));
-        context.showSnackBar('Série removida.');
+        final timerState = ref.read(restTimerNotifierProvider);
+        if (timerState.isVisible &&
+            setNumber != null &&
+            timerState.setNumber == setNumber &&
+            (exerciseName == null || timerState.exerciseName == exerciseName)) {
+          ref.read(restTimerNotifierProvider.notifier).stop();
+        }
+        context.showSnackBar('Série desfeita.');
       },
       (failure) {
         context.showSnackBar(
-          'Erro ao remover série: ${failure.message}',
+          'Erro ao desfazer série: ${failure.message}',
           isError: true,
         );
       },
@@ -272,6 +284,9 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
     final sessionAsync = ref.watch(liveSessionDetailProvider(widget.sessionId));
     final restVisible = ref.watch(
       restTimerNotifierProvider.select((s) => s.isVisible),
+    );
+    final restMinimized = ref.watch(
+      restTimerNotifierProvider.select((s) => s.isMinimized),
     );
 
     return Scaffold(
@@ -448,84 +463,138 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                         )
                       : Stack(
                           children: [
-                            ListView.builder(
-                              padding: EdgeInsets.fromLTRB(
-                                0,
-                                12,
-                                0,
-                                restVisible ? 172 : 40,
-                              ),
-                              itemCount: session.exercises.length,
-                              itemBuilder: (context, index) {
-                                final rawSe = session.exercises[index];
-                                final swapped = _swappedExercises[rawSe.id];
-                                final se = swapped != null
-                                    ? rawSe.copyWith(
-                                        exerciseId: swapped.id,
-                                        exercise: swapped,
-                                      )
-                                    : rawSe;
-
-                                final increment = settings.incrementForEquipment(
-                                  se.exercise?.equipment,
-                                );
-
-                                return ResponsiveContainer(
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(bottom: 10),
-                                    child: SessionExerciseCard(
-                                      sessionExercise: se,
-                                      isExpanded: _expandedIndex == index,
-                                      exerciseIndex: index,
-                                      totalExercises: session.exercises.length,
-                                      weightIncrement: increment,
-                                      showRir: false,
-                                      onToggleExpand: () => setState(() {
-                                        _expandedIndex =
-                                            _expandedIndex == index ? -1 : index;
-                                      }),
-                                      onSwapExercise: () =>
-                                          SwapExerciseSheet.show(
-                                        context,
-                                        currentExercise: se.exercise,
-                                        onSelect: (chosen) =>
-                                            _handleSwapExercise(rawSe, chosen),
-                                      ),
-                                      onLogSet: ({
-                                        required sessionExerciseId,
-                                        required setNumber,
-                                        required setType,
-                                        required weightKg,
-                                        required repsCompleted,
-                                        durationSeconds,
-                                        rirActual,
-                                        restSeconds = AppConstants.defaultRestSeconds,
-                                        dropSets = const [],
-                                        existingSetId,
-                                      }) =>
-                                          _handleLogSet(
-                                        sessionExerciseId: sessionExerciseId,
-                                        setNumber: setNumber,
-                                        setType: setType,
-                                        weightKg: weightKg,
-                                        repsCompleted: repsCompleted,
-                                        durationSeconds: durationSeconds,
-                                        rirActual: rirActual,
-                                        restSeconds: se.isCardio
-                                            ? 0
-                                            : (restSeconds > 0
-                                                ? restSeconds
-                                                : settings.defaultRestSeconds),
-                                        dropSets: dropSets,
-                                        existingSetId: existingSetId,
-                                        exerciseName: se.exercise?.name,
-                                        isCardio: se.isCardio,
-                                      ),
-                                      onDeleteSet: _handleDeleteSet,
-                                    ),
-                                  ),
-                                );
+                            NotificationListener<ScrollUpdateNotification>(
+                              onNotification: (notification) {
+                                final delta = notification.scrollDelta;
+                                if (delta != null && delta > 1.5) {
+                                  final timerState =
+                                      ref.read(restTimerNotifierProvider);
+                                  if (timerState.isVisible &&
+                                      !timerState.isMinimized) {
+                                    ref
+                                        .read(
+                                            restTimerNotifierProvider.notifier)
+                                        .minimize();
+                                  }
+                                }
+                                return false;
                               },
+                              child: ListView.builder(
+                                padding: EdgeInsets.fromLTRB(
+                                  0,
+                                  12,
+                                  0,
+                                  !restVisible
+                                      ? 40
+                                      : (restMinimized ? 84 : 188),
+                                ),
+                                itemCount: session.exercises.length,
+                                itemBuilder: (context, index) {
+                                  final rawSe = session.exercises[index];
+                                  final swapped = _swappedExercises[rawSe.id];
+                                  final se = swapped != null
+                                      ? rawSe.copyWith(
+                                          exerciseId: swapped.id,
+                                          exercise: swapped,
+                                        )
+                                      : rawSe;
+
+                                  final increment =
+                                      settings.incrementForEquipment(
+                                    se.exercise?.equipment,
+                                  );
+
+                                  return ResponsiveContainer(
+                                    child: Padding(
+                                      padding:
+                                          const EdgeInsets.only(bottom: 10),
+                                      child: SessionExerciseCard(
+                                        sessionExercise: se,
+                                        isExpanded: _expandedIndex == index,
+                                        exerciseIndex: index,
+                                        totalExercises:
+                                            session.exercises.length,
+                                        weightIncrement: increment,
+                                        showRir: false,
+                                        onToggleExpand: () => setState(() {
+                                          _expandedIndex =
+                                              _expandedIndex == index
+                                                  ? -1
+                                                  : index;
+                                        }),
+                                        onSwapExercise: () =>
+                                            SwapExerciseSheet.show(
+                                          context,
+                                          currentExercise: se.exercise,
+                                          onSelect: (chosen) =>
+                                              _handleSwapExercise(
+                                                  rawSe, chosen),
+                                        ),
+                                        onLogSet: ({
+                                          required sessionExerciseId,
+                                          required setNumber,
+                                          required setType,
+                                          required weightKg,
+                                          required repsCompleted,
+                                          durationSeconds,
+                                          rirActual,
+                                          restSeconds =
+                                              AppConstants.defaultRestSeconds,
+                                          dropSets = const [],
+                                          existingSetId,
+                                        }) {
+                                          final resolvedRest = se.isCardio
+                                              ? 0
+                                              : RestDurationResolver.resolve(
+                                                  targetRepsMin:
+                                                      se.targetRepsMin,
+                                                  targetRepsMax:
+                                                      se.targetRepsMax,
+                                                  movementPattern: se.exercise
+                                                      ?.movementPattern,
+                                                  primaryMuscleGroup: se
+                                                      .exercise
+                                                      ?.primaryMuscleGroup,
+                                                  equipment:
+                                                      se.exercise?.equipment,
+                                                  isCardio: se.isCardio,
+                                                  setType: setType,
+                                                  explicitTemplateRestSeconds:
+                                                      restSeconds > 0
+                                                          ? restSeconds
+                                                          : null,
+                                                );
+                                          return _handleLogSet(
+                                            sessionExerciseId:
+                                                sessionExerciseId,
+                                            setNumber: setNumber,
+                                            setType: setType,
+                                            weightKg: weightKg,
+                                            repsCompleted: repsCompleted,
+                                            durationSeconds: durationSeconds,
+                                            rirActual: rirActual,
+                                            restSeconds: resolvedRest,
+                                            dropSets: dropSets,
+                                            existingSetId: existingSetId,
+                                            exerciseName: se.exercise?.name,
+                                            isCardio: se.isCardio,
+                                          );
+                                        },
+                                        onDeleteSet: (setId) {
+                                          final matched = se.sets
+                                              .where((s) => s.id == setId)
+                                              .firstOrNull;
+                                          return _handleDeleteSet(
+                                            setId,
+                                            exerciseName: se.exercise?.name,
+                                            setNumber: matched?.setNumber,
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
                             const Positioned(
                               bottom: 0,

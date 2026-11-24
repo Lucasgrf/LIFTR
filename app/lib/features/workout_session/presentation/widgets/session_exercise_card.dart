@@ -14,9 +14,12 @@ import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/features/progression/domain/entities/progression_recommendation.dart';
+import 'package:personal_fitness_os/features/progression/domain/services/progression_engine.dart';
 import 'package:personal_fitness_os/features/progression/presentation/providers/progression_providers.dart';
+import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/logged_set.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/session_exercise.dart';
+import 'package:personal_fitness_os/features/workout_session/domain/services/initial_weight_estimator.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/logged_set_row.dart';
 
 class SessionExerciseCard extends ConsumerStatefulWidget {
@@ -66,6 +69,21 @@ class SessionExerciseCard extends ConsumerStatefulWidget {
 class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
   int _minRowCount = 0;
   final Map<int, SetType> _extraRowTypes = {};
+  final Map<int, ({double weightKg, int reps})> _prefilledBySetNumber = {};
+  int _syncToken = 0;
+  bool _isBulkCompleting = false;
+
+  @override
+  void didUpdateWidget(covariant SessionExerciseCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.sessionExercise.id != widget.sessionExercise.id) {
+      _prefilledBySetNumber.clear();
+      _extraRowTypes.clear();
+      _minRowCount = 0;
+      _syncToken++;
+      _isBulkCompleting = false;
+    }
+  }
 
   int get _totalRowsCount {
     final se = widget.sessionExercise;
@@ -89,6 +107,134 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
     return null;
   }
 
+  ({double weightKg, int reps}) _resolveDefaultsForSet({
+    required int setNumber,
+    required double defaultWeight,
+  }) {
+    final prefilled = _prefilledBySetNumber[setNumber];
+    if (prefilled != null) {
+      return prefilled;
+    }
+
+    LoggedSet? latestPrev;
+    for (final s in widget.sessionExercise.sets) {
+      if (s.setNumber < setNumber &&
+          (latestPrev == null || s.setNumber > latestPrev.setNumber)) {
+        latestPrev = s;
+      }
+    }
+
+    final prevWeight = latestPrev != null ? latestPrev.weightKg : defaultWeight;
+    final prevReps = latestPrev != null && latestPrev.repsCompleted > 0
+        ? latestPrev.repsCompleted
+        : widget.sessionExercise.targetRepsMin;
+    return (weightKg: prevWeight, reps: prevReps);
+  }
+
+  void _applyToRemainingSets(int fromSetNumber, double weightKg, int reps) {
+    final total = _totalRowsCount;
+    var updatedCount = 0;
+    setState(() {
+      if (_findLoggedSetForNumber(fromSetNumber) == null) {
+        _prefilledBySetNumber[fromSetNumber] = (weightKg: weightKg, reps: reps);
+      }
+      for (var n = fromSetNumber + 1; n <= total; n++) {
+        if (_findLoggedSetForNumber(n) == null) {
+          _prefilledBySetNumber[n] = (weightKg: weightKg, reps: reps);
+          updatedCount++;
+        }
+      }
+      _syncToken++;
+    });
+    if (updatedCount > 0 && mounted) {
+      context.showSnackBar(
+        'Aplicado ${_formatWeight(weightKg)} kg × $reps reps às $updatedCount séries restantes.',
+      );
+    }
+  }
+
+  void _repeatLastSession(ProgressionRecommendation rec) {
+    final se = widget.sessionExercise;
+    final prevWorking = rec.previousWorkingSets;
+    final total = _totalRowsCount;
+    var updatedCount = 0;
+    setState(() {
+      for (var n = 1; n <= total; n++) {
+        if (_findLoggedSetForNumber(n) != null) continue;
+        final sourceSet = prevWorking.isNotEmpty
+            ? prevWorking[(n - 1).clamp(0, prevWorking.length - 1)]
+            : null;
+        final targetWeight = rec.isIncrease && rec.suggestedWeightKg > 0
+            ? rec.suggestedWeightKg
+            : (sourceSet != null && sourceSet.weightKg > 0
+                ? sourceSet.weightKg
+                : rec.suggestedWeightKg);
+        final targetReps = rec.isIncrease
+            ? se.targetRepsMin
+            : (sourceSet != null && sourceSet.repsCompleted > 0
+                ? sourceSet.repsCompleted
+                : se.targetRepsMin);
+        if (targetReps > 0) {
+          _prefilledBySetNumber[n] = (weightKg: targetWeight, reps: targetReps);
+          updatedCount++;
+        }
+      }
+      _syncToken++;
+    });
+    if (updatedCount > 0 && mounted) {
+      HapticFeedback.lightImpact();
+      context.showSnackBar(
+        rec.isIncrease
+            ? 'Nova meta (${_formatWeight(rec.suggestedWeightKg)} kg) aplicada nas séries pendentes.'
+            : 'Última sessão aplicada nas $updatedCount séries pendentes.',
+      );
+    }
+  }
+
+  Future<void> _completeAllRemainingSets({
+    required double defaultWeight,
+  }) async {
+    if (_isBulkCompleting) return;
+    final se = widget.sessionExercise;
+    final total = _totalRowsCount;
+    final pendingNumbers = <int>[
+      for (var n = 1; n <= total; n++)
+        if (_findLoggedSetForNumber(n) == null) n,
+    ];
+    if (pendingNumbers.isEmpty) return;
+
+    setState(() => _isBulkCompleting = true);
+    HapticFeedback.mediumImpact();
+    try {
+      for (final n in pendingNumbers) {
+        final idx = n - 1;
+        final setType = _extraRowTypes[n] ??
+            (idx < se.prescribedSetTypes.length
+                ? se.prescribedSetTypes[idx]
+                : SetType.working);
+        final resolved = _resolveDefaultsForSet(
+          setNumber: n,
+          defaultWeight: defaultWeight,
+        );
+        final repsToLog =
+            resolved.reps > 0 ? resolved.reps : math.max(1, se.targetRepsMin);
+        await widget.onLogSet(
+          sessionExerciseId: se.id,
+          setNumber: n,
+          setType: setType,
+          weightKg: resolved.weightKg,
+          repsCompleted: repsToLog,
+          rirActual: widget.showRir ? se.targetRir : null,
+          restSeconds: se.targetRestSeconds,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isBulkCompleting = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -109,10 +255,10 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
           .padLeft(2, '0');
       final collapsedSubtitle = isCardio
           ? (se.totalCardioDurationSeconds > 0
-              ? '${formatCardioSeconds(se.totalCardioDurationSeconds)} concluído ✓'
+              ? '${formatCardioSeconds(se.totalCardioDurationSeconds)} concluído'
               : 'Meta ${se.targetRepsMin == se.targetRepsMax ? '${se.targetRepsMin}' : '${se.targetRepsMin}–${se.targetRepsMax}'} min')
           : (isAllDone
-              ? '${se.completedWorkingSetsCount}/${se.targetSetsCount} concluídas ✓'
+              ? '${se.completedWorkingSetsCount}/${se.targetSetsCount} concluídas'
               : '${se.completedWorkingSetsCount}/${se.targetSetsCount} séries');
 
       return InkWell(
@@ -159,14 +305,31 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                       style: context.textTheme.titleSmall,
                     ),
                     const SizedBox(height: 3),
-                    Text(
-                      collapsedSubtitle,
-                      style: context.textTheme.labelSmall?.copyWith(
-                        color: isAllDone
-                            ? fitnessColors.progressUp
-                            : colors.textTertiary,
-                        fontFeatures: AppTypography.tabularFeatures,
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (isAllDone) ...[
+                          Icon(
+                            Icons.check_circle_rounded,
+                            size: 13,
+                            color: fitnessColors.progressUp,
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        Flexible(
+                          child: Text(
+                            collapsedSubtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.textTheme.labelSmall?.copyWith(
+                              color: isAllDone
+                                  ? fitnessColors.progressUp
+                                  : colors.textTertiary,
+                              fontFeatures: AppTypography.tabularFeatures,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -186,6 +349,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
       );
     }
 
+    final settings = ref.watch(userSettingsProvider);
     final ProgressionRecommendation? rec = isCardio
         ? null
         : ref
@@ -203,8 +367,24 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
             .asData
             ?.value;
 
-    final defaultWeight =
-        (rec != null && rec.suggestedWeightKg > 0) ? rec.suggestedWeightKg : 0.0;
+    final hasHistoryWeight = rec != null && rec.suggestedWeightKg > 0;
+    final estimatedInitial = (!isCardio && !hasHistoryWeight)
+        ? InitialWeightEstimator.estimate(
+            exercise: se.exercise,
+            experience: settings.experience,
+            bodyWeightKg: settings.weightKg,
+            biologicalSex: settings.biologicalSex,
+            targetRepsMin: se.targetRepsMin,
+            targetRepsMax: se.targetRepsMax,
+            equipmentIncrement: widget.weightIncrement,
+          )
+        : null;
+
+    final double defaultWeight = hasHistoryWeight
+        ? rec.suggestedWeightKg
+        : (estimatedInitial?.weightKg ?? 0.0);
+    final bool isUsingInitialEstimate =
+        !isCardio && !hasHistoryWeight && (estimatedInitial?.isEstimated ?? false) && defaultWeight > 0;
     final targetWeightText =
         defaultWeight > 0 ? '${_formatWeight(defaultWeight)} kg · ' : '';
 
@@ -299,6 +479,16 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                             fontFeatures: AppTypography.tabularFeatures,
                           ),
                         ),
+                      ] else if (isUsingInitialEstimate) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'Carga inicial sugerida (${settings.experience.label}) · ajuste se necessário',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: colors.primaryLight,
+                          ),
+                        ),
                       ],
                     ],
                   ),
@@ -356,6 +546,14 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                         ? LiftrBadgeTone.success
                         : LiftrBadgeTone.neutral,
                   ),
+                  if (!isCardio && rec != null && rec.isIncrease) ...[
+                    const SizedBox(height: 6),
+                    LiftrBadge(
+                      label: 'SUBIR +${_formatWeight(rec.weightDeltaKg)} kg',
+                      tone: LiftrBadgeTone.success,
+                      icon: Icons.north_east_rounded,
+                    ),
+                  ],
                 ],
               ),
             ],
@@ -384,15 +582,144 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                     ? 'Meta de cardio concluída ($cardioLoggedMin min)!'
                     : '$cardioLoggedMin/$cardioTargetMin min registrados')
                 : (repsRemaining == 0
-                    ? 'Meta da faixa batida · pronto para subir na próxima!'
-                    : '$loggedWorkingReps/$totalTargetReps reps · faltam $repsRemaining para o topo da faixa'),
+                    ? ((rec?.consecutiveCeilingHits ?? 0) >= 1
+                        ? 'Topo consolidado (2/2) · subida de carga liberada!'
+                        : 'Topo da faixa batido (1/2) · repita na próxima sessão para subir carga')
+                    : (!isCardio &&
+                            rec != null &&
+                            rec.consecutiveCeilingHits == 1 &&
+                            !rec.isIncrease)
+                        ? 'Teto 1/2 · repita hoje para liberar +${_formatWeight(ProgressionEngine.defaultWeightIncrement(se.exercise?.equipment))} kg'
+                        : '$loggedWorkingReps/$totalTargetReps reps · faltam $repsRemaining para o topo da faixa'),
             style: context.textTheme.labelSmall?.copyWith(
-              color: (isCardio ? isAllDone : repsRemaining == 0)
+              color: (isCardio
+                      ? isAllDone
+                      : (repsRemaining == 0 &&
+                          (rec?.consecutiveCeilingHits ?? 0) >= 1))
                   ? fitnessColors.progressUp
-                  : colors.textTertiary,
+                  : (!isCardio &&
+                          ((rec?.consecutiveCeilingHits ?? 0) == 1 ||
+                              repsRemaining == 0))
+                      ? colors.primaryLight
+                      : colors.textTertiary,
               fontFeatures: AppTypography.tabularFeatures,
             ),
           ),
+          if (!isCardio &&
+              [
+                for (var n = 1; n <= _totalRowsCount; n++)
+                  if (_findLoggedSetForNumber(n) == null) n,
+              ].isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                if (rec != null && rec.previousWorkingSets.isNotEmpty)
+                  Semantics(
+                    label: 'Repetir carga e repetições da última sessão',
+                    button: true,
+                    child: InkWell(
+                      onTap: () => _repeatLastSession(rec),
+                      borderRadius: BorderRadius.circular(radius.medium),
+                      child: Container(
+                        constraints: const BoxConstraints(minHeight: 38),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.surfaceElevated,
+                          borderRadius: BorderRadius.circular(radius.medium),
+                          border: Border.all(color: colors.border),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.replay_rounded,
+                              size: 15,
+                              color: colors.primaryLight,
+                            ),
+                            const SizedBox(width: 5),
+                            Flexible(
+                              child: Text(
+                                'Repetir última',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: colors.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                if (defaultWeight > 0 || se.sets.isNotEmpty)
+                  Semantics(
+                    label: 'Concluir séries restantes deste exercício',
+                    button: true,
+                    child: InkWell(
+                      onTap: _isBulkCompleting
+                          ? null
+                          : () => _completeAllRemainingSets(
+                                defaultWeight: defaultWeight,
+                              ),
+                      borderRadius: BorderRadius.circular(radius.medium),
+                      child: Container(
+                        constraints: const BoxConstraints(minHeight: 38),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.primaryMuted,
+                          borderRadius: BorderRadius.circular(radius.medium),
+                          border: Border.all(
+                            color: colors.primary.withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_isBulkCompleting)
+                              SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: colors.primaryLight,
+                                ),
+                              )
+                            else
+                              Icon(
+                                Icons.done_all_rounded,
+                                size: 15,
+                                color: colors.primaryLight,
+                              ),
+                            const SizedBox(width: 5),
+                            Flexible(
+                              child: Text(
+                                'Concluir restantes',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: colors.primaryLight,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
           const SizedBox(height: 16),
 
           // Column Labels
@@ -517,10 +844,15 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
           ...List.generate(_totalRowsCount, (idx) {
             final setNumber = idx + 1;
             final LoggedSet? logged = _findLoggedSetForNumber(setNumber);
-            final prevLogged = _findLoggedSetForNumber(setNumber - 1);
-            final prevWeight = idx > 0 && prevLogged != null
-                ? prevLogged.weightKg
-                : defaultWeight;
+
+            final resolvedDefaults = _resolveDefaultsForSet(
+              setNumber: setNumber,
+              defaultWeight: defaultWeight,
+            );
+            final hasRemainingUnlogged = [
+              for (var n = setNumber + 1; n <= _totalRowsCount; n++)
+                if (_findLoggedSetForNumber(n) == null) n,
+            ].isNotEmpty;
 
             final initialType = _extraRowTypes[setNumber] ??
                 (idx < se.prescribedSetTypes.length
@@ -532,14 +864,18 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
               setNumber: setNumber,
               initialType: initialType,
               loggedSet: logged,
-              defaultWeight: prevWeight,
-              defaultReps: se.targetRepsMin,
+              defaultWeight: resolvedDefaults.weightKg,
+              defaultReps: resolvedDefaults.reps,
               defaultDurationMinutes:
                   se.targetRepsMin > 0 ? se.targetRepsMin : 15,
               defaultRir: se.targetRir,
               weightIncrement: widget.weightIncrement,
               showRir: widget.showRir,
               isCardio: isCardio,
+              syncToken: _syncToken,
+              onApplyToRemaining: (!isCardio && hasRemainingUnlogged)
+                  ? (w, r) => _applyToRemainingSets(setNumber, w, r)
+                  : null,
               onSave: ({
                 required double weightKg,
                 required int repsCompleted,
