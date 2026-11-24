@@ -70,6 +70,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
   int _minRowCount = 0;
   final Map<int, SetType> _extraRowTypes = {};
   final Map<int, ({double weightKg, int reps})> _prefilledBySetNumber = {};
+  final Map<int, ({double weightKg, int reps})> _draftBySetNumber = {};
   int _syncToken = 0;
   bool _isBulkCompleting = false;
 
@@ -78,6 +79,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.sessionExercise.id != widget.sessionExercise.id) {
       _prefilledBySetNumber.clear();
+      _draftBySetNumber.clear();
       _extraRowTypes.clear();
       _minRowCount = 0;
       _syncToken++;
@@ -137,10 +139,12 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
     setState(() {
       if (_findLoggedSetForNumber(fromSetNumber) == null) {
         _prefilledBySetNumber[fromSetNumber] = (weightKg: weightKg, reps: reps);
+        _draftBySetNumber[fromSetNumber] = (weightKg: weightKg, reps: reps);
       }
       for (var n = fromSetNumber + 1; n <= total; n++) {
         if (_findLoggedSetForNumber(n) == null) {
           _prefilledBySetNumber[n] = (weightKg: weightKg, reps: reps);
+          _draftBySetNumber.remove(n);
           updatedCount++;
         }
       }
@@ -176,6 +180,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                 : se.targetRepsMin);
         if (targetReps > 0) {
           _prefilledBySetNumber[n] = (weightKg: targetWeight, reps: targetReps);
+          _draftBySetNumber.remove(n);
           updatedCount++;
         }
       }
@@ -212,10 +217,11 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
             (idx < se.prescribedSetTypes.length
                 ? se.prescribedSetTypes[idx]
                 : SetType.working);
-        final resolved = _resolveDefaultsForSet(
-          setNumber: n,
-          defaultWeight: defaultWeight,
-        );
+        final resolved = _draftBySetNumber[n] ??
+            _resolveDefaultsForSet(
+              setNumber: n,
+              defaultWeight: defaultWeight,
+            );
         final repsToLog =
             resolved.reps > 0 ? resolved.reps : math.max(1, se.targetRepsMin);
         await widget.onLogSet(
@@ -411,7 +417,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
         : '${se.completedWorkingSetsCount}/${se.targetSetsCount} séries';
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 16, 14, 12),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(radius.xl),
@@ -622,38 +628,45 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                     child: InkWell(
                       onTap: () => _repeatLastSession(rec),
                       borderRadius: BorderRadius.circular(radius.medium),
-                      child: Container(
-                        constraints: const BoxConstraints(minHeight: 38),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.surfaceElevated,
-                          borderRadius: BorderRadius.circular(radius.medium),
-                          border: Border.all(color: colors.border),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.replay_rounded,
-                              size: 15,
-                              color: colors.primaryLight,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 48),
+                        child: Center(
+                          widthFactor: 1,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
                             ),
-                            const SizedBox(width: 5),
-                            Flexible(
-                              child: Text(
-                                'Repetir última',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: context.textTheme.labelSmall?.copyWith(
-                                  color: colors.textPrimary,
-                                  fontWeight: FontWeight.w600,
+                            decoration: BoxDecoration(
+                              color: colors.surfaceElevated,
+                              borderRadius:
+                                  BorderRadius.circular(radius.medium),
+                              border: Border.all(color: colors.border),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.replay_rounded,
+                                  size: 15,
+                                  color: colors.primaryLight,
                                 ),
-                              ),
+                                const SizedBox(width: 5),
+                                Flexible(
+                                  child: Text(
+                                    'Repetir última',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style:
+                                        context.textTheme.labelSmall?.copyWith(
+                                      color: colors.textPrimary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
@@ -669,50 +682,57 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                                 defaultWeight: defaultWeight,
                               ),
                       borderRadius: BorderRadius.circular(radius.medium),
-                      child: Container(
-                        constraints: const BoxConstraints(minHeight: 38),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.primaryMuted,
-                          borderRadius: BorderRadius.circular(radius.medium),
-                          border: Border.all(
-                            color: colors.primary.withValues(alpha: 0.35),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (_isBulkCompleting)
-                              SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: colors.primaryLight,
-                                ),
-                              )
-                            else
-                              Icon(
-                                Icons.done_all_rounded,
-                                size: 15,
-                                color: colors.primaryLight,
-                              ),
-                            const SizedBox(width: 5),
-                            Flexible(
-                              child: Text(
-                                'Concluir restantes',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: context.textTheme.labelSmall?.copyWith(
-                                  color: colors.primaryLight,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 48),
+                        child: Center(
+                          widthFactor: 1,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.primaryMuted,
+                              borderRadius:
+                                  BorderRadius.circular(radius.medium),
+                              border: Border.all(
+                                color: colors.primary.withValues(alpha: 0.35),
                               ),
                             ),
-                          ],
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (_isBulkCompleting)
+                                  SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: colors.primaryLight,
+                                    ),
+                                  )
+                                else
+                                  Icon(
+                                    Icons.done_all_rounded,
+                                    size: 15,
+                                    color: colors.primaryLight,
+                                  ),
+                                const SizedBox(width: 5),
+                                Flexible(
+                                  child: Text(
+                                    'Concluir restantes',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style:
+                                        context.textTheme.labelSmall?.copyWith(
+                                      color: colors.primaryLight,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -720,7 +740,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
               ],
             ),
           ],
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
 
           // Column Labels
           Padding(
@@ -876,6 +896,11 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
               onApplyToRemaining: (!isCardio && hasRemainingUnlogged)
                   ? (w, r) => _applyToRemainingSets(setNumber, w, r)
                   : null,
+              onDraftChanged: isCardio
+                  ? null
+                  : (w, r) {
+                      _draftBySetNumber[setNumber] = (weightKg: w, reps: r);
+                    },
               onSave: ({
                 required double weightKg,
                 required int repsCompleted,

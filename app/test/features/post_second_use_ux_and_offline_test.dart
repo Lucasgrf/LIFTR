@@ -442,6 +442,43 @@ void main() {
       final progRes = await progRepo.getLastExercisePerformance('ex-bench');
       expect(progRes.isSuccess, isTrue);
       expect(progRes.fold((h) => h?.maxWeightKg, (_) => null), 32);
+
+      // Warmup-only completed session must be skipped so it never breaks 2x streak
+      await sessionLocal.saveSession(
+        WorkoutSessionModel(
+          id: 'sess-warmup-only',
+          userId: 'u-1',
+          workoutName: 'Warmup Check',
+          startedAt: DateTime(2026, 11, 23, 10, 0),
+          completedAt: DateTime(2026, 11, 23, 10, 20),
+          durationSeconds: 1200,
+          status: 'completed',
+          exercises: const [
+            SessionExerciseModel(
+              id: 'se-wu',
+              sessionId: 'sess-warmup-only',
+              exerciseId: 'ex-bench',
+              sets: [
+                LoggedSetModel(
+                  id: 'ls-wu',
+                  sessionExerciseId: 'se-wu',
+                  setNumber: 1,
+                  setType: 'warmup',
+                  isWarmup: true,
+                  weightKg: 20,
+                  repsCompleted: 12,
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+      final recentRes =
+          await progRepo.getRecentExercisePerformances('ex-bench', limit: 2);
+      expect(recentRes.isSuccess, isTrue);
+      final recent = recentRes.fold((l) => l, (_) => const []);
+      expect(recent, hasLength(1));
+      expect(recent.first.workoutSessionId, 'sess-done');
     });
   });
 
@@ -1018,12 +1055,21 @@ void main() {
       await tester.pump();
       expect(find.text('60'), findsNWidgets(3));
 
-      // Tap 'Concluir restantes' -> logs all 3 sets cleanly
+      // Edit Set 2 inline before bulk complete -> draft must be respected
+      await tester.ensureVisible(find.bySemanticsLabel('Aumentar carga').at(1));
+      await tester.tap(find.bySemanticsLabel('Aumentar carga').at(1));
+      await tester.pump();
+      expect(find.text('62.5'), findsOneWidget);
+
+      // Tap 'Concluir restantes' -> logs all 3 sets preserving Set 2 draft
       await tester.ensureVisible(find.text('Concluir restantes'));
       await tester.tap(find.text('Concluir restantes'));
       await tester.pumpAndSettle();
       expect(loggedCalls.length, 3);
-      expect(loggedCalls.every((c) => c.weightKg == 60 && c.reps == 10), isTrue);
+      expect(loggedCalls[0].weightKg, 60);
+      expect(loggedCalls[1].weightKg, 62.5);
+      expect(loggedCalls[2].weightKg, 60);
+      expect(loggedCalls.every((c) => c.reps == 10), isTrue);
       expect(tester.takeException(), isNull);
     });
 

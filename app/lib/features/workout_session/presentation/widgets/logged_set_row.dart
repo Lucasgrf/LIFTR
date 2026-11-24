@@ -29,6 +29,7 @@ class LoggedSetRow extends StatefulWidget {
     this.onDelete,
     this.onToggleWarmup,
     this.onApplyToRemaining,
+    this.onDraftChanged,
   });
 
   final int setNumber;
@@ -54,6 +55,7 @@ class LoggedSetRow extends StatefulWidget {
   final VoidCallback? onDelete;
   final VoidCallback? onToggleWarmup;
   final void Function(double weightKg, int repsCompleted)? onApplyToRemaining;
+  final void Function(double weightKg, int repsCompleted)? onDraftChanged;
 
   @override
   State<LoggedSetRow> createState() => _LoggedSetRowState();
@@ -198,6 +200,7 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
       _weight = (_weight + delta).clamp(0.0, 999.0);
       _weightController.text = _formatWeight(_weight);
     });
+    widget.onDraftChanged?.call(_weight, _reps);
   }
 
   void _stepReps(int delta) {
@@ -207,6 +210,7 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
       _reps = (_reps + delta).clamp(0, 999);
       _repsController.text = '$_reps';
     });
+    widget.onDraftChanged?.call(_weight, _reps);
   }
 
   void _stepDuration(int delta) {
@@ -636,33 +640,38 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                 child: InkWell(
                   onTap: () => _selectSetType(SetType.dropSet),
                   borderRadius: BorderRadius.circular(radius.small),
-                  child: Container(
-                    constraints: const BoxConstraints(minHeight: 36),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: fitnessColors.dropSetTag.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(radius.small),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.bolt_rounded,
-                          size: 14,
-                          color: fitnessColors.dropSetTag,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 48),
+                    child: Center(
+                      widthFactor: 1,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '+ Drop-set',
-                          style: context.textTheme.labelSmall?.copyWith(
-                            color: fitnessColors.dropSetTag,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        decoration: BoxDecoration(
+                          color: fitnessColors.dropSetTag.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(radius.small),
                         ),
-                      ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.bolt_rounded,
+                              size: 14,
+                              color: fitnessColors.dropSetTag,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '+ Drop-set',
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: fitnessColors.dropSetTag,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -674,36 +683,41 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                 child: InkWell(
                   onTap: _isSaving ? null : _handleSave,
                   borderRadius: BorderRadius.circular(radius.small),
-                  child: Container(
-                    constraints: const BoxConstraints(minHeight: 36),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.primaryMuted,
-                      borderRadius: BorderRadius.circular(radius.small),
-                      border: Border.all(
-                        color: colors.primary.withValues(alpha: 0.35),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.check_rounded,
-                          size: 14,
-                          color: colors.primaryLight,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 48),
+                    child: Center(
+                      widthFactor: 1,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Salvar alteração',
-                          style: context.textTheme.labelSmall?.copyWith(
-                            color: colors.primaryLight,
-                            fontWeight: FontWeight.w700,
+                        decoration: BoxDecoration(
+                          color: colors.primaryMuted,
+                          borderRadius: BorderRadius.circular(radius.small),
+                          border: Border.all(
+                            color: colors.primary.withValues(alpha: 0.35),
                           ),
                         ),
-                      ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.check_rounded,
+                              size: 14,
+                              color: colors.primaryLight,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Salvar alteração',
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: colors.primaryLight,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -720,38 +734,43 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                           widget.onApplyToRemaining!(_weight, _reps);
                         },
                   borderRadius: BorderRadius.circular(radius.small),
-                  child: Container(
-                    constraints: const BoxConstraints(minHeight: 36),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.surfaceElevated,
-                      borderRadius: BorderRadius.circular(radius.small),
-                      border: Border.all(color: colors.borderSubtle),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.copy_all_rounded,
-                          size: 14,
-                          color: colors.primaryLight,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 48),
+                    child: Center(
+                      widthFactor: 1,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
                         ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            'Aplicar às restantes',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.textTheme.labelSmall?.copyWith(
+                        decoration: BoxDecoration(
+                          color: colors.surfaceElevated,
+                          borderRadius: BorderRadius.circular(radius.small),
+                          border: Border.all(color: colors.borderSubtle),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.copy_all_rounded,
+                              size: 14,
                               color: colors.primaryLight,
-                              fontWeight: FontWeight.w600,
                             ),
-                          ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                'Aplicar às restantes',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: colors.primaryLight,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -768,33 +787,38 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                           widget.onDelete!();
                         },
                   borderRadius: BorderRadius.circular(radius.small),
-                  child: Container(
-                    constraints: const BoxConstraints(minHeight: 36),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.surfaceElevated,
-                      borderRadius: BorderRadius.circular(radius.small),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.undo_rounded,
-                          size: 14,
-                          color: colors.textSecondary,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 48),
+                    child: Center(
+                      widthFactor: 1,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Desfazer',
-                          style: context.textTheme.labelSmall?.copyWith(
-                            color: colors.textSecondary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        decoration: BoxDecoration(
+                          color: colors.surfaceElevated,
+                          borderRadius: BorderRadius.circular(radius.small),
                         ),
-                      ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.undo_rounded,
+                              size: 14,
+                              color: colors.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Desfazer',
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: colors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -951,38 +975,43 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                               widget.onApplyToRemaining!(_weight, _reps);
                             },
                       borderRadius: BorderRadius.circular(radius.small),
-                      child: Container(
-                        constraints: const BoxConstraints(minHeight: 36),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.surfaceElevated,
-                          borderRadius: BorderRadius.circular(radius.small),
-                          border: Border.all(color: colors.borderSubtle),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.copy_all_rounded,
-                              size: 14,
-                              color: colors.primaryLight,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 48),
+                        child: Center(
+                          widthFactor: 1,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
                             ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                'Aplicar às restantes',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: context.textTheme.labelSmall?.copyWith(
+                            decoration: BoxDecoration(
+                              color: colors.surfaceElevated,
+                              borderRadius: BorderRadius.circular(radius.small),
+                              border: Border.all(color: colors.borderSubtle),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.copy_all_rounded,
+                                  size: 14,
                                   color: colors.primaryLight,
-                                  fontWeight: FontWeight.w600,
                                 ),
-                              ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    'Aplicar às restantes',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: context.textTheme.labelSmall?.copyWith(
+                                      color: colors.primaryLight,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
@@ -1049,6 +1078,7 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                             _weight = parsed.clamp(0.0, 999.0);
                             _weightController.text = _formatWeight(_weight);
                           });
+                          widget.onDraftChanged?.call(_weight, _reps);
                         }
                       },
                     ),
@@ -1078,6 +1108,7 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                             _reps = parsed.clamp(0, 999);
                             _repsController.text = '$_reps';
                           });
+                          widget.onDraftChanged?.call(_weight, _reps);
                         }
                       },
                     ),
@@ -1384,38 +1415,43 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                               widget.onApplyToRemaining!(_weight, _reps);
                             },
                       borderRadius: BorderRadius.circular(radius.small),
-                      child: Container(
-                        constraints: const BoxConstraints(minHeight: 36),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.surfaceElevated,
-                          borderRadius: BorderRadius.circular(radius.small),
-                          border: Border.all(color: colors.borderSubtle),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.copy_all_rounded,
-                              size: 14,
-                              color: colors.primaryLight,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 48),
+                        child: Center(
+                          widthFactor: 1,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
                             ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                'Aplicar às restantes',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: context.textTheme.labelSmall?.copyWith(
+                            decoration: BoxDecoration(
+                              color: colors.surfaceElevated,
+                              borderRadius: BorderRadius.circular(radius.small),
+                              border: Border.all(color: colors.borderSubtle),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.copy_all_rounded,
+                                  size: 14,
                                   color: colors.primaryLight,
-                                  fontWeight: FontWeight.w600,
                                 ),
-                              ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    'Aplicar às restantes',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: context.textTheme.labelSmall?.copyWith(
+                                      color: colors.primaryLight,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
