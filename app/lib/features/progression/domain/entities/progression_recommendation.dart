@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+import 'package:personal_fitness_os/features/workout_session/domain/entities/logged_set.dart';
+
 enum ProgressionType {
   increase,
   maintain,
@@ -15,6 +18,9 @@ class ProgressionRecommendation {
     this.targetRepsMin,
     this.targetRepsMax,
     this.targetRir,
+    this.consecutiveCeilingHits = 0,
+    this.requiredCeilingHits = 2,
+    this.previousWorkingSets = const [],
   });
 
   final ProgressionType type;
@@ -25,6 +31,9 @@ class ProgressionRecommendation {
   final int? targetRepsMin;
   final int? targetRepsMax;
   final int? targetRir;
+  final int consecutiveCeilingHits;
+  final int requiredCeilingHits;
+  final List<LoggedSet> previousWorkingSets;
 
   bool get isIncrease => type == ProgressionType.increase;
   bool get isMaintain => type == ProgressionType.maintain;
@@ -52,7 +61,10 @@ class ProgressionRecommendation {
         other.previousSummary == previousSummary &&
         other.targetRepsMin == targetRepsMin &&
         other.targetRepsMax == targetRepsMax &&
-        other.targetRir == targetRir;
+        other.targetRir == targetRir &&
+        other.consecutiveCeilingHits == consecutiveCeilingHits &&
+        other.requiredCeilingHits == requiredCeilingHits &&
+        listEquals(other.previousWorkingSets, previousWorkingSets);
   }
 
   @override
@@ -65,5 +77,8 @@ class ProgressionRecommendation {
         targetRepsMin,
         targetRepsMax,
         targetRir,
+        consecutiveCeilingHits,
+        requiredCeilingHits,
+        Object.hashAll(previousWorkingSets),
       );
 }

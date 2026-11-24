@@ -6,6 +6,10 @@ import 'package:personal_fitness_os/features/progression/domain/entities/progres
 class ProgressionEngine {
   const ProgressionEngine();
 
+  /// Number of consecutive qualifying sessions hitting the rep ceiling
+  /// required before unlocking a load increase.
+  static const int requiredCeilingHitsForIncrease = 2;
+
   static double defaultWeightIncrement(String? equipment) {
     if (equipment == null) return 2.5;
     final eq = equipment.toLowerCase();
@@ -28,12 +32,33 @@ class ProgressionEngine {
     }
   }
 
+  /// Returns `true` when all working sets in [session] hit at least
+  /// [targetRepsMax] with acceptable form and within the RIR threshold.
+  static bool didSessionHitCeiling(
+    ExercisePerformanceHistory session, {
+    required int targetRepsMax,
+    int targetRir = 2,
+  }) {
+    final workingSets = session.workingSets;
+    if (workingSets.isEmpty) return false;
+    final allHitMax =
+        workingSets.every((s) => s.repsCompleted >= targetRepsMax);
+    if (!allHitMax) return false;
+    final hasPoorExecution =
+        workingSets.any((s) => s.executionQuality == ExecutionQuality.poor);
+    if (hasPoorExecution) return false;
+    final minRirThreshold = (targetRir - 1).clamp(0, 5);
+    return workingSets
+        .every((s) => (s.rirActual ?? targetRir) >= minRirThreshold);
+  }
+
   ProgressionRecommendation evaluate({
     required ExercisePerformanceHistory history,
     required int targetRepsMin,
     required int targetRepsMax,
     int targetRir = 2,
     String? equipment,
+    List<ExercisePerformanceHistory> previousHistories = const [],
   }) {
     final workingSets = history.workingSets;
 
@@ -47,6 +72,8 @@ class ProgressionEngine {
         targetRepsMin: targetRepsMin,
         targetRepsMax: targetRepsMax,
         targetRir: targetRir,
+        requiredCeilingHits: requiredCeilingHitsForIncrease,
+        previousWorkingSets: const [],
       );
     }
 
@@ -68,11 +95,13 @@ class ProgressionEngine {
           suggestedWeightKg: baseWeight,
           weightDeltaKg: 0.0,
           rationale:
-              '⚠️ Topo da faixa ($targetRepsMax reps) atingido, mas a execução técnica precisa melhorar antes de subir a carga.',
+              'Topo da faixa ($targetRepsMax reps) atingido, mas a execução técnica precisa melhorar antes de subir a carga.',
           previousSummary: history.summaryString,
           targetRepsMin: targetRepsMin,
           targetRepsMax: targetRepsMax,
           targetRir: targetRir,
+          requiredCeilingHits: requiredCeilingHitsForIncrease,
+          previousWorkingSets: workingSets,
         );
       }
 
@@ -86,7 +115,42 @@ class ProgressionEngine {
           suggestedWeightKg: baseWeight,
           weightDeltaKg: 0.0,
           rationale:
-              '⚠️ Topo da faixa atingido no limite de esforço (RIR abaixo da meta). Mantenha a carga mais uma sessão para consolidar.',
+              'Topo da faixa atingido no limite de esforço (RIR abaixo da meta). Mantenha a carga mais uma sessão para consolidar.',
+          previousSummary: history.summaryString,
+          targetRepsMin: targetRepsMin,
+          targetRepsMax: targetRepsMax,
+          targetRir: targetRir,
+          requiredCeilingHits: requiredCeilingHitsForIncrease,
+          previousWorkingSets: workingSets,
+        );
+      }
+
+      var consecutiveCeilingHits = 1;
+      for (final prev in previousHistories) {
+        if (prev.workoutSessionId == history.workoutSessionId) continue;
+        if (prev.workingSets.isNotEmpty &&
+            prev.maxWeightKg >= baseWeight - 0.01 &&
+            didSessionHitCeiling(
+              prev,
+              targetRepsMax: targetRepsMax,
+              targetRir: targetRir,
+            )) {
+          consecutiveCeilingHits++;
+        } else {
+          break;
+        }
+      }
+
+      if (consecutiveCeilingHits < requiredCeilingHitsForIncrease) {
+        return ProgressionRecommendation(
+          type: ProgressionType.maintain,
+          suggestedWeightKg: baseWeight,
+          weightDeltaKg: 0.0,
+          consecutiveCeilingHits: consecutiveCeilingHits,
+          requiredCeilingHits: requiredCeilingHitsForIncrease,
+          previousWorkingSets: workingSets,
+          rationale:
+              'Topo da faixa ($targetRepsMax reps) atingido $consecutiveCeilingHits/$requiredCeilingHitsForIncrease vezes com ${baseWeight.toStringAsFixed(1)} kg. Repita o topo na próxima sessão para confirmar a subida de carga.',
           previousSummary: history.summaryString,
           targetRepsMin: targetRepsMin,
           targetRepsMax: targetRepsMax,
@@ -101,8 +165,11 @@ class ProgressionEngine {
         type: ProgressionType.increase,
         suggestedWeightKg: newWeight,
         weightDeltaKg: delta,
+        consecutiveCeilingHits: consecutiveCeilingHits,
+        requiredCeilingHits: requiredCeilingHitsForIncrease,
+        previousWorkingSets: workingSets,
         rationale:
-            '🎯 Meta atingida! Todas as séries bateram o topo da faixa ($targetRepsMax reps) com boa execução. Suba para ${newWeight.toStringAsFixed(1)} kg (+${delta.toStringAsFixed(1)} kg).',
+            'Meta consolidada ($consecutiveCeilingHits/$requiredCeilingHitsForIncrease)! Todas as séries bateram o topo ($targetRepsMax reps) em $requiredCeilingHitsForIncrease sessões seguidas com boa execução. Suba para ${newWeight.toStringAsFixed(1)} kg (+${delta.toStringAsFixed(1)} kg).',
         previousSummary: history.summaryString,
         targetRepsMin: targetRepsMin,
         targetRepsMax: targetRepsMax,
@@ -116,8 +183,10 @@ class ProgressionEngine {
         type: ProgressionType.maintain,
         suggestedWeightKg: baseWeight,
         weightDeltaKg: 0.0,
+        requiredCeilingHits: requiredCeilingHitsForIncrease,
+        previousWorkingSets: workingSets,
         rationale:
-            '💪 Dentro da faixa alvo ($targetRepsMin-$targetRepsMax reps). Mantenha ${baseWeight.toStringAsFixed(1)} kg e busque mais repetições até atingir $targetRepsMax reps em todas as séries.',
+            'Dentro da faixa alvo ($targetRepsMin-$targetRepsMax reps). Mantenha ${baseWeight.toStringAsFixed(1)} kg e busque mais repetições até atingir $targetRepsMax reps em todas as séries.',
         previousSummary: history.summaryString,
         targetRepsMin: targetRepsMin,
         targetRepsMax: targetRepsMax,
@@ -138,8 +207,10 @@ class ProgressionEngine {
         type: ProgressionType.decrease,
         suggestedWeightKg: roundedSuggested,
         weightDeltaKg: -(baseWeight - roundedSuggested),
+        requiredCeilingHits: requiredCeilingHitsForIncrease,
+        previousWorkingSets: workingSets,
         rationale:
-            '📉 Dificuldade excessiva ou queda abaixo de $targetRepsMin reps. Reduza para ${roundedSuggested.toStringAsFixed(1)} kg para restaurar o volume e a técnica.',
+            'Dificuldade excessiva ou queda abaixo de $targetRepsMin reps. Reduza para ${roundedSuggested.toStringAsFixed(1)} kg para restaurar o volume e a técnica.',
         previousSummary: history.summaryString,
         targetRepsMin: targetRepsMin,
         targetRepsMax: targetRepsMax,
@@ -152,8 +223,10 @@ class ProgressionEngine {
       type: ProgressionType.maintain,
       suggestedWeightKg: baseWeight,
       weightDeltaKg: 0.0,
+      requiredCeilingHits: requiredCeilingHitsForIncrease,
+      previousWorkingSets: workingSets,
       rationale:
-          '→ Mantenha a carga de ${baseWeight.toStringAsFixed(1)} kg e foque em atingir ao menos $targetRepsMin reps em todas as séries.',
+          'Mantenha a carga de ${baseWeight.toStringAsFixed(1)} kg e foque em atingir ao menos $targetRepsMin reps em todas as séries.',
       previousSummary: history.summaryString,
       targetRepsMin: targetRepsMin,
       targetRepsMax: targetRepsMax,
