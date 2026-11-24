@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/features/dashboard/domain/entities/dashboard_data.dart';
 import 'package:personal_fitness_os/features/dashboard/domain/usecases/get_dashboard_data.dart';
 import 'package:personal_fitness_os/features/goals/presentation/providers/goal_providers.dart';
@@ -19,7 +20,17 @@ final historyRemoteDataSourceProvider = Provider<HistoryRemoteDataSource>((ref) 
 });
 
 final historyRepositoryProvider = Provider<HistoryRepository>((ref) {
-  return HistoryRepositoryImpl(ref.watch(historyRemoteDataSourceProvider));
+  return HistoryRepositoryImpl(
+    ref.watch(historyRemoteDataSourceProvider),
+    localSessionDataSource: ref.watch(sessionLocalDataSourceProvider),
+    networkInfo: ref.watch(networkInfoProvider),
+    isOfflineMode: () => ref.read(isOfflineModeProvider),
+    onConnectivityFallback: (offline) {
+      Future.microtask(() {
+        ref.read(runtimeOfflineDetectedProvider.notifier).state = offline;
+      });
+    },
+  );
 });
 
 final getWorkoutHistoryUseCaseProvider = Provider<GetWorkoutHistoryUseCase>((ref) {

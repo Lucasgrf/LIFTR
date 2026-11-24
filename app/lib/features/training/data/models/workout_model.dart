@@ -59,6 +59,13 @@ class WorkoutModel {
     };
   }
 
+  Map<String, dynamic> toFullJson() {
+    return {
+      ...toJson(),
+      'workout_exercises': exercises.map((e) => e.toFullJson()).toList(),
+    };
+  }
+
   Workout toDomain() {
     final sortedExercises = [...exercises]
       ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));

@@ -16,6 +16,7 @@ import 'package:personal_fitness_os/features/exercise_library/presentation/widge
 import 'package:personal_fitness_os/features/exercise_library/presentation/widgets/muscle_filter_chips.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/set_template.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
+import 'package:personal_fitness_os/features/workout_session/domain/services/rest_duration_resolver.dart';
 
 class AddExerciseToWorkoutScreen extends ConsumerStatefulWidget {
   const AddExerciseToWorkoutScreen({
@@ -181,7 +182,19 @@ class _AddExerciseToWorkoutScreenState
                     return ExerciseCard(
                       exercise: exercise,
                       onTap: () {
-                        setState(() => _selectedExercise = exercise);
+                        final recommendedRest = exercise.isCardio
+                            ? 60
+                            : RestDurationResolver.resolve(
+                                targetRepsMin: _repsMin,
+                                targetRepsMax: _repsMax,
+                                movementPattern: exercise.movementPattern,
+                                primaryMuscleGroup: exercise.primaryMuscleGroup,
+                                equipment: exercise.equipment,
+                              );
+                        setState(() {
+                          _selectedExercise = exercise;
+                          _restSeconds = recommendedRest;
+                        });
                       },
                     );
                   },

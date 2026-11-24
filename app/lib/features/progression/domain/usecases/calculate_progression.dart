@@ -21,31 +21,39 @@ class CalculateProgressionUseCase {
     int targetRir = 2,
     String? equipment,
   }) async {
-    final historyResult = await _repository.getLastExercisePerformance(exerciseId);
+    final historiesResult = await _repository.getRecentExercisePerformances(
+      exerciseId,
+      limit: ProgressionEngine.requiredCeilingHitsForIncrease,
+    );
 
-    if (historyResult is Err<ExercisePerformanceHistory?, Failure>) {
-      return Err(historyResult.failure);
+    if (historiesResult is Err<List<ExercisePerformanceHistory>, Failure>) {
+      return Err(historiesResult.failure);
     }
 
-    final history = (historyResult as Success<ExercisePerformanceHistory?, Failure>).value;
+    final histories =
+        (historiesResult as Success<List<ExercisePerformanceHistory>, Failure>)
+            .value;
 
-    if (history == null || history.loggedSets.isEmpty) {
+    if (histories.isEmpty || histories.first.loggedSets.isEmpty) {
       return Success(
         ProgressionRecommendation(
           type: ProgressionType.maintain,
           suggestedWeightKg: 0.0,
           weightDeltaKg: 0.0,
-          rationale: 'Primeira vez executando este exercício. Defina uma carga confortável para iniciar.',
+          rationale:
+              'Primeira vez executando este exercício. Defina uma carga confortável para iniciar.',
           previousSummary: null,
           targetRepsMin: targetRepsMin,
           targetRepsMax: targetRepsMax,
           targetRir: targetRir,
+          requiredCeilingHits: ProgressionEngine.requiredCeilingHitsForIncrease,
         ),
       );
     }
 
     final recommendation = engine.evaluate(
-      history: history,
+      history: histories.first,
+      previousHistories: histories.skip(1).toList(),
       targetRepsMin: targetRepsMin,
       targetRepsMax: targetRepsMax,
       targetRir: targetRir,

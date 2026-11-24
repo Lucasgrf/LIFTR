@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,15 +27,21 @@ import 'package:personal_fitness_os/features/training/presentation/widgets/switc
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _StubAiWorkoutRemoteDataSource implements AiWorkoutRemoteDataSource {
-  _StubAiWorkoutRemoteDataSource({this.planToReturn, this.errorToThrow});
+  _StubAiWorkoutRemoteDataSource({
+    this.planToReturn,
+    this.errorToThrow,
+    this.completer,
+  });
 
   final GeneratedTrainingPlan? planToReturn;
   final AiWorkoutException? errorToThrow;
+  final Completer<GeneratedTrainingPlan>? completer;
   AiWorkoutRequest? lastRequest;
 
   @override
   Future<GeneratedTrainingPlan> generatePlan(AiWorkoutRequest request) async {
     lastRequest = request;
+    if (completer != null) return completer!.future;
     if (errorToThrow != null) throw errorToThrow!;
     return planToReturn!;
   }
@@ -372,6 +379,58 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Tentar novamente'), findsOneWidget);
+    });
+
+    testWidgets(
+        'displays progressive percentage bar (0% -> 100%) and contextual stage while generating (Issue #28)',
+        (tester) async {
+      final completer = Completer<GeneratedTrainingPlan>();
+      final stubAi = _StubAiWorkoutRemoteDataSource(completer: completer);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            aiWorkoutRemoteDataSourceProvider.overrideWithValue(stubAi),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.dark(),
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(disableAnimations: true),
+              child: child!,
+            ),
+            home: const AiWorkoutGeneratorScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      for (int i = 0; i < 4; i++) {
+        await tester.tap(find.text('Continuar'));
+        await tester.pumpAndSettle();
+      }
+      await tester.tap(find.text('Gerar treino com IA'));
+      await tester.pump();
+
+      expect(find.byKey(const Key('ai_generating_percent_text')), findsOneWidget);
+      expect(find.text('6%'), findsOneWidget);
+      expect(
+        find.text('Analisando seu perfil, nível e divisão ideal...'),
+        findsOneWidget,
+      );
+
+      // Advance timers to verify percentage climbs smoothly across stages
+      await tester.pump(const Duration(milliseconds: 1500));
+      expect(find.textContaining('%'), findsWidgets);
+      expect(
+        find.text('Selecionando exercícios do catálogo LIFTR...'),
+        findsOneWidget,
+      );
+
+      completer.complete(tGeneratedPlan);
+      await tester.pumpAndSettle();
+
+      expect(find.text('ABCD Foco Inferiores & Glúteos'), findsOneWidget);
     });
   });
 

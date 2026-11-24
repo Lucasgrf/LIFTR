@@ -13,9 +13,10 @@ import 'package:personal_fitness_os/features/history/presentation/widgets/progre
 import 'package:personal_fitness_os/features/history/presentation/widgets/progress_exercises_view.dart';
 import 'package:personal_fitness_os/features/history/presentation/widgets/progress_segmented_control.dart';
 import 'package:personal_fitness_os/features/history/presentation/widgets/progress_weight_view.dart';
+import 'package:personal_fitness_os/features/history/presentation/widgets/progress_workouts_view.dart';
 import 'package:personal_fitness_os/features/weekly_comparison/presentation/providers/weekly_comparison_providers.dart';
 
-/// 0: Exercícios, 1: Peso, 2: Consistência
+/// 0: Exercícios, 1: Peso, 2: Consistência, 3: Treinos
 final historyViewModeProvider = StateProvider.autoDispose<int>((ref) => 0);
 
 class HistoryScreen extends ConsumerWidget {
@@ -147,8 +148,10 @@ class HistoryScreen extends ConsumerWidget {
                     const ProgressExercisesView()
                   else if (viewMode == 1)
                     const ProgressWeightView()
+                  else if (viewMode == 2)
+                    const ProgressConsistencyView()
                   else
-                    const ProgressConsistencyView(),
+                    const ProgressWorkoutsView(),
                 ],
               ),
             ),

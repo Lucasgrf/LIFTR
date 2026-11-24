@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
@@ -236,37 +237,55 @@ class _ProgressConsistencyViewState
             const SizedBox(height: 10),
 
             // Selected Day Detail Strip
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-              decoration: BoxDecoration(
-                color: colors.surface,
-                borderRadius: BorderRadius.circular(radius.medium),
-                border: Border.all(color: colors.border),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    DateFormat("d 'de' MMM", 'pt_BR').format(selectedDay),
-                    style: context.textTheme.labelMedium?.copyWith(
-                      color: colors.textSecondary,
-                      fontFeatures: AppTypography.tabularFeatures,
-                    ),
-                  ),
-                  const Spacer(),
-                  Flexible(
-                    child: Text(
-                      selectedSessions.isEmpty
-                          ? 'Dia de descanso'
-                          : '${selectedSessions.first.workoutName} · ${selectedSessions.first.totalWorkingSetsCount} séries · ${mathMaxOne(selectedSessions.first.durationSeconds ~/ 60)} min',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+            InkWell(
+              onTap: selectedSessions.isNotEmpty
+                  ? () => context.push(
+                        '/session/${selectedSessions.first.id}/summary',
+                      )
+                  : null,
+              borderRadius: BorderRadius.circular(radius.medium),
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 48),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                decoration: BoxDecoration(
+                  color: colors.surface,
+                  borderRadius: BorderRadius.circular(radius.medium),
+                  border: Border.all(color: colors.border),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      DateFormat("d 'de' MMM", 'pt_BR').format(selectedDay),
                       style: context.textTheme.labelMedium?.copyWith(
-                        color: colors.textPrimary,
+                        color: colors.textSecondary,
                         fontFeatures: AppTypography.tabularFeatures,
                       ),
                     ),
-                  ),
-                ],
+                    const Spacer(),
+                    Flexible(
+                      child: Text(
+                        selectedSessions.isEmpty
+                            ? 'Dia de descanso'
+                            : '${selectedSessions.first.workoutName} · ${selectedSessions.first.totalWorkingSetsCount} séries · ${mathMaxOne(selectedSessions.first.durationSeconds ~/ 60)} min',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textTheme.labelMedium?.copyWith(
+                          color: colors.textPrimary,
+                          fontFeatures: AppTypography.tabularFeatures,
+                        ),
+                      ),
+                    ),
+                    if (selectedSessions.isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 18,
+                        color: colors.textTertiary,
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
           ],

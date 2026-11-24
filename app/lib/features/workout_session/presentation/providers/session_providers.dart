@@ -5,6 +5,8 @@ import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
+import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
+import 'package:personal_fitness_os/features/weekly_comparison/presentation/providers/weekly_comparison_providers.dart';
 import 'package:personal_fitness_os/features/workout_session/data/datasources/session_local_datasource.dart';
 import 'package:personal_fitness_os/features/workout_session/data/datasources/session_remote_datasource.dart';
 import 'package:personal_fitness_os/features/workout_session/data/repositories/session_repository_impl.dart';
@@ -73,7 +75,15 @@ final sessionAutoSyncProvider = Provider<void>((ref) {
     final isOnline = ref.read(isOnlineStreamProvider).asData?.value ?? true;
     final simulated = ref.read(simulatedOfflineProvider);
     if (isOnline && !simulated && repo is SessionRepositoryImpl) {
-      unawaited(repo.syncPendingOperations());
+      unawaited(
+        repo.syncPendingOperations().then((synced) {
+          if (synced) {
+            ref.invalidate(dashboardDataProvider);
+            ref.invalidate(historyListProvider);
+            ref.invalidate(currentWeekSummaryProvider);
+          }
+        }),
+      );
     }
   }
 
@@ -153,6 +163,7 @@ class RestTimerState {
     this.totalSeconds = 0,
     this.exerciseName,
     this.setNumber,
+    this.isMinimized = false,
   });
 
   final RestTimerStatus status;
@@ -160,6 +171,7 @@ class RestTimerState {
   final int totalSeconds;
   final String? exerciseName;
   final int? setNumber;
+  final bool isMinimized;
 
   bool get isRunning => status == RestTimerStatus.running;
   bool get isPaused => status == RestTimerStatus.paused;
@@ -184,6 +196,7 @@ class RestTimerState {
     int? totalSeconds,
     String? exerciseName,
     int? setNumber,
+    bool? isMinimized,
   }) {
     return RestTimerState(
       status: status ?? this.status,
@@ -191,6 +204,7 @@ class RestTimerState {
       totalSeconds: totalSeconds ?? this.totalSeconds,
       exerciseName: exerciseName ?? this.exerciseName,
       setNumber: setNumber ?? this.setNumber,
+      isMinimized: isMinimized ?? this.isMinimized,
     );
   }
 }
@@ -216,8 +230,24 @@ class RestTimerNotifier extends StateNotifier<RestTimerState> {
       totalSeconds: effectiveSeconds,
       exerciseName: exerciseName,
       setNumber: setNumber,
+      isMinimized: false,
     );
     _startTicker();
+  }
+
+  void minimize() {
+    if (!state.isVisible || state.isMinimized) return;
+    state = state.copyWith(isMinimized: true);
+  }
+
+  void expand() {
+    if (!state.isVisible || !state.isMinimized) return;
+    state = state.copyWith(isMinimized: false);
+  }
+
+  void toggleMinimized() {
+    if (!state.isVisible) return;
+    state = state.copyWith(isMinimized: !state.isMinimized);
   }
 
   void _startTicker() {

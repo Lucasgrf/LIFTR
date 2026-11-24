@@ -60,4 +60,29 @@ void main() {
       expect((result as Err).failure, isA<ServerFailure>());
     });
   });
+
+  group('getRecentExercisePerformances', () {
+    test('should return list of recent ExercisePerformanceHistory on success', () async {
+      when(() => mockDataSource.fetchRecentExercisePerformances('ex-1', limit: 2))
+          .thenAnswer((_) async => [tHistory]);
+
+      final result = await repository.getRecentExercisePerformances('ex-1', limit: 2);
+
+      expect(result.isSuccess, isTrue);
+      final data =
+          (result as Success<List<ExercisePerformanceHistory>, Failure>).value;
+      expect(data, hasLength(1));
+      expect(data.first.exerciseId, 'ex-1');
+    });
+
+    test('should return ServerFailure on PostgrestException', () async {
+      when(() => mockDataSource.fetchRecentExercisePerformances('ex-1', limit: 2))
+          .thenThrow(const PostgrestException(message: 'Query timeout'));
+
+      final result = await repository.getRecentExercisePerformances('ex-1', limit: 2);
+
+      expect(result.isError, isTrue);
+      expect((result as Err).failure, isA<ServerFailure>());
+    });
+  });
 }

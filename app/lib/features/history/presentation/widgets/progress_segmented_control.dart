@@ -19,6 +19,7 @@ class ProgressSegmentedControl extends StatelessWidget {
     'Exercícios',
     'Peso',
     'Consistência',
+    'Treinos',
   ];
 
   @override
@@ -52,6 +53,7 @@ class ProgressSegmentedControl extends StatelessWidget {
                   duration: motion.resolve(context, motion.fast),
                   curve: motion.curveStandard,
                   constraints: const BoxConstraints(minHeight: 48),
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: isSelected
@@ -62,16 +64,19 @@ class ProgressSegmentedControl extends StatelessWidget {
                         ? Border.all(color: colors.border)
                         : null,
                   ),
-                  child: Text(
-                    segments[index],
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.textTheme.labelMedium?.copyWith(
-                      color: isSelected
-                          ? colors.textPrimary
-                          : colors.textTertiary,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.w500,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      segments[index],
+                      maxLines: 1,
+                      softWrap: false,
+                      style: context.textTheme.labelMedium?.copyWith(
+                        color: isSelected
+                            ? colors.textPrimary
+                            : colors.textTertiary,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w500,
+                      ),
                     ),
                   ),
                 ),

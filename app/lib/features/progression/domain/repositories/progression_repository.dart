@@ -7,4 +7,12 @@ abstract class ProgressionRepository {
   Future<Result<ExercisePerformanceHistory?, Failure>> getLastExercisePerformance(
     String exerciseId,
   );
+
+  /// Fetches up to [limit] recent completed workout session performances
+  /// for a given exercise, ordered from newest to oldest.
+  Future<Result<List<ExercisePerformanceHistory>, Failure>>
+      getRecentExercisePerformances(
+    String exerciseId, {
+    int limit = 2,
+  });
 }

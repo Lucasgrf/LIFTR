@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
+import 'package:personal_fitness_os/features/workout_session/presentation/widgets/workout_mood_icon.dart';
 
 class HistoryWorkoutCard extends StatelessWidget {
   const HistoryWorkoutCard({
@@ -17,23 +17,6 @@ class HistoryWorkoutCard extends StatelessWidget {
 
   final WorkoutSession session;
   final VoidCallback? onTap;
-
-  String _moodEmoji(Mood? mood) {
-    switch (mood) {
-      case Mood.awful:
-        return '😫';
-      case Mood.bad:
-        return '😕';
-      case Mood.neutral:
-        return '😐';
-      case Mood.good:
-        return '😊';
-      case Mood.excellent:
-        return '🔥';
-      case null:
-        return '';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,10 +44,7 @@ class HistoryWorkoutCard extends StatelessWidget {
               ),
               const Spacer(),
               if (session.mood != null) ...[
-                Text(
-                  _moodEmoji(session.mood),
-                  style: const TextStyle(fontSize: 16),
-                ),
+                WorkoutMoodChip(mood: session.mood!, compact: true),
                 const SizedBox(width: 6),
               ],
               if (session.perceivedExertion != null)

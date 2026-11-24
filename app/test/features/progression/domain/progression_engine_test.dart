@@ -23,7 +23,7 @@ void main() {
   });
 
   group('ProgressionEngine - evaluate', () {
-    test('should recommend INCREASE when all working sets reach max reps with good form', () {
+    test('should recommend MAINTAIN (1/2 consolidation) when ceiling is hit only once', () {
       final history = ExercisePerformanceHistory(
         exerciseId: 'ex-1',
         workoutSessionId: 'ws-1',
@@ -69,11 +69,134 @@ void main() {
         equipment: 'barbell',
       );
 
+      expect(rec.type, ProgressionType.maintain);
+      expect(rec.isIncrease, isFalse);
+      expect(rec.suggestedWeightKg, 80.0);
+      expect(rec.weightDeltaKg, 0.0);
+      expect(rec.consecutiveCeilingHits, 1);
+      expect(rec.requiredCeilingHits, 2);
+      expect(rec.rationale, contains('1/2'));
+    });
+
+    test('should recommend INCREASE when ceiling is hit 2 consecutive sessions at >= same weight', () {
+      final latest = ExercisePerformanceHistory(
+        exerciseId: 'ex-1',
+        workoutSessionId: 'ws-2',
+        date: DateTime(2026, 8, 24),
+        loggedSets: const [
+          LoggedSet(
+            id: 's-21',
+            sessionExerciseId: 'se-2',
+            setNumber: 1,
+            setType: SetType.working,
+            weightKg: 80.0,
+            repsCompleted: 12,
+            rirActual: 2,
+            executionQuality: ExecutionQuality.good,
+          ),
+          LoggedSet(
+            id: 's-22',
+            sessionExerciseId: 'se-2',
+            setNumber: 2,
+            setType: SetType.working,
+            weightKg: 80.0,
+            repsCompleted: 12,
+            rirActual: 2,
+            executionQuality: ExecutionQuality.good,
+          ),
+        ],
+      );
+      final previous = ExercisePerformanceHistory(
+        exerciseId: 'ex-1',
+        workoutSessionId: 'ws-1',
+        date: DateTime(2026, 8, 20),
+        loggedSets: const [
+          LoggedSet(
+            id: 's-11',
+            sessionExerciseId: 'se-1',
+            setNumber: 1,
+            setType: SetType.working,
+            weightKg: 80.0,
+            repsCompleted: 12,
+            rirActual: 2,
+            executionQuality: ExecutionQuality.good,
+          ),
+          LoggedSet(
+            id: 's-12',
+            sessionExerciseId: 'se-1',
+            setNumber: 2,
+            setType: SetType.working,
+            weightKg: 80.0,
+            repsCompleted: 12,
+            rirActual: 1,
+            executionQuality: ExecutionQuality.good,
+          ),
+        ],
+      );
+
+      final rec = engine.evaluate(
+        history: latest,
+        previousHistories: [previous],
+        targetRepsMin: 8,
+        targetRepsMax: 12,
+        equipment: 'barbell',
+      );
+
       expect(rec.type, ProgressionType.increase);
       expect(rec.isIncrease, isTrue);
       expect(rec.suggestedWeightKg, 82.5);
       expect(rec.weightDeltaKg, 2.5);
-      expect(rec.rationale, contains('Meta atingida'));
+      expect(rec.consecutiveCeilingHits, 2);
+      expect(rec.rationale, contains('Meta consolidada (2/2)'));
+    });
+
+    test('should NOT recommend increase if previous ceiling was at lower weight', () {
+      final latest = ExercisePerformanceHistory(
+        exerciseId: 'ex-1',
+        workoutSessionId: 'ws-2',
+        date: DateTime(2026, 8, 24),
+        loggedSets: const [
+          LoggedSet(
+            id: 's-21',
+            sessionExerciseId: 'se-2',
+            setNumber: 1,
+            setType: SetType.working,
+            weightKg: 82.5,
+            repsCompleted: 12,
+            rirActual: 2,
+            executionQuality: ExecutionQuality.good,
+          ),
+        ],
+      );
+      final previous = ExercisePerformanceHistory(
+        exerciseId: 'ex-1',
+        workoutSessionId: 'ws-1',
+        date: DateTime(2026, 8, 20),
+        loggedSets: const [
+          LoggedSet(
+            id: 's-11',
+            sessionExerciseId: 'se-1',
+            setNumber: 1,
+            setType: SetType.working,
+            weightKg: 80.0,
+            repsCompleted: 12,
+            rirActual: 2,
+            executionQuality: ExecutionQuality.good,
+          ),
+        ],
+      );
+
+      final rec = engine.evaluate(
+        history: latest,
+        previousHistories: [previous],
+        targetRepsMin: 8,
+        targetRepsMax: 12,
+        equipment: 'barbell',
+      );
+
+      expect(rec.type, ProgressionType.maintain);
+      expect(rec.consecutiveCeilingHits, 1);
+      expect(rec.suggestedWeightKg, 82.5);
     });
 
     test('should recommend MAINTAIN when max reps hit but execution quality is poor', () {
@@ -275,9 +398,9 @@ void main() {
   });
 
   group('CalculateProgressionUseCase', () {
-    test('should return default start recommendation when history is null', () async {
-      when(() => mockRepo.getLastExercisePerformance('ex-new'))
-          .thenAnswer((_) async => const Success(null));
+    test('should return default start recommendation when history is null/empty', () async {
+      when(() => mockRepo.getRecentExercisePerformances('ex-new', limit: 2))
+          .thenAnswer((_) async => const Success([]));
 
       final result = await useCase.execute(
         exerciseId: 'ex-new',
@@ -292,7 +415,7 @@ void main() {
     });
 
     test('should propagate failure when repository fails', () async {
-      when(() => mockRepo.getLastExercisePerformance('ex-err'))
+      when(() => mockRepo.getRecentExercisePerformances('ex-err', limit: 2))
           .thenAnswer((_) async => const Err(ServerFailure('Query error')));
 
       final result = await useCase.execute(

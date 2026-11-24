@@ -1,12 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:personal_fitness_os/core/errors/failures.dart';
-import 'package:personal_fitness_os/core/errors/result.dart';
+import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
+import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
+import 'package:personal_fitness_os/features/training/data/datasources/training_local_datasource.dart';
 import 'package:personal_fitness_os/features/training/data/datasources/training_remote_datasource.dart';
 import 'package:personal_fitness_os/features/training/data/repositories/training_repository_impl.dart';
-import 'package:personal_fitness_os/features/training/domain/entities/set_template.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
-import 'package:personal_fitness_os/features/training/domain/entities/workout_exercise.dart';
 import 'package:personal_fitness_os/features/training/domain/repositories/training_repository.dart';
 import 'package:personal_fitness_os/features/training/domain/usecases/add_exercise_to_workout.dart';
 import 'package:personal_fitness_os/features/training/domain/usecases/add_workout_to_plan.dart';
@@ -28,9 +27,29 @@ final trainingRemoteDataSourceProvider = Provider<TrainingRemoteDataSource>((ref
   return SupabaseTrainingRemoteDataSource(Supabase.instance.client);
 });
 
+final trainingLocalDataSourceProvider = Provider<TrainingLocalDataSource?>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  if (prefs == null) return null;
+  final userId = ref.watch(activeUserIdProvider);
+  return TrainingLocalDataSource(prefs, userId: userId);
+});
+
 final trainingRepositoryProvider = Provider<TrainingRepository>((ref) {
   final remoteDataSource = ref.watch(trainingRemoteDataSourceProvider);
-  return TrainingRepositoryImpl(remoteDataSource);
+  final localDataSource = ref.watch(trainingLocalDataSourceProvider);
+  final networkInfo = ref.watch(networkInfoProvider);
+
+  return TrainingRepositoryImpl(
+    remoteDataSource,
+    localDataSource: localDataSource,
+    networkInfo: networkInfo,
+    isOfflineMode: () => ref.read(isOfflineModeProvider),
+    onConnectivityFallback: (offline) {
+      Future.microtask(() {
+        ref.read(runtimeOfflineDetectedProvider.notifier).state = offline;
+      });
+    },
+  );
 });
 
 // --- USE CASE PROVIDERS ---

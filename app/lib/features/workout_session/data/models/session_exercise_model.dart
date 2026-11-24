@@ -3,6 +3,7 @@ import 'package:personal_fitness_os/features/exercise_library/data/models/exerci
 import 'package:personal_fitness_os/features/training/data/models/set_template_model.dart';
 import 'package:personal_fitness_os/features/workout_session/data/models/logged_set_model.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/session_exercise.dart';
+import 'package:personal_fitness_os/features/workout_session/domain/services/rest_duration_resolver.dart';
 
 /// DTO for `workout_session_exercises` table in Supabase.
 class SessionExerciseModel {
@@ -82,17 +83,6 @@ class SessionExerciseModel {
       resolvedTargetSetsCount = 3;
     }
 
-    final int resolvedRestSeconds;
-    if (isCardio) {
-      resolvedRestSeconds = 0;
-    } else if (json['target_rest_seconds'] != null) {
-      resolvedRestSeconds = (json['target_rest_seconds'] as num).toInt();
-    } else if (primaryTemplate != null && primaryTemplate.restSeconds > 0) {
-      resolvedRestSeconds = primaryTemplate.restSeconds;
-    } else {
-      resolvedRestSeconds = AppConstants.defaultRestSeconds;
-    }
-
     final resolvedRepsMin = (json['target_reps_min'] as num?)?.toInt() ??
         primaryTemplate?.targetRepsMin ??
         (isCardio ? 15 : 8);
@@ -102,6 +92,20 @@ class SessionExerciseModel {
     final resolvedRir = (json['target_rir'] as num?)?.toInt() ??
         primaryTemplate?.targetRirMin ??
         2;
+
+    final int? explicitRest = (json['target_rest_seconds'] as num?)?.toInt() ??
+        primaryTemplate?.restSeconds;
+    final int resolvedRestSeconds = isCardio
+        ? 0
+        : RestDurationResolver.resolve(
+            targetRepsMin: resolvedRepsMin,
+            targetRepsMax: resolvedRepsMax,
+            movementPattern: exerciseModel?.movementPattern,
+            primaryMuscleGroup: exerciseModel?.primaryMuscleGroup,
+            equipment: exerciseModel?.equipment,
+            isCardio: isCardio,
+            explicitTemplateRestSeconds: explicitRest,
+          );
 
     final List<SetType> resolvedPrescribedTypes;
     if (json['prescribed_set_types'] is List) {

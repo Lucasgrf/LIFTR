@@ -166,7 +166,7 @@ Deno.test("grounding: fails if workout ends up with zero valid exercises", () =>
   assertThrows(() => validateAndGroundPlan(raw, SAMPLE_CATALOG));
 });
 
-Deno.test("rankGeminiCandidateModels prioritizes Gemini 4 Argon/Carbon and filters embeddings", () => {
+Deno.test("rankGeminiCandidateModels prioritizes Gemini 4 Hydrogen as #1 and filters embeddings", () => {
   const ranked = rankGeminiCandidateModels([
     {
       name: "models/text-embedding-004",
@@ -185,15 +185,76 @@ Deno.test("rankGeminiCandidateModels prioritizes Gemini 4 Argon/Carbon and filte
       supportedGenerationMethods: ["generateContent"],
     },
     {
+      name: "models/gemini-4-hydrogen",
+      supportedGenerationMethods: ["generateContent"],
+    },
+    {
       name: "models/gemini-3.8-flash",
       supportedGenerationMethods: ["generateContent"],
     },
   ]);
 
-  assertEquals(ranked[0], "gemini-4-argon");
-  assertEquals(ranked[1], "gemini-4-carbon");
-  assertEquals(ranked[2], "gemini-3.8-flash");
+  assertEquals(ranked[0], "gemini-4-hydrogen");
+  assertEquals(ranked[1], "gemini-4-argon");
+  assertEquals(ranked[2], "gemini-4-carbon");
+  assertEquals(ranked[3], "gemini-3.8-flash");
   assertEquals(ranked.includes("text-embedding-004"), false);
+});
+
+Deno.test("grounding: normalizes rest_seconds for heavy (6-10 -> 180s) vs light (12-15 -> 120s) exercises", () => {
+  const catalogWithIsolation: CatalogExercise[] = [
+    ...SAMPLE_CATALOG,
+    {
+      id: "00000000-0000-4000-8000-000000000099",
+      name: "Elevação lateral com halteres",
+      primary_muscle_group: "shoulders",
+      equipment: "dumbbell",
+      movement_pattern: "isolation",
+    },
+  ];
+
+  const raw = {
+    plan_name: "ABC Personalizado",
+    split_type: "ABC",
+    description: "Divisão ajustada ao nível",
+    rationale: "Melhor divisão para o aluno.",
+    workouts: [
+      {
+        name: "Treino A",
+        estimated_duration_minutes: 55,
+        exercises: [
+          {
+            exercise_id: "00000000-0000-4000-8000-000000000001",
+            exercise_name: "Supino reto com barra",
+            sets_count: 4,
+            target_reps_min: 6,
+            target_reps_max: 10,
+            rest_seconds: 90,
+          },
+          {
+            exercise_id: "00000000-0000-4000-8000-000000000099",
+            exercise_name: "Elevação lateral com halteres",
+            sets_count: 3,
+            target_reps_min: 12,
+            target_reps_max: 15,
+            rest_seconds: 180,
+          },
+        ],
+      },
+    ],
+  };
+
+  const grounded = validateAndGroundPlan(raw, catalogWithIsolation);
+  assertEquals(grounded.workouts[0].exercises[0].rest_seconds, 180);
+  assertEquals(grounded.workouts[0].exercises[1].rest_seconds, 120);
+
+  const req = GenerateWorkoutRequestSchema.parse({
+    goal: "hypertrophy",
+    experience: "beginner",
+    days_per_week: 3,
+  });
+  const prompts = buildGeminiPrompts(req, catalogWithIsolation);
+  assertEquals(prompts.system.includes("NÃO retorne Upper/Lower por padrão"), true);
 });
 
 Deno.test("extractJsonObject parses markdown-fenced or preamble-wrapped json", () => {

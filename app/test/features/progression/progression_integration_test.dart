@@ -9,8 +9,6 @@ import 'package:personal_fitness_os/features/progression/domain/entities/progres
 import 'package:personal_fitness_os/features/progression/domain/usecases/calculate_progression.dart';
 import 'package:personal_fitness_os/features/workout_session/data/datasources/session_remote_datasource.dart';
 import 'package:personal_fitness_os/features/workout_session/data/models/logged_set_model.dart';
-import 'package:personal_fitness_os/features/workout_session/data/models/session_exercise_model.dart';
-import 'package:personal_fitness_os/features/workout_session/data/models/workout_session_model.dart';
 import 'package:personal_fitness_os/features/workout_session/data/repositories/session_repository_impl.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/logged_set.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/usecases/log_set.dart';
@@ -85,8 +83,51 @@ void main() {
         ],
       );
 
-      when(() => mockProgressionDataSource.fetchLastExercisePerformance('ex-bench'))
-          .thenAnswer((_) async => pastHistory);
+      final olderHistory = ExercisePerformanceHistory(
+        exerciseId: 'ex-bench',
+        workoutSessionId: 'ws-prev-0',
+        workoutName: 'Upper A',
+        date: DateTime(2026, 8, 11),
+        loggedSets: const [
+          LoggedSet(
+            id: 's-01',
+            sessionExerciseId: 'se-prev-0',
+            setNumber: 1,
+            setType: SetType.working,
+            weightKg: 80.0,
+            repsCompleted: 12,
+            rirActual: 2,
+            executionQuality: ExecutionQuality.good,
+          ),
+          LoggedSet(
+            id: 's-02',
+            sessionExerciseId: 'se-prev-0',
+            setNumber: 2,
+            setType: SetType.working,
+            weightKg: 80.0,
+            repsCompleted: 12,
+            rirActual: 2,
+            executionQuality: ExecutionQuality.good,
+          ),
+          LoggedSet(
+            id: 's-03',
+            sessionExerciseId: 'se-prev-0',
+            setNumber: 3,
+            setType: SetType.working,
+            weightKg: 80.0,
+            repsCompleted: 12,
+            rirActual: 2,
+            executionQuality: ExecutionQuality.good,
+          ),
+        ],
+      );
+
+      when(
+        () => mockProgressionDataSource.fetchRecentExercisePerformances(
+          'ex-bench',
+          limit: 2,
+        ),
+      ).thenAnswer((_) async => [pastHistory, olderHistory]);
 
       // 2. Calculate progression recommendation for next session (Target 8-12 reps, Barbell)
       final progResult = await calculateProgressionUseCase.execute(
@@ -102,7 +143,8 @@ void main() {
       expect(recommendation.type, ProgressionType.increase);
       expect(recommendation.suggestedWeightKg, 82.5);
       expect(recommendation.weightDeltaKg, 2.5);
-      expect(recommendation.rationale, contains('Meta atingida'));
+      expect(recommendation.consecutiveCeilingHits, 2);
+      expect(recommendation.rationale, contains('Meta consolidada (2/2)'));
 
       // 3. User begins new session and logs first set with the recommended weight (82.5kg x 10 reps)
       const tLoggedSetModel = LoggedSetModel(

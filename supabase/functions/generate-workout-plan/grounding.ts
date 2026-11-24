@@ -42,6 +42,7 @@ export type GeminiModelDescriptor = {
 };
 
 export const FALLBACK_GEMINI_MODELS: readonly string[] = [
+  "gemini-4-hydrogen",
   "gemini-4-argon",
   "gemini-4-carbon",
   "gemini-3.8-flash",
@@ -80,10 +81,11 @@ function scoreGeminiModelId(id: string): number {
   else if (lower.startsWith("gemini-1.5")) score += 2000;
   else if (lower.startsWith("gemini-")) score += 1000;
 
-  if (lower.includes("argon")) score += 140;
+  if (lower.includes("hydrogen")) score += 180;
+  else if (lower.includes("argon")) score += 140;
   else if (lower.includes("flash") && !lower.includes("lite")) score += 120;
   else if (lower.includes("carbon") || lower.includes("pro")) score += 100;
-  else if (lower.includes("neon") || lower.includes("hydrogen")) score += 90;
+  else if (lower.includes("neon")) score += 90;
   else if (lower.includes("lite")) score += 70;
 
   if (lower.includes("latest")) score += 15;
@@ -94,8 +96,8 @@ function scoreGeminiModelId(id: string): number {
 
 /**
  * Ranks available Gemini models returned by `GET /v1beta/models`, prioritizing
- * Gemini 4 (`gemini-4-argon`, `gemini-4-carbon`) followed by the newest
- * available Flash/Pro models supporting `generateContent`.
+ * Gemini 4 Hydrogen (`gemini-4-hydrogen`) as #1 followed by `gemini-4-argon`,
+ * `gemini-4-carbon` and the newest available Flash/Pro models supporting `generateContent`.
  */
 export function rankGeminiCandidateModels(
   discovered: readonly GeminiModelDescriptor[],
@@ -217,6 +219,34 @@ function clamp(val: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, Math.round(val)));
 }
 
+const HEAVY_COMPOUND_PATTERNS = new Set([
+  "squat",
+  "hinge",
+  "horizontal_push",
+  "vertical_push",
+  "horizontal_pull",
+  "vertical_pull",
+]);
+
+export function resolveRecommendedRestSeconds(
+  repsMin: number,
+  repsMax: number,
+  movementPattern?: string | null,
+): number {
+  if (repsMax <= 10) {
+    return 180;
+  }
+  const normalizedPattern = (movementPattern ?? "").trim().toLowerCase();
+  if (
+    repsMin >= 12 ||
+    (repsMax >= 13 &&
+      (normalizedPattern === "isolation" || normalizedPattern === "carry"))
+  ) {
+    return 120;
+  }
+  return HEAVY_COMPOUND_PATTERNS.has(normalizedPattern) ? 180 : 120;
+}
+
 function normalizeText(value: string): string {
   return value.trim().toLowerCase();
 }
@@ -318,6 +348,17 @@ export function validateAndGroundPlan(
       const rirMin = Math.min(rawRirMin, rawRirMax);
       const rirMax = Math.max(rawRirMin, rawRirMax);
 
+      const recommendedRest = resolveRecommendedRestSeconds(
+        repsMin,
+        repsMax,
+        matched.movement_pattern,
+      );
+      const rawRest = clamp(ex.rest_seconds, 60, 300);
+      const needsRestNormalization =
+        (repsMin >= 12 && rawRest >= 180) ||
+        (repsMax <= 10 && rawRest < 150);
+      const restSeconds = needsRestNormalization ? recommendedRest : rawRest;
+
       groundedExercises.push({
         exercise_id: matched.id,
         exercise_name: matched.name,
@@ -331,7 +372,7 @@ export function validateAndGroundPlan(
         target_duration_minutes: null,
         target_rir_min: rirMin,
         target_rir_max: rirMax,
-        rest_seconds: clamp(ex.rest_seconds, 30, 300),
+        rest_seconds: restSeconds,
         notes: ex.notes?.trim() || null,
       });
     }
@@ -382,10 +423,18 @@ export function buildGeminiPrompts(
     "   2 a 4 sessões (usando exercise_id de cardio do catálogo), com sets_count=1,",
     "   rest_seconds=0, target_reps_min=null, target_reps_max=null e",
     "   target_duration_minutes preenchido.",
-    "6. Para exercícios de força: sets_count entre 2 e 5, target_reps_min/max (ex: 8-12),",
-    "   target_rir_min/max (ex: 1-2), rest_seconds entre 60 e 210 e target_duration_minutes=null.",
-    "7. Se 'preferred_split' for informado (ex: ABC, ABCD, Push / Pull / Legs, Upper / Lower),",
-    "   siga exatamente essa divisão.",
+    "6. Para exercícios de força: sets_count entre 2 e 5, target_rir_min/max (ex: 1-2) e target_duration_minutes=null.",
+    "   Calibre repetições e descanso pelo tipo do exercício:",
+    "   - Multiarticulares/compostos pesados (supino, agachamento, terra, remada livre/barra, desenvolvimento, leg press, barra fixa): target_reps_min=6, target_reps_max=10 (ou 6-8 em força) e rest_seconds=180 (3 min).",
+    "   - Auxiliares, isoladores ou mais leves (elevação lateral, rosca, tríceps, extensora/flexora, crucifixo, panturrilha, abdominal): target_reps_min=12, target_reps_max=15 e rest_seconds=120 (2 min).",
+    "   - Exercícios intermediários 8-12: compostos pesados usam rest_seconds=180; isoladores/máquinas/cabos leves usam rest_seconds=120.",
+    "7. Escolha da divisão ('split_type'):",
+    "   - Se 'preferred_split' for informado, siga exatamente essa divisão.",
+    "   - Se 'preferred_split' for null, NÃO retorne Upper/Lower por padrão para todos os alunos! Escolha a melhor divisão baseada em experiência, dias_por_semana, objetivo e enfase_muscular:",
+    "     * Iniciante: 2-3 dias -> Full Body; 4 dias -> AB (Superior/Inferior) ou ABCD equilibrado conforme foco; 5-6 dias -> ABC ou Push / Pull / Legs moderado.",
+    "     * Intermediário: 2 dias -> Full Body 2x; 3 dias -> Full Body 3x, ABC ou Push / Pull / Legs; 4 dias -> varie conforme objetivo e foco (ABCD · Inferiores & Glúteos quando houver foco em pernas/glúteos, ABCD clássico para hipertrofia segmentada, Torso / Membros ou Upper / Lower apenas quando ideal para força/equilíbrio); 5 dias -> PPL + Upper / Lower ou ABCDE; 6 dias -> Push / Pull / Legs 2x ou ABC 2x.",
+    "     * Avançado: 3-4 dias -> ABCD, Torso / Membros ou Upper / Lower especializado; 5 dias -> PPL + Upper / Lower ou ABCDE; 6 dias -> Push / Pull / Legs 2x ou Arnold Split.",
+    "   - Explique no campo 'rationale' por que essa divisão foi escolhida para o nível e objetivo do aluno.",
     "8. Retorne SOMENTE um objeto JSON válido com o formato exato:",
     "{",
     '  "plan_name": string,',
