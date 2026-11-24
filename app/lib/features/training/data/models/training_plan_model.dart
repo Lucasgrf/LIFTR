@@ -67,6 +67,13 @@ class TrainingPlanModel {
     };
   }
 
+  Map<String, dynamic> toFullJson() {
+    return {
+      ...toJson(),
+      'workouts': workouts.map((w) => w.toFullJson()).toList(),
+    };
+  }
+
   TrainingPlan toDomain() {
     final sortedWorkouts = [...workouts]
       ..sort((a, b) {

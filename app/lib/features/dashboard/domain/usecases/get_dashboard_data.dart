@@ -162,22 +162,26 @@ class GetDashboardDataUseCase {
       days: days,
     );
 
-    // 6. Fetch Today's Nutrition (if repository configured)
+    // 6. Fetch Today's Nutrition (if repository configured, best-effort offline-safe)
     DailyNutrition? todayNutrition;
     if (_nutritionRepository != null) {
-      final nutResult = await _nutritionRepository.getDailyNutrition(now);
-      if (nutResult is Success<DailyNutrition, Failure>) {
-        todayNutrition = nutResult.value;
-      }
+      try {
+        final nutResult = await _nutritionRepository.getDailyNutrition(now);
+        if (nutResult is Success<DailyNutrition, Failure>) {
+          todayNutrition = nutResult.value;
+        }
+      } catch (_) {}
     }
 
-    // 7. Fetch Active Goals (if repository configured)
+    // 7. Fetch Active Goals (if repository configured, best-effort offline-safe)
     List<Goal> activeGoals = const [];
     if (_goalRepository != null) {
-      final goalResult = await _goalRepository.getGoals(status: GoalStatus.active);
-      if (goalResult is Success<List<Goal>, Failure>) {
-        activeGoals = goalResult.value;
-      }
+      try {
+        final goalResult = await _goalRepository.getGoals(status: GoalStatus.active);
+        if (goalResult is Success<List<Goal>, Failure>) {
+          activeGoals = goalResult.value;
+        }
+      } catch (_) {}
     }
 
     return Success(

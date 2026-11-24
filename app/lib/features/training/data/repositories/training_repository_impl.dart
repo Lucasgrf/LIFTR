@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:personal_fitness_os/core/errors/failures.dart';
 import 'package:personal_fitness_os/core/errors/result.dart';
+import 'package:personal_fitness_os/core/network/network_info.dart';
+import 'package:personal_fitness_os/features/training/data/datasources/training_local_datasource.dart';
 import 'package:personal_fitness_os/features/training/data/datasources/training_remote_datasource.dart';
 import 'package:personal_fitness_os/features/training/data/models/set_template_model.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/set_template.dart';
@@ -12,48 +14,130 @@ import 'package:personal_fitness_os/features/training/domain/repositories/traini
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TrainingRepositoryImpl implements TrainingRepository {
-  const TrainingRepositoryImpl(this._remoteDataSource);
+  const TrainingRepositoryImpl(
+    this._remoteDataSource, {
+    TrainingLocalDataSource? localDataSource,
+    NetworkInfo? networkInfo,
+    bool Function()? isOfflineMode,
+    void Function(bool offline)? onConnectivityFallback,
+  })  : _localDataSource = localDataSource,
+        _networkInfo = networkInfo,
+        _isOfflineMode = isOfflineMode,
+        _onConnectivityFallback = onConnectivityFallback;
 
   final TrainingRemoteDataSource _remoteDataSource;
+  final TrainingLocalDataSource? _localDataSource;
+  final NetworkInfo? _networkInfo;
+  final bool Function()? _isOfflineMode;
+  final void Function(bool offline)? _onConnectivityFallback;
+
+  Future<bool> _shouldUseOffline() async {
+    if (_localDataSource == null) return false;
+    if (_isOfflineMode?.call() == true) return true;
+    if (_networkInfo != null) {
+      try {
+        final connected = await _networkInfo.isConnected;
+        if (!connected) {
+          _onConnectivityFallback?.call(true);
+          return true;
+        }
+      } catch (_) {}
+    }
+    return false;
+  }
 
   @override
   Future<Result<List<TrainingPlan>, Failure>> getTrainingPlans() async {
+    final local = _localDataSource;
+    if (local != null && await _shouldUseOffline()) {
+      return Success(local.getAllPlans().map((m) => m.toDomain()).toList());
+    }
+
     try {
       final models = await _remoteDataSource.fetchTrainingPlans();
+      await local?.savePlans(models);
       return Success(models.map((m) => m.toDomain()).toList());
     } on PostgrestException catch (e, stack) {
+      if (local != null && isNetworkError(e)) {
+        _onConnectivityFallback?.call(true);
+        return Success(local.getAllPlans().map((m) => m.toDomain()).toList());
+      }
       return Err(ServerFailure(e.message, stack));
-    } on SocketException catch (e, stack) {
-      return Err(NetworkFailure('Sem conexão com a internet.', stack));
     } catch (e, stack) {
+      if (local != null && isNetworkError(e)) {
+        _onConnectivityFallback?.call(true);
+        return Success(local.getAllPlans().map((m) => m.toDomain()).toList());
+      }
+      if (e is SocketException) {
+        return Err(NetworkFailure('Sem conexão com a internet.', stack));
+      }
       return Err(UnexpectedFailure('Erro ao carregar programas de treino: $e', stack));
     }
   }
 
   @override
   Future<Result<TrainingPlan?, Failure>> getActiveTrainingPlan() async {
+    final local = _localDataSource;
+    if (local != null && await _shouldUseOffline()) {
+      return Success(local.getActivePlan()?.toDomain());
+    }
+
     try {
       final model = await _remoteDataSource.fetchActiveTrainingPlan();
+      if (model != null) {
+        await local?.savePlan(model);
+      }
       return Success(model?.toDomain());
     } on PostgrestException catch (e, stack) {
+      if (local != null && isNetworkError(e)) {
+        _onConnectivityFallback?.call(true);
+        return Success(local.getActivePlan()?.toDomain());
+      }
       return Err(ServerFailure(e.message, stack));
-    } on SocketException catch (e, stack) {
-      return Err(NetworkFailure('Sem conexão com a internet.', stack));
     } catch (e, stack) {
+      if (local != null && isNetworkError(e)) {
+        _onConnectivityFallback?.call(true);
+        return Success(local.getActivePlan()?.toDomain());
+      }
+      if (e is SocketException) {
+        return Err(NetworkFailure('Sem conexão com a internet.', stack));
+      }
       return Err(UnexpectedFailure('Erro ao buscar programa ativo: $e', stack));
     }
   }
 
   @override
   Future<Result<TrainingPlan, Failure>> getTrainingPlanById(String id) async {
+    final local = _localDataSource;
+    if (local != null && await _shouldUseOffline()) {
+      final cached = local.getPlanById(id);
+      if (cached != null) {
+        return Success(cached.toDomain());
+      }
+    }
+
     try {
       final model = await _remoteDataSource.fetchTrainingPlanById(id);
+      await local?.savePlan(model);
       return Success(model.toDomain());
     } on PostgrestException catch (e, stack) {
+      final cached = local?.getPlanById(id);
+      if (cached != null && isNetworkError(e)) {
+        _onConnectivityFallback?.call(true);
+        return Success(cached.toDomain());
+      }
       return Err(ServerFailure(e.message, stack));
-    } on SocketException catch (e, stack) {
-      return Err(NetworkFailure('Sem conexão com a internet.', stack));
     } catch (e, stack) {
+      if (local != null && isNetworkError(e)) {
+        _onConnectivityFallback?.call(true);
+        final cached = local.getPlanById(id);
+        if (cached != null) {
+          return Success(cached.toDomain());
+        }
+      }
+      if (e is SocketException) {
+        return Err(NetworkFailure('Sem conexão com a internet.', stack));
+      }
       return Err(UnexpectedFailure('Erro ao carregar programa de treino: $e', stack));
     }
   }

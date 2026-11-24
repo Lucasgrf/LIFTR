@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:personal_fitness_os/core/errors/failures.dart';
-import 'package:personal_fitness_os/core/errors/result.dart';
+import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
+import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
+import 'package:personal_fitness_os/features/exercise_library/data/datasources/exercise_local_datasource.dart';
 import 'package:personal_fitness_os/features/exercise_library/data/datasources/exercise_remote_datasource.dart';
 import 'package:personal_fitness_os/features/exercise_library/data/repositories/exercise_repository_impl.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
@@ -19,9 +20,29 @@ final exerciseRemoteDataSourceProvider = Provider<ExerciseRemoteDataSource>((ref
   return SupabaseExerciseRemoteDataSource(Supabase.instance.client);
 });
 
+final exerciseLocalDataSourceProvider = Provider<ExerciseLocalDataSource?>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  if (prefs == null) return null;
+  final userId = ref.watch(activeUserIdProvider);
+  return ExerciseLocalDataSource(prefs, userId: userId);
+});
+
 final exerciseRepositoryProvider = Provider<ExerciseRepository>((ref) {
   final remoteDataSource = ref.watch(exerciseRemoteDataSourceProvider);
-  return ExerciseRepositoryImpl(remoteDataSource);
+  final localDataSource = ref.watch(exerciseLocalDataSourceProvider);
+  final networkInfo = ref.watch(networkInfoProvider);
+
+  return ExerciseRepositoryImpl(
+    remoteDataSource,
+    localDataSource: localDataSource,
+    networkInfo: networkInfo,
+    isOfflineMode: () => ref.read(isOfflineModeProvider),
+    onConnectivityFallback: (offline) {
+      Future.microtask(() {
+        ref.read(runtimeOfflineDetectedProvider.notifier).state = offline;
+      });
+    },
+  );
 });
 
 // --- USE CASE PROVIDERS ---

@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/features/progression/data/datasources/progression_remote_datasource.dart';
 import 'package:personal_fitness_os/features/progression/data/repositories/progression_repository_impl.dart';
 import 'package:personal_fitness_os/features/progression/domain/entities/progression_recommendation.dart';
 import 'package:personal_fitness_os/features/progression/domain/repositories/progression_repository.dart';
 import 'package:personal_fitness_os/features/progression/domain/usecases/calculate_progression.dart';
+import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final supabaseClientProvider = Provider<SupabaseClient>((ref) {
@@ -18,6 +20,14 @@ final progressionRemoteDataSourceProvider =
 final progressionRepositoryProvider = Provider<ProgressionRepository>((ref) {
   return ProgressionRepositoryImpl(
     ref.watch(progressionRemoteDataSourceProvider),
+    localSessionDataSource: ref.watch(sessionLocalDataSourceProvider),
+    networkInfo: ref.watch(networkInfoProvider),
+    isOfflineMode: () => ref.read(isOfflineModeProvider),
+    onConnectivityFallback: (offline) {
+      Future.microtask(() {
+        ref.read(runtimeOfflineDetectedProvider.notifier).state = offline;
+      });
+    },
   );
 });
 
