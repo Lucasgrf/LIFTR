@@ -1,11 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
+import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
@@ -60,6 +63,8 @@ class _AiWorkoutGeneratorScreenState
   // Generation & persistence state
   bool _isGenerating = false;
   bool _isApplying = false;
+  int _generationPercent = 0;
+  Timer? _progressTimer;
   String? _errorMessage;
   GeneratedTrainingPlan? _generatedPlan;
 
@@ -75,6 +80,7 @@ class _AiWorkoutGeneratorScreenState
     _experience = switch (settings.experience) {
       UserExperience.beginner => AiWorkoutExperience.beginner,
       UserExperience.intermediate => AiWorkoutExperience.intermediate,
+      UserExperience.advanced => AiWorkoutExperience.advanced,
     };
     _daysPerWeek = settings.trainingDaysPerWeek.clamp(2, 6);
     _biologicalSex = settings.biologicalSex;
@@ -82,6 +88,7 @@ class _AiWorkoutGeneratorScreenState
 
   @override
   void dispose() {
+    _progressTimer?.cancel();
     _restrictionsController.dispose();
     super.dispose();
   }
@@ -135,29 +142,61 @@ class _AiWorkoutGeneratorScreenState
     );
   }
 
+  void _startProgressTicker() {
+    _progressTimer?.cancel();
+    _progressTimer = Timer.periodic(const Duration(milliseconds: 220), (timer) {
+      if (!mounted || !_isGenerating) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        if (_generationPercent < 30) {
+          _generationPercent += 5;
+        } else if (_generationPercent < 70) {
+          _generationPercent += 4;
+        } else if (_generationPercent < 92) {
+          _generationPercent += 2;
+        }
+      });
+    });
+  }
+
   Future<void> _generatePlan() async {
     if (_isGenerating) return;
     HapticFeedback.mediumImpact();
     setState(() {
       _isGenerating = true;
+      _generationPercent = 6;
       _errorMessage = null;
     });
+    _startProgressTicker();
 
     try {
       final remote = ref.read(aiWorkoutRemoteDataSourceProvider);
       final plan = await remote.generatePlan(_buildRequest());
+      _progressTimer?.cancel();
       if (!mounted) return;
+      final disableAnimations = MediaQuery.disableAnimationsOf(context);
+      setState(() {
+        _generationPercent = 100;
+      });
+      if (!disableAnimations) {
+        await Future<void>.delayed(const Duration(milliseconds: 180));
+        if (!mounted) return;
+      }
       setState(() {
         _generatedPlan = plan;
         _isGenerating = false;
       });
     } on AiWorkoutException catch (e) {
+      _progressTimer?.cancel();
       if (!mounted) return;
       setState(() {
         _errorMessage = e.message;
         _isGenerating = false;
       });
     } catch (e) {
+      _progressTimer?.cancel();
       if (!mounted) return;
       setState(() {
         _errorMessage = 'Não foi possível gerar seu treino agora: $e';
@@ -772,12 +811,29 @@ class _AiWorkoutGeneratorScreenState
     );
   }
 
+  String _generatingStageLabel(int percent) {
+    if (percent >= 100) return 'Treino pronto!';
+    if (percent > 70) return 'Calibrando séries, repetições, descanso e cardio...';
+    if (percent > 30) return 'Selecionando exercícios do catálogo LIFTR...';
+    return 'Analisando seu perfil, nível e divisão ideal...';
+  }
+
   Widget _buildGeneratingState(BuildContext context) {
     final colors = context.appColors;
+    final fitnessColors = context.fitnessColors;
     final radius = context.appRadius;
+    final motion = context.appMotion;
+    final percent = _generationPercent.clamp(0, 100);
+    final stageLabel = _generatingStageLabel(percent);
+
+    const stages = [
+      (threshold: 30, label: 'Perfil e divisão semanal'),
+      (threshold: 70, label: 'Seleção do catálogo LIFTR'),
+      (threshold: 95, label: 'Séries, descanso e cardio'),
+    ];
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 36),
+      padding: const EdgeInsets.symmetric(vertical: 28),
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
@@ -787,30 +843,84 @@ class _AiWorkoutGeneratorScreenState
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(
-              width: 36,
-              height: 36,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Expanded(
+                  child: Text(
+                    'MONTANDO TREINO COM IA',
+                    style: AppTypography.eyebrow(context),
+                  ),
+                ),
+                Text(
+                  '$percent%',
+                  key: const Key('ai_generating_percent_text'),
+                  style: context.textTheme.displayMedium?.copyWith(
+                    color: percent >= 100
+                        ? fitnessColors.progressUp
+                        : colors.primaryLight,
+                    fontFeatures: AppTypography.tabularFeatures,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            AnimatedContainer(
+              duration: motion.resolve(context, motion.fast),
+              curve: motion.curveStandard,
+              child: LiftrProgressBar(
+                progress: percent / 100.0,
+                height: 6,
+                color: percent >= 100
+                    ? fitnessColors.progressUp
+                    : colors.primary,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Text(
-              'Montando seu treino com IA...',
-              style: context.textTheme.titleLarge,
-              textAlign: TextAlign.center,
+              stageLabel,
+              style: context.textTheme.titleMedium,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
-              'O Gemini está selecionando os exercícios ideais do catálogo LIFTR '
-              'para $_daysPerWeek dias por semana (${_goal.label}).',
-              style: context.textTheme.bodyMedium?.copyWith(
+              'O Gemini está estruturando $_daysPerWeek sessões (${_goal.label}) para o seu nível.',
+              style: context.textTheme.bodySmall?.copyWith(
                 color: colors.textSecondary,
               ),
-              textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 18),
+            for (final stage in stages) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Icon(
+                      percent >= stage.threshold
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                      size: 16,
+                      color: percent >= stage.threshold
+                          ? fitnessColors.progressUp
+                          : colors.textTertiary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        stage.label,
+                        style: context.textTheme.labelMedium?.copyWith(
+                          color: percent >= stage.threshold
+                              ? colors.textPrimary
+                              : colors.textTertiary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
