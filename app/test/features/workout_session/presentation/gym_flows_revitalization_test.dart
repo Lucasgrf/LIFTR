@@ -50,6 +50,32 @@ class _StubProgressionRepository implements ProgressionRepository {
       ),
     );
   }
+
+  @override
+  Future<Result<List<ExercisePerformanceHistory>, Failure>>
+      getRecentExercisePerformances(
+    String exerciseId, {
+    int limit = 2,
+  }) async {
+    return Success([
+      ExercisePerformanceHistory(
+        exerciseId: exerciseId,
+        workoutSessionId: 'prev-1',
+        workoutName: 'Push A',
+        date: DateTime(2026, 11, 18),
+        loggedSets: const [
+          LoggedSet(
+            id: 'ls-prev',
+            sessionExerciseId: 'se-prev',
+            setNumber: 1,
+            weightKg: 82.5,
+            repsCompleted: 10,
+            rirActual: 2,
+          ),
+        ],
+      ),
+    ]);
+  }
 }
 
 void main() {

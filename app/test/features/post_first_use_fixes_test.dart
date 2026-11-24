@@ -54,6 +54,14 @@ class _StubProgressionRepo implements ProgressionRepository {
   Future<Result<ExercisePerformanceHistory?, Failure>>
       getLastExercisePerformance(String exerciseId) async =>
           const Success(null);
+
+  @override
+  Future<Result<List<ExercisePerformanceHistory>, Failure>>
+      getRecentExercisePerformances(
+    String exerciseId, {
+    int limit = 2,
+  }) async =>
+          const Success([]);
 }
 
 class _StubExerciseListNotifier extends ExerciseListNotifier {
@@ -253,13 +261,21 @@ void main() {
       expect(const UserSettingsState().defaultRestSeconds, 180);
     });
 
-    testWidgets('starts rest timer at 03:00 on WorkoutSessionScreen when logging a set',
+    testWidgets('starts 02:00 rest timer for lighter 10-15 rep exercises and 03:00 for heavy 6-10 rep exercises',
         (tester) async {
-      const ex = Exercise(
+      const exLight = Exercise(
         id: 'ex-1',
         name: 'Tríceps Acima da Cabeça',
         primaryMuscleGroup: 'triceps',
         equipment: 'dumbbell',
+        movementPattern: 'isolation',
+      );
+      const exHeavy = Exercise(
+        id: 'ex-2',
+        name: 'Supino Reto com Barra',
+        primaryMuscleGroup: 'chest',
+        equipment: 'barbell',
+        movementPattern: 'horizontal_push',
       );
       final session = WorkoutSession(
         id: 's-1',
@@ -271,10 +287,19 @@ void main() {
             id: 'se-1',
             sessionId: 's-1',
             exerciseId: 'ex-1',
-            exercise: ex,
+            exercise: exLight,
             targetSetsCount: 2,
             targetRepsMin: 10,
             targetRepsMax: 15,
+          ),
+          SessionExercise(
+            id: 'se-2',
+            sessionId: 's-1',
+            exerciseId: 'ex-2',
+            exercise: exHeavy,
+            targetSetsCount: 3,
+            targetRepsMin: 6,
+            targetRepsMax: 10,
           ),
         ],
       );
@@ -288,7 +313,7 @@ void main() {
             progressionRepositoryProvider
                 .overrideWithValue(_StubProgressionRepo()),
             exerciseListStateProvider.overrideWith(
-              (ref) => _StubExerciseListNotifier(ref, const [ex]),
+              (ref) => _StubExerciseListNotifier(ref, const [exLight, exHeavy]),
             ),
             isOnlineStreamProvider.overrideWith((_) => Stream.value(true)),
           ],
@@ -296,6 +321,21 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      await tester.tap(find.byIcon(Icons.check_rounded).first);
+      await tester.pump();
+      expect(find.text('02:00'), findsOneWidget);
+
+      await tester.tap(find.text('Pular'));
+      await tester.pumpAndSettle();
+
+      // Expand heavy compound exercise and verify 3-min rest timer
+      await tester.scrollUntilVisible(
+        find.text('Supino Reto com Barra'),
+        150,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('Supino Reto com Barra'));
+      await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.check_rounded).first);
       await tester.pump();
       expect(find.text('03:00'), findsOneWidget);
@@ -611,7 +651,7 @@ void main() {
       expect(domain.exercises.first.targetSetsCount, 2);
       expect(domain.exercises.first.targetRepsMin, 10);
       expect(domain.exercises.first.targetRepsMax, 15);
-      expect(domain.exercises.first.targetRestSeconds, 180);
+      expect(domain.exercises.first.targetRestSeconds, 120);
       expect(domain.exercises.first.prescribedSetTypes,
           [SetType.working, SetType.working]);
     });

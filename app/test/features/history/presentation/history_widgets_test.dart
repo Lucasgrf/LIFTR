@@ -10,6 +10,7 @@ import 'package:personal_fitness_os/features/history/presentation/widgets/histor
 import 'package:personal_fitness_os/features/history/presentation/widgets/timeline_event_card.dart';
 import 'package:personal_fitness_os/features/history/presentation/widgets/timeline_filter_bar.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
+import 'package:personal_fitness_os/features/workout_session/presentation/widgets/workout_mood_icon.dart';
 
 void main() {
   setUpAll(() async {
@@ -57,7 +58,8 @@ void main() {
       expect(find.text('Treino A - Peito e Tríceps'), findsOneWidget);
       expect(find.text('60 min'), findsOneWidget);
       expect(find.text('RPE 8.5'), findsOneWidget);
-      expect(find.text('🔥'), findsOneWidget);
+      expect(find.byType(WorkoutMoodIcon), findsOneWidget);
+      expect(find.text('Muito forte'), findsOneWidget);
     });
   });
 

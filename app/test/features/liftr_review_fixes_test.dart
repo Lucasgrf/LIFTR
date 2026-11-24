@@ -33,6 +33,14 @@ class _StubProgressionRepository implements ProgressionRepository {
   Future<Result<ExercisePerformanceHistory?, Failure>>
       getLastExercisePerformance(String exerciseId) async =>
           const Success(null);
+
+  @override
+  Future<Result<List<ExercisePerformanceHistory>, Failure>>
+      getRecentExercisePerformances(
+    String exerciseId, {
+    int limit = 2,
+  }) async =>
+          const Success([]);
 }
 
 class _StubExerciseListNotifier extends ExerciseListNotifier {

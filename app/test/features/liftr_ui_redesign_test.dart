@@ -81,6 +81,40 @@ class _FakeProgressionRepository implements ProgressionRepository {
       ),
     );
   }
+
+  @override
+  Future<Result<List<ExercisePerformanceHistory>, Failure>>
+      getRecentExercisePerformances(
+    String exerciseId, {
+    int limit = 2,
+  }) async {
+    return Success([
+      ExercisePerformanceHistory(
+        exerciseId: exerciseId,
+        workoutSessionId: 'prev-session',
+        workoutName: 'Lower A',
+        date: DateTime(2026, 11, 15),
+        loggedSets: const [
+          LoggedSet(
+            id: 'prev-1',
+            sessionExerciseId: 'prev-se',
+            setNumber: 1,
+            weightKg: 60.0,
+            repsCompleted: 12,
+            rirActual: 2,
+          ),
+          LoggedSet(
+            id: 'prev-2',
+            sessionExerciseId: 'prev-se',
+            setNumber: 2,
+            weightKg: 60.0,
+            repsCompleted: 12,
+            rirActual: 2,
+          ),
+        ],
+      ),
+    ]);
+  }
 }
 
 class _FakeSessionRepository implements SessionRepository {
@@ -599,10 +633,23 @@ void main() {
         expect(find.text('Lower A'), findsOneWidget);
         expect(find.text('Finalizar'), findsOneWidget);
         expect(find.text('Agachamento Livre'), findsOneWidget);
-        expect(find.text('Supino Reto'), findsOneWidget);
         expect(find.text('Trocar'), findsOneWidget);
+        await tester.scrollUntilVisible(
+          find.text('Supino Reto'),
+          120,
+          scrollable: find.byType(Scrollable).first,
+        );
+        expect(find.text('Supino Reto'), findsOneWidget);
+        await tester.scrollUntilVisible(
+          find.text('Agachamento Livre'),
+          -120,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, 300));
+        await tester.pumpAndSettle();
 
         // Open swap sheet
+        await tester.ensureVisible(find.text('Trocar'));
         await tester.tap(find.text('Trocar'));
         await tester.pumpAndSettle();
         expect(find.text('Trocar exercício'), findsOneWidget);
@@ -640,6 +687,8 @@ void main() {
           overrides: [
             liveSessionDetailProvider('sess-1')
                 .overrideWith((_) async => tActiveSession),
+            progressionRepositoryProvider
+                .overrideWithValue(_FakeProgressionRepository()),
             isOnlineStreamProvider
                 .overrideWith((_) => Stream.value(false)),
           ],
@@ -652,7 +701,7 @@ void main() {
       expect(find.text('Séries'), findsOneWidget);
       expect(find.text('Volume'), findsOneWidget);
       expect(find.text('Subidas de carga desbloqueadas'), findsOneWidget);
-      expect(find.text('Agachamento Livre'), findsOneWidget);
+      expect(find.text('Agachamento Livre'), findsWidgets);
       expect(find.text('+2,5 kg'), findsOneWidget);
       expect(
         find.text('Resumo enviado para o WhatsApp quando sincronizado'),
@@ -829,7 +878,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Treino concluído'), findsOneWidget);
-      expect(find.text('Sincronizado com o WhatsApp ✓'), findsOneWidget);
+      expect(find.text('Sincronizado com o WhatsApp'), findsOneWidget);
     });
   });
 }
