@@ -12,6 +12,7 @@ import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
+import 'package:personal_fitness_os/features/workout_session/presentation/widgets/workout_mood_icon.dart';
 
 class LastCompletedWorkoutCard extends StatelessWidget {
   const LastCompletedWorkoutCard({
@@ -22,23 +23,6 @@ class LastCompletedWorkoutCard extends StatelessWidget {
 
   final WorkoutSession session;
   final VoidCallback? onTap;
-
-  String _moodEmoji(Mood? mood) {
-    switch (mood) {
-      case Mood.awful:
-        return '😫';
-      case Mood.bad:
-        return '😕';
-      case Mood.neutral:
-        return '😐';
-      case Mood.good:
-        return '😊';
-      case Mood.excellent:
-        return '🔥';
-      case null:
-        return '';
-    }
-  }
 
   String _formatDateLabel(DateTime dt) {
     final now = DateTime.now();
@@ -62,7 +46,6 @@ class LastCompletedWorkoutCard extends StatelessWidget {
     final volumeFormatted = NumberFormat('#,##0', 'pt_BR').format(
       session.totalVolumeKg.round(),
     );
-    final emoji = _moodEmoji(session.mood);
 
     return InkWell(
       onTap: onTap ?? () => context.push('/session/${session.id}/summary'),
@@ -129,9 +112,9 @@ class LastCompletedWorkoutCard extends StatelessWidget {
                     style: context.textTheme.titleMedium,
                   ),
                 ),
-                if (emoji.isNotEmpty) ...[
+                if (session.mood != null) ...[
                   const SizedBox(width: 6),
-                  Text(emoji, style: const TextStyle(fontSize: 16)),
+                  WorkoutMoodChip(mood: session.mood!, compact: true),
                 ],
                 if (session.executionScore != null) ...[
                   const SizedBox(width: 6),

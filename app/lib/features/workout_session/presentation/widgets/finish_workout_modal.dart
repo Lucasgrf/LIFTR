@@ -23,6 +23,7 @@ import 'package:personal_fitness_os/features/weekly_comparison/presentation/prov
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/services/session_performance_calculator.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
+import 'package:personal_fitness_os/features/workout_session/presentation/widgets/workout_mood_icon.dart';
 
 class FinishWorkoutModal extends ConsumerStatefulWidget {
   const FinishWorkoutModal({
@@ -119,54 +120,65 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
   Widget _buildMoodSelector(BuildContext context) {
     final colors = context.appColors;
     final radius = context.appRadius;
-    final moods = [
-      (Mood.awful, '😫', 'Péssimo'),
-      (Mood.bad, '😕', 'Cansado'),
-      (Mood.neutral, '😐', 'Normal'),
-      (Mood.good, '😊', 'Bom'),
-      (Mood.excellent, '🔥', 'Ótimo'),
-    ];
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: moods.map((m) {
-        final isSelected = _mood == m.$1;
+      children: Mood.values.map((mood) {
+        final meta = WorkoutMoodMeta.resolve(context, mood);
+        final isSelected = _mood == mood;
         return Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: InkWell(
-              onTap: () => setState(() => _mood = m.$1),
-              borderRadius: BorderRadius.circular(radius.medium),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? colors.primaryMuted
-                      : colors.surfaceElevated,
-                  borderRadius: BorderRadius.circular(radius.medium),
-                  border: Border.all(
-                    color: isSelected ? colors.primary : colors.border,
-                    width: isSelected ? 1.5 : 1,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Text(m.$2, style: const TextStyle(fontSize: 20)),
-                    const SizedBox(height: 4),
-                    Text(
-                      m.$3,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.textTheme.labelSmall?.copyWith(
-                        fontSize: 10,
-                        fontWeight:
-                            isSelected ? FontWeight.w700 : FontWeight.w500,
-                        color: isSelected
-                            ? colors.primaryLight
-                            : colors.textSecondary,
-                      ),
+            child: Semantics(
+              label: 'Sensação: ${meta.label}',
+              selected: isSelected,
+              button: true,
+              child: InkWell(
+                onTap: () => setState(() => _mood = mood),
+                borderRadius: BorderRadius.circular(radius.medium),
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 62),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 3, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? meta.color.withValues(alpha: 0.16)
+                        : colors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(radius.medium),
+                    border: Border.all(
+                      color: isSelected ? meta.color : colors.border,
+                      width: isSelected ? 1.5 : 1,
                     ),
-                  ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      WorkoutMoodIcon(
+                        mood: mood,
+                        size: 24,
+                        color: isSelected
+                            ? meta.color
+                            : meta.color.withValues(alpha: 0.72),
+                      ),
+                      const SizedBox(height: 5),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          meta.label,
+                          maxLines: 1,
+                          softWrap: false,
+                          style: context.textTheme.labelSmall?.copyWith(
+                            fontSize: 10,
+                            fontWeight:
+                                isSelected ? FontWeight.w700 : FontWeight.w500,
+                            color: isSelected
+                                ? meta.color
+                                : colors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -271,22 +283,26 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
+                  SizedBox(
+                    width: double.infinity,
+                    child: Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: [
+                        Text(
                           'AVALIAÇÃO AUTOMÁTICA',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppTypography.eyebrow(context),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      LiftrBadge(
-                        label: perf.scoreLabel,
-                        tone: scoreTone,
-                      ),
-                    ],
+                        LiftrBadge(
+                          label: perf.scoreLabel,
+                          tone: scoreTone,
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
