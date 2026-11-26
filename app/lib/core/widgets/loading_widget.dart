@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:shimmer/shimmer.dart';
 
 class LoadingWidget extends StatelessWidget {
@@ -38,7 +39,7 @@ class LiftrShimmerBox extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: colors.surface,
+        color: colors.surfaceSubtle,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: colors.borderSubtle),
       ),
@@ -49,7 +50,7 @@ class LiftrShimmerBox extends StatelessWidget {
     }
 
     return Shimmer.fromColors(
-      baseColor: colors.surface,
+      baseColor: colors.surfaceSubtle,
       highlightColor: colors.surfaceElevated,
       child: box,
     );
@@ -69,9 +70,15 @@ class LiftrScreenSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final radius = context.appRadius;
+    final spacing = context.appSpacing;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 32),
+      padding: EdgeInsets.fromLTRB(
+        spacing.space16,
+        spacing.space12,
+        spacing.space16,
+        spacing.space32,
+      ),
       physics: const NeverScrollableScrollPhysics(),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -79,14 +86,14 @@ class LiftrScreenSkeleton extends StatelessWidget {
         children: [
           if (showHero) ...[
             LiftrShimmerBox(height: 200, borderRadius: radius.large),
-            const SizedBox(height: 22),
+            AppSpacing.verticalGap24,
             LiftrShimmerBox(width: 140, height: 18, borderRadius: radius.xs),
-            const SizedBox(height: 12),
+            AppSpacing.verticalGap12,
           ],
           ...List.generate(
             itemCount,
             (index) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: EdgeInsets.only(bottom: spacing.space12),
               child: LiftrShimmerBox(height: 80, borderRadius: radius.medium),
             ),
           ),

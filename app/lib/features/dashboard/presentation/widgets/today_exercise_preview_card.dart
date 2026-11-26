@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
@@ -26,6 +27,7 @@ class TodayExercisePreviewCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.appColors;
     final radius = context.appRadius;
+    final spacing = context.appSpacing;
     final fitnessColors = context.fitnessColors;
 
     final workingSets = workoutExercise.setTemplates
@@ -96,14 +98,19 @@ class TodayExercisePreviewCard extends ConsumerWidget {
     final content = ConstrainedBox(
       constraints: BoxConstraints(minHeight: embedded ? 80 : 88),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+        padding: EdgeInsets.fromLTRB(
+          spacing.space16,
+          spacing.space12,
+          spacing.space16,
+          spacing.space12,
+        ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
               width: 26,
               child: Padding(
-                padding: const EdgeInsets.only(top: 2),
+                padding: EdgeInsets.only(top: spacing.space2),
                 child: Text(
                   indexLabel,
                   style: context.textTheme.labelSmall?.copyWith(
@@ -114,7 +121,7 @@ class TodayExercisePreviewCard extends ConsumerWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            AppSpacing.horizontalGap8,
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,7 +142,7 @@ class TodayExercisePreviewCard extends ConsumerWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      AppSpacing.horizontalGap8,
                       Flexible(
                         flex: 2,
                         child: Text(
@@ -152,14 +159,14 @@ class TodayExercisePreviewCard extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 11),
+                  AppSpacing.verticalGap12,
                   LiftrProgressBar(
                     progress: progressValue,
                     height: 5,
                     color: isIncrease ? fitnessColors.progressUp : colors.primary,
                     trackColor: colors.surfaceElevated,
                   ),
-                  const SizedBox(height: 7),
+                  AppSpacing.verticalGap8,
                   Text(
                     noteText,
                     maxLines: 1,
@@ -187,7 +194,7 @@ class TodayExercisePreviewCard extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: colors.surfacePreview,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(radius.large),
         border: Border.all(color: colors.border),
       ),

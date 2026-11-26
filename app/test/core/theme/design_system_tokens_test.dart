@@ -48,14 +48,24 @@ void main() {
       expect(_contrastRatio(dark.textPrimary, dark.background), greaterThanOrEqualTo(7.0));
       expect(_contrastRatio(dark.textPrimary, dark.surface), greaterThanOrEqualTo(7.0));
       expect(_contrastRatio(dark.textSecondary, dark.surface), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(dark.textSecondary, dark.surfaceElevated), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(dark.textSecondary, dark.surfaceVariant), greaterThanOrEqualTo(4.5));
       expect(_contrastRatio(dark.textTertiary, dark.surface), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(dark.textTertiary, dark.surfaceElevated), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(dark.textTertiary, dark.surfaceVariant), greaterThanOrEqualTo(4.5));
       expect(_contrastRatio(dark.onPrimary, dark.primary), greaterThanOrEqualTo(7.0));
       expect(_contrastRatio(dark.primaryLight, dark.primaryMuted), greaterThanOrEqualTo(7.0));
       expect(_contrastRatio(dark.warning, dark.surface), greaterThanOrEqualTo(4.5));
       expect(_contrastRatio(dark.danger, dark.surface), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(dark.danger, dark.surfaceElevated), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(dark.onPrimary, dark.danger), greaterThanOrEqualTo(4.5));
       expect(_contrastRatio(dark.info, dark.surface), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(dark.borderInteractive, dark.surface), greaterThanOrEqualTo(3.0));
+      expect(_contrastRatio(dark.borderInteractive, dark.surfaceElevated), greaterThanOrEqualTo(3.0));
       expect(_contrastRatio(fitness.dropSetTag, dark.surface), greaterThanOrEqualTo(4.5));
       expect(_contrastRatio(fitness.progressUp, dark.surface), greaterThanOrEqualTo(4.5));
+      expect(dark.primaryVariant, dark.primaryPressed);
+      expect(dark.success, dark.primary);
     });
 
     test('Light palette satisfies WCAG 2.1 AA/AAA with Deep Botanical primary', () {
@@ -66,17 +76,31 @@ void main() {
       expect(light.primary, const Color(0xFF315B43));
       expect(light.onPrimary, const Color(0xFFF2F2F0));
       expect(theme.textTheme.bodyLarge?.fontFamily, 'Geist');
+      expect(light.surfaceSubtle, isNot(light.surface));
+      expect(light.surface, isNot(light.surfaceElevated));
 
       expect(_contrastRatio(light.textPrimary, light.background), greaterThanOrEqualTo(7.0));
       expect(_contrastRatio(light.textSecondary, light.background), greaterThanOrEqualTo(7.0));
+      expect(_contrastRatio(light.textSecondary, light.surfaceElevated), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(light.textSecondary, light.surfaceVariant), greaterThanOrEqualTo(4.5));
       expect(_contrastRatio(light.textTertiary, light.surface), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(light.textTertiary, light.surfaceElevated), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(light.textTertiary, light.surfaceVariant), greaterThanOrEqualTo(4.5));
       expect(_contrastRatio(light.primary, light.background), greaterThanOrEqualTo(7.0));
       expect(_contrastRatio(light.onPrimary, light.primary), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(light.warning, light.background), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(light.warning, light.surfaceSubtle), greaterThanOrEqualTo(4.5));
       expect(_contrastRatio(light.warning, light.surface), greaterThanOrEqualTo(4.5));
       expect(_contrastRatio(light.danger, light.surface), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(light.danger, light.surfaceElevated), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(light.onPrimary, light.danger), greaterThanOrEqualTo(4.5));
       expect(_contrastRatio(light.info, light.surface), greaterThanOrEqualTo(4.5));
+      expect(_contrastRatio(light.borderInteractive, light.surface), greaterThanOrEqualTo(3.0));
+      expect(_contrastRatio(light.borderInteractive, light.surfaceElevated), greaterThanOrEqualTo(3.0));
       expect(_contrastRatio(fitness.dropSetTag, light.surface), greaterThanOrEqualTo(4.5));
       expect(_contrastRatio(fitness.progressUp, light.surface), greaterThanOrEqualTo(4.5));
+      expect(light.primaryVariant, light.primaryPressed);
+      expect(light.success, light.primary);
     });
 
     test('AppRadius and AppMotion expose restrained geometry and motion budgets', () {

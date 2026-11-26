@@ -172,7 +172,9 @@ class _AppButtonState extends State<AppButton> {
               foregroundColor: colors.textPrimary,
               disabledForegroundColor: colors.textDisabled,
               side: BorderSide(
-                color: isDisabled ? colors.borderSubtle : colors.border,
+                color: isDisabled
+                    ? colors.borderSubtle
+                    : colors.borderInteractive,
               ),
               backgroundColor: colors.surface,
               shape: RoundedRectangleBorder(

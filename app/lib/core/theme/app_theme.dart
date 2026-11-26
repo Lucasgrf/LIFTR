@@ -116,11 +116,11 @@ class AppTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: borderRadius,
-          borderSide: BorderSide(color: colors.border),
+          borderSide: BorderSide(color: colors.borderInteractive),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: borderRadius,
-          borderSide: BorderSide(color: colors.border),
+          borderSide: BorderSide(color: colors.borderInteractive),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: borderRadius,
@@ -133,6 +133,17 @@ class AppTheme {
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: borderRadius,
           borderSide: BorderSide(color: colors.danger, width: 1.5),
+        ),
+      ),
+      checkboxTheme: CheckboxThemeData(
+        side: BorderSide(color: colors.borderInteractive, width: 1.5),
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return colors.primary;
+          return Colors.transparent;
+        }),
+        checkColor: WidgetStatePropertyAll(colors.onPrimary),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radius.xs),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -159,7 +170,7 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           minimumSize: const Size(48, 48),
           foregroundColor: colors.textPrimary,
-          side: BorderSide(color: colors.border),
+          side: BorderSide(color: colors.borderInteractive),
           shape: RoundedRectangleBorder(borderRadius: borderRadius),
           textStyle: textTheme.labelLarge,
         ),

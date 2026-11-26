@@ -12,11 +12,7 @@ class FitnessColors extends ThemeExtension<FitnessColors> {
     required this.muscleShoulders,
     required this.muscleArms,
     required this.muscleCore,
-    this.progressSteady = const Color(0xFF8E8E98),
-    this.progressStalled = const Color(0xFFD4A154),
-    this.warmupTag = const Color(0xFF6E9EC7),
-    this.dropSetTag = const Color(0xFFC98A5B),
-    this.timerActive = const Color(0xFF72A987),
+    this.progressSteady = const Color(0xFF9898A3),
     this.onSuccess = const Color(0xFF0D0D0F),
   });
 
@@ -25,10 +21,6 @@ class FitnessColors extends ThemeExtension<FitnessColors> {
   final Color progressMaintain;
   final Color progressNeutral;
   final Color progressSteady;
-  final Color progressStalled;
-  final Color warmupTag;
-  final Color dropSetTag;
-  final Color timerActive;
   final Color onSuccess;
 
   final Color muscleChest;
@@ -38,6 +30,18 @@ class FitnessColors extends ThemeExtension<FitnessColors> {
   final Color muscleArms;
   final Color muscleCore;
 
+  /// Alias pointing to [progressMaintain].
+  Color get progressStalled => progressMaintain;
+
+  /// Alias pointing to [progressNeutral].
+  Color get warmupTag => progressNeutral;
+
+  /// Alias pointing to [progressDown].
+  Color get dropSetTag => progressDown;
+
+  /// Alias pointing to [progressUp].
+  Color get timerActive => progressUp;
+
   @override
   FitnessColors copyWith({
     Color? progressUp,
@@ -45,10 +49,6 @@ class FitnessColors extends ThemeExtension<FitnessColors> {
     Color? progressMaintain,
     Color? progressNeutral,
     Color? progressSteady,
-    Color? progressStalled,
-    Color? warmupTag,
-    Color? dropSetTag,
-    Color? timerActive,
     Color? onSuccess,
     Color? muscleChest,
     Color? muscleBack,
@@ -63,10 +63,6 @@ class FitnessColors extends ThemeExtension<FitnessColors> {
       progressMaintain: progressMaintain ?? this.progressMaintain,
       progressNeutral: progressNeutral ?? this.progressNeutral,
       progressSteady: progressSteady ?? this.progressSteady,
-      progressStalled: progressStalled ?? this.progressStalled,
-      warmupTag: warmupTag ?? this.warmupTag,
-      dropSetTag: dropSetTag ?? this.dropSetTag,
-      timerActive: timerActive ?? this.timerActive,
       onSuccess: onSuccess ?? this.onSuccess,
       muscleChest: muscleChest ?? this.muscleChest,
       muscleBack: muscleBack ?? this.muscleBack,
@@ -92,12 +88,6 @@ class FitnessColors extends ThemeExtension<FitnessColors> {
           progressNeutral,
       progressSteady:
           Color.lerp(progressSteady, other.progressSteady, t) ?? progressSteady,
-      progressStalled:
-          Color.lerp(progressStalled, other.progressStalled, t) ??
-          progressStalled,
-      warmupTag: Color.lerp(warmupTag, other.warmupTag, t) ?? warmupTag,
-      dropSetTag: Color.lerp(dropSetTag, other.dropSetTag, t) ?? dropSetTag,
-      timerActive: Color.lerp(timerActive, other.timerActive, t) ?? timerActive,
       onSuccess: Color.lerp(onSuccess, other.onSuccess, t) ?? onSuccess,
       muscleChest: Color.lerp(muscleChest, other.muscleChest, t) ?? muscleChest,
       muscleBack: Color.lerp(muscleBack, other.muscleBack, t) ?? muscleBack,
@@ -115,14 +105,10 @@ class FitnessColors extends ThemeExtension<FitnessColors> {
     progressDown: Color(0xFFC98A5B),
     progressMaintain: Color(0xFFD4A154),
     progressNeutral: Color(0xFF6E9EC7),
-    progressSteady: Color(0xFF8E8E98),
-    progressStalled: Color(0xFFD4A154),
-    warmupTag: Color(0xFF6E9EC7),
-    dropSetTag: Color(0xFFC98A5B),
-    timerActive: Color(0xFF72A987),
+    progressSteady: Color(0xFF9898A3),
     onSuccess: Color(0xFF0D0D0F),
     muscleChest: Color(0xFF72A987),
-    muscleBack: Color(0xFF8E8E98),
+    muscleBack: Color(0xFF9898A3),
     muscleLegs: Color(0xFF7C9286),
     muscleShoulders: Color(0xFF9A9AA6),
     muscleArms: Color(0xFF6E8C7D),
@@ -132,18 +118,14 @@ class FitnessColors extends ThemeExtension<FitnessColors> {
   static const light = FitnessColors(
     progressUp: Color(0xFF315B43),
     progressDown: Color(0xFF9A5528),
-    progressMaintain: Color(0xFF9A6700),
+    progressMaintain: Color(0xFF805500),
     progressNeutral: Color(0xFF2B5E8A),
     progressSteady: Color(0xFF52525B),
-    progressStalled: Color(0xFF9A6700),
-    warmupTag: Color(0xFF2B5E8A),
-    dropSetTag: Color(0xFF9A5528),
-    timerActive: Color(0xFF315B43),
     onSuccess: Color(0xFFF2F2F0),
     muscleChest: Color(0xFF315B43),
     muscleBack: Color(0xFF52525B),
     muscleLegs: Color(0xFF476354),
-    muscleShoulders: Color(0xFF64646E),
+    muscleShoulders: Color(0xFF5E5E68),
     muscleArms: Color(0xFF3F5E4D),
     muscleCore: Color(0xFF525C68),
   );

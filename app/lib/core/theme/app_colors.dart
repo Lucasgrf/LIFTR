@@ -7,7 +7,6 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.surfaceVariant,
     required this.surfaceElevated,
     required this.primary,
-    required this.primaryVariant,
     required this.textPrimary,
     required this.textSecondary,
     required this.textTertiary,
@@ -15,15 +14,14 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.border,
     required this.divider,
     this.surfaceSubtle = const Color(0xFF141418),
-    this.surfacePreview = const Color(0xFF17171C),
     this.primaryPressed = const Color(0xFF5E9473),
     this.primaryLight = const Color(0xFF93C4A5),
     this.primaryMuted = const Color(0xFF1B2921),
     this.borderSubtle = const Color(0xFF1E1E24),
+    this.borderInteractive = const Color(0xFF6E6E7B),
     this.borderFocus = const Color(0xFF72A987),
-    this.danger = const Color(0xFFD96B6B),
+    this.danger = const Color(0xFFE07575),
     this.warning = const Color(0xFFD4A154),
-    this.success = const Color(0xFF72A987),
     this.info = const Color(0xFF6E9EC7),
     this.onPrimary = const Color(0xFF0D0D0F),
   });
@@ -33,9 +31,7 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color surfaceVariant;
   final Color surfaceElevated;
   final Color surfaceSubtle;
-  final Color surfacePreview;
   final Color primary;
-  final Color primaryVariant;
   final Color primaryPressed;
   final Color primaryLight;
   final Color primaryMuted;
@@ -46,12 +42,18 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color textDisabled;
   final Color border;
   final Color borderSubtle;
+  final Color borderInteractive;
   final Color borderFocus;
   final Color divider;
   final Color danger;
   final Color warning;
-  final Color success;
   final Color info;
+
+  /// Alias pointing to [primaryPressed].
+  Color get primaryVariant => primaryPressed;
+
+  /// Alias pointing to [primary].
+  Color get success => primary;
 
   @override
   AppColors copyWith({
@@ -60,9 +62,7 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? surfaceVariant,
     Color? surfaceElevated,
     Color? surfaceSubtle,
-    Color? surfacePreview,
     Color? primary,
-    Color? primaryVariant,
     Color? primaryPressed,
     Color? primaryLight,
     Color? primaryMuted,
@@ -73,11 +73,11 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? textDisabled,
     Color? border,
     Color? borderSubtle,
+    Color? borderInteractive,
     Color? borderFocus,
     Color? divider,
     Color? danger,
     Color? warning,
-    Color? success,
     Color? info,
   }) {
     return AppColors(
@@ -86,9 +86,7 @@ class AppColors extends ThemeExtension<AppColors> {
       surfaceVariant: surfaceVariant ?? this.surfaceVariant,
       surfaceElevated: surfaceElevated ?? this.surfaceElevated,
       surfaceSubtle: surfaceSubtle ?? this.surfaceSubtle,
-      surfacePreview: surfacePreview ?? this.surfacePreview,
       primary: primary ?? this.primary,
-      primaryVariant: primaryVariant ?? this.primaryVariant,
       primaryPressed: primaryPressed ?? this.primaryPressed,
       primaryLight: primaryLight ?? this.primaryLight,
       primaryMuted: primaryMuted ?? this.primaryMuted,
@@ -99,11 +97,11 @@ class AppColors extends ThemeExtension<AppColors> {
       textDisabled: textDisabled ?? this.textDisabled,
       border: border ?? this.border,
       borderSubtle: borderSubtle ?? this.borderSubtle,
+      borderInteractive: borderInteractive ?? this.borderInteractive,
       borderFocus: borderFocus ?? this.borderFocus,
       divider: divider ?? this.divider,
       danger: danger ?? this.danger,
       warning: warning ?? this.warning,
-      success: success ?? this.success,
       info: info ?? this.info,
     );
   }
@@ -121,11 +119,7 @@ class AppColors extends ThemeExtension<AppColors> {
           surfaceElevated,
       surfaceSubtle:
           Color.lerp(surfaceSubtle, other.surfaceSubtle, t) ?? surfaceSubtle,
-      surfacePreview:
-          Color.lerp(surfacePreview, other.surfacePreview, t) ?? surfacePreview,
       primary: Color.lerp(primary, other.primary, t) ?? primary,
-      primaryVariant:
-          Color.lerp(primaryVariant, other.primaryVariant, t) ?? primaryVariant,
       primaryPressed:
           Color.lerp(primaryPressed, other.primaryPressed, t) ?? primaryPressed,
       primaryLight:
@@ -143,11 +137,13 @@ class AppColors extends ThemeExtension<AppColors> {
       border: Color.lerp(border, other.border, t) ?? border,
       borderSubtle:
           Color.lerp(borderSubtle, other.borderSubtle, t) ?? borderSubtle,
+      borderInteractive:
+          Color.lerp(borderInteractive, other.borderInteractive, t) ??
+          borderInteractive,
       borderFocus: Color.lerp(borderFocus, other.borderFocus, t) ?? borderFocus,
       divider: Color.lerp(divider, other.divider, t) ?? divider,
       danger: Color.lerp(danger, other.danger, t) ?? danger,
       warning: Color.lerp(warning, other.warning, t) ?? warning,
-      success: Color.lerp(success, other.success, t) ?? success,
       info: Color.lerp(info, other.info, t) ?? info,
     );
   }
@@ -155,54 +151,50 @@ class AppColors extends ThemeExtension<AppColors> {
   static const dark = AppColors(
     background: Color(0xFF0D0D0F),
     surfaceSubtle: Color(0xFF141418),
-    surfacePreview: Color(0xFF17171C),
     surface: Color(0xFF1A1A1F),
     surfaceElevated: Color(0xFF222228),
     surfaceVariant: Color(0xFF2A2A32),
     primary: Color(0xFF72A987),
-    primaryVariant: Color(0xFF5E9473),
     primaryPressed: Color(0xFF5E9473),
     primaryLight: Color(0xFF93C4A5),
     primaryMuted: Color(0xFF1B2921),
     onPrimary: Color(0xFF0D0D0F),
     textPrimary: Color(0xFFF2F2F0),
-    textSecondary: Color(0xFF8E8E98),
-    textTertiary: Color(0xFF858590),
-    textDisabled: Color(0xFF4E4E58),
+    textSecondary: Color(0xFF9898A3),
+    textTertiary: Color(0xFF93939E),
+    textDisabled: Color(0xFF585864),
     border: Color(0xFF26262E),
     borderSubtle: Color(0xFF1E1E24),
+    borderInteractive: Color(0xFF6E6E7B),
     borderFocus: Color(0xFF72A987),
     divider: Color(0xFF22222A),
-    danger: Color(0xFFD96B6B),
+    danger: Color(0xFFE07575),
     warning: Color(0xFFD4A154),
-    success: Color(0xFF72A987),
     info: Color(0xFF6E9EC7),
   );
 
   static const light = AppColors(
-    background: Color(0xFFF5F5F3),
-    surfaceSubtle: Color(0xFFECECE8),
-    surfacePreview: Color(0xFFFFFFFF),
-    surface: Color(0xFFFFFFFF),
+    background: Color(0xFFF4F4F0),
+    surfaceSubtle: Color(0xFFEAEAE4),
+    surface: Color(0xFFFAFAF8),
     surfaceElevated: Color(0xFFFFFFFF),
-    surfaceVariant: Color(0xFFE3E3DE),
+    surfaceVariant: Color(0xFFE3E3DC),
     primary: Color(0xFF315B43),
-    primaryVariant: Color(0xFF264835),
     primaryPressed: Color(0xFF264835),
     primaryLight: Color(0xFF315B43),
     primaryMuted: Color(0xFFE4EFE8),
     onPrimary: Color(0xFFF2F2F0),
     textPrimary: Color(0xFF0D0D0F),
     textSecondary: Color(0xFF52525B),
-    textTertiary: Color(0xFF64646E),
-    textDisabled: Color(0xFFA0A0AA),
-    border: Color(0xFFDFDFDA),
-    borderSubtle: Color(0xFFEAEAE5),
+    textTertiary: Color(0xFF5E5E68),
+    textDisabled: Color(0xFF90909A),
+    border: Color(0xFFDCDBD5),
+    borderSubtle: Color(0xFFE8E7E1),
+    borderInteractive: Color(0xFF76767F),
     borderFocus: Color(0xFF315B43),
-    divider: Color(0xFFE5E5E0),
+    divider: Color(0xFFE2E2DC),
     danger: Color(0xFFB93838),
-    warning: Color(0xFF9A6700),
-    success: Color(0xFF315B43),
+    warning: Color(0xFF805500),
     info: Color(0xFF2B5E8A),
   );
 }
