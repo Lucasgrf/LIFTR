@@ -506,9 +506,9 @@ class _HeroCardioCard extends StatelessWidget {
               fontFeatures: AppTypography.tabularFeatures,
             ),
           ),
-          const SizedBox(height: 18),
-          SizedBox(
-            height: 102,
+          AppSpacing.verticalGap16,
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 102),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: List.generate(7, (idx) {
@@ -530,12 +530,15 @@ class _HeroCardioCard extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Text(
-                          mins > 0 ? '${mins}m' : '',
-                          maxLines: 1,
-                          style: context.textTheme.labelSmall?.copyWith(
-                            color: colors.primaryLight,
-                            fontFeatures: AppTypography.tabularFeatures,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            mins > 0 ? '${mins}m' : '',
+                            maxLines: 1,
+                            style: context.textTheme.labelSmall?.copyWith(
+                              color: colors.primaryLight,
+                              fontFeatures: AppTypography.tabularFeatures,
+                            ),
                           ),
                         ),
                         SizedBox(height: context.appSpacing.space4),
@@ -550,13 +553,16 @@ class _HeroCardioCard extends StatelessWidget {
                           ),
                         ),
                         SizedBox(height: context.appSpacing.space8),
-                        Text(
-                          dayLabel,
-                          style: context.textTheme.labelSmall?.copyWith(
-                            color: mins > 0
-                                ? colors.textPrimary
-                                : colors.textTertiary,
-                            fontSize: 11,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            dayLabel,
+                            maxLines: 1,
+                            style: context.textTheme.labelSmall?.copyWith(
+                              color: mins > 0
+                                  ? colors.textPrimary
+                                  : colors.textTertiary,
+                            ),
                           ),
                         ),
                       ],

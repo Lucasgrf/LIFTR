@@ -27,8 +27,8 @@ class WorkoutCard extends StatelessWidget {
           children: [
             // Day of Week indicator box
             Container(
-              width: 50,
-              height: 50,
+              constraints: const BoxConstraints(minWidth: 52, minHeight: 52),
+              padding: EdgeInsets.all(context.appSpacing.space4),
               decoration: BoxDecoration(
                 color: context.appColors.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(context.appRadius.small),
@@ -45,7 +45,7 @@ class WorkoutCard extends StatelessWidget {
                     size: 20,
                     color: context.appColors.primary,
                   ),
-                  const SizedBox(height: 2),
+                  AppSpacing.verticalGap4,
                   Text(
                     workout.dayOfWeek != null ? _shortDay(workout.dayOfWeek!) : 'Livre',
                     style: context.textTheme.labelSmall?.copyWith(

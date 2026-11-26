@@ -129,7 +129,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           children: [
             // Sticky Top Header
             Container(
-              height: 64,
+              constraints: const BoxConstraints(minHeight: 64),
               padding: const EdgeInsets.symmetric(horizontal: 8),
               decoration: BoxDecoration(
                 color: colors.background,

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
 
 class MuscleFilterChips extends ConsumerWidget {
@@ -27,47 +28,61 @@ class MuscleFilterChips extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.appColors;
     final radius = context.appRadius;
+    final spacing = context.appSpacing;
     final selectedMuscle = ref.watch(exerciseSelectedMuscleFilterProvider);
 
-    return SizedBox(
-      height: 48,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: muscleOptions.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final option = muscleOptions[index];
-          final key = option['key'];
-          final label = option['label']!;
-          final isSelected = selectedMuscle == key;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: EdgeInsets.symmetric(horizontal: spacing.space16),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 48),
+        child: Row(
+          children: [
+            for (var index = 0; index < muscleOptions.length; index++) ...[
+              if (index > 0) AppSpacing.horizontalGap8,
+              Builder(
+                builder: (context) {
+                  final option = muscleOptions[index];
+                  final key = option['key'];
+                  final label = option['label']!;
+                  final isSelected = selectedMuscle == key;
 
-          return FilterChip(
-            selected: isSelected,
-            showCheckmark: false,
-            materialTapTargetSize: MaterialTapTargetSize.padded,
-            label: Text(label),
-            labelStyle: context.textTheme.labelMedium?.copyWith(
-              color: isSelected ? colors.onPrimary : colors.textSecondary,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            ),
-            backgroundColor: colors.surfaceElevated,
-            selectedColor: colors.primary,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(radius.small),
-              side: BorderSide(
-                color: isSelected ? colors.primary : colors.border,
-                width: 1,
+                  return FilterChip(
+                    selected: isSelected,
+                    showCheckmark: false,
+                    materialTapTargetSize: MaterialTapTargetSize.padded,
+                    label: Text(label),
+                    labelStyle: context.textTheme.labelMedium?.copyWith(
+                      color:
+                          isSelected ? colors.onPrimary : colors.textSecondary,
+                      fontWeight:
+                          isSelected ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                    backgroundColor: colors.surfaceElevated,
+                    selectedColor: colors.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(radius.small),
+                      side: BorderSide(
+                        color: isSelected ? colors.primary : colors.border,
+                        width: 1,
+                      ),
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: spacing.space8,
+                      vertical: spacing.space4,
+                    ),
+                    onSelected: (_) {
+                      HapticFeedback.selectionClick();
+                      ref
+                          .read(exerciseSelectedMuscleFilterProvider.notifier)
+                          .state = isSelected ? null : key;
+                    },
+                  );
+                },
               ),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-            onSelected: (_) {
-              HapticFeedback.selectionClick();
-              ref.read(exerciseSelectedMuscleFilterProvider.notifier).state =
-                  isSelected ? null : key;
-            },
-          );
-        },
+            ],
+          ],
+        ),
       ),
     );
   }

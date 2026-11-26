@@ -124,8 +124,8 @@ class _AppShellState extends ConsumerState<AppShell> {
           ),
           child: SafeArea(
             top: false,
-            child: SizedBox(
-              height: 64,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 64),
               child: Row(
                 children: List.generate(_destinations.length, (index) {
                   final item = _destinations[index];
@@ -141,6 +141,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                       child: InkWell(
                         onTap: () => _goBranch(index),
                         child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             AnimatedContainer(
