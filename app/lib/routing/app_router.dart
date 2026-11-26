@@ -64,14 +64,14 @@ final activeUserIdProvider = StateProvider<String?>((ref) {
         appErrorLogger(
           error,
           stackTrace: stackTrace,
-          context: 'AuthStateChange.recoveryLink',
+          context: 'AuthStateChange.authLink',
         );
         ref.read(passwordRecoveryPendingProvider.notifier).state = false;
         ref.read(passwordRecoveryErrorProvider.notifier).state =
             userFacingMessage(
           error,
           stackTrace: stackTrace,
-          context: 'AuthStateChange.recoveryLink',
+          context: 'AuthStateChange.authLink',
           logError: false,
         );
       },

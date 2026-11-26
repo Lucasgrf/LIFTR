@@ -1130,6 +1130,156 @@ void main() {
     });
 
     testWidgets(
+        'RegisterScreen forwards liftr://auth-callback as emailRedirectTo and shows pending confirmation card when email confirmation is required',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(375, 812));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      String? capturedRedirect;
+      final router = GoRouter(
+        initialLocation: '/register',
+        routes: [
+          GoRoute(
+            path: '/register',
+            builder: (_, _) => const RegisterScreen(),
+          ),
+          GoRoute(
+            path: '/login',
+            builder: (_, _) => const Scaffold(body: Text('LoginDestination')),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            signUpActionProvider.overrideWithValue(({
+              required name,
+              required email,
+              required password,
+              required emailRedirectTo,
+            }) async {
+              capturedRedirect = emailRedirectTo;
+              return (
+                userId: 'user-pending-1',
+                hasSession: false,
+                requiresEmailConfirmation: true,
+              );
+            }),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.dark(),
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AppInput).at(0),
+          matching: find.byType(EditableText),
+        ),
+        'Lucas',
+      );
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AppInput).at(1),
+          matching: find.byType(EditableText),
+        ),
+        'novo@liftr.app',
+      );
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AppInput).at(2),
+          matching: find.byType(EditableText),
+        ),
+        'senha123',
+      );
+
+      await tester.tap(find.text('Criar conta'));
+      await tester.pumpAndSettle();
+
+      expect(capturedRedirect, 'liftr://auth-callback');
+      expect(find.text('Confirme seu e-mail'), findsOneWidget);
+      expect(find.textContaining('novo@liftr.app'), findsOneWidget);
+
+      await tester.tap(find.text('Ir para o login'));
+      await tester.pumpAndSettle();
+      expect(find.text('LoginDestination'), findsOneWidget);
+    });
+
+    testWidgets(
+        'LoginScreen supports resending email confirmation from expired auth-link banner with neutral feedback and in-flight guard',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final completer = Completer<void>();
+      final resentEmails = <String>[];
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            passwordRecoveryErrorProvider.overrideWith(
+              (_) =>
+                  'Este link expirou ou já foi utilizado. Solicite um novo link de confirmação ou redefinição para continuar.',
+            ),
+            confirmationResenderProvider.overrideWithValue((email) {
+              resentEmails.add(email);
+              return completer.future;
+            }),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.dark(),
+            home: const LoginScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Reenviar confirmação'), findsOneWidget);
+
+      await tester.tap(find.text('Reenviar confirmação'));
+      await tester.pumpAndSettle();
+      expect(find.text('Reenviar confirmação'), findsOneWidget);
+
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(EditableText),
+        ),
+        'pendente@liftr.app',
+      );
+      await tester.tap(find.text('Enviar link'));
+      await tester.pump();
+
+      expect(find.text('Enviando...'), findsOneWidget);
+      final sendingButton = tester.widget<TextButton>(
+        find.ancestor(
+          of: find.text('Enviando...'),
+          matching: find.byType(TextButton),
+        ),
+      );
+      expect(sendingButton.onPressed, isNull);
+
+      completer.complete();
+      await tester.pumpAndSettle();
+
+      expect(resentEmails, ['pendente@liftr.app']);
+      expect(
+        find.text(
+          'Se houver um cadastro pendente para esse e-mail, enviaremos um novo link de confirmação.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
         'OnboardingScreen shows inline Step 0 validation, handles PopScope step back, and guards double submit',
         (tester) async {
       await tester.binding.setSurfaceSize(const Size(375, 812));

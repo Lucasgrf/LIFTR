@@ -23,6 +23,7 @@ import 'package:personal_fitness_os/routing/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 typedef PasswordResetSender = Future<void> Function(String email);
+typedef ConfirmationResender = Future<void> Function(String email);
 
 final passwordResetSenderProvider = Provider<PasswordResetSender>((ref) {
   return (email) async {
@@ -30,6 +31,17 @@ final passwordResetSenderProvider = Provider<PasswordResetSender>((ref) {
     await Supabase.instance.client.auth.resetPasswordForEmail(
       email,
       redirectTo: SupabaseConfig.passwordResetRedirectUrl,
+    );
+  };
+});
+
+final confirmationResenderProvider = Provider<ConfirmationResender>((ref) {
+  return (email) async {
+    if (!SupabaseConfig.isConfigured) return;
+    await Supabase.instance.client.auth.resend(
+      type: OtpType.signup,
+      email: email,
+      emailRedirectTo: SupabaseConfig.authCallbackRedirectUrl,
     );
   };
 });
@@ -61,9 +73,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _showForgotPasswordDialog() async {
     await showDialog<void>(
       context: context,
-      builder: (_) => _ForgotPasswordDialog(
+      builder: (_) => _EmailLinkDialog(
+        title: 'Redefinir senha',
+        prompt:
+            'Informe o e-mail da sua conta para receber o link de recuperação.',
+        sentMessage:
+            'Se houver uma conta com esse e-mail, enviaremos um link para redefinir sua senha.',
+        logContext: 'ForgotPasswordDialog._submit',
         initialEmail: _emailController.text.trim(),
-        sendReset: ref.read(passwordResetSenderProvider),
+        onSend: ref.read(passwordResetSenderProvider),
+      ),
+    );
+  }
+
+  Future<void> _showResendConfirmationDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => _EmailLinkDialog(
+        title: 'Reenviar confirmação',
+        prompt:
+            'Informe o e-mail cadastrado para receber um novo link de confirmação.',
+        sentMessage:
+            'Se houver um cadastro pendente para esse e-mail, enviaremos um novo link de confirmação.',
+        logContext: 'ResendConfirmationDialog._submit',
+        initialEmail: _emailController.text.trim(),
+        onSend: ref.read(confirmationResenderProvider),
       ),
     );
   }
@@ -147,29 +181,55 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                             ),
                             AppSpacing.verticalGap8,
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: TextButton(
-                                onPressed: () {
-                                  ref
-                                      .read(passwordRecoveryErrorProvider
-                                          .notifier)
-                                      .state = null;
-                                  _showForgotPasswordDialog();
-                                },
-                                style: TextButton.styleFrom(
-                                  minimumSize: const Size(48, 48),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              children: [
+                                TextButton(
+                                  onPressed: () {
+                                    ref
+                                        .read(passwordRecoveryErrorProvider
+                                            .notifier)
+                                        .state = null;
+                                    _showForgotPasswordDialog();
+                                  },
+                                  style: TextButton.styleFrom(
+                                    minimumSize: const Size(48, 48),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Solicitar novo link',
+                                    style:
+                                        context.textTheme.labelLarge?.copyWith(
+                                      color: colors.primaryLight,
+                                    ),
                                   ),
                                 ),
-                                child: Text(
-                                  'Solicitar novo link',
-                                  style: context.textTheme.labelLarge?.copyWith(
-                                    color: colors.primaryLight,
+                                TextButton(
+                                  onPressed: () {
+                                    ref
+                                        .read(passwordRecoveryErrorProvider
+                                            .notifier)
+                                        .state = null;
+                                    _showResendConfirmationDialog();
+                                  },
+                                  style: TextButton.styleFrom(
+                                    minimumSize: const Size(48, 48),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Reenviar confirmação',
+                                    style:
+                                        context.textTheme.labelLarge?.copyWith(
+                                      color: colors.primaryLight,
+                                    ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
                           ],
                         ),
@@ -311,20 +371,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 }
 
-class _ForgotPasswordDialog extends StatefulWidget {
-  const _ForgotPasswordDialog({
+class _EmailLinkDialog extends StatefulWidget {
+  const _EmailLinkDialog({
+    required this.title,
+    required this.prompt,
+    required this.sentMessage,
+    required this.logContext,
     required this.initialEmail,
-    required this.sendReset,
+    required this.onSend,
   });
 
+  final String title;
+  final String prompt;
+  final String sentMessage;
+  final String logContext;
   final String initialEmail;
-  final PasswordResetSender sendReset;
+  final Future<void> Function(String email) onSend;
 
   @override
-  State<_ForgotPasswordDialog> createState() => _ForgotPasswordDialogState();
+  State<_EmailLinkDialog> createState() => _EmailLinkDialogState();
 }
 
-class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
+class _EmailLinkDialogState extends State<_EmailLinkDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _emailController =
       TextEditingController(text: widget.initialEmail);
@@ -360,7 +428,7 @@ class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
       _errorMessage = null;
     });
     try {
-      await widget.sendReset(_emailController.text.trim());
+      await widget.onSend(_emailController.text.trim());
       if (!mounted) return;
       setState(() {
         _isSubmitting = false;
@@ -370,7 +438,7 @@ class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
       appErrorLogger(
         e,
         stackTrace: st,
-        context: 'ForgotPasswordDialog._submit',
+        context: widget.logContext,
       );
       if (!mounted) return;
       if (_isTransientDeliveryError(e)) {
@@ -379,7 +447,7 @@ class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
           _errorMessage = userFacingMessage(
             e,
             stackTrace: st,
-            context: 'ForgotPasswordDialog._submit',
+            context: widget.logContext,
             logError: false,
           );
         });
@@ -396,10 +464,10 @@ class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     return AlertDialog(
-      title: const Text('Redefinir senha'),
+      title: Text(widget.title),
       content: _sent
           ? Text(
-              'Se houver uma conta com esse e-mail, enviaremos um link para redefinir sua senha.',
+              widget.sentMessage,
               style: context.textTheme.bodyMedium?.copyWith(
                 color: colors.textSecondary,
               ),
@@ -411,7 +479,7 @@ class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Informe o e-mail da sua conta para receber o link de recuperação.',
+                    widget.prompt,
                     style: context.textTheme.bodySmall?.copyWith(
                       color: colors.textSecondary,
                     ),

@@ -65,7 +65,8 @@ bool isExpiredOrUsedAuthLinkError(Object error) {
       msg.contains('token_expired') ||
       msg.contains('flow_state_expired') ||
       msg.contains('flow_state_not_found') ||
-      msg.contains('code verifier');
+      msg.contains('code verifier') ||
+      (msg.contains('access_denied') && msg.contains('expired'));
 }
 
 /// Translates technical exceptions and [Failure] objects into clear,
@@ -88,6 +89,15 @@ String userFacingMessage(
     return 'Não foi possível ler ou salvar os dados locais neste aparelho. Tente novamente.';
   }
   if (isExpiredOrUsedAuthLinkError(error)) {
+    final ctxLower = (context ?? '').toLowerCase();
+    if (ctxLower.contains('signup') ||
+        ctxLower.contains('register') ||
+        ctxLower.contains('confirm')) {
+      return 'Este link de confirmação expirou ou já foi utilizado. Reenvie o e-mail de confirmação para continuar.';
+    }
+    if (ctxLower.contains('authlink') || ctxLower.contains('authcallback')) {
+      return 'Este link expirou ou já foi utilizado. Solicite um novo link de confirmação ou redefinição para continuar.';
+    }
     return 'Este link de redefinição expirou ou já foi utilizado. Solicite um novo link para continuar.';
   }
   if (error is ValidationFailure && error.message.trim().isNotEmpty) {

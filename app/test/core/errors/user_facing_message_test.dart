@@ -114,6 +114,14 @@ void main() {
         userFacingMessage(expired),
         'Este link de redefinição expirou ou já foi utilizado. Solicite um novo link para continuar.',
       );
+      expect(
+        userFacingMessage(expired, context: 'RegisterScreen.confirmLink'),
+        'Este link de confirmação expirou ou já foi utilizado. Reenvie o e-mail de confirmação para continuar.',
+      );
+      expect(
+        userFacingMessage(expired, context: 'AuthStateChange.authLink'),
+        'Este link expirou ou já foi utilizado. Solicite um novo link de confirmação ou redefinição para continuar.',
+      );
     });
   });
 }
