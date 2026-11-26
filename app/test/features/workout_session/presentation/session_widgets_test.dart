@@ -102,6 +102,79 @@ void main() {
       expect(find.text('CHEST'), findsOneWidget);
       expect(find.text('1/3 séries'), findsOneWidget);
     });
+
+    testWidgets(
+        'exposes full Semantics labels on abbreviated BL. and SÉR. column headers',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(600, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final handle = tester.ensureSemantics();
+      try {
+        await tester.pumpWidget(
+          createWidgetUnderTest(
+            SessionExerciseCard(
+              sessionExercise: tSessionExercise,
+              onLogSet: ({
+                required sessionExerciseId,
+                required setNumber,
+                required setType,
+                required weightKg,
+                required repsCompleted,
+                durationSeconds,
+                rirActual,
+                restSeconds = 180,
+                dropSets = const [],
+                existingSetId,
+              }) async {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('SÉR.'), findsOneWidget);
+        expect(find.bySemanticsLabel('Série'), findsOneWidget);
+
+        const tCardioSessionExercise = SessionExercise(
+          id: 'se-cardio',
+          sessionId: 's-1',
+          exerciseId: 'ex-cardio',
+          exercise: Exercise(
+            id: 'ex-cardio',
+            name: 'Esteira',
+            primaryMuscleGroup: 'cardio',
+            equipment: 'machine',
+          ),
+          targetSetsCount: 1,
+        );
+
+        await tester.pumpWidget(
+          createWidgetUnderTest(
+            SessionExerciseCard(
+              sessionExercise: tCardioSessionExercise,
+              onLogSet: ({
+                required sessionExerciseId,
+                required setNumber,
+                required setType,
+                required weightKg,
+                required repsCompleted,
+                durationSeconds,
+                rirActual,
+                restSeconds = 0,
+                dropSets = const [],
+                existingSetId,
+              }) async {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('BL.'), findsOneWidget);
+        expect(find.bySemanticsLabel('Bloco'), findsOneWidget);
+      } finally {
+        handle.dispose();
+      }
+    });
   });
 
   group('RestTimerWidget Widget Test', () {

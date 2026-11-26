@@ -171,6 +171,7 @@ void main() {
     required _RecordingSessionRepository sessionRepo,
     double width = 375,
     double textScale = 1.0,
+    EdgeInsets viewPadding = EdgeInsets.zero,
     Widget? home,
   }) {
     return ProviderScope(
@@ -190,6 +191,8 @@ void main() {
       child: MediaQuery(
         data: MediaQueryData(
           size: Size(width, 812),
+          padding: viewPadding,
+          viewPadding: viewPadding,
           textScaler: TextScaler.linear(textScale),
           disableAnimations: true,
         ),
@@ -415,5 +418,58 @@ void main() {
         await tester.pumpWidget(const SizedBox.shrink());
       });
     }
+
+    testWidgets(
+        'respects bottom viewPadding of 34dp via SafeArea on Finalizar treino bar',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(375, 812));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final repo = _RecordingSessionRepository();
+      final completedSession = WorkoutSession(
+        id: 'sess-done-safe',
+        userId: 'u-1',
+        workoutId: 'w-1',
+        workoutName: 'Treino A',
+        startedAt: startedAt,
+        exercises: const [
+          SessionExercise(
+            id: 'se-1',
+            sessionId: 'sess-done-safe',
+            exerciseId: 'ex-supino',
+            exercise: benchPress,
+            targetSetsCount: 1,
+            sets: [
+              LoggedSet(
+                id: 'ls-1',
+                sessionExerciseId: 'se-1',
+                setNumber: 1,
+                weightKg: 80,
+                repsCompleted: 10,
+              ),
+            ],
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        wrapScreen(
+          session: completedSession,
+          sessionRepo: repo,
+          width: 375,
+          viewPadding: const EdgeInsets.only(bottom: 34),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final ctaFinder = find.widgetWithText(AppButton, 'Finalizar treino');
+      expect(ctaFinder, findsOneWidget);
+      final ctaRect = tester.getRect(ctaFinder);
+      expect(ctaRect.bottom, lessThanOrEqualTo(812.0 - 34.0 - 12.0));
+      expect(tester.takeException(), isNull);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
   });
 }

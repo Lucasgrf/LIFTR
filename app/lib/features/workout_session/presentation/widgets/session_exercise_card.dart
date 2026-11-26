@@ -783,14 +783,18 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                         children: [
                           SizedBox(
                             width: 34,
-                            child: Text(
-                              'BL.',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                              style: context.textTheme.labelSmall?.copyWith(
-                                color: colors.textTertiary,
-                                fontWeight: FontWeight.w700,
+                            child: Semantics(
+                              label: 'Bloco',
+                              excludeSemantics: true,
+                              child: Text(
+                                'BL.',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: colors.textTertiary,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                           ),
@@ -827,14 +831,18 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                         children: [
                           SizedBox(
                             width: 48,
-                            child: Text(
-                              'SÉR.',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                              style: context.textTheme.labelSmall?.copyWith(
-                                color: colors.textTertiary,
-                                fontWeight: FontWeight.w700,
+                            child: Semantics(
+                              label: 'Série',
+                              excludeSemantics: true,
+                              child: Text(
+                                'SÉR.',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: colors.textTertiary,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                           ),

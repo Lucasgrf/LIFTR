@@ -90,6 +90,58 @@ void main() {
       });
     }
 
+    for (final width in [320.0, 375.0]) {
+      testWidgets(
+          'verifies >= 48dp touch targets and a11y guidelines on set type badge, Outro drop and Remover drop at ${width}dp',
+          (tester) async {
+        final handle = tester.ensureSemantics();
+        try {
+          await pumpRow(
+            tester,
+            width: width,
+            initialType: SetType.dropSet,
+            loggedSet: const LoggedSet(
+              id: 'ls-drop-targets',
+              sessionExerciseId: 'se-1',
+              setNumber: 1,
+              setType: SetType.dropSet,
+              weightKg: 80.0,
+              repsCompleted: 10,
+              dropSets: [
+                DropSetEntry(weightKg: 60.0, repsCompleted: 8),
+              ],
+            ),
+          );
+
+          final badgeFinder =
+              find.bySemanticsLabel('Série drop-set. Toque para alternar tipo');
+          final addAnotherDropFinder =
+              find.bySemanticsLabel('Adicionar outro drop');
+          final removeDropFinder = find.bySemanticsLabel('Remover drop 1');
+
+          expect(badgeFinder, findsOneWidget);
+          expect(addAnotherDropFinder, findsOneWidget);
+          expect(removeDropFinder, findsOneWidget);
+
+          for (final finder in [
+            badgeFinder,
+            addAnotherDropFinder,
+            removeDropFinder,
+          ]) {
+            final size = tester.getSize(finder);
+            expect(size.width, greaterThanOrEqualTo(48.0));
+            expect(size.height, greaterThanOrEqualTo(48.0));
+          }
+
+          await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+          expect(tester.takeException(), isNull);
+        } finally {
+          handle.dispose();
+        }
+      });
+    }
+
     testWidgets('maintains >= 8dp spacing between stepper controls', (tester) async {
       await pumpRow(tester, width: 320.0);
 

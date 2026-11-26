@@ -500,9 +500,10 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                 ),
                               ),
                             ),
-                            const SafeArea(
+                            SafeArea(
                               top: false,
-                              child: RestTimerWidget(stepSeconds: 15),
+                              bottom: restVisible,
+                              child: const RestTimerWidget(stepSeconds: 15),
                             ),
                           ],
                         )
@@ -649,9 +650,10 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const SafeArea(
+                                  SafeArea(
                                     top: false,
-                                    child: RestTimerWidget(stepSeconds: 15),
+                                    bottom: restVisible && !allCompleted,
+                                    child: const RestTimerWidget(stepSeconds: 15),
                                   ),
                                   if (allCompleted)
                                     Material(
