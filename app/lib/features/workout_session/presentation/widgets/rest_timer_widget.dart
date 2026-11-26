@@ -375,7 +375,7 @@ class _MinimizedFooterTimer extends StatelessWidget {
                 child: Row(
                   children: [
                     Icon(
-                      Icons.timer_outlined,
+                      Icons.timer_rounded,
                       size: 18,
                       color: statusColor,
                     ),

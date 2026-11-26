@@ -127,7 +127,7 @@ class SetTemplateRow extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  Icons.timer_outlined,
+                  Icons.timer_rounded,
                   size: 14,
                   color: context.appColors.textTertiary,
                 ),

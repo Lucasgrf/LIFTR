@@ -83,7 +83,7 @@ class HistoryWorkoutCard extends StatelessWidget {
             children: [
               _buildMetricChip(
                 context,
-                icon: Icons.timer_outlined,
+                icon: Icons.timer_rounded,
                 label: '$minutes min',
                 color: colors.textSecondary,
               ),

@@ -205,7 +205,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                               ),
                               const Spacer(),
                               if (workout.estimatedDurationMinutes != null) ...[
-                                Icon(Icons.timer_outlined,
+                                Icon(Icons.timer_rounded,
                                     size: 14, color: context.appColors.textTertiary),
                                 AppSpacing.horizontalGap4,
                                 Text(

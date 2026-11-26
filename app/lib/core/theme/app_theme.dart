@@ -65,31 +65,6 @@ class AppTheme {
         centerTitle: false,
         titleTextStyle: textTheme.titleLarge,
       ),
-      navigationBarTheme: NavigationBarThemeData(
-        height: 64,
-        backgroundColor: colors.surfaceSubtle,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        indicatorColor: colors.primaryMuted,
-        indicatorShape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(radius.small),
-        ),
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        iconTheme: WidgetStateProperty.resolveWith((states) {
-          final isSelected = states.contains(WidgetState.selected);
-          return IconThemeData(
-            size: 22,
-            color: isSelected ? colors.primaryLight : colors.textTertiary,
-          );
-        }),
-        labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          final isSelected = states.contains(WidgetState.selected);
-          return textTheme.labelSmall?.copyWith(
-            color: isSelected ? colors.primaryLight : colors.textTertiary,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-          );
-        }),
-      ),
       chipTheme: ChipThemeData(
         backgroundColor: colors.surfaceVariant,
         selectedColor: colors.primaryMuted,

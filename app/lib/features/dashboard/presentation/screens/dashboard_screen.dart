@@ -321,7 +321,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     border: Border.all(color: colors.border),
                                   ),
                                   child: Icon(
-                                    Icons.settings_outlined,
+                                    Icons.settings_rounded,
                                     color: colors.textSecondary,
                                     size: 22,
                                   ),

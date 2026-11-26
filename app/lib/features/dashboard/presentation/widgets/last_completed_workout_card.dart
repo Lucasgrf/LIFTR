@@ -141,7 +141,7 @@ class LastCompletedWorkoutCard extends StatelessWidget {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 _MetricPill(
-                  icon: Icons.timer_outlined,
+                  icon: Icons.timer_rounded,
                   label: '$minutes min',
                   color: colors.textSecondary,
                 ),
@@ -165,7 +165,7 @@ class LastCompletedWorkoutCard extends StatelessWidget {
                   ),
                 if (session.totalExercisesCount > 0)
                   _MetricPill(
-                    icon: Icons.layers_outlined,
+                    icon: Icons.layers_rounded,
                     label: '${session.totalExercisesCount} exerc.',
                     color: colors.textTertiary,
                   ),

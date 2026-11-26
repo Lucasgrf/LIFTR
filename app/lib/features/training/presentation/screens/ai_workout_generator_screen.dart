@@ -7,6 +7,7 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
@@ -1072,7 +1073,7 @@ class _AiWorkoutGeneratorScreenState
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  AppSpacing.verticalGap12,
                   ...workout.exercises.map((ex) {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
@@ -1081,7 +1082,7 @@ class _AiWorkoutGeneratorScreenState
                         children: [
                           Icon(
                             ex.isCardio
-                                ? Icons.timer_outlined
+                                ? Icons.timer_rounded
                                 : Icons.fitness_center_rounded,
                             size: 16,
                             color: ex.isCardio

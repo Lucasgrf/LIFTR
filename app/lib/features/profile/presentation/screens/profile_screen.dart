@@ -85,7 +85,7 @@ class ProfileScreen extends ConsumerWidget {
                         minHeight: 48,
                       ),
                       icon: Icon(
-                        Icons.settings_outlined,
+                        Icons.settings_rounded,
                         color: colors.textSecondary,
                       ),
                     ),
@@ -208,7 +208,7 @@ class ProfileScreen extends ConsumerWidget {
                                       ),
                                       const SizedBox(width: 6),
                                       Icon(
-                                        Icons.edit_outlined,
+                                        Icons.edit_rounded,
                                         size: 16,
                                         color: colors.textTertiary,
                                       ),

@@ -175,8 +175,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             ),
                             icon: Icon(
                               _obscurePassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
+                                  ? Icons.visibility_rounded
+                                  : Icons.visibility_off_rounded,
                               color: colors.textTertiary,
                             ),
                           ),

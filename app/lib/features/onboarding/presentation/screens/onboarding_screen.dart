@@ -771,17 +771,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           child: const Column(
             children: [
               _BulletRow(
-                icon: Icons.restaurant_outlined,
+                icon: Icons.restaurant_rounded,
                 text: 'Registre refeições por áudio ou texto em segundos',
               ),
               SizedBox(height: 14),
               _BulletRow(
-                icon: Icons.monitor_weight_outlined,
+                icon: Icons.monitor_weight_rounded,
                 text: 'Envie seu peso pela manhã para atualizar a tendência EMA',
               ),
               SizedBox(height: 14),
               _BulletRow(
-                icon: Icons.summarize_outlined,
+                icon: Icons.summarize_rounded,
                 text: 'Receba resumo pós-treino e relatório semanal todo domingo',
               ),
             ],

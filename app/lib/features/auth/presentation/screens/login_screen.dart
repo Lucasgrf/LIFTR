@@ -145,8 +145,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                             icon: Icon(
                               _obscurePassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
+                                  ? Icons.visibility_rounded
+                                  : Icons.visibility_off_rounded,
                               color: colors.textTertiary,
                             ),
                           ),
@@ -205,7 +205,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       child: Row(
                         children: [
                           Icon(
-                            Icons.offline_bolt_outlined,
+                            Icons.offline_bolt_rounded,
                             size: 18,
                             color: colors.primaryLight,
                           ),
