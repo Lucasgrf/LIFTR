@@ -42,10 +42,10 @@ class AppTypography {
       ),
       displaySmall: TextStyle(
         fontFamily: fontFamily,
-        fontSize: 26,
-        height: 32 / 26,
+        fontSize: 28,
+        height: 34 / 28,
         fontWeight: FontWeight.w700,
-        letterSpacing: -0.6,
+        letterSpacing: -0.7,
         fontFeatures: tabularFeatures,
         color: textColor,
       ),
