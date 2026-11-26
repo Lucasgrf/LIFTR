@@ -8,6 +8,7 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
@@ -744,7 +745,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
 
           // Column Labels
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 5),
+            padding: EdgeInsets.symmetric(horizontal: context.appSpacing.space4),
             child: isCardio
                 ? Row(
                     children: [
@@ -755,7 +756,6 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                           textAlign: TextAlign.center,
                           style: context.textTheme.labelSmall?.copyWith(
                             color: colors.textTertiary,
-                            fontSize: 10,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -767,7 +767,6 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                           textAlign: TextAlign.center,
                           style: context.textTheme.labelSmall?.copyWith(
                             color: colors.textTertiary,
-                            fontSize: 10,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -780,7 +779,6 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                           textAlign: TextAlign.center,
                           style: context.textTheme.labelSmall?.copyWith(
                             color: colors.textTertiary,
-                            fontSize: 10,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -796,7 +794,6 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                           textAlign: TextAlign.center,
                           style: context.textTheme.labelSmall?.copyWith(
                             color: colors.textTertiary,
-                            fontSize: 10,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -809,7 +806,6 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                           textAlign: TextAlign.center,
                           style: context.textTheme.labelSmall?.copyWith(
                             color: colors.textTertiary,
-                            fontSize: 10,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -822,7 +818,6 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                           textAlign: TextAlign.center,
                           style: context.textTheme.labelSmall?.copyWith(
                             color: colors.textTertiary,
-                            fontSize: 10,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -836,7 +831,6 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                             textAlign: TextAlign.center,
                             style: context.textTheme.labelSmall?.copyWith(
                               color: colors.textTertiary,
-                              fontSize: 10,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -850,7 +844,6 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                           textAlign: TextAlign.center,
                           style: context.textTheme.labelSmall?.copyWith(
                             color: colors.textTertiary,
-                            fontSize: 10,
                             fontWeight: FontWeight.w700,
                           ),
                         ),

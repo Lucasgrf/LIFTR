@@ -5,6 +5,7 @@ import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/set_template.dart';
@@ -182,7 +183,7 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                 final template = entry.value;
 
                 return AppCard(
-                  padding: const EdgeInsets.all(14),
+                  padding: EdgeInsets.all(context.appSpacing.space16),
                   child: Column(
                     children: [
                       Row(
@@ -196,8 +197,11 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                             ),
                             child: Text(
                               'Série ${idx + 1}',
-                              style: TextStyle(
-                                color: SetTemplateRow.getSetTypeColor(context, template.setType),
+                              style: context.textTheme.labelLarge?.copyWith(
+                                color: SetTemplateRow.getSetTypeColor(
+                                  context,
+                                  template.setType,
+                                ),
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -239,12 +243,12 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                            color: Colors.redAccent,
+                            color: context.appColors.danger,
                             onPressed: () => _removeSet(idx),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      SizedBox(height: context.appSpacing.space8),
                       Row(
                         children: [
                           Expanded(
@@ -252,7 +256,9 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                               isCardio
                                   ? 'Tempo: ${template.repRangeText} min'
                                   : 'Reps: ${template.repRangeText} · RIR: ${template.rirRangeText}',
-                              style: TextStyle(color: context.appColors.textSecondary),
+                              style: context.textTheme.bodyMedium?.copyWith(
+                                color: context.appColors.textSecondary,
+                              ),
                             ),
                           ),
                           DropdownButton<int>(

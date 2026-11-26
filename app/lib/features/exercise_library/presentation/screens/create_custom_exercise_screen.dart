@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
@@ -189,7 +190,9 @@ class _CreateCustomExerciseScreenState
                     value: _selectedPrimaryMuscle,
                     hint: Text(
                       'Selecione o músculo principal...',
-                      style: TextStyle(color: context.appColors.textTertiary),
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        color: context.appColors.textTertiary,
+                      ),
                     ),
                     dropdownColor: context.appColors.surfaceElevated,
                     items: primaryMuscles.map((m) {
@@ -205,10 +208,12 @@ class _CreateCustomExerciseScreenState
                                 shape: BoxShape.circle,
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            AppSpacing.horizontalGap12,
                             Text(
                               m['label']!,
-                              style: TextStyle(color: context.appColors.textPrimary),
+                              style: context.textTheme.bodyMedium?.copyWith(
+                                color: context.appColors.textPrimary,
+                              ),
                             ),
                           ],
                         ),
@@ -296,7 +301,9 @@ class _CreateCustomExerciseScreenState
                     value: _selectedEquipment,
                     hint: Text(
                       'Selecione o equipamento (opcional)...',
-                      style: TextStyle(color: context.appColors.textTertiary),
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        color: context.appColors.textTertiary,
+                      ),
                     ),
                     dropdownColor: context.appColors.surfaceElevated,
                     items: equipments.map((e) {
@@ -304,7 +311,9 @@ class _CreateCustomExerciseScreenState
                         value: e['key'],
                         child: Text(
                           e['label']!,
-                          style: TextStyle(color: context.appColors.textPrimary),
+                          style: context.textTheme.bodyMedium?.copyWith(
+                            color: context.appColors.textPrimary,
+                          ),
                         ),
                       );
                     }).toList(),
@@ -333,7 +342,9 @@ class _CreateCustomExerciseScreenState
                     value: _selectedMovementPattern,
                     hint: Text(
                       'Selecione o padrão de movimento (opcional)...',
-                      style: TextStyle(color: context.appColors.textTertiary),
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        color: context.appColors.textTertiary,
+                      ),
                     ),
                     dropdownColor: context.appColors.surfaceElevated,
                     items: movementPatterns.map((p) {
@@ -341,7 +352,9 @@ class _CreateCustomExerciseScreenState
                         value: p['key'],
                         child: Text(
                           p['label']!,
-                          style: TextStyle(color: context.appColors.textPrimary),
+                          style: context.textTheme.bodyMedium?.copyWith(
+                            color: context.appColors.textPrimary,
+                          ),
                         ),
                       );
                     }).toList(),

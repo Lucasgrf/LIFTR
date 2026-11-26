@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
 
@@ -50,13 +51,12 @@ class WorkoutCard extends StatelessWidget {
                     style: context.textTheme.labelSmall?.copyWith(
                       color: context.appColors.primary,
                       fontWeight: FontWeight.w700,
-                      fontSize: 9,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 14),
+            AppSpacing.horizontalGap12,
 
             // Workout info
             Expanded(
@@ -70,7 +70,7 @@ class WorkoutCard extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  AppSpacing.verticalGap4,
                   Row(
                     children: [
                       Text(
@@ -80,8 +80,13 @@ class WorkoutCard extends StatelessWidget {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Text('·', style: TextStyle(color: context.appColors.textTertiary)),
+                      AppSpacing.horizontalGap8,
+                      Text(
+                        '·',
+                        style: context.textTheme.bodySmall?.copyWith(
+                          color: context.appColors.textTertiary,
+                        ),
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         '${workout.totalExercisesCount} exercícios',

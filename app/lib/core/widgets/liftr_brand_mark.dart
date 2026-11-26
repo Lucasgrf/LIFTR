@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
-import 'package:personal_fitness_os/core/theme/app_typography.dart';
 
 enum LiftrMarkVariant {
   brand,
@@ -106,14 +105,13 @@ class LiftrWordmark extends StatelessWidget {
               alignment: Alignment.bottomLeft,
               child: Text(
                 'LIFTR',
-                style: TextStyle(
-                  fontFamily: AppTypography.fontFamily,
-                  fontSize: fontSize,
-                  height: 1.0,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: fontSize * 0.04,
-                  color: _resolveWordmarkColor(colors),
-                ),
+                style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                      fontSize: fontSize,
+                      height: 1.0,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: fontSize * 0.04,
+                      color: _resolveWordmarkColor(colors),
+                    ),
               ),
             ),
           ),

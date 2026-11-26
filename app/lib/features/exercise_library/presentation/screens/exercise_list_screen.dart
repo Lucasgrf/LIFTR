@@ -135,7 +135,13 @@ class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
         backgroundColor: context.appColors.primary,
         foregroundColor: context.appColors.onPrimary,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Novo Exercício', style: TextStyle(fontWeight: FontWeight.w600)),
+        label: Text(
+          'Novo Exercício',
+          style: context.textTheme.labelLarge?.copyWith(
+            color: context.appColors.onPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
     );
   }

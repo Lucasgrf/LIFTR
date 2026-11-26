@@ -90,7 +90,6 @@ class SetTemplateRow extends StatelessWidget {
               style: context.textTheme.labelSmall?.copyWith(
                 color: badgeColor,
                 fontWeight: FontWeight.w700,
-                fontSize: 10,
               ),
             ),
           ),
@@ -114,9 +113,8 @@ class SetTemplateRow extends StatelessWidget {
                 if (!isCardio && template.targetRirMin != null)
                   Text(
                     'RIR ${template.rirRangeText}',
-                    style: context.textTheme.bodySmall?.copyWith(
+                    style: context.textTheme.labelSmall?.copyWith(
                       color: context.appColors.textSecondary,
-                      fontSize: 11,
                     ),
                   ),
               ],

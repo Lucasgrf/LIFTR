@@ -368,7 +368,7 @@ class ProfileScreen extends ConsumerWidget {
                 leading: Icon(Icons.delete_outline_rounded, color: colors.danger),
                 title: Text(
                   'Remover foto',
-                  style: TextStyle(color: colors.danger),
+                  style: context.textTheme.bodyMedium?.copyWith(color: colors.danger),
                 ),
                 onTap: () {
                   Navigator.pop(ctx);

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
@@ -49,7 +50,10 @@ class HistoryWorkoutCard extends StatelessWidget {
               ],
               if (session.perceivedExertion != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: context.appSpacing.space8,
+                    vertical: context.appSpacing.space2,
+                  ),
                   decoration: BoxDecoration(
                     color: colors.primary.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(context.appRadius.small),
@@ -59,7 +63,6 @@ class HistoryWorkoutCard extends StatelessWidget {
                     style: context.textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: colors.primary,
-                      fontSize: 10,
                     ),
                   ),
                 ),

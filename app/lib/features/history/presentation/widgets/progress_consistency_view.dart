@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
@@ -200,10 +201,9 @@ class _ProgressConsistencyViewState
                           'Menos',
                           style: context.textTheme.labelSmall?.copyWith(
                             color: colors.textTertiary,
-                            fontSize: 10,
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: context.appSpacing.space8),
                         for (final swatchColor in [
                           colors.surfaceElevated,
                           colors.primary.withValues(alpha: 0.28),
@@ -218,14 +218,13 @@ class _ProgressConsistencyViewState
                               borderRadius: BorderRadius.circular(radius.xs),
                             ),
                           ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: context.appSpacing.space4),
                         ],
-                        const SizedBox(width: 2),
+                        SizedBox(width: context.appSpacing.space2),
                         Text(
                           'Mais',
                           style: context.textTheme.labelSmall?.copyWith(
                             color: colors.textTertiary,
-                            fontSize: 10,
                           ),
                         ),
                       ],
@@ -234,7 +233,7 @@ class _ProgressConsistencyViewState
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: context.appSpacing.space12),
 
             // Selected Day Detail Strip
             InkWell(

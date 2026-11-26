@@ -123,6 +123,20 @@ void main() {
       expect(motion.curveStandard, const Cubic(0.23, 1.0, 0.32, 1.0));
     });
 
+    test('AppTypography defines complete scale, tabular bodyLarge, and 14sp labelLarge', () {
+      for (final theme in [AppTheme.dark(), AppTheme.light()]) {
+        final tt = theme.textTheme;
+        expect(tt.displaySmall?.fontSize, 26);
+        expect(tt.displaySmall?.fontFeatures, isNotEmpty);
+        expect(tt.headlineSmall?.fontSize, 20);
+        expect(tt.headlineSmall?.fontFeatures, isNotEmpty);
+        expect(tt.bodyLarge?.fontSize, 16);
+        expect(tt.bodyLarge?.fontFeatures, isNotEmpty);
+        expect(tt.labelLarge?.fontSize, 14);
+        expect(tt.labelSmall?.fontSize, greaterThanOrEqualTo(11));
+      }
+    });
+
     testWidgets('AppMotion.resolve honors MediaQuery disableAnimations', (tester) async {
       late Duration resolvedNormal;
       late Duration resolvedReduced;

@@ -10,6 +10,7 @@ import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
@@ -962,7 +963,6 @@ class _LoggedExerciseDetailTile extends StatelessWidget {
                           child: Text(
                             _setTag(s),
                             style: context.textTheme.labelSmall?.copyWith(
-                              fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: s.setType == SetType.dropSet
                                   ? fitnessColors.dropSetTag
@@ -973,7 +973,7 @@ class _LoggedExerciseDetailTile extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        SizedBox(width: context.appSpacing.space12),
                         Expanded(
                           child: Text(
                             isCardio

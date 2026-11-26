@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
@@ -84,16 +85,18 @@ class ExerciseCard extends StatelessWidget {
     final muscleLabel = getMuscleLabel(exercise.primaryMuscleGroup);
     final equipmentLabel = getEquipmentLabel(exercise.equipment);
 
+    final spacing = context.appSpacing;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: spacing.space16, vertical: spacing.space8),
       child: AppCard(
         onTap: onTap,
-        padding: const EdgeInsets.all(14),
+        padding: EdgeInsets.all(spacing.space16),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             ExerciseDiagram(exercise: exercise, size: 48),
-            const SizedBox(width: 14),
+            SizedBox(width: spacing.space16),
 
             // Main info
             Expanded(
@@ -114,7 +117,7 @@ class ExerciseCard extends StatelessWidget {
                         ),
                       ),
                       if (exercise.isCustom) ...[
-                        const SizedBox(width: 8),
+                        SizedBox(width: spacing.space8),
                         const LiftrBadge(
                           label: 'Custom',
                           tone: LiftrBadgeTone.brand,
@@ -122,7 +125,7 @@ class ExerciseCard extends StatelessWidget {
                       ],
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: spacing.space8),
 
                   // Muscle and Equipment tags
                   Wrap(
@@ -137,7 +140,9 @@ class ExerciseCard extends StatelessWidget {
                       if (equipmentLabel.isNotEmpty) ...[
                         Text(
                           '·',
-                          style: TextStyle(color: context.appColors.textTertiary),
+                          style: context.textTheme.bodySmall?.copyWith(
+                            color: context.appColors.textTertiary,
+                          ),
                         ),
                         Text(
                           equipmentLabel,

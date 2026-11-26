@@ -7,6 +7,7 @@ import 'package:personal_fitness_os/core/constants/supabase_config.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
@@ -160,7 +161,7 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
                             ? meta.color
                             : meta.color.withValues(alpha: 0.72),
                       ),
-                      const SizedBox(height: 5),
+                      SizedBox(height: context.appSpacing.space4),
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(
@@ -168,7 +169,6 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
                           maxLines: 1,
                           softWrap: false,
                           style: context.textTheme.labelSmall?.copyWith(
-                            fontSize: 10,
                             fontWeight:
                                 isSelected ? FontWeight.w700 : FontWeight.w500,
                             color: isSelected

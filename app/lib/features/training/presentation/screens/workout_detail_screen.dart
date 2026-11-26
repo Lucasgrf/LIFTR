@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
@@ -188,7 +189,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                   children: [
                     // Header card
                     AppCard(
-                      padding: const EdgeInsets.all(18),
+                      padding: EdgeInsets.all(context.appSpacing.space16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -206,7 +207,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                               if (workout.estimatedDurationMinutes != null) ...[
                                 Icon(Icons.timer_outlined,
                                     size: 14, color: context.appColors.textTertiary),
-                                const SizedBox(width: 4),
+                                AppSpacing.horizontalGap4,
                                 Text(
                                   '~${workout.estimatedDurationMinutes} min',
                                   style: context.textTheme.bodySmall?.copyWith(
@@ -216,7 +217,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                               ],
                             ],
                           ),
-                          const SizedBox(height: 10),
+                          AppSpacing.verticalGap12,
                           Text(
                             workout.name,
                             style: context.textTheme.titleLarge?.copyWith(
@@ -225,7 +226,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                             ),
                           ),
                           if (workout.notes != null && workout.notes!.isNotEmpty) ...[
-                            const SizedBox(height: 6),
+                            AppSpacing.verticalGap8,
                             Text(
                               workout.notes!,
                               style: context.textTheme.bodySmall?.copyWith(
@@ -233,7 +234,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                               ),
                             ),
                           ],
-                          const SizedBox(height: 12),
+                          AppSpacing.verticalGap12,
                           Row(
                             children: [
                               Text(
@@ -243,9 +244,14 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Text('·', style: TextStyle(color: context.appColors.textTertiary)),
-                              const SizedBox(width: 8),
+                              AppSpacing.horizontalGap8,
+                              Text(
+                                '·',
+                                style: context.textTheme.bodySmall?.copyWith(
+                                  color: context.appColors.textTertiary,
+                                ),
+                              ),
+                              AppSpacing.horizontalGap8,
                               Text(
                                 '${workout.totalWorkingSetsCount} séries válidas',
                                 style: context.textTheme.bodySmall?.copyWith(
@@ -313,15 +319,22 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                             child: ListTile(
                               leading: Text(
                                 '${index + 1}',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: context.textTheme.titleSmall?.copyWith(
+                                  color: context.appColors.textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               title: Text(
                                 exercise.exercise?.name ?? 'Exercício',
-                                style: TextStyle(color: context.appColors.textPrimary),
+                                style: context.textTheme.bodyMedium?.copyWith(
+                                  color: context.appColors.textPrimary,
+                                ),
                               ),
                               subtitle: Text(
                                 '${exercise.totalSetsCount} séries',
-                                style: TextStyle(color: context.appColors.textSecondary),
+                                style: context.textTheme.bodySmall?.copyWith(
+                                  color: context.appColors.textSecondary,
+                                ),
                               ),
                               trailing: const Icon(Icons.drag_handle_rounded),
                             ),

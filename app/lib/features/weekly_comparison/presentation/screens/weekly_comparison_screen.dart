@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
@@ -540,12 +541,11 @@ class _HeroCardioCard extends StatelessWidget {
                           mins > 0 ? '${mins}m' : '',
                           maxLines: 1,
                           style: context.textTheme.labelSmall?.copyWith(
-                            fontSize: 10,
                             color: colors.primaryLight,
                             fontFeatures: AppTypography.tabularFeatures,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: context.appSpacing.space4),
                         Container(
                           width: 18,
                           height: barHeight,
@@ -556,7 +556,7 @@ class _HeroCardioCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(radius.xs),
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        SizedBox(height: context.appSpacing.space8),
                         Text(
                           dayLabel,
                           style: context.textTheme.labelSmall?.copyWith(

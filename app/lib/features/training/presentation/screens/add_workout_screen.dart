@@ -132,7 +132,9 @@ class _AddWorkoutScreenState extends ConsumerState<AddWorkoutScreen> {
                       value: d['day'] as int?,
                       child: Text(
                         d['label'] as String,
-                        style: TextStyle(color: context.appColors.textPrimary),
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: context.appColors.textPrimary,
+                        ),
                       ),
                     );
                   }).toList(),

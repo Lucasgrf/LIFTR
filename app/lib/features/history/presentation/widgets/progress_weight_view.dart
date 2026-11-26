@@ -7,6 +7,7 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/extensions/date_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
@@ -347,7 +348,6 @@ class _WeightEmaChart extends StatelessWidget {
                 value.toStringAsFixed(1),
                 style: context.textTheme.labelSmall?.copyWith(
                   color: colors.textTertiary,
-                  fontSize: 10,
                   fontFeatures: AppTypography.tabularFeatures,
                 ),
               ),
@@ -362,12 +362,11 @@ class _WeightEmaChart extends StatelessWidget {
                 final idx = value.toInt();
                 if (idx >= 0 && idx < series.length) {
                   return Padding(
-                    padding: const EdgeInsets.only(top: 6),
+                    padding: EdgeInsets.only(top: context.appSpacing.space8),
                     child: Text(
                       series[idx].date.formatShort(),
                       style: context.textTheme.labelSmall?.copyWith(
                         color: colors.textTertiary,
-                        fontSize: 10,
                         fontFeatures: AppTypography.tabularFeatures,
                       ),
                     ),

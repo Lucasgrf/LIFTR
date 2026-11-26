@@ -6,6 +6,7 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
@@ -1244,7 +1245,6 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                           'DROP-SET',
                           style: context.textTheme.labelSmall?.copyWith(
                             color: fitnessColors.dropSetTag,
-                            fontSize: 10,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.8,
                           ),
@@ -1254,9 +1254,9 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                           onTap: _addAnotherDrop,
                           borderRadius: BorderRadius.circular(radius.small),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 3,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: context.appSpacing.space8,
+                              vertical: context.appSpacing.space4,
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -1266,7 +1266,7 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                                   size: 14,
                                   color: fitnessColors.dropSetTag,
                                 ),
-                                const SizedBox(width: 3),
+                                SizedBox(width: context.appSpacing.space4),
                                 Text(
                                   'Outro drop',
                                   style: context.textTheme.labelSmall?.copyWith(
@@ -1282,7 +1282,7 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                     ),
                     for (var i = 0; i < _dropSets.length; i++)
                       Padding(
-                        padding: const EdgeInsets.only(top: 6),
+                        padding: EdgeInsets.only(top: context.appSpacing.space8),
                         child: Row(
                           children: [
                             SizedBox(
@@ -1299,7 +1299,6 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                                     _dropSets.length > 1 ? 'D${i + 1}' : '',
                                     style: context.textTheme.labelSmall?.copyWith(
                                       color: fitnessColors.dropSetTag,
-                                      fontSize: 10,
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
