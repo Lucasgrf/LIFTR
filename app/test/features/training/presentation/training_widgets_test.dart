@@ -4,10 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/theme/app_theme.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/set_template.dart';
-import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
 import 'package:personal_fitness_os/features/training/presentation/widgets/set_template_row.dart';
-import 'package:personal_fitness_os/features/training/presentation/widgets/training_plan_card.dart';
 import 'package:personal_fitness_os/features/training/presentation/widgets/workout_card.dart';
 
 void main() {
@@ -28,23 +26,6 @@ void main() {
     trainingPlanId: 'p-1',
     name: 'Treino A - Peito e Tríceps',
     dayOfWeek: 1,
-  );
-
-  const tPlan = TrainingPlan(
-    id: 'p-1',
-    userId: 'u-1',
-    name: 'Hipertrofia 4x',
-    description: 'Divisão Upper/Lower com foco em progressão.',
-    isActive: true,
-    workouts: [tWorkout],
-  );
-
-  const tArchivedPlan = TrainingPlan(
-    id: 'p-2',
-    userId: 'u-1',
-    name: 'Fullbody 3x',
-    isActive: false,
-    workouts: [],
   );
 
   Widget createWidgetUnderTest(Widget child) {
@@ -81,53 +62,6 @@ void main() {
 
       expect(find.text('Treino A - Peito e Tríceps'), findsOneWidget);
       expect(find.text('Segunda-feira'), findsOneWidget);
-    });
-  });
-
-  group('TrainingPlanCard Widget Test', () {
-    testWidgets('should render active plan badge and title', (tester) async {
-      await tester.pumpWidget(
-        createWidgetUnderTest(
-          const TrainingPlanCard(plan: tPlan),
-        ),
-      );
-
-      expect(find.text('PLANO ATIVO'), findsOneWidget);
-      expect(find.text('Hipertrofia 4x'), findsOneWidget);
-    });
-
-    testWidgets('should render archived badge and activate button for inactive plan', (tester) async {
-      var activated = false;
-      await tester.pumpWidget(
-        createWidgetUnderTest(
-          TrainingPlanCard(
-            plan: tArchivedPlan,
-            onActivate: () => activated = true,
-          ),
-        ),
-      );
-
-      expect(find.text('ARQUIVADO'), findsOneWidget);
-      expect(find.text('Tornar Ativo'), findsOneWidget);
-
-      await tester.tap(find.text('Tornar Ativo'));
-      await tester.pump();
-
-      expect(activated, isTrue);
-    });
-
-    testWidgets('should render loading indicator when isActivating is true', (tester) async {
-      await tester.pumpWidget(
-        createWidgetUnderTest(
-          TrainingPlanCard(
-            plan: tArchivedPlan,
-            isActivating: true,
-            onActivate: () {},
-          ),
-        ),
-      );
-
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
   });
 }

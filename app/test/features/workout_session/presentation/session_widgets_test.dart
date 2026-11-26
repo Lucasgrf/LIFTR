@@ -6,12 +6,10 @@ import 'package:personal_fitness_os/core/theme/app_theme.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/logged_set.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/session_exercise.dart';
-import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/logged_set_row.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/rest_timer_widget.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/session_exercise_card.dart';
-import 'package:personal_fitness_os/features/workout_session/presentation/widgets/session_timer_header.dart';
 
 void main() {
   const tExercise = Exercise(
@@ -41,15 +39,6 @@ void main() {
     sets: [tLoggedSet],
   );
 
-  final tSession = WorkoutSession(
-    id: 's-1',
-    userId: 'u-1',
-    workoutName: 'Treino A - Peito e Tríceps',
-    startedAt: DateTime.now().subtract(const Duration(minutes: 25)),
-    durationSeconds: 1500,
-    exercises: [tSessionExercise],
-  );
-
   Widget createWidgetUnderTest(Widget child, {List<Override> overrides = const []}) {
     return ProviderScope(
       overrides: overrides,
@@ -59,23 +48,6 @@ void main() {
       ),
     );
   }
-
-  group('SessionTimerHeader Widget Test', () {
-    testWidgets('should render elapsed time, working sets count and volume in kg', (tester) async {
-      await tester.pumpWidget(
-        createWidgetUnderTest(
-          SessionTimerHeader(
-            session: tSession,
-            elapsedSeconds: 1500, // 25:00
-          ),
-        ),
-      );
-
-      expect(find.text('25:00'), findsOneWidget);
-      expect(find.text('1 séries válidas'), findsOneWidget);
-      expect(find.text('800 kg'), findsOneWidget);
-    });
-  });
 
   group('LoggedSetRow Widget Test', () {
     testWidgets('should render set number, weight and reps when logged', (tester) async {

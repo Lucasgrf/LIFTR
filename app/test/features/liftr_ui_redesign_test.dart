@@ -20,10 +20,6 @@ import 'package:personal_fitness_os/features/body/presentation/providers/weight_
 import 'package:personal_fitness_os/features/dashboard/domain/entities/dashboard_data.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/screens/dashboard_screen.dart';
-import 'package:personal_fitness_os/features/dashboard/presentation/widgets/dashboard_active_goals_card.dart';
-import 'package:personal_fitness_os/features/dashboard/presentation/widgets/dashboard_nutrition_card.dart';
-import 'package:personal_fitness_os/features/dashboard/presentation/widgets/dashboard_stats_grid.dart';
-import 'package:personal_fitness_os/features/dashboard/presentation/widgets/weekly_streak_widget.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
 import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
@@ -581,10 +577,9 @@ void main() {
       expect(find.textContaining('Agachamento pronto para subir'), findsOneWidget);
       expect(find.textContaining('Segundo insight oculto'), findsNothing);
 
-      expect(find.byType(DashboardNutritionCard), findsNothing);
-      expect(find.byType(DashboardActiveGoalsCard), findsNothing);
-      expect(find.byType(WeeklyStreakWidget), findsNothing);
-      expect(find.byType(DashboardStatsGrid), findsNothing);
+      expect(find.text('NUTRIÇÃO HOJE'), findsNothing);
+      expect(find.text('METAS EM ANDAMENTO'), findsNothing);
+      expect(find.text('Consistência Semanal'), findsNothing);
 
       // Test skipping current workout in rotating queue
       await tester.tap(find.text('Pular / Trocar'));
