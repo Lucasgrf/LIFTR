@@ -75,9 +75,11 @@ class _CreateTrainingPlanScreenState
       appBar: AppBar(
         title: const Text('Novo Programa de Treino'),
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
+      body: SafeArea(
+        top: false,
+        child: Form(
+          key: _formKey,
+          child: ListView(
           padding: const EdgeInsets.fromLTRB(0, 16, 0, 40),
           children: [
             ResponsiveContainer(
@@ -129,6 +131,7 @@ class _CreateTrainingPlanScreenState
               ),
             ),
           ],
+        ),
         ),
       ),
     );

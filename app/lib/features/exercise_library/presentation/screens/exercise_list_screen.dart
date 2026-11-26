@@ -61,9 +61,11 @@ class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
           ),
         ],
       ),
-      body: ResponsiveContainer(
-        child: Column(
-          children: [
+      body: SafeArea(
+        top: false,
+        child: ResponsiveContainer(
+          child: Column(
+            children: [
             // Search input
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -138,6 +140,7 @@ class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
               ),
             ),
           ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(

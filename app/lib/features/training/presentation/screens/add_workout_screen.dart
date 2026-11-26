@@ -95,9 +95,11 @@ class _AddWorkoutScreenState extends ConsumerState<AddWorkoutScreen> {
       appBar: AppBar(
         title: const Text('Adicionar Treino ao Plano'),
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
+      body: SafeArea(
+        top: false,
+        child: Form(
+          key: _formKey,
+          child: ListView(
           padding: const EdgeInsets.fromLTRB(0, 16, 0, 40),
           children: [
             ResponsiveContainer(
@@ -185,6 +187,7 @@ class _AddWorkoutScreenState extends ConsumerState<AddWorkoutScreen> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

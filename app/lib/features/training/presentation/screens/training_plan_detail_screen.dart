@@ -73,13 +73,15 @@ class _TrainingPlanDetailScreenState
                   plan: planAsync.asData!.value,
                 ),
                 constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                icon: const Icon(Icons.ios_share_rounded),
+                icon: Icon(Icons.adaptive.share),
               ),
             ),
         ],
       ),
-      body: planAsync.when(
-        loading: () => const LoadingWidget(),
+      body: SafeArea(
+        top: false,
+        child: planAsync.when(
+          loading: () => const LoadingWidget(),
         error: (error, st) => ErrorStateWidget(
           message: userFacingMessage(
             error,
@@ -235,6 +237,7 @@ class _TrainingPlanDetailScreenState
             ],
           );
         },
+        ),
       ),
     );
   }
