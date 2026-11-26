@@ -14,15 +14,24 @@ class SwapExerciseSheet extends ConsumerStatefulWidget {
     super.key,
     required this.currentExercise,
     required this.onSelect,
+    this.eyebrow,
+    this.title,
+    this.closeSemanticLabel,
   });
 
   final Exercise? currentExercise;
   final ValueChanged<Exercise> onSelect;
+  final String? eyebrow;
+  final String? title;
+  final String? closeSemanticLabel;
 
   static Future<void> show(
     BuildContext context, {
     required Exercise? currentExercise,
     required ValueChanged<Exercise> onSelect,
+    String? eyebrow,
+    String? title,
+    String? closeSemanticLabel,
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -31,6 +40,9 @@ class SwapExerciseSheet extends ConsumerStatefulWidget {
       builder: (_) => SwapExerciseSheet(
         currentExercise: currentExercise,
         onSelect: onSelect,
+        eyebrow: eyebrow,
+        title: title,
+        closeSemanticLabel: closeSemanticLabel,
       ),
     );
   }
@@ -136,21 +148,23 @@ class _SwapExerciseSheetState extends ConsumerState<SwapExerciseSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          currentMuscle.isNotEmpty
-                              ? currentMuscle.toUpperCase()
-                              : 'SUBSTITUIÇÃO',
+                          widget.eyebrow ??
+                              (currentMuscle.isNotEmpty
+                                  ? currentMuscle.toUpperCase()
+                                  : 'SUBSTITUIÇÃO'),
                           style: AppTypography.eyebrow(context),
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          'Trocar exercício',
+                          widget.title ?? 'Trocar exercício',
                           style: context.textTheme.headlineMedium,
                         ),
                       ],
                     ),
                   ),
                   Semantics(
-                    label: 'Fechar troca de exercício',
+                    label:
+                        widget.closeSemanticLabel ?? 'Fechar troca de exercício',
                     button: true,
                     child: IconButton(
                       onPressed: () => Navigator.pop(context),

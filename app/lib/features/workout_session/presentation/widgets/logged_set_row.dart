@@ -651,11 +651,15 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                                 color: fitnessColors.dropSetTag,
                               ),
                               AppSpacing.horizontalGap4,
-                              Text(
-                                '+ Drop-set',
-                                style: context.textTheme.labelSmall?.copyWith(
-                                  color: fitnessColors.dropSetTag,
-                                  fontWeight: FontWeight.w600,
+                              Flexible(
+                                child: Text(
+                                  '+ Drop-set',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: context.textTheme.labelSmall?.copyWith(
+                                    color: fitnessColors.dropSetTag,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ],
@@ -700,11 +704,15 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                                 color: colors.primaryLight,
                               ),
                               AppSpacing.horizontalGap4,
-                              Text(
-                                'Salvar alteração',
-                                style: context.textTheme.labelSmall?.copyWith(
-                                  color: colors.primaryLight,
-                                  fontWeight: FontWeight.w700,
+                              Flexible(
+                                child: Text(
+                                  'Salvar alteração',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: context.textTheme.labelSmall?.copyWith(
+                                    color: colors.primaryLight,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
                             ],
@@ -807,11 +815,15 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                                 color: colors.textSecondary,
                               ),
                               AppSpacing.horizontalGap4,
-                              Text(
-                                'Desfazer',
-                                style: context.textTheme.labelSmall?.copyWith(
-                                  color: colors.textSecondary,
-                                  fontWeight: FontWeight.w600,
+                              Flexible(
+                                child: Text(
+                                  'Desfazer',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: context.textTheme.labelSmall?.copyWith(
+                                    color: colors.textSecondary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ],
