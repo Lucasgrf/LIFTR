@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Responsive container enforcing mobile padding (16dp on <= 375pt, 20dp
-/// otherwise) and centering content at 560dp maxWidth on tablets (>= 600dp).
+/// Responsive container enforcing mobile padding (16dp on <= 375dp, 20dp
+/// above 375dp) and centering content at 560dp maxWidth on tablets (>= 600dp).
 class ResponsiveContainer extends StatelessWidget {
   const ResponsiveContainer({
     super.key,
@@ -18,7 +18,7 @@ class ResponsiveContainer extends StatelessWidget {
 
   static double horizontalPaddingForWidth(double width) {
     if (width <= 375) return 16;
-    return 18;
+    return 20;
   }
 
   @override

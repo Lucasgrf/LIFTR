@@ -8,7 +8,12 @@ import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
 
 class MuscleFilterChips extends ConsumerWidget {
-  const MuscleFilterChips({super.key});
+  const MuscleFilterChips({
+    super.key,
+    this.horizontalPadding,
+  });
+
+  final double? horizontalPadding;
 
   static const List<Map<String, String?>> muscleOptions = [
     {'label': 'Todos', 'key': null},
@@ -33,7 +38,9 @@ class MuscleFilterChips extends ConsumerWidget {
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: EdgeInsets.symmetric(horizontal: spacing.space16),
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding ?? spacing.space16,
+      ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 48),
         child: Row(

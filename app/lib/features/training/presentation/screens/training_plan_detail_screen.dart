@@ -11,6 +11,7 @@ import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
+import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
 import 'package:personal_fitness_os/features/training/presentation/widgets/export_plan_sheet.dart';
@@ -92,8 +93,12 @@ class _TrainingPlanDetailScreenState
           final activeColor = context.fitnessColors.progressUp;
 
           return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
+            padding: const EdgeInsets.fromLTRB(0, 12, 0, 90),
             children: [
+              ResponsiveContainer(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
               // Header Card
               AppCard(
                 padding: const EdgeInsets.all(20),
@@ -224,6 +229,9 @@ class _TrainingPlanDetailScreenState
                     onTap: () => context.push('/training/${plan.id}/workout/${workout.id}'),
                   ),
                 ),
+                  ],
+                ),
+              ),
             ],
           );
         },

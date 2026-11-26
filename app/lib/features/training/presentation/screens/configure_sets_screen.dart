@@ -11,6 +11,7 @@ import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
+import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/set_template.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
 import 'package:personal_fitness_os/features/training/presentation/widgets/set_template_row.dart';
@@ -221,8 +222,12 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
           final isCardio = exercise.isCardio;
 
           return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
+            padding: const EdgeInsets.fromLTRB(0, 12, 0, 40),
             children: [
+              ResponsiveContainer(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
               Text(
                 exercise.exercise?.name ?? 'Exercício',
                 style: context.textTheme.titleLarge?.copyWith(
@@ -540,6 +545,9 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                 icon: Icons.check_rounded,
                 isLoading: _isLoading,
                 onPressed: _save,
+              ),
+                  ],
+                ),
               ),
             ],
           );

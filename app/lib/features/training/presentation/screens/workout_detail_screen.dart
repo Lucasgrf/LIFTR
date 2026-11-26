@@ -11,6 +11,7 @@ import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_confirm_dialog.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
+import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
@@ -179,8 +180,12 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
             children: [
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                  padding: const EdgeInsets.fromLTRB(0, 12, 0, 20),
                   children: [
+                    ResponsiveContainer(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
                     // Header card
                     AppCard(
                       padding: EdgeInsets.all(context.appSpacing.space16),
@@ -348,13 +353,16 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                           ),
                         );
                       }),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
 
               // Bottom Bar with "Iniciar Treino"
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
                   color: context.appColors.surfaceElevated,
                   border: Border(
@@ -363,11 +371,13 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                 ),
                 child: SafeArea(
                   top: false,
-                  child: AppButton.primary(
-                    label: 'Iniciar treino',
-                    icon: Icons.play_arrow_rounded,
-                    isLoading: _isStartingWorkout,
-                    onPressed: () => _startWorkout(workout),
+                  child: ResponsiveContainer(
+                    child: AppButton.primary(
+                      label: 'Iniciar treino',
+                      icon: Icons.play_arrow_rounded,
+                      isLoading: _isStartingWorkout,
+                      onPressed: () => _startWorkout(workout),
+                    ),
                   ),
                 ),
               ),

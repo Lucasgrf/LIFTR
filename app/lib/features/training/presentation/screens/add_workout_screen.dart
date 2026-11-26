@@ -6,6 +6,7 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
+import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
 
 class AddWorkoutScreen extends ConsumerStatefulWidget {
@@ -97,8 +98,12 @@ class _AddWorkoutScreenState extends ConsumerState<AddWorkoutScreen> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+          padding: const EdgeInsets.fromLTRB(0, 16, 0, 40),
           children: [
+            ResponsiveContainer(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
             AppInput(
               label: 'Nome do Treino *',
               hint: 'Ex: Treino A - Superior (Peito/Costas)',
@@ -175,6 +180,9 @@ class _AddWorkoutScreenState extends ConsumerState<AddWorkoutScreen> {
               icon: Icons.check_rounded,
               isLoading: _isLoading,
               onPressed: _submit,
+            ),
+                ],
+              ),
             ),
           ],
         ),

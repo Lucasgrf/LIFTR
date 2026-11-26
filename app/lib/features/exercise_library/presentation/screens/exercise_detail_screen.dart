@@ -12,6 +12,7 @@ import 'package:personal_fitness_os/core/widgets/charts/exercise_load_progressio
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
+import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/widgets/exercise_card.dart';
@@ -116,9 +117,10 @@ class _ExerciseDetailScreenState extends ConsumerState<ExerciseDetailScreen> {
           final equipmentLabel = ExerciseCard.getEquipmentLabel(exercise.equipment);
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            padding: const EdgeInsets.fromLTRB(0, 8, 0, 40),
+            child: ResponsiveContainer(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header Card
                 AppCard(
@@ -348,6 +350,7 @@ class _ExerciseDetailScreenState extends ConsumerState<ExerciseDetailScreen> {
                   ),
                 ),
               ],
+            ),
             ),
           );
         },

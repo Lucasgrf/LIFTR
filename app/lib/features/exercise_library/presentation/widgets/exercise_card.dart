@@ -11,11 +11,13 @@ class ExerciseCard extends StatelessWidget {
   const ExerciseCard({
     required this.exercise,
     this.onTap,
+    this.margin,
     super.key,
   });
 
   final Exercise exercise;
   final VoidCallback? onTap;
+  final EdgeInsetsGeometry? margin;
 
   static String getMuscleLabel(String raw) {
     switch (raw.toLowerCase()) {
@@ -88,7 +90,11 @@ class ExerciseCard extends StatelessWidget {
     final spacing = context.appSpacing;
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: spacing.space16, vertical: spacing.space8),
+      padding: margin ??
+          EdgeInsets.symmetric(
+            horizontal: spacing.space16,
+            vertical: spacing.space8,
+          ),
       child: AppCard(
         onTap: onTap,
         padding: EdgeInsets.all(spacing.space16),
