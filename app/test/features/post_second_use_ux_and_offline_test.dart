@@ -254,6 +254,19 @@ class _MutableSessionRepo implements SessionRepository {
   }
 
   @override
+  Future<Result<LoggedSet, Failure>> restoreLoggedSet(LoggedSet set) async {
+    _session = _session.copyWith(
+      exercises: _session.exercises.map((se) {
+        if (se.id != set.sessionExerciseId) return se;
+        final updatedSets = [...se.sets.where((s) => s.id != set.id), set]
+          ..sort((a, b) => a.setNumber.compareTo(b.setNumber));
+        return se.copyWith(sets: updatedSets);
+      }).toList(),
+    );
+    return Success(set);
+  }
+
+  @override
   Future<Result<void, Failure>> abandonSession(String sessionId) async =>
       const Success(null);
 

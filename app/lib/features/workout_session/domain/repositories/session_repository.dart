@@ -41,6 +41,10 @@ abstract class SessionRepository {
   /// Deletes a logged set from a session.
   Future<Result<void, Failure>> deleteLoggedSet(String setId);
 
+  /// Restores a previously deleted logged set, preserving its original ID,
+  /// timestamp, RPE/RIR, set type, and drop-set entries.
+  Future<Result<LoggedSet, Failure>> restoreLoggedSet(LoggedSet set);
+
   /// Dynamically adds an exercise to an ongoing workout session.
   Future<Result<SessionExercise, Failure>> addExerciseToSession({
     required String sessionId,

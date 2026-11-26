@@ -99,6 +99,24 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
     );
   }
 
+  Future<void> _handleRestoreSet(LoggedSet deletedSet) async {
+    final useCase = ref.read(restoreLoggedSetUseCaseProvider);
+    final result = await useCase.execute(deletedSet);
+    if (!mounted) return;
+
+    result.fold(
+      (_) {
+        ref.invalidate(liveSessionDetailProvider(widget.sessionId));
+      },
+      (failure) {
+        context.showSnackBar(
+          'Erro ao restaurar série: ${failure.message}',
+          isError: true,
+        );
+      },
+    );
+  }
+
   Future<void> _handleDeleteSet(
     String setId, {
     String? exerciseName,
@@ -120,7 +138,7 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
             (exerciseName == null || timerState.exerciseName == exerciseName)) {
           ref.read(restTimerNotifierProvider.notifier).stop();
         }
-        if (deletedSet != null && sessionExerciseId != null) {
+        if (deletedSet != null) {
           final messenger = ScaffoldMessenger.maybeOf(context);
           messenger?.hideCurrentSnackBar();
           messenger?.showSnackBar(
@@ -128,21 +146,7 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
               content: Text('Série ${deletedSet.setNumber} desmarcada'),
               action: SnackBarAction(
                 label: 'Desfazer',
-                onPressed: () {
-                  _handleLogSet(
-                    sessionExerciseId: sessionExerciseId,
-                    setNumber: deletedSet.setNumber,
-                    setType: deletedSet.setType,
-                    weightKg: deletedSet.weightKg,
-                    repsCompleted: deletedSet.repsCompleted,
-                    durationSeconds: deletedSet.durationSeconds,
-                    rirActual: deletedSet.rirActual,
-                    restSeconds: 0,
-                    dropSets: deletedSet.dropSets,
-                    exerciseName: exerciseName,
-                    isCardio: isCardio,
-                  );
-                },
+                onPressed: () => _handleRestoreSet(deletedSet),
               ),
             ),
           );

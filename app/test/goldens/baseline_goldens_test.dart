@@ -116,6 +116,10 @@ class _GoldenSessionRepository implements SessionRepository {
       const Success(null);
 
   @override
+  Future<Result<LoggedSet, Failure>> restoreLoggedSet(LoggedSet set) async =>
+      Success(set);
+
+  @override
   Future<Result<WorkoutSession, Failure>> finishSession({
     required String sessionId,
     required int durationSeconds,

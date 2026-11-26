@@ -228,4 +228,23 @@ class SessionLocalDataSource {
     await _writeOps(ops);
     return true;
   }
+
+  /// If a set was deleted offline before sync, drop its pending `deleteSet` op
+  /// directly and return `true` so restoring it requires no remote re-insert.
+  Future<bool> cancelPendingDeleteOp(String setId) async {
+    final ops = getPendingOps();
+    final hasPendingDelete = ops.any(
+      (o) =>
+          o.type == PendingSessionOpType.deleteSet &&
+          o.payload['set_id'] == setId,
+    );
+    if (!hasPendingDelete) return false;
+    ops.removeWhere(
+      (o) =>
+          o.type == PendingSessionOpType.deleteSet &&
+          o.payload['set_id'] == setId,
+    );
+    await _writeOps(ops);
+    return true;
+  }
 }

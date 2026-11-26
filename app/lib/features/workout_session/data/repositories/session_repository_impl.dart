@@ -691,6 +691,73 @@ class SessionRepositoryImpl implements SessionRepository {
   }
 
   @override
+  Future<Result<LoggedSet, Failure>> restoreLoggedSet(LoggedSet set) async {
+    final local = _localDataSource;
+    final restoredModel = LoggedSetModel.fromDomain(set);
+    final effectiveIsWarmup = set.isWarmup || set.setType == SetType.warmup;
+    final data = <String, dynamic>{
+      'id': set.id,
+      'session_exercise_id': set.sessionExerciseId,
+      'set_number': set.setNumber,
+      'set_type': LoggedSetModel.setTypeToString(set.setType),
+      'weight_kg': set.weightKg,
+      'reps_completed': set.repsCompleted,
+      if (set.durationSeconds != null) 'duration_seconds': set.durationSeconds,
+      if (set.rirActual != null) 'rir_actual': set.rirActual,
+      if (set.rpeActual != null) 'rpe_actual': set.rpeActual,
+      if (set.restSecondsActual != null)
+        'rest_seconds_actual': set.restSecondsActual,
+      if (set.executionQuality != null)
+        'execution_quality':
+            LoggedSetModel.executionQualityToString(set.executionQuality),
+      'is_warmup': effectiveIsWarmup,
+      if (set.notes != null) 'notes': set.notes,
+      if (set.dropSets.isNotEmpty)
+        'drop_sets': set.dropSets.map((d) => d.toJson()).toList(),
+      if (set.completedAt != null)
+        'completed_at': set.completedAt!.toIso8601String(),
+    };
+
+    Future<Result<LoggedSet, Failure>> restoreOffline() async {
+      await _upsertSetInCache(set.sessionExerciseId, restoredModel);
+      final canceledDelete = await local!.cancelPendingDeleteOp(set.id);
+      if (!canceledDelete) {
+        await local.enqueueOp(
+          PendingSessionOp(
+            id: _uuid.v4(),
+            type: PendingSessionOpType.logSet,
+            payload: data,
+            createdAt: set.completedAt ?? DateTime.now(),
+          ),
+        );
+      }
+      _notifyPendingCount();
+      return Success(restoredModel.toDomain());
+    }
+
+    if (local != null && await _shouldUseOffline()) {
+      return restoreOffline();
+    }
+
+    try {
+      final model = await _remoteDataSource.insertLoggedSet(data);
+      await _upsertSetInCache(set.sessionExerciseId, model);
+      return Success(model.toDomain());
+    } on PostgrestException catch (e, stack) {
+      return Err(ServerFailure(e.message, stack));
+    } catch (e, stack) {
+      if (local != null && isNetworkError(e)) {
+        _onConnectivityFallback?.call(true);
+        return restoreOffline();
+      }
+      if (e is SocketException) {
+        return Err(NetworkFailure('Sem conexão com a internet.', stack));
+      }
+      return Err(UnexpectedFailure('Erro ao restaurar série: $e', stack));
+    }
+  }
+
+  @override
   Future<Result<SessionExercise, Failure>> addExerciseToSession({
     required String sessionId,
     required String exerciseId,

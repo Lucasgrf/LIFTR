@@ -78,6 +78,10 @@ class _RecordingFinishSessionRepo implements SessionRepository {
       const Success(null);
 
   @override
+  Future<Result<LoggedSet, Failure>> restoreLoggedSet(LoggedSet set) async =>
+      Success(set);
+
+  @override
   Future<Result<WorkoutSession?, Failure>> getActiveSession() async =>
       const Success(null);
 

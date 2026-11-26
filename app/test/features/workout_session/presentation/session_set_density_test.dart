@@ -44,6 +44,7 @@ class _FakeSessionRepo implements SessionRepository {
   final List<({String? existingSetId, int setNumber, double weightKg, int reps})>
       loggedCalls = [];
   final List<String> deletedIds = [];
+  final List<LoggedSet> restoredSets = [];
 
   @override
   Future<Result<void, Failure>> abandonSession(String sessionId) async =>
@@ -70,6 +71,19 @@ class _FakeSessionRepo implements SessionRepository {
     }).toList();
     session = session.copyWith(exercises: updatedExercises);
     return const Success(null);
+  }
+
+  @override
+  Future<Result<LoggedSet, Failure>> restoreLoggedSet(LoggedSet set) async {
+    restoredSets.add(set);
+    final updatedExercises = session.exercises.map((se) {
+      if (se.id != set.sessionExerciseId) return se;
+      final nextSets = [...se.sets.where((s) => s.id != set.id), set]
+        ..sort((a, b) => a.setNumber.compareTo(b.setNumber));
+      return se.copyWith(sets: nextSets);
+    }).toList();
+    session = session.copyWith(exercises: updatedExercises);
+    return Success(set);
   }
 
   @override
@@ -452,18 +466,19 @@ void main() {
     });
 
     testWidgets(
-        'unmarking completed set via compact check shows SnackBar Série N desmarcada + Desfazer and restores set on Undo',
+        'unmarking completed drop-set via compact check shows SnackBar and Undo restores exact LoggedSet without timer or logSet call',
         (tester) async {
       await tester.binding.setSurfaceSize(const Size(375, 812));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
+      final originalCompletedAt = DateTime(2026, 11, 20, 18, 12, 45);
       final initialSession = WorkoutSession(
         id: 'sess-undo',
         userId: 'u-1',
         workoutId: 'w-1',
         workoutName: 'Treino A',
         startedAt: DateTime(2026, 11, 20, 18, 0),
-        exercises: const [
+        exercises: [
           SessionExercise(
             id: 'se-1',
             sessionId: 'sess-undo',
@@ -475,14 +490,22 @@ void main() {
                 id: 'ls-1',
                 sessionExerciseId: 'se-1',
                 setNumber: 1,
+                setType: SetType.dropSet,
                 weightKg: 90.0,
                 repsCompleted: 8,
+                rirActual: 1,
+                rpeActual: 8.5,
+                dropSets: const [
+                  DropSetEntry(weightKg: 60.0, repsCompleted: 10),
+                ],
+                completedAt: originalCompletedAt,
               ),
             ],
           ),
         ],
       );
       final fakeRepo = _FakeSessionRepo(initialSession);
+      late ProviderContainer container;
 
       await tester.pumpWidget(
         ProviderScope(
@@ -501,9 +524,14 @@ void main() {
                 .overrideWith((ref) => _FakeExercisesNotifier(ref)),
             historyListProvider.overrideWith((_) async => const []),
           ],
-          child: MaterialApp(
-            theme: AppTheme.dark(),
-            home: const WorkoutSessionScreen(sessionId: 'sess-undo'),
+          child: Consumer(
+            builder: (context, ref, _) {
+              container = ProviderScope.containerOf(context);
+              return MaterialApp(
+                theme: AppTheme.dark(),
+                home: const WorkoutSessionScreen(sessionId: 'sess-undo'),
+              );
+            },
           ),
         ),
       );
@@ -518,14 +546,25 @@ void main() {
       expect(find.text('Série 1 desmarcada'), findsOneWidget);
       expect(find.text('Desfazer'), findsOneWidget);
 
-      // Tap Desfazer action on SnackBar -> restores set via logSet
+      // Tap Desfazer action on SnackBar -> restores exact original set without logSet or timer
       await tester.tap(find.text('Desfazer'));
       await tester.pumpAndSettle();
 
-      expect(fakeRepo.loggedCalls, hasLength(1));
-      expect(fakeRepo.loggedCalls.single.setNumber, 1);
-      expect(fakeRepo.loggedCalls.single.weightKg, 90.0);
-      expect(fakeRepo.loggedCalls.single.reps, 8);
+      expect(fakeRepo.loggedCalls, isEmpty);
+      expect(fakeRepo.restoredSets, hasLength(1));
+      final restored = fakeRepo.restoredSets.single;
+      expect(restored.id, 'ls-1');
+      expect(restored.completedAt, originalCompletedAt);
+      expect(restored.rpeActual, 8.5);
+      expect(restored.rirActual, 1);
+      expect(restored.setType, SetType.dropSet);
+      expect(
+        restored.dropSets,
+        const [DropSetEntry(weightKg: 60.0, repsCompleted: 10)],
+      );
+      final timerState = container.read(restTimerNotifierProvider);
+      expect(timerState.isVisible, isFalse);
+      expect(timerState.status, RestTimerStatus.idle);
 
       await tester.pumpWidget(const SizedBox.shrink());
     });
