@@ -624,39 +624,42 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
               Semantics(
                 label: 'Adicionar drop-set na série ${widget.setNumber}',
                 button: true,
-                child: InkWell(
-                  onTap: () => _selectSetType(SetType.dropSet),
-                  borderRadius: BorderRadius.circular(radius.small),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                    child: Center(
-                      widthFactor: 1,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: fitnessColors.dropSetTag.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(radius.small),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.bolt_rounded,
-                              size: 14,
-                              color: fitnessColors.dropSetTag,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '+ Drop-set',
-                              style: context.textTheme.labelSmall?.copyWith(
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: InkWell(
+                    onTap: () => _selectSetType(SetType.dropSet),
+                    borderRadius: BorderRadius.circular(radius.small),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                      child: Center(
+                        widthFactor: 1,
+                        child: Ink(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: context.appSpacing.space8,
+                            vertical: context.appSpacing.space8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: fitnessColors.dropSetTag.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(radius.small),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.bolt_rounded,
+                                size: 14,
                                 color: fitnessColors.dropSetTag,
-                                fontWeight: FontWeight.w600,
                               ),
-                            ),
-                          ],
+                              AppSpacing.horizontalGap4,
+                              Text(
+                                '+ Drop-set',
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: fitnessColors.dropSetTag,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -667,42 +670,45 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
               Semantics(
                 label: 'Salvar alteração na série ${widget.setNumber}',
                 button: true,
-                child: InkWell(
-                  onTap: _isSaving ? null : _handleSave,
-                  borderRadius: BorderRadius.circular(radius.small),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                    child: Center(
-                      widthFactor: 1,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.primaryMuted,
-                          borderRadius: BorderRadius.circular(radius.small),
-                          border: Border.all(
-                            color: colors.primary.withValues(alpha: 0.35),
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: InkWell(
+                    onTap: _isSaving ? null : _handleSave,
+                    borderRadius: BorderRadius.circular(radius.small),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                      child: Center(
+                        widthFactor: 1,
+                        child: Ink(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: context.appSpacing.space8,
+                            vertical: context.appSpacing.space8,
                           ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.check_rounded,
-                              size: 14,
-                              color: colors.primaryLight,
+                          decoration: BoxDecoration(
+                            color: colors.primaryMuted,
+                            borderRadius: BorderRadius.circular(radius.small),
+                            border: Border.all(
+                              color: colors.primary.withValues(alpha: 0.35),
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Salvar alteração',
-                              style: context.textTheme.labelSmall?.copyWith(
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.check_rounded,
+                                size: 14,
                                 color: colors.primaryLight,
-                                fontWeight: FontWeight.w700,
                               ),
-                            ),
-                          ],
+                              AppSpacing.horizontalGap4,
+                              Text(
+                                'Salvar alteração',
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: colors.primaryLight,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -713,49 +719,52 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
               Semantics(
                 label: 'Aplicar carga e repetições às séries restantes',
                 button: true,
-                child: InkWell(
-                  onTap: _isSaving
-                      ? null
-                      : () {
-                          HapticFeedback.lightImpact();
-                          widget.onApplyToRemaining!(_weight, _reps);
-                        },
-                  borderRadius: BorderRadius.circular(radius.small),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                    child: Center(
-                      widthFactor: 1,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.surfaceElevated,
-                          borderRadius: BorderRadius.circular(radius.small),
-                          border: Border.all(color: colors.borderSubtle),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.copy_all_rounded,
-                              size: 14,
-                              color: colors.primaryLight,
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                'Aplicar às restantes',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: context.textTheme.labelSmall?.copyWith(
-                                  color: colors.primaryLight,
-                                  fontWeight: FontWeight.w600,
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: InkWell(
+                    onTap: _isSaving
+                        ? null
+                        : () {
+                            HapticFeedback.lightImpact();
+                            widget.onApplyToRemaining!(_weight, _reps);
+                          },
+                    borderRadius: BorderRadius.circular(radius.small),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                      child: Center(
+                        widthFactor: 1,
+                        child: Ink(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: context.appSpacing.space8,
+                            vertical: context.appSpacing.space8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.surfaceElevated,
+                            borderRadius: BorderRadius.circular(radius.small),
+                            border: Border.all(color: colors.borderSubtle),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.copy_all_rounded,
+                                size: 14,
+                                color: colors.primaryLight,
+                              ),
+                              AppSpacing.horizontalGap4,
+                              Flexible(
+                                child: Text(
+                                  'Aplicar às restantes',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: context.textTheme.labelSmall?.copyWith(
+                                    color: colors.primaryLight,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -766,44 +775,47 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
               Semantics(
                 label: 'Desfazer série ${widget.setNumber}',
                 button: true,
-                child: InkWell(
-                  onTap: _isSaving
-                      ? null
-                      : () {
-                          HapticFeedback.lightImpact();
-                          widget.onDelete!();
-                        },
-                  borderRadius: BorderRadius.circular(radius.small),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                    child: Center(
-                      widthFactor: 1,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.surfaceElevated,
-                          borderRadius: BorderRadius.circular(radius.small),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.undo_rounded,
-                              size: 14,
-                              color: colors.textSecondary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Desfazer',
-                              style: context.textTheme.labelSmall?.copyWith(
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: InkWell(
+                    onTap: _isSaving
+                        ? null
+                        : () {
+                            HapticFeedback.lightImpact();
+                            widget.onDelete!();
+                          },
+                    borderRadius: BorderRadius.circular(radius.small),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                      child: Center(
+                        widthFactor: 1,
+                        child: Ink(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: context.appSpacing.space8,
+                            vertical: context.appSpacing.space8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.surfaceElevated,
+                            borderRadius: BorderRadius.circular(radius.small),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.undo_rounded,
+                                size: 14,
                                 color: colors.textSecondary,
-                                fontWeight: FontWeight.w600,
                               ),
-                            ),
-                          ],
+                              AppSpacing.horizontalGap4,
+                              Text(
+                                'Desfazer',
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: colors.textSecondary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -872,41 +884,44 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
             : 'Marcar bloco de cardio ${widget.setNumber} como concluído',
         button: true,
         selected: isDone,
-        child: InkWell(
-          onTap: _isSaving ? null : _handleCheckPressed,
-          onLongPress: isDone ? widget.onDelete : null,
-          borderRadius: BorderRadius.circular(radius.medium),
-          child: SizedBox(
-            width: 48,
-            height: 48,
-            child: Center(
-              child: Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: isDone
-                      ? fitnessColors.progressUp
-                      : colors.surfaceElevated,
-                  borderRadius: BorderRadius.circular(radius.medium),
-                  border: Border.all(
-                    color: isDone ? fitnessColors.progressUp : colors.border,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: _isSaving ? null : _handleCheckPressed,
+            onLongPress: isDone ? widget.onDelete : null,
+            borderRadius: BorderRadius.circular(radius.medium),
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: Center(
+                child: Ink(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: isDone
+                        ? fitnessColors.progressUp
+                        : colors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(radius.medium),
+                    border: Border.all(
+                      color: isDone ? fitnessColors.progressUp : colors.border,
+                    ),
                   ),
-                ),
-                child: _isSaving
-                    ? Padding(
-                        padding: EdgeInsets.all(context.appSpacing.space8),
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: colors.onPrimary,
+                  child: _isSaving
+                      ? Padding(
+                          padding: EdgeInsets.all(context.appSpacing.space8),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colors.onPrimary,
+                          ),
+                        )
+                      : Icon(
+                          Icons.check_rounded,
+                          size: 21,
+                          color: isDone
+                              ? fitnessColors.onSuccess
+                              : colors.textTertiary,
                         ),
-                      )
-                    : Icon(
-                        Icons.check_rounded,
-                        size: 21,
-                        color: isDone
-                            ? fitnessColors.onSuccess
-                            : colors.textTertiary,
-                      ),
+                ),
               ),
             ),
           ),
@@ -1069,49 +1084,52 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
               : 'Marcar série ${widget.setNumber} como concluída',
       button: true,
       selected: isDone,
-      child: InkWell(
-        onTap: _isSaving ? null : _handleCheckPressed,
-        onLongPress: isDone ? widget.onDelete : null,
-        borderRadius: BorderRadius.circular(radius.medium),
-        child: SizedBox(
-          width: 48,
-          height: 48,
-          child: Center(
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: hasPendingEdit
-                    ? colors.primaryMuted
-                    : isDone
-                        ? fitnessColors.progressUp
-                        : colors.surfaceElevated,
-                borderRadius: BorderRadius.circular(radius.medium),
-                border: Border.all(
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: _isSaving ? null : _handleCheckPressed,
+          onLongPress: isDone ? widget.onDelete : null,
+          borderRadius: BorderRadius.circular(radius.medium),
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: Center(
+              child: Ink(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
                   color: hasPendingEdit
-                      ? colors.primary
+                      ? colors.primaryMuted
                       : isDone
                           ? fitnessColors.progressUp
-                          : colors.border,
+                          : colors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(radius.medium),
+                  border: Border.all(
+                    color: hasPendingEdit
+                        ? colors.primary
+                        : isDone
+                            ? fitnessColors.progressUp
+                            : colors.border,
+                  ),
                 ),
-              ),
-              child: _isSaving
-                  ? Padding(
-                      padding: EdgeInsets.all(context.appSpacing.space8),
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: colors.onPrimary,
+                child: _isSaving
+                    ? Padding(
+                        padding: EdgeInsets.all(context.appSpacing.space8),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: colors.onPrimary,
+                        ),
+                      )
+                    : Icon(
+                        Icons.check_rounded,
+                        size: 21,
+                        color: hasPendingEdit
+                            ? colors.primaryLight
+                            : isDone
+                                ? fitnessColors.onSuccess
+                                : colors.textTertiary,
                       ),
-                    )
-                  : Icon(
-                      Icons.check_rounded,
-                      size: 21,
-                      color: hasPendingEdit
-                          ? colors.primaryLight
-                          : isDone
-                              ? fitnessColors.onSuccess
-                              : colors.textTertiary,
-                    ),
+              ),
             ),
           ),
         ),
@@ -1460,53 +1478,57 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                   child: Semantics(
                     label: 'Aplicar carga e repetições às séries restantes',
                     button: true,
-                    child: InkWell(
-                      onTap: _isSaving
-                          ? null
-                          : () {
-                              HapticFeedback.lightImpact();
-                              widget.onApplyToRemaining!(_weight, _reps);
-                            },
-                      borderRadius: BorderRadius.circular(radius.small),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          minWidth: 48,
-                          minHeight: 48,
-                        ),
-                        child: Center(
-                          widthFactor: 1,
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: context.appSpacing.space8,
-                              vertical: context.appSpacing.space8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.surfaceElevated,
-                              borderRadius: BorderRadius.circular(radius.small),
-                              border: Border.all(color: colors.borderSubtle),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.copy_all_rounded,
-                                  size: 14,
-                                  color: colors.primaryLight,
-                                ),
-                                AppSpacing.horizontalGap4,
-                                Flexible(
-                                  child: Text(
-                                    'Aplicar às restantes',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style:
-                                        context.textTheme.labelSmall?.copyWith(
-                                      color: colors.primaryLight,
-                                      fontWeight: FontWeight.w600,
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: InkWell(
+                        onTap: _isSaving
+                            ? null
+                            : () {
+                                HapticFeedback.lightImpact();
+                                widget.onApplyToRemaining!(_weight, _reps);
+                              },
+                        borderRadius: BorderRadius.circular(radius.small),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            minWidth: 48,
+                            minHeight: 48,
+                          ),
+                          child: Center(
+                            widthFactor: 1,
+                            child: Ink(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: context.appSpacing.space8,
+                                vertical: context.appSpacing.space8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.surfaceElevated,
+                                borderRadius:
+                                    BorderRadius.circular(radius.small),
+                                border: Border.all(color: colors.borderSubtle),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.copy_all_rounded,
+                                    size: 14,
+                                    color: colors.primaryLight,
+                                  ),
+                                  AppSpacing.horizontalGap4,
+                                  Flexible(
+                                    child: Text(
+                                      'Aplicar às restantes',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style:
+                                          context.textTheme.labelSmall?.copyWith(
+                                        color: colors.primaryLight,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),

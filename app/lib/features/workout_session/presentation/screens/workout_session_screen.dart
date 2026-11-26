@@ -8,6 +8,7 @@ import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/providers/clock_provider.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
@@ -376,38 +377,43 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                             Semantics(
                               label: 'Finalizar treino',
                               button: true,
-                              child: InkWell(
-                                onTap: () {
-                                  HapticFeedback.lightImpact();
-                                  _openFinishModal(session);
-                                },
+                              child: Material(
+                                color: allCompleted
+                                    ? fitnessColors.progressUp
+                                    : fitnessColors.progressUp
+                                        .withValues(alpha: 0.14),
                                 borderRadius:
                                     BorderRadius.circular(radius.small),
-                                child: Container(
-                                  constraints: const BoxConstraints(
-                                    minHeight: 48,
-                                    minWidth: 82,
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                  ),
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: allCompleted
-                                        ? fitnessColors.progressUp
-                                        : fitnessColors.progressUp
-                                            .withValues(alpha: 0.14),
-                                    borderRadius:
-                                        BorderRadius.circular(radius.small),
-                                  ),
-                                  child: Text(
-                                    'Finalizar',
-                                    style: context.textTheme.labelMedium
-                                        ?.copyWith(
-                                      color: allCompleted
-                                          ? fitnessColors.onSuccess
-                                          : fitnessColors.progressUp,
-                                      fontWeight: FontWeight.w700,
+                                clipBehavior: Clip.antiAlias,
+                                child: InkWell(
+                                  onTap: () {
+                                    HapticFeedback.lightImpact();
+                                    _openFinishModal(session);
+                                  },
+                                  borderRadius:
+                                      BorderRadius.circular(radius.small),
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      minHeight: 48,
+                                      minWidth: 82,
+                                    ),
+                                    child: Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: context.appSpacing.space16,
+                                      ),
+                                      child: Center(
+                                        widthFactor: 1,
+                                        child: Text(
+                                          'Finalizar',
+                                          style: context.textTheme.labelMedium
+                                              ?.copyWith(
+                                            color: allCompleted
+                                                ? fitnessColors.onSuccess
+                                                : fitnessColors.progressUp,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),

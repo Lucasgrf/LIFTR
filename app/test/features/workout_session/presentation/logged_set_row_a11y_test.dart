@@ -123,5 +123,35 @@ void main() {
         expect(tester.takeException(), isNull);
       }
     });
+
+    testWidgets(
+        'A11Y-02 completed set check button renders Material + Ink ripple surface',
+        (tester) async {
+      await pumpRow(
+        tester,
+        width: 375.0,
+        loggedSet: const LoggedSet(
+          id: 'ls-1',
+          sessionExerciseId: 'se-1',
+          setNumber: 1,
+          weightKg: 80.0,
+          repsCompleted: 10,
+        ),
+      );
+
+      final checkInkWell = find.ancestor(
+        of: find.byIcon(Icons.check_rounded),
+        matching: find.byType(InkWell),
+      );
+      expect(checkInkWell, findsOneWidget);
+      expect(
+        find.ancestor(of: checkInkWell, matching: find.byType(Material)),
+        findsWidgets,
+      );
+      expect(
+        find.descendant(of: checkInkWell, matching: find.byType(Ink)),
+        findsOneWidget,
+      );
+    });
   });
 }

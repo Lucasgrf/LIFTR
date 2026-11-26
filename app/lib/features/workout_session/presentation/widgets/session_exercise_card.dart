@@ -266,25 +266,31 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
               ? '${se.completedWorkingSetsCount}/${se.targetSetsCount} concluídas'
               : '${se.completedWorkingSetsCount}/${se.targetSetsCount} séries');
 
-      return InkWell(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          widget.onToggleExpand?.call();
-        },
-        borderRadius: BorderRadius.circular(radius.large),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 68),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: colors.surface,
-            borderRadius: BorderRadius.circular(radius.large),
-            border: Border.all(
-              color: isAllDone
-                  ? fitnessColors.progressUp.withValues(alpha: 0.35)
-                  : colors.border,
-            ),
+      return Material(
+        color: colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radius.large),
+          side: BorderSide(
+            color: isAllDone
+                ? fitnessColors.progressUp.withValues(alpha: 0.35)
+                : colors.border,
           ),
-          child: Row(
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            widget.onToggleExpand?.call();
+          },
+          borderRadius: BorderRadius.circular(radius.large),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 68),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: context.appSpacing.space16,
+                vertical: context.appSpacing.space12,
+              ),
+              child: Row(
             children: [
               SizedBox(
                 width: 28,
@@ -346,7 +352,9 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
             ],
           ),
         ),
-      );
+      ),
+      ),
+    );
     }
 
     final settings = ref.watch(userSettingsProvider);
@@ -428,9 +436,12 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: InkWell(
-                  onTap: widget.onToggleExpand,
-                  child: Column(
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: InkWell(
+                    onTap: widget.onToggleExpand,
+                    borderRadius: BorderRadius.circular(radius.small),
+                    child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Wrap(
@@ -494,6 +505,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                   ),
                 ),
               ),
+              ),
               const SizedBox(width: 8),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -503,37 +515,42 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                       container: true,
                       label: 'Trocar exercício',
                       button: true,
-                      child: InkWell(
-                        onTap: widget.onSwapExercise,
+                      child: Material(
+                        color: colors.primaryMuted,
                         borderRadius: BorderRadius.circular(radius.medium),
-                        child: ExcludeSemantics(
-                          child: Container(
-                            constraints: const BoxConstraints(
-                              minWidth: 48,
-                              minHeight: 48,
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(
-                              color: colors.primaryMuted,
-                              borderRadius:
-                                  BorderRadius.circular(radius.medium),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.swap_horiz_rounded,
-                                  size: 17,
-                                  color: colors.primaryLight,
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: widget.onSwapExercise,
+                          borderRadius: BorderRadius.circular(radius.medium),
+                          child: ExcludeSemantics(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                minWidth: 48,
+                                minHeight: 48,
+                              ),
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: context.appSpacing.space12,
                                 ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  'Trocar',
-                                  style: context.textTheme.labelMedium?.copyWith(
-                                    color: colors.primaryLight,
-                                  ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.swap_horiz_rounded,
+                                      size: 17,
+                                      color: colors.primaryLight,
+                                    ),
+                                    AppSpacing.horizontalGap4,
+                                    Text(
+                                      'Trocar',
+                                      style: context.textTheme.labelMedium
+                                          ?.copyWith(
+                                        color: colors.primaryLight,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
                           ),
                         ),
@@ -619,46 +636,52 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                   Semantics(
                     label: 'Repetir carga e repetições da última sessão',
                     button: true,
-                    child: InkWell(
-                      onTap: () => _repeatLastSession(rec),
-                      borderRadius: BorderRadius.circular(radius.medium),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(minHeight: 48),
-                        child: Center(
-                          widthFactor: 1,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.surfaceElevated,
-                              borderRadius:
-                                  BorderRadius.circular(radius.medium),
-                              border: Border.all(color: colors.border),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.replay_rounded,
-                                  size: 15,
-                                  color: colors.primaryLight,
-                                ),
-                                const SizedBox(width: 5),
-                                Flexible(
-                                  child: Text(
-                                    'Repetir última',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style:
-                                        context.textTheme.labelSmall?.copyWith(
-                                      color: colors.textPrimary,
-                                      fontWeight: FontWeight.w600,
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: InkWell(
+                        onTap: () => _repeatLastSession(rec),
+                        borderRadius: BorderRadius.circular(radius.medium),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            minWidth: 48,
+                            minHeight: 48,
+                          ),
+                          child: Center(
+                            widthFactor: 1,
+                            child: Ink(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: context.appSpacing.space12,
+                                vertical: context.appSpacing.space8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.surfaceElevated,
+                                borderRadius:
+                                    BorderRadius.circular(radius.medium),
+                                border: Border.all(color: colors.border),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.replay_rounded,
+                                    size: 15,
+                                    color: colors.primaryLight,
+                                  ),
+                                  AppSpacing.horizontalGap4,
+                                  Flexible(
+                                    child: Text(
+                                      'Repetir última',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: context.textTheme.labelSmall
+                                          ?.copyWith(
+                                        color: colors.textPrimary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -669,62 +692,68 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                   Semantics(
                     label: 'Concluir séries restantes deste exercício',
                     button: true,
-                    child: InkWell(
-                      onTap: _isBulkCompleting
-                          ? null
-                          : () => _completeAllRemainingSets(
-                                defaultWeight: defaultWeight,
-                              ),
-                      borderRadius: BorderRadius.circular(radius.medium),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(minHeight: 48),
-                        child: Center(
-                          widthFactor: 1,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.primaryMuted,
-                              borderRadius:
-                                  BorderRadius.circular(radius.medium),
-                              border: Border.all(
-                                color: colors.primary.withValues(alpha: 0.35),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (_isBulkCompleting)
-                                  SizedBox(
-                                    width: 14,
-                                    height: 14,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: colors.primaryLight,
-                                    ),
-                                  )
-                                else
-                                  Icon(
-                                    Icons.done_all_rounded,
-                                    size: 15,
-                                    color: colors.primaryLight,
-                                  ),
-                                const SizedBox(width: 5),
-                                Flexible(
-                                  child: Text(
-                                    'Concluir restantes',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style:
-                                        context.textTheme.labelSmall?.copyWith(
-                                      color: colors.primaryLight,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: InkWell(
+                        onTap: _isBulkCompleting
+                            ? null
+                            : () => _completeAllRemainingSets(
+                                  defaultWeight: defaultWeight,
                                 ),
-                              ],
+                        borderRadius: BorderRadius.circular(radius.medium),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            minWidth: 48,
+                            minHeight: 48,
+                          ),
+                          child: Center(
+                            widthFactor: 1,
+                            child: Ink(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: context.appSpacing.space12,
+                                vertical: context.appSpacing.space8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.primaryMuted,
+                                borderRadius:
+                                    BorderRadius.circular(radius.medium),
+                                border: Border.all(
+                                  color: colors.primary.withValues(alpha: 0.35),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (_isBulkCompleting)
+                                    SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: colors.primaryLight,
+                                      ),
+                                    )
+                                  else
+                                    Icon(
+                                      Icons.done_all_rounded,
+                                      size: 15,
+                                      color: colors.primaryLight,
+                                    ),
+                                  AppSpacing.horizontalGap4,
+                                  Flexible(
+                                    child: Text(
+                                      'Concluir restantes',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: context.textTheme.labelSmall
+                                          ?.copyWith(
+                                        color: colors.primaryLight,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
