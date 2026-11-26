@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
+import 'package:personal_fitness_os/core/providers/clock_provider.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
@@ -40,7 +41,7 @@ class _ProgressConsistencyViewState
         onRetry: () => ref.invalidate(historyListProvider),
       ),
       data: (sessions) {
-        final now = DateTime.now();
+        final now = ref.watch(appClockProvider)();
         final today = _dateOnly(now);
         final weekStart = today.subtract(Duration(days: today.weekday - 1));
         final monthStart = DateTime(now.year, now.month, 1);

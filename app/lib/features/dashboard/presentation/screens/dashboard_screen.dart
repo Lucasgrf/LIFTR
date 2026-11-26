@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
+import 'package:personal_fitness_os/core/providers/clock_provider.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
@@ -199,7 +200,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final insightsAsync = ref.watch(fitnessInsightsProvider);
     ref.watch(workoutQueueProvider);
 
-    final now = DateTime.now();
+    final now = ref.watch(appClockProvider)();
     final formattedDate = DateFormat("EEEE, d 'de' MMM", 'pt_BR').format(now);
     final capitalizedDate =
         formattedDate[0].toUpperCase() + formattedDate.substring(1);
@@ -360,6 +361,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         const SizedBox(height: 14),
                         LastCompletedWorkoutCard(
                           session: data.lastCompletedSession!,
+                          referenceNow: now,
                         ),
                       ],
 

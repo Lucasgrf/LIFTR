@@ -17,14 +17,16 @@ class LastCompletedWorkoutCard extends StatelessWidget {
   const LastCompletedWorkoutCard({
     super.key,
     required this.session,
+    this.referenceNow,
     this.onTap,
   });
 
   final WorkoutSession session;
+  final DateTime? referenceNow;
   final VoidCallback? onTap;
 
   String _formatDateLabel(DateTime dt) {
-    final now = DateTime.now();
+    final now = referenceNow ?? DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final date = DateTime(dt.year, dt.month, dt.day);
     final diff = today.difference(date).inDays;
