@@ -452,7 +452,7 @@ void main() {
       expect(darkColors.surface, const Color(0xFF1A1A1F));
       expect(darkColors.primary, const Color(0xFF72A987));
       expect(darkColors.onPrimary, const Color(0xFF0D0D0F));
-      expect(darkColors.danger, const Color(0xFFD96B6B));
+      expect(darkColors.danger, const Color(0xFFE07575));
       expect(darkFitness.progressUp, const Color(0xFF72A987));
       expect(darkFitness.warmupTag, const Color(0xFF6E9EC7));
       expect(darkRadius.xl, 16);
@@ -461,7 +461,7 @@ void main() {
       expect(dark.colorScheme.primary == Colors.blue, isFalse);
 
       final lightColors = light.extension<AppColors>()!;
-      expect(lightColors.background, const Color(0xFFF5F5F3));
+      expect(lightColors.background, const Color(0xFFF4F4F0));
       expect(lightColors.primary, const Color(0xFF315B43));
       expect(lightColors.onPrimary, const Color(0xFFF2F2F0));
     });
