@@ -290,53 +290,47 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               padding: const EdgeInsets.fromLTRB(8, 8, 18, 8),
               child: Column(
                 children: [
-                  Row(
-                    children: [
-                      Semantics(
-                        label: 'Voltar',
-                        button: true,
-                        child: IconButton(
-                          onPressed: _goBack,
-                          constraints: const BoxConstraints(
-                            minWidth: 48,
-                            minHeight: 48,
-                          ),
-                          icon: Icon(
-                            Icons.arrow_back_rounded,
-                            color: colors.textPrimary,
+                  LayoutBuilder(
+                    builder: (context, constraints) => Row(
+                      children: [
+                        Semantics(
+                          label: 'Voltar',
+                          button: true,
+                          child: IconButton(
+                            onPressed: _goBack,
+                            constraints: const BoxConstraints(
+                              minWidth: 48,
+                              minHeight: 48,
+                            ),
+                            icon: Icon(
+                              Icons.arrow_back_rounded,
+                              color: colors.textPrimary,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: LiftrProgressBar(
-                          progress: (_step + 1) / _totalSteps,
-                          height: 4,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: LiftrProgressBar(
+                            progress: (_step + 1) / _totalSteps,
+                            height: 4,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      if (MediaQuery.sizeOf(context).width < 360 ||
-                          MediaQuery.textScalerOf(context).scale(14) > 18)
-                        Flexible(
+                        const SizedBox(width: 12),
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: constraints.maxWidth * 0.42,
+                          ),
                           child: Text(
                             'Passo ${_step + 1} de $_totalSteps',
                             maxLines: 2,
-                            textAlign: TextAlign.end,
                             style: context.textTheme.labelMedium?.copyWith(
                               color: colors.textSecondary,
                               fontFeatures: AppTypography.tabularFeatures,
                             ),
                           ),
-                        )
-                      else
-                        Text(
-                          'Passo ${_step + 1} de $_totalSteps',
-                          style: context.textTheme.labelMedium?.copyWith(
-                            color: colors.textSecondary,
-                            fontFeatures: AppTypography.tabularFeatures,
-                          ),
                         ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -463,82 +457,84 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _buildBodyDataStep(BuildContext context) {
-    final isNarrow = MediaQuery.sizeOf(context).width < 360 ||
-        MediaQuery.textScalerOf(context).scale(14) > 18;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildStepHeader(
-          context,
-          title: 'Seus dados corporais',
-          subtitle:
-              'Usamos isso apenas para calcular suas metas iniciais de carga e gasto calórico.',
-        ),
-        _buildPair(
-          context,
-          isNarrow: isNarrow,
-          rowCrossAxisAlignment: CrossAxisAlignment.center,
-          first: _SelectableOptionCard(
-            title: 'Masculino',
-            selected: _sex == 'M',
-            onTap: () {
-              HapticFeedback.lightImpact();
-              setState(() => _sex = 'M');
-            },
-          ),
-          second: _SelectableOptionCard(
-            title: 'Feminino',
-            selected: _sex == 'F',
-            onTap: () {
-              HapticFeedback.lightImpact();
-              setState(() => _sex = 'F');
-            },
-          ),
-        ),
-        const SizedBox(height: 18),
-        _buildPair(
-          context,
-          isNarrow: isNarrow,
-          first: _NumericStepInput(
-            label: 'Idade',
-            controller: _ageController,
-            suffix: 'anos',
-            decimal: false,
-            errorText: _ageError,
-            onChanged: (_) => setState(() {}),
-          ),
-          second: _NumericStepInput(
-            label: 'Altura',
-            controller: _heightController,
-            suffix: 'cm',
-            decimal: false,
-            errorText: _heightError,
-            onChanged: (_) => setState(() {}),
-          ),
-        ),
-        const SizedBox(height: 12),
-        _buildPair(
-          context,
-          isNarrow: isNarrow,
-          first: _NumericStepInput(
-            label: 'Peso atual',
-            controller: _weightController,
-            suffix: 'kg',
-            decimal: true,
-            errorText: _weightError,
-            onChanged: (_) => setState(() {}),
-          ),
-          second: _NumericStepInput(
-            label: '% Gordura (opc.)',
-            controller: _bodyFatController,
-            suffix: '%',
-            decimal: true,
-            errorText: _bodyFatError,
-            onChanged: (_) => setState(() {}),
-          ),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 320;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildStepHeader(
+              context,
+              title: 'Seus dados corporais',
+              subtitle:
+                  'Usamos isso apenas para calcular suas metas iniciais de carga e gasto calórico.',
+            ),
+            _buildPair(
+              context,
+              isNarrow: isNarrow,
+              rowCrossAxisAlignment: CrossAxisAlignment.center,
+              first: _SelectableOptionCard(
+                title: 'Masculino',
+                selected: _sex == 'M',
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  setState(() => _sex = 'M');
+                },
+              ),
+              second: _SelectableOptionCard(
+                title: 'Feminino',
+                selected: _sex == 'F',
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  setState(() => _sex = 'F');
+                },
+              ),
+            ),
+            const SizedBox(height: 18),
+            _buildPair(
+              context,
+              isNarrow: isNarrow,
+              first: _NumericStepInput(
+                label: 'Idade',
+                controller: _ageController,
+                suffix: 'anos',
+                decimal: false,
+                errorText: _ageError,
+                onChanged: (_) => setState(() {}),
+              ),
+              second: _NumericStepInput(
+                label: 'Altura',
+                controller: _heightController,
+                suffix: 'cm',
+                decimal: false,
+                errorText: _heightError,
+                onChanged: (_) => setState(() {}),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildPair(
+              context,
+              isNarrow: isNarrow,
+              first: _NumericStepInput(
+                label: 'Peso atual',
+                controller: _weightController,
+                suffix: 'kg',
+                decimal: true,
+                errorText: _weightError,
+                onChanged: (_) => setState(() {}),
+              ),
+              second: _NumericStepInput(
+                label: '% Gordura (opc.)',
+                controller: _bodyFatController,
+                suffix: '%',
+                decimal: true,
+                errorText: _bodyFatError,
+                onChanged: (_) => setState(() {}),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 

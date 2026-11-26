@@ -163,24 +163,27 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
     required Widget second,
     double horizontalGap = 8,
   }) {
-    final stackVertically = MediaQuery.sizeOf(context).width < 360 ||
-        MediaQuery.textScalerOf(context).scale(14) > 18;
-    if (stackVertically) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          first,
-          AppSpacing.verticalGap8,
-          second,
-        ],
-      );
-    }
-    return Row(
-      children: [
-        Expanded(child: first),
-        SizedBox(width: horizontalGap),
-        Expanded(child: second),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stackVertically = constraints.maxWidth < 300;
+        if (stackVertically) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              first,
+              AppSpacing.verticalGap8,
+              second,
+            ],
+          );
+        }
+        return Row(
+          children: [
+            Expanded(child: first),
+            SizedBox(width: horizontalGap),
+            Expanded(child: second),
+          ],
+        );
+      },
     );
   }
 
@@ -249,8 +252,8 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                   padding: EdgeInsets.all(context.appSpacing.space16),
                   child: Column(
                     children: [
-                      Builder(
-                        builder: (context) {
+                      LayoutBuilder(
+                        builder: (context, constraints) {
                           final badge = Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
@@ -276,51 +279,44 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                               ),
                             ),
                           );
-                          final isCompact =
-                              MediaQuery.sizeOf(context).width < 360 ||
-                                  MediaQuery.textScalerOf(context).scale(14) >
-                                      18;
+                          final isCompact = constraints.maxWidth < 300;
+                          const setTypeLabels = <SetType, String>{
+                            SetType.warmup: 'Aquecimento',
+                            SetType.rampUp: 'Reconhecimento',
+                            SetType.working: 'Válida (Trabalho)',
+                            SetType.dropSet: 'Drop-set',
+                            SetType.mobility: 'Mobilidade',
+                          };
                           final typeDropdown = DropdownButton<SetType>(
                             value: template.setType,
-                            isExpanded: isCompact,
+                            isExpanded: true,
+                            alignment: isCompact
+                                ? AlignmentDirectional.centerStart
+                                : AlignmentDirectional.centerEnd,
                             dropdownColor: context.appColors.surfaceElevated,
                             underline: const SizedBox(),
-                            items: const [
-                              DropdownMenuItem(
-                                value: SetType.warmup,
-                                child: Text(
-                                  'Aquecimento',
-                                  overflow: TextOverflow.ellipsis,
+                            selectedItemBuilder: (context) => [
+                              for (final label in setTypeLabels.values)
+                                Align(
+                                  alignment: isCompact
+                                      ? AlignmentDirectional.centerStart
+                                      : AlignmentDirectional.centerEnd,
+                                  child: Text(
+                                    label,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
-                              DropdownMenuItem(
-                                value: SetType.rampUp,
-                                child: Text(
-                                  'Reconhecimento',
-                                  overflow: TextOverflow.ellipsis,
+                            ],
+                            items: [
+                              for (final entry in setTypeLabels.entries)
+                                DropdownMenuItem(
+                                  value: entry.key,
+                                  child: Text(
+                                    entry.value,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
-                              DropdownMenuItem(
-                                value: SetType.working,
-                                child: Text(
-                                  'Válida (Trabalho)',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              DropdownMenuItem(
-                                value: SetType.dropSet,
-                                child: Text(
-                                  'Drop-set',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              DropdownMenuItem(
-                                value: SetType.mobility,
-                                child: Text(
-                                  'Mobilidade',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
                             ],
                             onChanged: (newType) {
                               if (newType != null) {
@@ -366,12 +362,7 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                             children: [
                               badge,
                               AppSpacing.horizontalGap8,
-                              Expanded(
-                                child: Align(
-                                  alignment: Alignment.centerRight,
-                                  child: typeDropdown,
-                                ),
-                              ),
+                              Expanded(child: typeDropdown),
                               deleteButton,
                             ],
                           );
@@ -508,57 +499,62 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                         ),
                       ],
                       AppSpacing.verticalGap8,
-                      SizedBox(
-                        width: double.infinity,
-                        child: Wrap(
-                          alignment: WrapAlignment.spaceBetween,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: [
-                            Text(
-                              'Descanso',
-                              style: context.textTheme.bodyMedium?.copyWith(
-                                color: context.appColors.textSecondary,
-                              ),
-                            ),
-                            DropdownButton<int>(
-                              value: template.restSeconds,
-                              isExpanded:
-                                  MediaQuery.sizeOf(context).width < 360 ||
-                                      MediaQuery.textScalerOf(context)
-                                              .scale(14) >
-                                          18,
-                              dropdownColor: context.appColors.surfaceElevated,
-                              isDense: true,
-                              underline: const SizedBox(),
-                              items: ConfigureSetsScreen.restDropdownValuesFor(
-                                template.restSeconds,
-                              ).map((v) {
-                                final label = v == 0
-                                    ? 'Sem descanso'
-                                    : ConfigureSetsScreen.restOptions.contains(v)
-                                        ? '${v}s'
-                                        : '${v}s (personalizado)';
-                                return DropdownMenuItem<int>(
-                                  value: v,
-                                  child: Text(
-                                    label,
-                                    overflow: TextOverflow.ellipsis,
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isCompact = constraints.maxWidth < 300;
+                          return SizedBox(
+                            width: double.infinity,
+                            child: Wrap(
+                              alignment: WrapAlignment.spaceBetween,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 8,
+                              runSpacing: 4,
+                              children: [
+                                Text(
+                                  'Descanso',
+                                  style: context.textTheme.bodyMedium?.copyWith(
+                                    color: context.appColors.textSecondary,
                                   ),
-                                );
-                              }).toList(),
-                              onChanged: (v) {
-                                if (v != null) {
-                                  setState(() {
-                                    final cur = _sets[idx];
-                                    _sets[idx] = cur.copyWith(restSeconds: v);
-                                  });
-                                }
-                              },
+                                ),
+                                DropdownButton<int>(
+                                  value: template.restSeconds,
+                                  isExpanded: isCompact,
+                                  dropdownColor:
+                                      context.appColors.surfaceElevated,
+                                  isDense: true,
+                                  underline: const SizedBox(),
+                                  items:
+                                      ConfigureSetsScreen.restDropdownValuesFor(
+                                    template.restSeconds,
+                                  ).map((v) {
+                                    final label = v == 0
+                                        ? 'Sem descanso'
+                                        : ConfigureSetsScreen.restOptions
+                                                .contains(v)
+                                            ? '${v}s'
+                                            : '${v}s (personalizado)';
+                                    return DropdownMenuItem<int>(
+                                      value: v,
+                                      child: Text(
+                                        label,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: (v) {
+                                    if (v != null) {
+                                      setState(() {
+                                        final cur = _sets[idx];
+                                        _sets[idx] =
+                                            cur.copyWith(restSeconds: v);
+                                      });
+                                    }
+                                  },
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          );
+                        },
                       ),
                     ],
                   ),
