@@ -653,9 +653,11 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Hack Squat'), findsOneWidget);
 
-        // Toggle warmup badge
+        // Expand completed Set 1 (compact by default) and toggle warmup badge
+        await tester.tap(find.bySemanticsLabel(RegExp(r'^Série 1,')));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('1').first);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('AQ'), findsWidgets);
 
         // Tap check button to start Rest Timer (-15s, +15s, Pular)

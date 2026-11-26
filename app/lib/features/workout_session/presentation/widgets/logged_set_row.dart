@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
+import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
@@ -24,12 +25,15 @@ class LoggedSetRow extends StatefulWidget {
     this.weightIncrement = 2.5,
     this.showRir = true,
     this.isCardio = false,
+    this.isExpanded = true,
     this.syncToken = 0,
     required this.onSave,
     this.onDelete,
     this.onToggleWarmup,
     this.onApplyToRemaining,
     this.onDraftChanged,
+    this.onRequestExpand,
+    this.focusNode,
   });
 
   final int setNumber;
@@ -42,6 +46,7 @@ class LoggedSetRow extends StatefulWidget {
   final double weightIncrement;
   final bool showRir;
   final bool isCardio;
+  final bool isExpanded;
   final int syncToken;
   final Future<void> Function({
     required double weightKg,
@@ -56,6 +61,8 @@ class LoggedSetRow extends StatefulWidget {
   final VoidCallback? onToggleWarmup;
   final void Function(double weightKg, int repsCompleted)? onApplyToRemaining;
   final void Function(double weightKg, int repsCompleted)? onDraftChanged;
+  final VoidCallback? onRequestExpand;
+  final FocusNode? focusNode;
 
   @override
   State<LoggedSetRow> createState() => _LoggedSetRowState();
@@ -153,6 +160,18 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
           (forceSync || oldWidget.defaultReps != widget.defaultReps)) {
         _reps = widget.defaultReps;
       }
+    }
+
+    if (!widget.isCardio &&
+        oldWidget.isExpanded &&
+        !widget.isExpanded &&
+        _hasUnsavedEdits &&
+        !_isSaving) {
+      Future.microtask(() {
+        if (mounted && !widget.isExpanded && _hasUnsavedEdits && !_isSaving) {
+          _handleSave();
+        }
+      });
     }
   }
 
@@ -515,10 +534,9 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     }
   }
 
-  Widget _buildBadge(BuildContext context) {
+  ({String label, Color bg, Color fg}) _badgeAppearance(BuildContext context) {
     final colors = context.appColors;
     final fitnessColors = context.fitnessColors;
-    final radius = context.appRadius;
 
     final String label;
     final Color bg;
@@ -559,6 +577,45 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
         break;
     }
 
+    return (label: label, bg: bg, fg: fg);
+  }
+
+  Widget _buildBadgeBox(BuildContext context) {
+    final radius = context.appRadius;
+    final appearance = _badgeAppearance(context);
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: Center(
+        child: Container(
+          width: 34,
+          height: 34,
+          padding: EdgeInsets.symmetric(horizontal: context.appSpacing.space4),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: appearance.bg,
+            borderRadius: BorderRadius.circular(radius.small),
+          ),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              appearance.label,
+              maxLines: 1,
+              style: context.textTheme.labelMedium?.copyWith(
+                color: appearance.fg,
+                fontWeight: FontWeight.w700,
+                fontFeatures: AppTypography.tabularFeatures,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBadge(BuildContext context) {
+    final radius = context.appRadius;
+
     return Semantics(
       label: _setType == SetType.warmup
           ? 'Série de aquecimento. Toque para alternar tipo'
@@ -573,34 +630,7 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
           onTap: _cycleSetType,
           onLongPress: _showSetTypePicker,
           borderRadius: BorderRadius.circular(radius.small),
-          child: SizedBox(
-            width: 48,
-            height: 48,
-            child: Center(
-              child: Container(
-                width: 34,
-                height: 34,
-                padding: EdgeInsets.symmetric(horizontal: context.appSpacing.space4),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: bg,
-                  borderRadius: BorderRadius.circular(radius.small),
-                ),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    style: context.textTheme.labelMedium?.copyWith(
-                      color: fg,
-                      fontWeight: FontWeight.w700,
-                      fontFeatures: AppTypography.tabularFeatures,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
+          child: _buildBadgeBox(context),
         ),
       ),
     );
@@ -1148,8 +1178,586 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
       ),
     );
 
-    return GestureDetector(
-      onLongPress: _showSetTypePicker,
+    final compactCheckButton = Semantics(
+      container: true,
+      button: true,
+      selected: isDone,
+      label: isDone
+          ? 'Desmarcar série ${widget.setNumber}'
+          : 'Concluir série ${widget.setNumber}',
+      onTap: _isSaving ? null : _handleCheckPressed,
+      onLongPress: isDone ? widget.onDelete : null,
+      child: ExcludeSemantics(
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: _isSaving ? null : _handleCheckPressed,
+            onLongPress: isDone ? widget.onDelete : null,
+            borderRadius: BorderRadius.circular(radius.medium),
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: Center(
+                child: Ink(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: hasPendingEdit
+                        ? colors.primaryMuted
+                        : isDone
+                            ? fitnessColors.progressUp
+                            : colors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(radius.medium),
+                    border: Border.all(
+                      color: hasPendingEdit
+                          ? colors.primary
+                          : isDone
+                              ? fitnessColors.progressUp
+                              : colors.border,
+                    ),
+                  ),
+                  child: _isSaving
+                      ? Padding(
+                          padding: EdgeInsets.all(context.appSpacing.space8),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colors.onPrimary,
+                          ),
+                        )
+                      : Icon(
+                          Icons.check_rounded,
+                          size: 21,
+                          color: hasPendingEdit
+                              ? colors.primaryLight
+                              : isDone
+                                  ? fitnessColors.onSuccess
+                                  : colors.textTertiary,
+                        ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    Widget buildCompactRow() {
+      final weightText = _formatWeight(_weight);
+      final repsText = '$_reps';
+      final stateWord = isDone ? 'concluída' : 'pendente';
+      final compactSemanticLabel = isDropSet && _dropSets.isNotEmpty
+          ? 'Série ${widget.setNumber}, drop-set, $weightText kg, $repsText repetições, drop ${_dropSets.map((d) => '${_formatWeight(d.weightKg)} kg por ${d.repsCompleted} repetições').join(', ')}, $stateWord. Toque duas vezes para editar'
+          : 'Série ${widget.setNumber}, $weightText kg, $repsText repetições, $stateWord. Toque duas vezes para editar';
+
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Semantics(
+              container: true,
+              button: true,
+              label: compactSemanticLabel,
+              onTapHint: 'expandir para editar',
+              onTap: widget.onRequestExpand,
+              child: ExcludeSemantics(
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: InkWell(
+                    onTap: widget.onRequestExpand,
+                    borderRadius: BorderRadius.circular(radius.small),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 48),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              _buildBadgeBox(context),
+                              AppSpacing.horizontalGap8,
+                              Expanded(
+                                flex: 12,
+                                child: _CompactValueCell(
+                                  valueText: weightText,
+                                ),
+                              ),
+                              AppSpacing.horizontalGap8,
+                              Expanded(
+                                flex: 10,
+                                child: _CompactValueCell(
+                                  valueText: repsText,
+                                ),
+                              ),
+                              if (widget.showRir) ...[
+                                AppSpacing.horizontalGap8,
+                                SizedBox(
+                                  width: 58,
+                                  child: _CompactValueCell(
+                                    valueText:
+                                        'RIR ${_rir ?? widget.defaultRir}',
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          if (isDropSet && _dropSets.isNotEmpty)
+                            Padding(
+                              padding: EdgeInsets.only(
+                                top: context.appSpacing.space4,
+                                left: context.appSpacing.space4,
+                              ),
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: context.appSpacing.space8,
+                                  vertical: context.appSpacing.space2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: fitnessColors.dropSetTag
+                                      .withValues(alpha: 0.06),
+                                  borderRadius:
+                                      BorderRadius.circular(radius.xs),
+                                  border: Border(
+                                    left: BorderSide(
+                                      color: fitnessColors.dropSetTag,
+                                      width: 2.5,
+                                    ),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.bolt_rounded,
+                                      size: 13,
+                                      color: fitnessColors.dropSetTag,
+                                    ),
+                                    AppSpacing.horizontalGap4,
+                                    Expanded(
+                                      child: Text(
+                                        '↳ ${_dropSets.map((d) => '${_formatWeight(d.weightKg)} kg × ${d.repsCompleted}').join(' · ')}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: context.textTheme.labelSmall
+                                            ?.copyWith(
+                                          color: fitnessColors.dropSetTag,
+                                          fontWeight: FontWeight.w600,
+                                          fontFeatures:
+                                              AppTypography.tabularFeatures,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          AppSpacing.horizontalGap8,
+          compactCheckButton,
+        ],
+      );
+    }
+
+    Widget buildExpandedContent(double innerMaxWidth) {
+      final wideBreakpoint = widget.showRir ? 520.0 : 448.0;
+      final isWide = innerMaxWidth >= wideBreakpoint;
+      final isDropWide = (innerMaxWidth - 22.5) >= 420.0;
+
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isWide)
+            Row(
+              children: [
+                _buildBadge(context),
+                AppSpacing.horizontalGap8,
+                Expanded(flex: 12, child: weightStepper),
+                AppSpacing.horizontalGap8,
+                Expanded(flex: 10, child: repsStepper),
+                if (widget.showRir) ...[
+                  AppSpacing.horizontalGap8,
+                  rirSelector,
+                ],
+                AppSpacing.horizontalGap8,
+                checkButton,
+              ],
+            )
+          else
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    _buildBadge(context),
+                    AppSpacing.horizontalGap8,
+                    Expanded(child: weightStepper),
+                  ],
+                ),
+                AppSpacing.verticalGap8,
+                Row(
+                  children: [
+                    Expanded(child: repsStepper),
+                    AppSpacing.horizontalGap8,
+                    checkButton,
+                  ],
+                ),
+                if (widget.showRir) ...[
+                  AppSpacing.verticalGap8,
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: rirSelector,
+                  ),
+                ],
+              ],
+            ),
+
+        // Drop-set sub-widget anchored directly below this set row
+        if (isDropSet)
+          Container(
+            margin: EdgeInsets.only(
+              top: context.appSpacing.space8,
+              left: context.appSpacing.space4,
+            ),
+            padding: EdgeInsets.all(context.appSpacing.space8),
+            decoration: BoxDecoration(
+              color: fitnessColors.dropSetTag.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(radius.small),
+              border: Border(
+                left: BorderSide(
+                  color: fitnessColors.dropSetTag,
+                  width: 2.5,
+                ),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: context.appSpacing.space8,
+                  runSpacing: context.appSpacing.space4,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.bolt_rounded,
+                          size: 13,
+                          color: fitnessColors.dropSetTag,
+                        ),
+                        AppSpacing.horizontalGap4,
+                        Text(
+                          'DROP-SET',
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: fitnessColors.dropSetTag,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Semantics(
+                      label: 'Adicionar outro drop',
+                      button: true,
+                      excludeSemantics: true,
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: InkWell(
+                          onTap: _addAnotherDrop,
+                          borderRadius: BorderRadius.circular(radius.small),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              minWidth: 48,
+                              minHeight: 48,
+                            ),
+                            child: Center(
+                              widthFactor: 1,
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: context.appSpacing.space8,
+                                  vertical: context.appSpacing.space4,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.add_rounded,
+                                      size: 14,
+                                      color: fitnessColors.dropSetTag,
+                                    ),
+                                    AppSpacing.horizontalGap4,
+                                    Flexible(
+                                      child: Text(
+                                        'Outro drop',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: context.textTheme.labelSmall
+                                            ?.copyWith(
+                                          color: fitnessColors.dropSetTag,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                for (var i = 0; i < _dropSets.length; i++)
+                  Padding(
+                    padding: EdgeInsets.only(top: context.appSpacing.space8),
+                    child: Builder(
+                      builder: (context) {
+                        final dIndicator = SizedBox(
+                          width: 28,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.subdirectory_arrow_right_rounded,
+                                size: 13,
+                                color: fitnessColors.dropSetTag,
+                              ),
+                              Text(
+                                _dropSets.length > 1 ? 'D${i + 1}' : '',
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: fitnessColors.dropSetTag,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                        final dropWeightStepper = _TactileStepper(
+                          valueText: _formatWeight(_dropSets[i].weightKg),
+                          unitLabel: 'kg',
+                          valueLabel:
+                              'Editar carga do drop ${i + 1}: ${_formatWeight(_dropSets[i].weightKg)} kg',
+                          decrementLabel: 'Diminuir carga do drop ${i + 1}',
+                          incrementLabel: 'Aumentar carga do drop ${i + 1}',
+                          onDecrement: () =>
+                              _stepDropWeight(i, -widget.weightIncrement),
+                          onIncrement: () =>
+                              _stepDropWeight(i, widget.weightIncrement),
+                          onTapValue: () => _editNumericDialog(
+                            title: 'Carga do drop (kg)',
+                            initialValue: _formatWeight(_dropSets[i].weightKg),
+                            decimal: true,
+                            quickWeightDeltas: const [-5.0, -2.5, 2.5, 5.0],
+                            onConfirm: (val) {
+                              final parsed = double.tryParse(
+                                val.trim().replaceAll(',', '.'),
+                              );
+                              if (parsed != null && parsed >= 0) {
+                                setState(() {
+                                  _dropSets[i] = _dropSets[i].copyWith(
+                                    weightKg: parsed.clamp(0.0, 999.0),
+                                  );
+                                });
+                              }
+                            },
+                          ),
+                        );
+                        final dropRepsStepper = _TactileStepper(
+                          valueText: '+${_dropSets[i].repsCompleted}',
+                          unitLabel: 'reps',
+                          valueLabel:
+                              'Editar repetições do drop ${i + 1}: ${_dropSets[i].repsCompleted} reps',
+                          decrementLabel:
+                              'Diminuir repetições do drop ${i + 1}',
+                          incrementLabel:
+                              'Aumentar repetições do drop ${i + 1}',
+                          onDecrement: () => _stepDropReps(i, -1),
+                          onIncrement: () => _stepDropReps(i, 1),
+                          onTapValue: () => _editNumericDialog(
+                            title: 'Repetições do drop',
+                            initialValue: '${_dropSets[i].repsCompleted}',
+                            decimal: false,
+                            quickRepsOptions: const [3, 5, 6, 8, 10],
+                            onConfirm: (val) {
+                              final parsed = int.tryParse(val.trim());
+                              if (parsed != null && parsed > 0) {
+                                setState(() {
+                                  _dropSets[i] = _dropSets[i].copyWith(
+                                    repsCompleted: parsed.clamp(1, 999),
+                                  );
+                                });
+                              }
+                            },
+                          ),
+                        );
+                        final removeButton = Semantics(
+                          label: 'Remover drop ${i + 1}',
+                          button: true,
+                          child: Material(
+                            type: MaterialType.transparency,
+                            child: InkWell(
+                              onTap: () => _removeDrop(i),
+                              borderRadius: BorderRadius.circular(radius.small),
+                              child: SizedBox(
+                                width: 48,
+                                height: 48,
+                                child: Icon(
+                                  Icons.close_rounded,
+                                  size: 16,
+                                  color: colors.textTertiary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+
+                        if (isDropWide) {
+                          return Row(
+                            children: [
+                              dIndicator,
+                              AppSpacing.horizontalGap8,
+                              Expanded(flex: 12, child: dropWeightStepper),
+                              AppSpacing.horizontalGap8,
+                              Expanded(flex: 10, child: dropRepsStepper),
+                              AppSpacing.horizontalGap8,
+                              removeButton,
+                            ],
+                          );
+                        }
+
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              children: [
+                                dIndicator,
+                                AppSpacing.horizontalGap4,
+                                Expanded(child: dropWeightStepper),
+                              ],
+                            ),
+                            AppSpacing.verticalGap8,
+                            Row(
+                              children: [
+                                Expanded(child: dropRepsStepper),
+                                AppSpacing.horizontalGap8,
+                                removeButton,
+                              ],
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+        if (isDone)
+          _buildCompletedActionsStrip(context)
+        else if (!widget.isCardio &&
+            widget.onApplyToRemaining != null &&
+            (_userEditedWeight || _userEditedReps))
+          Padding(
+            padding: EdgeInsets.only(
+              top: context.appSpacing.space8,
+              left: context.appSpacing.space12,
+            ),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Semantics(
+                label: 'Aplicar carga e repetições às séries restantes',
+                button: true,
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: InkWell(
+                    onTap: _isSaving
+                        ? null
+                        : () {
+                            HapticFeedback.lightImpact();
+                            widget.onApplyToRemaining!(_weight, _reps);
+                          },
+                    borderRadius: BorderRadius.circular(radius.small),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minWidth: 48,
+                        minHeight: 48,
+                      ),
+                      child: Center(
+                        widthFactor: 1,
+                        child: Ink(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: context.appSpacing.space8,
+                            vertical: context.appSpacing.space8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.surfaceElevated,
+                            borderRadius: BorderRadius.circular(radius.small),
+                            border: Border.all(color: colors.borderSubtle),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.copy_all_rounded,
+                                size: 14,
+                                color: colors.primaryLight,
+                              ),
+                              AppSpacing.horizontalGap4,
+                              Flexible(
+                                child: Text(
+                                  'Aplicar às restantes',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: context.textTheme.labelSmall?.copyWith(
+                                    color: colors.primaryLight,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+    }
+
+    final animDuration =
+        context.appMotion.resolve(context, context.appMotion.standard);
+    final animatedBody = LayoutBuilder(
+      builder: (context, constraints) {
+        final content = widget.isExpanded
+            ? buildExpandedContent(constraints.maxWidth)
+            : buildCompactRow();
+        if (animDuration == Duration.zero) {
+          return content;
+        }
+        return AnimatedSize(
+          duration: animDuration,
+          curve: context.appMotion.curveStandard,
+          alignment: Alignment.topCenter,
+          child: content,
+        );
+      },
+    );
+
+    final rowContainer = GestureDetector(
+      onLongPress: widget.isExpanded ? _showSetTypePicker : null,
       excludeFromSemantics: true,
       child: Container(
         constraints: const BoxConstraints(minHeight: 58),
@@ -1170,386 +1778,49 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                     : colors.border.withValues(alpha: 0.6),
           ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final wideBreakpoint = widget.showRir ? 520.0 : 448.0;
-                if (constraints.maxWidth >= wideBreakpoint) {
-                  return Row(
-                    children: [
-                      _buildBadge(context),
-                      AppSpacing.horizontalGap8,
-                      Expanded(flex: 12, child: weightStepper),
-                      AppSpacing.horizontalGap8,
-                      Expanded(flex: 10, child: repsStepper),
-                      if (widget.showRir) ...[
-                        AppSpacing.horizontalGap8,
-                        rirSelector,
-                      ],
-                      AppSpacing.horizontalGap8,
-                      checkButton,
-                    ],
-                  );
-                }
+        child: animatedBody,
+      ),
+    );
 
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      children: [
-                        _buildBadge(context),
-                        AppSpacing.horizontalGap8,
-                        Expanded(child: weightStepper),
-                      ],
-                    ),
-                    AppSpacing.verticalGap8,
-                    Row(
-                      children: [
-                        Expanded(child: repsStepper),
-                        AppSpacing.horizontalGap8,
-                        checkButton,
-                      ],
-                    ),
-                    if (widget.showRir) ...[
-                      AppSpacing.verticalGap8,
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: rirSelector,
-                      ),
-                    ],
-                  ],
-                );
-              },
-            ),
+    if (widget.focusNode != null) {
+      return Focus(
+        focusNode: widget.focusNode,
+        child: rowContainer,
+      );
+    }
+    return rowContainer;
+  }
+}
 
-            // Drop-set sub-widget anchored directly below this set row
-            if (isDropSet)
-              Container(
-                margin: EdgeInsets.only(
-                  top: context.appSpacing.space8,
-                  left: context.appSpacing.space4,
-                ),
-                padding: EdgeInsets.all(context.appSpacing.space8),
-                decoration: BoxDecoration(
-                  color: fitnessColors.dropSetTag.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(radius.small),
-                  border: Border(
-                    left: BorderSide(
-                      color: fitnessColors.dropSetTag,
-                      width: 2.5,
-                    ),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Wrap(
-                      alignment: WrapAlignment.spaceBetween,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: context.appSpacing.space8,
-                      runSpacing: context.appSpacing.space4,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.bolt_rounded,
-                              size: 13,
-                              color: fitnessColors.dropSetTag,
-                            ),
-                            AppSpacing.horizontalGap4,
-                            Text(
-                              'DROP-SET',
-                              style: context.textTheme.labelSmall?.copyWith(
-                                color: fitnessColors.dropSetTag,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Semantics(
-                          label: 'Adicionar outro drop',
-                          button: true,
-                          excludeSemantics: true,
-                          child: Material(
-                            type: MaterialType.transparency,
-                            child: InkWell(
-                              onTap: _addAnotherDrop,
-                              borderRadius:
-                                  BorderRadius.circular(radius.small),
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  minWidth: 48,
-                                  minHeight: 48,
-                                ),
-                                child: Center(
-                                  widthFactor: 1,
-                                  child: Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: context.appSpacing.space8,
-                                      vertical: context.appSpacing.space4,
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.add_rounded,
-                                          size: 14,
-                                          color: fitnessColors.dropSetTag,
-                                        ),
-                                        AppSpacing.horizontalGap4,
-                                        Flexible(
-                                          child: Text(
-                                            'Outro drop',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: context.textTheme.labelSmall
-                                                ?.copyWith(
-                                              color: fitnessColors.dropSetTag,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    for (var i = 0; i < _dropSets.length; i++)
-                      Padding(
-                        padding: EdgeInsets.only(top: context.appSpacing.space8),
-                        child: LayoutBuilder(
-                          builder: (context, dropConstraints) {
-                            final dIndicator = SizedBox(
-                              width: 28,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.subdirectory_arrow_right_rounded,
-                                    size: 13,
-                                    color: fitnessColors.dropSetTag,
-                                  ),
-                                  Text(
-                                    _dropSets.length > 1 ? 'D${i + 1}' : '',
-                                    style:
-                                        context.textTheme.labelSmall?.copyWith(
-                                      color: fitnessColors.dropSetTag,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                            final dropWeightStepper = _TactileStepper(
-                              valueText: _formatWeight(_dropSets[i].weightKg),
-                              unitLabel: 'kg',
-                              valueLabel:
-                                  'Editar carga do drop ${i + 1}: ${_formatWeight(_dropSets[i].weightKg)} kg',
-                              decrementLabel:
-                                  'Diminuir carga do drop ${i + 1}',
-                              incrementLabel:
-                                  'Aumentar carga do drop ${i + 1}',
-                              onDecrement: () =>
-                                  _stepDropWeight(i, -widget.weightIncrement),
-                              onIncrement: () =>
-                                  _stepDropWeight(i, widget.weightIncrement),
-                              onTapValue: () => _editNumericDialog(
-                                title: 'Carga do drop (kg)',
-                                initialValue:
-                                    _formatWeight(_dropSets[i].weightKg),
-                                decimal: true,
-                                quickWeightDeltas: const [-5.0, -2.5, 2.5, 5.0],
-                                onConfirm: (val) {
-                                  final parsed = double.tryParse(
-                                    val.trim().replaceAll(',', '.'),
-                                  );
-                                  if (parsed != null && parsed >= 0) {
-                                    setState(() {
-                                      _dropSets[i] = _dropSets[i].copyWith(
-                                        weightKg: parsed.clamp(0.0, 999.0),
-                                      );
-                                    });
-                                  }
-                                },
-                              ),
-                            );
-                            final dropRepsStepper = _TactileStepper(
-                              valueText: '+${_dropSets[i].repsCompleted}',
-                              unitLabel: 'reps',
-                              valueLabel:
-                                  'Editar repetições do drop ${i + 1}: ${_dropSets[i].repsCompleted} reps',
-                              decrementLabel:
-                                  'Diminuir repetições do drop ${i + 1}',
-                              incrementLabel:
-                                  'Aumentar repetições do drop ${i + 1}',
-                              onDecrement: () => _stepDropReps(i, -1),
-                              onIncrement: () => _stepDropReps(i, 1),
-                              onTapValue: () => _editNumericDialog(
-                                title: 'Repetições do drop',
-                                initialValue: '${_dropSets[i].repsCompleted}',
-                                decimal: false,
-                                quickRepsOptions: const [3, 5, 6, 8, 10],
-                                onConfirm: (val) {
-                                  final parsed = int.tryParse(val.trim());
-                                  if (parsed != null && parsed > 0) {
-                                    setState(() {
-                                      _dropSets[i] = _dropSets[i].copyWith(
-                                        repsCompleted: parsed.clamp(1, 999),
-                                      );
-                                    });
-                                  }
-                                },
-                              ),
-                            );
-                            final removeButton = Semantics(
-                              label: 'Remover drop ${i + 1}',
-                              button: true,
-                              child: Material(
-                                type: MaterialType.transparency,
-                                child: InkWell(
-                                  onTap: () => _removeDrop(i),
-                                  borderRadius:
-                                      BorderRadius.circular(radius.small),
-                                  child: SizedBox(
-                                    width: 48,
-                                    height: 48,
-                                    child: Icon(
-                                      Icons.close_rounded,
-                                      size: 16,
-                                      color: colors.textTertiary,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
+class _CompactValueCell extends StatelessWidget {
+  const _CompactValueCell({required this.valueText});
 
-                            if (dropConstraints.maxWidth >= 420.0) {
-                              return Row(
-                                children: [
-                                  dIndicator,
-                                  AppSpacing.horizontalGap8,
-                                  Expanded(flex: 12, child: dropWeightStepper),
-                                  AppSpacing.horizontalGap8,
-                                  Expanded(flex: 10, child: dropRepsStepper),
-                                  AppSpacing.horizontalGap8,
-                                  removeButton,
-                                ],
-                              );
-                            }
+  final String valueText;
 
-                            return Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Row(
-                                  children: [
-                                    dIndicator,
-                                    AppSpacing.horizontalGap4,
-                                    Expanded(child: dropWeightStepper),
-                                  ],
-                                ),
-                                AppSpacing.verticalGap8,
-                                Row(
-                                  children: [
-                                    Expanded(child: dropRepsStepper),
-                                    AppSpacing.horizontalGap8,
-                                    removeButton,
-                                  ],
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                  ],
-                ),
-              ),
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final radius = context.appRadius;
 
-            if (isDone)
-              _buildCompletedActionsStrip(context)
-            else if (!widget.isCardio &&
-                widget.onApplyToRemaining != null &&
-                (_userEditedWeight || _userEditedReps))
-              Padding(
-                padding: EdgeInsets.only(
-                  top: context.appSpacing.space8,
-                  left: context.appSpacing.space12,
-                ),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Semantics(
-                    label: 'Aplicar carga e repetições às séries restantes',
-                    button: true,
-                    child: Material(
-                      type: MaterialType.transparency,
-                      child: InkWell(
-                        onTap: _isSaving
-                            ? null
-                            : () {
-                                HapticFeedback.lightImpact();
-                                widget.onApplyToRemaining!(_weight, _reps);
-                              },
-                        borderRadius: BorderRadius.circular(radius.small),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(
-                            minWidth: 48,
-                            minHeight: 48,
-                          ),
-                          child: Center(
-                            widthFactor: 1,
-                            child: Ink(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: context.appSpacing.space8,
-                                vertical: context.appSpacing.space8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.surfaceElevated,
-                                borderRadius:
-                                    BorderRadius.circular(radius.small),
-                                border: Border.all(color: colors.borderSubtle),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.copy_all_rounded,
-                                    size: 14,
-                                    color: colors.primaryLight,
-                                  ),
-                                  AppSpacing.horizontalGap4,
-                                  Flexible(
-                                    child: Text(
-                                      'Aplicar às restantes',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style:
-                                          context.textTheme.labelSmall?.copyWith(
-                                        color: colors.primaryLight,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          ],
+    return Container(
+      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+      alignment: Alignment.center,
+      padding: EdgeInsets.symmetric(horizontal: context.appSpacing.space8),
+      decoration: BoxDecoration(
+        color: colors.surfaceElevated,
+        borderRadius: BorderRadius.circular(radius.small),
+      ),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          valueText,
+          maxLines: 1,
+          softWrap: false,
+          style: context.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: colors.textPrimary,
+            fontFeatures: AppTypography.tabularFeatures,
+          ),
         ),
       ),
     );

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
+import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
@@ -36,6 +37,7 @@ class SessionExerciseCard extends ConsumerStatefulWidget {
     this.totalExercises,
     this.weightIncrement = 2.5,
     this.showRir = true,
+    this.collapseSignal = 0,
   });
 
   final SessionExercise sessionExercise;
@@ -60,6 +62,7 @@ class SessionExerciseCard extends ConsumerStatefulWidget {
   final int? totalExercises;
   final double weightIncrement;
   final bool showRir;
+  final int collapseSignal;
 
   @override
   ConsumerState<SessionExerciseCard> createState() =>
@@ -73,6 +76,27 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
   final Map<int, ({double weightKg, int reps})> _draftBySetNumber = {};
   int _syncToken = 0;
   bool _isBulkCompleting = false;
+  int? _manuallyExpandedSetNumber;
+  int? _pendingCompletedSetForAutoFocus;
+  final Map<int, FocusNode> _rowFocusNodes = {};
+  final Map<int, GlobalKey> _rowKeys = {};
+
+  FocusNode _focusNodeForSet(int setNumber) => _rowFocusNodes.putIfAbsent(
+        setNumber,
+        () => FocusNode(debugLabel: 'set_row_$setNumber'),
+      );
+
+  GlobalKey _rowKeyForSet(int setNumber) =>
+      _rowKeys.putIfAbsent(setNumber, GlobalKey.new);
+
+  @override
+  void dispose() {
+    for (final node in _rowFocusNodes.values) {
+      node.dispose();
+    }
+    _rowFocusNodes.clear();
+    super.dispose();
+  }
 
   @override
   void didUpdateWidget(covariant SessionExerciseCard oldWidget) {
@@ -84,7 +108,78 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
       _minRowCount = 0;
       _syncToken++;
       _isBulkCompleting = false;
+      _manuallyExpandedSetNumber = null;
+      _pendingCompletedSetForAutoFocus = null;
+      return;
     }
+
+    if (oldWidget.collapseSignal != widget.collapseSignal &&
+        _manuallyExpandedSetNumber != null) {
+      _manuallyExpandedSetNumber = null;
+    }
+
+    if (!widget.sessionExercise.isCardio &&
+        _pendingCompletedSetForAutoFocus != null) {
+      final completedSetNumber = _pendingCompletedSetForAutoFocus!;
+      if (_findLoggedSetForNumber(completedSetNumber) != null) {
+        _pendingCompletedSetForAutoFocus = null;
+        if (_manuallyExpandedSetNumber == completedSetNumber) {
+          _manuallyExpandedSetNumber = null;
+        }
+        final nextPending = _firstPendingSetNumber();
+        if (nextPending != null && nextPending != completedSetNumber) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _focusNodeForSet(nextPending).requestFocus();
+            _ensureRowVisible(nextPending);
+          });
+        }
+      }
+    }
+  }
+
+  int? _firstPendingSetNumber() {
+    final total = _totalRowsCount;
+    for (var n = 1; n <= total; n++) {
+      if (_findLoggedSetForNumber(n) == null) return n;
+    }
+    return null;
+  }
+
+  void _expandSet(int setNumber) {
+    setState(() {
+      _manuallyExpandedSetNumber = setNumber;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _ensureRowVisible(setNumber);
+    });
+  }
+
+  void _clearManualExpandedSet() {
+    if (_manuallyExpandedSetNumber == null) return;
+    setState(() {
+      _manuallyExpandedSetNumber = null;
+    });
+  }
+
+  void _ensureRowVisible(int setNumber) {
+    final rowContext = _rowKeys[setNumber]?.currentContext;
+    if (rowContext == null || !rowContext.mounted) return;
+    if (Scrollable.maybeOf(rowContext) == null) return;
+    final motion = context.appMotion;
+    final duration = motion.resolve(context, motion.fast);
+    Scrollable.ensureVisible(
+      rowContext,
+      duration: duration,
+      curve: motion.curveStandard,
+      alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+    );
+    Scrollable.ensureVisible(
+      rowContext,
+      duration: duration,
+      curve: motion.curveStandard,
+      alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart,
+    );
   }
 
   int get _totalRowsCount {
@@ -418,19 +513,29 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
             : 'Cardio')
         : '${se.completedWorkingSetsCount}/${se.targetSetsCount} séries';
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(radius.xl),
-        border: Border.all(
-          color: colors.primary.withValues(alpha: 0.45),
-          width: 1,
+    final firstPending = isCardio ? null : _firstPendingSetNumber();
+    final expandedSetNumber =
+        isCardio ? null : (_manuallyExpandedSetNumber ?? firstPending);
+    final hasCompactRow =
+        !isCardio && (_totalRowsCount > 1 || expandedSetNumber == null);
+
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      excludeFromSemantics: true,
+      onTap: isCardio ? null : _clearManualExpandedSet,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(radius.xl),
+          border: Border.all(
+            color: colors.primary.withValues(alpha: 0.45),
+            width: 1,
+          ),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // Header
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -769,6 +874,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
           LayoutBuilder(
             builder: (context, constraints) {
               if (!isCardio &&
+                  !hasCompactRow &&
                   constraints.maxWidth < (widget.showRir ? 520.0 : 448.0)) {
                 return const SizedBox.shrink();
               }
@@ -929,52 +1035,66 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                     ? se.prescribedSetTypes[idx]
                     : SetType.working);
 
-            return LoggedSetRow(
-              key: ValueKey('set_${se.id}_$setNumber'),
-              setNumber: setNumber,
-              initialType: initialType,
-              loggedSet: logged,
-              defaultWeight: resolvedDefaults.weightKg,
-              defaultReps: resolvedDefaults.reps,
-              defaultDurationMinutes:
-                  se.targetRepsMin > 0 ? se.targetRepsMin : 15,
-              defaultRir: se.targetRir,
-              weightIncrement: widget.weightIncrement,
-              showRir: widget.showRir,
-              isCardio: isCardio,
-              syncToken: _syncToken,
-              onApplyToRemaining: (!isCardio && hasRemainingUnlogged)
-                  ? (w, r) => _applyToRemainingSets(setNumber, w, r)
-                  : null,
-              onDraftChanged: isCardio
-                  ? null
-                  : (w, r) {
-                      _draftBySetNumber[setNumber] = (weightKg: w, reps: r);
-                    },
-              onSave: ({
-                required double weightKg,
-                required int repsCompleted,
-                int? durationSeconds,
-                int? rirActual,
-                required SetType setType,
-                List<DropSetEntry> dropSets = const [],
-                String? existingSetId,
-              }) =>
-                  widget.onLogSet(
-                sessionExerciseId: se.id,
+            return KeyedSubtree(
+              key: _rowKeyForSet(setNumber),
+              child: LoggedSetRow(
+                key: ValueKey('set_${se.id}_$setNumber'),
                 setNumber: setNumber,
-                setType: setType,
-                weightKg: weightKg,
-                repsCompleted: repsCompleted,
-                durationSeconds: durationSeconds,
-                rirActual: rirActual,
-                restSeconds: isCardio ? 0 : se.targetRestSeconds,
-                dropSets: dropSets,
-                existingSetId: existingSetId,
+                initialType: initialType,
+                loggedSet: logged,
+                defaultWeight: resolvedDefaults.weightKg,
+                defaultReps: resolvedDefaults.reps,
+                defaultDurationMinutes:
+                    se.targetRepsMin > 0 ? se.targetRepsMin : 15,
+                defaultRir: se.targetRir,
+                weightIncrement: widget.weightIncrement,
+                showRir: widget.showRir,
+                isCardio: isCardio,
+                isExpanded: isCardio || expandedSetNumber == setNumber,
+                syncToken: _syncToken,
+                focusNode: isCardio ? null : _focusNodeForSet(setNumber),
+                onRequestExpand: isCardio ? null : () => _expandSet(setNumber),
+                onApplyToRemaining: (!isCardio && hasRemainingUnlogged)
+                    ? (w, r) => _applyToRemainingSets(setNumber, w, r)
+                    : null,
+                onDraftChanged: isCardio
+                    ? null
+                    : (w, r) {
+                        _draftBySetNumber[setNumber] =
+                            (weightKg: w, reps: r);
+                      },
+                onSave: ({
+                  required double weightKg,
+                  required int repsCompleted,
+                  int? durationSeconds,
+                  int? rirActual,
+                  required SetType setType,
+                  List<DropSetEntry> dropSets = const [],
+                  String? existingSetId,
+                }) {
+                  if (!isCardio && logged == null) {
+                    _pendingCompletedSetForAutoFocus = setNumber;
+                    if (_manuallyExpandedSetNumber == setNumber) {
+                      setState(() => _manuallyExpandedSetNumber = null);
+                    }
+                  }
+                  return widget.onLogSet(
+                    sessionExerciseId: se.id,
+                    setNumber: setNumber,
+                    setType: setType,
+                    weightKg: weightKg,
+                    repsCompleted: repsCompleted,
+                    durationSeconds: durationSeconds,
+                    rirActual: rirActual,
+                    restSeconds: isCardio ? 0 : se.targetRestSeconds,
+                    dropSets: dropSets,
+                    existingSetId: existingSetId,
+                  );
+                },
+                onDelete: logged != null && widget.onDeleteSet != null
+                    ? () => widget.onDeleteSet!(logged.id)
+                    : null,
               ),
-              onDelete: logged != null && widget.onDeleteSet != null
-                  ? () => widget.onDeleteSet!(logged.id)
-                  : null,
             );
           }),
 
@@ -1039,6 +1159,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                           final nextRow = _totalRowsCount + 1;
                           _minRowCount = nextRow;
                           _extraRowTypes[nextRow] = SetType.dropSet;
+                          _manuallyExpandedSetNumber = nextRow;
                         });
                         widget.onAddExtraSet?.call();
                       },
@@ -1079,6 +1200,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
             ),
           ],
         ],
+      ),
       ),
     );
   }

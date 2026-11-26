@@ -47,6 +47,7 @@ class WorkoutSessionScreen extends ConsumerStatefulWidget {
 
 class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
   int _expandedIndex = 0;
+  int _collapseManualSignal = 0;
   bool _leavingSession = false;
   final Map<String, Exercise> _swappedExercises = {};
 
@@ -101,22 +102,53 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
   Future<void> _handleDeleteSet(
     String setId, {
     String? exerciseName,
-    int? setNumber,
+    String? sessionExerciseId,
+    LoggedSet? deletedSet,
+    bool isCardio = false,
   }) async {
     final useCase = ref.read(deleteLoggedSetUseCaseProvider);
     final result = await useCase.execute(setId);
+    if (!mounted) return;
 
     result.fold(
       (_) {
         ref.invalidate(liveSessionDetailProvider(widget.sessionId));
         final timerState = ref.read(restTimerNotifierProvider);
         if (timerState.isVisible &&
-            setNumber != null &&
-            timerState.setNumber == setNumber &&
+            deletedSet != null &&
+            timerState.setNumber == deletedSet.setNumber &&
             (exerciseName == null || timerState.exerciseName == exerciseName)) {
           ref.read(restTimerNotifierProvider.notifier).stop();
         }
-        context.showSnackBar('Série desfeita.');
+        if (deletedSet != null && sessionExerciseId != null) {
+          final messenger = ScaffoldMessenger.maybeOf(context);
+          messenger?.hideCurrentSnackBar();
+          messenger?.showSnackBar(
+            SnackBar(
+              content: Text('Série ${deletedSet.setNumber} desmarcada'),
+              action: SnackBarAction(
+                label: 'Desfazer',
+                onPressed: () {
+                  _handleLogSet(
+                    sessionExerciseId: sessionExerciseId,
+                    setNumber: deletedSet.setNumber,
+                    setType: deletedSet.setType,
+                    weightKg: deletedSet.weightKg,
+                    repsCompleted: deletedSet.repsCompleted,
+                    durationSeconds: deletedSet.durationSeconds,
+                    rirActual: deletedSet.rirActual,
+                    restSeconds: 0,
+                    dropSets: deletedSet.dropSets,
+                    exerciseName: exerciseName,
+                    isCardio: isCardio,
+                  );
+                },
+              ),
+            ),
+          );
+        } else {
+          context.showSnackBar('Série desfeita.');
+        }
       },
       (failure) {
         context.showSnackBar(
@@ -525,7 +557,11 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                 }
                                 return false;
                               },
-                              child: ListView.builder(
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.translucent,
+                                excludeFromSemantics: true,
+                                onTap: () => setState(() => _collapseManualSignal++),
+                                child: ListView.builder(
                                 padding: EdgeInsets.fromLTRB(
                                   0,
                                   spacing.space12,
@@ -563,6 +599,7 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                             session.exercises.length,
                                         weightIncrement: increment,
                                         showRir: false,
+                                        collapseSignal: _collapseManualSignal,
                                         onToggleExpand: () => setState(() {
                                           _expandedIndex =
                                               _expandedIndex == index
@@ -634,7 +671,9 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                           return _handleDeleteSet(
                                             setId,
                                             exerciseName: se.exercise?.name,
-                                            setNumber: matched?.setNumber,
+                                            sessionExerciseId: se.id,
+                                            deletedSet: matched,
+                                            isCardio: se.isCardio,
                                           );
                                         },
                                       ),
@@ -642,6 +681,7 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                   );
                                 },
                               ),
+                            ),
                             ),
                             Positioned(
                               bottom: 0,

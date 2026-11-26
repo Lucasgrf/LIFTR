@@ -312,6 +312,13 @@ void main() {
           );
           await tester.pumpAndSettle();
 
+          expect(find.textContaining('60 kg × 10'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+
+          await tester.ensureVisible(find.textContaining('60 kg × 10'));
+          await tester.tap(find.textContaining('60 kg × 10'));
+          await tester.pumpAndSettle();
+
           expect(find.text('DROP-SET'), findsOneWidget);
           expect(tester.takeException(), isNull);
         },

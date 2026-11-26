@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/theme/app_theme.dart';
@@ -12,6 +13,8 @@ void main() {
     double textScale = 1.0,
     SetType initialType = SetType.working,
     LoggedSet? loggedSet,
+    bool isExpanded = true,
+    VoidCallback? onRequestExpand,
   }) async {
     await tester.binding.setSurfaceSize(Size(width, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -35,6 +38,8 @@ void main() {
                 defaultWeight: 80.0,
                 defaultReps: 10,
                 showRir: false,
+                isExpanded: isExpanded,
+                onRequestExpand: onRequestExpand,
                 onSave: ({
                   required weightKg,
                   required repsCompleted,
@@ -205,5 +210,125 @@ void main() {
         findsOneWidget,
       );
     });
+  });
+
+  group('Compact LoggedSetRow a11y, single-node Semantics and 48dp targets', () {
+    for (final width in [320.0, 375.0]) {
+      testWidgets(
+          'passes androidTapTargetGuideline & labeledTapTargetGuideline in compact mode (pending, completed, drop-set) at ${width}dp',
+          (tester) async {
+        final handle = tester.ensureSemantics();
+        try {
+          var expandedCalls = 0;
+
+          // Pending compact row
+          await pumpRow(
+            tester,
+            width: width,
+            isExpanded: false,
+            onRequestExpand: () => expandedCalls++,
+          );
+          await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+
+          final pendingNode = tester.getSemantics(
+            find.bySemanticsLabel(
+              'Série 1, 80 kg, 10 repetições, pendente. Toque duas vezes para editar',
+            ),
+          );
+          expect(pendingNode.flagsCollection.isButton, isTrue);
+          expect(
+            pendingNode.getSemanticsData().hasAction(SemanticsAction.tap),
+            isTrue,
+          );
+          expect(pendingNode.hintOverrides?.onTapHint, 'expandir para editar');
+          expect(pendingNode.childrenCount, 0);
+
+          final pendingCheckFinder =
+              find.bySemanticsLabel('Concluir série 1');
+          final pendingCheckNode = tester.getSemantics(pendingCheckFinder);
+          expect(pendingCheckNode.flagsCollection.isButton, isTrue);
+          expect(pendingCheckNode.childrenCount, 0);
+          expect(
+            tester.getSize(pendingCheckFinder).width,
+            greaterThanOrEqualTo(48.0),
+          );
+          expect(
+            tester.getSize(pendingCheckFinder).height,
+            greaterThanOrEqualTo(48.0),
+          );
+
+          await tester.tap(
+            find.bySemanticsLabel(
+              'Série 1, 80 kg, 10 repetições, pendente. Toque duas vezes para editar',
+            ),
+          );
+          expect(expandedCalls, 1);
+
+          // Completed drop-set compact row
+          await pumpRow(
+            tester,
+            width: width,
+            isExpanded: false,
+            initialType: SetType.dropSet,
+            onRequestExpand: () => expandedCalls++,
+            loggedSet: const LoggedSet(
+              id: 'ls-compact-drop',
+              sessionExerciseId: 'se-1',
+              setNumber: 1,
+              setType: SetType.dropSet,
+              weightKg: 80.0,
+              repsCompleted: 10,
+              dropSets: [
+                DropSetEntry(weightKg: 60.0, repsCompleted: 8),
+              ],
+            ),
+          );
+          await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+          expect(tester.takeException(), isNull);
+
+          const expectedDropLabel =
+              'Série 1, drop-set, 80 kg, 10 repetições, drop 60 kg por 8 repetições, concluída. Toque duas vezes para editar';
+          final dropExpandFinder = find.bySemanticsLabel(expectedDropLabel);
+          final dropNode = tester.getSemantics(dropExpandFinder);
+          expect(dropNode.childrenCount, 0);
+          expect(dropNode.hintOverrides?.onTapHint, 'expandir para editar');
+          expect(
+            tester.getSize(dropExpandFinder).height,
+            greaterThanOrEqualTo(48.0),
+          );
+          // Informative badge & drop summary must NOT expose separate interactive nodes
+          expect(find.bySemanticsLabel('Série drop-set. Toque para alternar tipo'), findsNothing);
+          expect(find.bySemanticsLabel('Adicionar outro drop'), findsNothing);
+          expect(find.bySemanticsLabel('Remover drop 1'), findsNothing);
+
+          final unmarkFinder = find.bySemanticsLabel('Desmarcar série 1');
+          final unmarkNode = tester.getSemantics(unmarkFinder);
+          expect(unmarkNode.childrenCount, 0);
+          expect(tester.getSize(unmarkFinder).width, greaterThanOrEqualTo(48.0));
+          expect(tester.getSize(unmarkFinder).height, greaterThanOrEqualTo(48.0));
+
+          // Verify zero duplicate/repeated child nodes under LoggedSetRow
+          final rootSemantics = tester.getSemantics(find.byType(LoggedSetRow));
+          final collectedLabels = <String>[];
+          void collect(SemanticsNode node) {
+            if (node.label.isNotEmpty) collectedLabels.add(node.label);
+            node.visitChildren((child) {
+              collect(child);
+              return true;
+            });
+          }
+
+          collect(rootSemantics);
+          expect(
+            collectedLabels,
+            unorderedEquals([expectedDropLabel, 'Desmarcar série 1']),
+          );
+        } finally {
+          handle.dispose();
+        }
+      });
+    }
   });
 }
