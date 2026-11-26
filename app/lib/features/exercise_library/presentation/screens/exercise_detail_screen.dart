@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
@@ -101,7 +102,8 @@ class _ExerciseDetailScreenState extends ConsumerState<ExerciseDetailScreen> {
       body: exerciseAsync.when(
         loading: () => const LoadingWidget(),
         error: (error, _) => ErrorStateWidget(
-          message: error.toString(),
+          message: userFacingMessage(error),
+          safetyNote: kOfflineDataSafetyNote,
           onRetry: () => ref.refresh(exerciseDetailProvider(widget.exerciseId)),
         ),
         data: (exercise) {

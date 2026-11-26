@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/extensions/date_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
@@ -85,7 +86,8 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
     return historyAsync.when(
       loading: () => const LiftrScreenSkeleton(showHero: false, itemCount: 2),
       error: (err, _) => ErrorStateWidget(
-        message: err.toString(),
+        message: userFacingMessage(err),
+        safetyNote: kOfflineDataSafetyNote,
         onRetry: () {
           ref.invalidate(weightHistoryProvider);
           ref.invalidate(weightStatsProvider);

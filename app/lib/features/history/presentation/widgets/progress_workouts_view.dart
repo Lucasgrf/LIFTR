@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
@@ -21,7 +22,8 @@ class ProgressWorkoutsView extends ConsumerWidget {
     return historyAsync.when(
       loading: () => const LiftrScreenSkeleton(showHero: false, itemCount: 3),
       error: (err, _) => ErrorStateWidget(
-        message: err.toString(),
+        message: userFacingMessage(err),
+        safetyNote: kOfflineDataSafetyNote,
         onRetry: () => ref.invalidate(historyListProvider),
       ),
       data: (sessions) {

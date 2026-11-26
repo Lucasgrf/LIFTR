@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_motion.dart';
@@ -203,7 +204,7 @@ class _AiWorkoutGeneratorScreenState
       _progressTimer?.cancel();
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Não foi possível gerar seu treino agora: $e';
+        _errorMessage = userFacingMessage(e);
         _isGenerating = false;
       });
     }
@@ -235,7 +236,7 @@ class _AiWorkoutGeneratorScreenState
       },
       (failure) {
         context.showSnackBar(
-          'Erro ao salvar programa: ${failure.message}',
+          userFacingMessage(failure),
           isError: true,
         );
       },

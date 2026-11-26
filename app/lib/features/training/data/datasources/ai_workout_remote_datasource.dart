@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:personal_fitness_os/core/constants/supabase_config.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/ai_generated_plan.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/ai_workout_request.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -120,7 +121,7 @@ class SupabaseAiWorkoutRemoteDataSource implements AiWorkoutRemoteDataSource {
     } catch (e) {
       throw AiWorkoutException(
         code: AiWorkoutErrorCode.unknown,
-        message: 'Não foi possível gerar o treino agora: $e',
+        message: userFacingMessage(e),
       );
     }
   }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/constants/supabase_config.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
@@ -58,7 +59,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       context.go('/');
     } catch (e) {
       if (!mounted) return;
-      context.showSnackBar('Não foi possível entrar: $e', isError: true);
+      context.showSnackBar(userFacingMessage(e), isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

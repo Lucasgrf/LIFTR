@@ -1,0 +1,61 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:personal_fitness_os/core/errors/failures.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+void main() {
+  group('userFacingMessage', () {
+    test('translates invalid credentials to friendly PT-BR message', () {
+      const err = AuthException('Invalid login credentials');
+      final msg = userFacingMessage(err);
+      expect(msg, contains('E-mail ou senha incorretos'));
+      expect(msg.toLowerCase(), isNot(contains('invalid login')));
+    });
+
+    test('translates already registered email', () {
+      const err = AuthException('User already registered');
+      final msg = userFacingMessage(err);
+      expect(msg, contains('já está cadastrado'));
+    });
+
+    test('translates network/offline errors without technical jargon', () {
+      final socketMsg = userFacingMessage(const SocketException('No route'));
+      const netFailureMsg = NetworkFailure('SocketException failed host lookup');
+      expect(socketMsg, contains('Sem conexão com a internet'));
+      expect(userFacingMessage(netFailureMsg), contains('Sem conexão'));
+      expect(socketMsg, isNot(contains('SocketException')));
+    });
+
+    test('translates timeout errors', () {
+      final msg = userFacingMessage(TimeoutException('Timed out after 10s'));
+      expect(msg, contains('demorou mais que o esperado'));
+    });
+
+    test('translates 5xx / unavailable server errors', () {
+      const err = PostgrestException(
+        message: '503 Service Unavailable from upstream pg_bouncer',
+        code: '503',
+      );
+      final msg = userFacingMessage(err);
+      expect(msg, contains('servidor está temporariamente indisponível'));
+      expect(msg, isNot(contains('pg_bouncer')));
+    });
+
+    test('preserves ValidationFailure message cleanly', () {
+      const failure = ValidationFailure('Informe o peso em kg.');
+      expect(userFacingMessage(failure), 'Informe o peso em kg.');
+    });
+
+    test('returns generic PT-BR fallback without leaking internal details', () {
+      final msg = userFacingMessage(
+        Exception('Null check operator used on a null value at foo.dart:99'),
+      );
+      expect(msg, contains('Algo deu errado'));
+      expect(msg, isNot(contains('foo.dart')));
+      expect(msg, isNot(contains('Null check')));
+    });
+  });
+}

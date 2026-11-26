@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/constants/supabase_config.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/features/profile/data/datasources/profile_remote_datasource.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 import 'package:personal_fitness_os/routing/app_router.dart';
@@ -121,7 +122,7 @@ class ProfileController extends StateNotifier<ProfileControllerState> {
     } catch (e) {
       state = state.copyWith(
         isUploadingAvatar: false,
-        errorMessage: 'Não foi possível enviar a foto de perfil: $e',
+        errorMessage: userFacingMessage(e),
       );
       return false;
     }

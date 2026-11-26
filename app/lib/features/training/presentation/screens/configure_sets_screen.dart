@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
+import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/set_template.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
 import 'package:personal_fitness_os/features/training/presentation/widgets/set_template_row.dart';
@@ -134,7 +136,7 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
         context.pop();
       },
       (failure) {
-        context.showSnackBar('Erro ao salvar séries: ${failure.message}', isError: true);
+        context.showSnackBar(userFacingMessage(failure), isError: true);
       },
     );
   }
@@ -152,7 +154,15 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
       ),
       body: workoutAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Erro: $err')),
+        error: (err, _) => ErrorStateWidget(
+          message: userFacingMessage(err),
+          safetyNote: kOfflineDataSafetyNote,
+          onRetry: () => ref.invalidate(
+            workoutDetailProvider(
+              (planId: widget.planId, workoutId: widget.workoutId),
+            ),
+          ),
+        ),
         data: (workout) {
           final exercise = workout.exercises
               .where((e) => e.id == widget.workoutExerciseId)

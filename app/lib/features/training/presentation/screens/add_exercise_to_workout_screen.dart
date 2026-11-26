@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
@@ -9,6 +10,7 @@ import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
+import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
@@ -117,7 +119,7 @@ class _AddExerciseToWorkoutScreenState
         context.pop();
       },
       (failure) {
-        context.showSnackBar('Erro ao adicionar exercício: ${failure.message}', isError: true);
+        context.showSnackBar(userFacingMessage(failure), isError: true);
       },
     );
   }
@@ -164,7 +166,12 @@ class _AddExerciseToWorkoutScreenState
           Expanded(
             child: filteredExercisesAsync.when(
               loading: () => const LoadingWidget(),
-              error: (err, _) => Center(child: Text('Erro: $err')),
+              error: (err, _) => ErrorStateWidget(
+                message: userFacingMessage(err),
+                safetyNote: kOfflineDataSafetyNote,
+                onRetry: () =>
+                    ref.read(exerciseListStateProvider.notifier).refresh(),
+              ),
               data: (exercises) {
                 if (exercises.isEmpty) {
                   return const EmptyStateWidget(

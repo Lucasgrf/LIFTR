@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
@@ -63,7 +64,8 @@ class WeeklyComparisonScreen extends ConsumerWidget {
       body: comparisonAsync.when(
         loading: () => const SafeArea(child: LiftrScreenSkeleton()),
         error: (err, _) => ErrorStateWidget(
-          message: err.toString(),
+          message: userFacingMessage(err),
+          safetyNote: kOfflineDataSafetyNote,
           onRetry: () => ref.invalidate(weeklyComparisonProvider),
         ),
         data: (data) {

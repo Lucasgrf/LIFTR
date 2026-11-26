@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
 import 'package:personal_fitness_os/core/update/app_update_info.dart';
 import 'package:personal_fitness_os/core/update/app_update_platform.dart';
@@ -319,7 +320,7 @@ class AppUpdateNotifier extends StateNotifier<AppUpdateState> {
       if (mounted) {
         state = state.copyWith(
           phase: AppUpdatePhase.error,
-          errorMessage: 'Erro ao baixar atualização: $e',
+          errorMessage: userFacingMessage(e),
         );
       }
     } finally {

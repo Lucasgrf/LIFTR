@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/providers/clock_provider.dart';
@@ -447,7 +448,8 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
               child: sessionAsync.when(
                 loading: () => const LiftrScreenSkeleton(showHero: false),
                 error: (err, _) => ErrorStateWidget(
-                  message: err.toString(),
+                  message: userFacingMessage(err),
+                  safetyNote: kOfflineDataSafetyNote,
                   onRetry: () =>
                       ref.invalidate(liveSessionDetailProvider(widget.sessionId)),
                 ),
