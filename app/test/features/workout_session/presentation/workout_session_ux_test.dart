@@ -229,7 +229,8 @@ void main() {
 
       expect(find.byType(SwapExerciseSheet), findsOneWidget);
       expect(find.text('Adicionar exercício'), findsOneWidget);
-      expect(find.text('CATÁLOGO'), findsOneWidget);
+      expect(find.text('Catálogo de exercícios'), findsOneWidget);
+      expect(find.text('CATÁLOGO'), findsNothing);
 
       await tester.tap(find.text('Supino Reto'));
       await tester.pumpAndSettle();

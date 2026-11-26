@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
@@ -15,6 +16,7 @@ class SwapExerciseSheet extends ConsumerStatefulWidget {
     required this.currentExercise,
     required this.onSelect,
     this.eyebrow,
+    this.subtitle,
     this.title,
     this.closeSemanticLabel,
   });
@@ -22,6 +24,7 @@ class SwapExerciseSheet extends ConsumerStatefulWidget {
   final Exercise? currentExercise;
   final ValueChanged<Exercise> onSelect;
   final String? eyebrow;
+  final String? subtitle;
   final String? title;
   final String? closeSemanticLabel;
 
@@ -30,6 +33,7 @@ class SwapExerciseSheet extends ConsumerStatefulWidget {
     required Exercise? currentExercise,
     required ValueChanged<Exercise> onSelect,
     String? eyebrow,
+    String? subtitle,
     String? title,
     String? closeSemanticLabel,
   }) {
@@ -41,6 +45,7 @@ class SwapExerciseSheet extends ConsumerStatefulWidget {
         currentExercise: currentExercise,
         onSelect: onSelect,
         eyebrow: eyebrow,
+        subtitle: subtitle,
         title: title,
         closeSemanticLabel: closeSemanticLabel,
       ),
@@ -147,18 +152,30 @@ class _SwapExerciseSheetState extends ConsumerState<SwapExerciseSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          widget.eyebrow ??
-                              (currentMuscle.isNotEmpty
-                                  ? currentMuscle.toUpperCase()
-                                  : 'SUBSTITUIÇÃO'),
-                          style: AppTypography.eyebrow(context),
-                        ),
-                        const SizedBox(height: 3),
+                        if (widget.eyebrow != null ||
+                            widget.subtitle == null) ...[
+                          Text(
+                            widget.eyebrow ??
+                                (currentMuscle.isNotEmpty
+                                    ? currentMuscle.toUpperCase()
+                                    : 'SUBSTITUIÇÃO'),
+                            style: AppTypography.eyebrow(context),
+                          ),
+                          SizedBox(height: context.appSpacing.space4),
+                        ],
                         Text(
                           widget.title ?? 'Trocar exercício',
                           style: context.textTheme.headlineMedium,
                         ),
+                        if (widget.subtitle != null) ...[
+                          SizedBox(height: context.appSpacing.space4),
+                          Text(
+                            widget.subtitle!,
+                            style: context.textTheme.bodySmall?.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

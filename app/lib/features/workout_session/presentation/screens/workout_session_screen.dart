@@ -491,8 +491,8 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                 onAction: () => SwapExerciseSheet.show(
                                   context,
                                   currentExercise: null,
-                                  eyebrow: 'CATÁLOGO',
                                   title: 'Adicionar exercício',
+                                  subtitle: 'Catálogo de exercícios',
                                   closeSemanticLabel:
                                       'Fechar seleção de exercício',
                                   onSelect: (chosen) =>
