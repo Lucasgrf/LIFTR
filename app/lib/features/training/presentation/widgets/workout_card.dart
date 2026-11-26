@@ -71,7 +71,10 @@ class WorkoutCard extends StatelessWidget {
                     ),
                   ),
                   AppSpacing.verticalGap4,
-                  Row(
+                  Wrap(
+                    spacing: context.appSpacing.space8,
+                    runSpacing: context.appSpacing.space4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
                         workout.dayOfWeekLabel,
@@ -80,14 +83,12 @@ class WorkoutCard extends StatelessWidget {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      AppSpacing.horizontalGap8,
                       Text(
                         '·',
                         style: context.textTheme.bodySmall?.copyWith(
                           color: context.appColors.textTertiary,
                         ),
                       ),
-                      const SizedBox(width: 8),
                       Text(
                         '${workout.totalExercisesCount} exercícios',
                         style: context.textTheme.bodySmall?.copyWith(
@@ -97,13 +98,12 @@ class WorkoutCard extends StatelessWidget {
                     ],
                   ),
                   if (workout.totalWorkingSetsCount > 0) ...[
-                    const SizedBox(height: 4),
+                    AppSpacing.verticalGap4,
                     Text(
                       '${workout.totalWorkingSetsCount} séries válidas',
-                      style: context.textTheme.bodySmall?.copyWith(
+                      style: context.textTheme.labelSmall?.copyWith(
                         color: context.appColors.primary,
                         fontWeight: FontWeight.w600,
-                        fontSize: 11,
                       ),
                     ),
                   ],

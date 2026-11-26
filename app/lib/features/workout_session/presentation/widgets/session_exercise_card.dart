@@ -745,7 +745,9 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                       SizedBox(
                         width: 34,
                         child: Text(
-                          'BLOCO',
+                          'BL.',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
                           style: context.textTheme.labelSmall?.copyWith(
                             color: colors.textTertiary,
@@ -753,10 +755,12 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      AppSpacing.horizontalGap8,
                       Expanded(
                         child: Text(
                           'TEMPO (MIN)',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
                           style: context.textTheme.labelSmall?.copyWith(
                             color: colors.textTertiary,
@@ -764,11 +768,13 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      AppSpacing.horizontalGap8,
                       SizedBox(
                         width: 48,
                         child: Text(
                           'FEITO',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
                           style: context.textTheme.labelSmall?.copyWith(
                             color: colors.textTertiary,
@@ -783,7 +789,9 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                       SizedBox(
                         width: 34,
                         child: Text(
-                          'SÉRIE',
+                          'SÉR.',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
                           style: context.textTheme.labelSmall?.copyWith(
                             color: colors.textTertiary,
@@ -791,11 +799,13 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      AppSpacing.horizontalGap4,
                       Expanded(
                         flex: 12,
                         child: Text(
                           'KG',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
                           style: context.textTheme.labelSmall?.copyWith(
                             color: colors.textTertiary,
@@ -803,11 +813,13 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      AppSpacing.horizontalGap4,
                       Expanded(
                         flex: 10,
                         child: Text(
                           'REPS',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
                           style: context.textTheme.labelSmall?.copyWith(
                             color: colors.textTertiary,
@@ -816,11 +828,13 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                         ),
                       ),
                       if (widget.showRir) ...[
-                        const SizedBox(width: 4),
+                        AppSpacing.horizontalGap4,
                         SizedBox(
                           width: 58,
                           child: Text(
                             'RIR',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
                             style: context.textTheme.labelSmall?.copyWith(
                               color: colors.textTertiary,
@@ -829,11 +843,13 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                           ),
                         ),
                       ],
-                      const SizedBox(width: 4),
+                      AppSpacing.horizontalGap4,
                       SizedBox(
                         width: 44,
                         child: Text(
                           'FEITO',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
                           style: context.textTheme.labelSmall?.copyWith(
                             color: colors.textTertiary,
@@ -938,12 +954,12 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            AppSpacing.verticalGap8,
             Row(
               children: [
                 Expanded(
-                  child: SizedBox(
-                    height: 48,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 48),
                     child: TextButton.icon(
                       onPressed: () {
                         HapticFeedback.lightImpact();
@@ -953,7 +969,11 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                         widget.onAddExtraSet?.call();
                       },
                       icon: const Icon(Icons.add_rounded, size: 18),
-                      label: const Text('Adicionar série'),
+                      label: const Text(
+                        'Adicionar série',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       style: TextButton.styleFrom(
                         minimumSize: const Size(48, 48),
                         foregroundColor: colors.primaryLight,
@@ -962,8 +982,8 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                   ),
                 ),
                 Expanded(
-                  child: SizedBox(
-                    height: 48,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 48),
                     child: TextButton.icon(
                       onPressed: () {
                         HapticFeedback.lightImpact();
@@ -975,7 +995,11 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                         widget.onAddExtraSet?.call();
                       },
                       icon: const Icon(Icons.bolt_rounded, size: 17),
-                      label: const Text('Drop-set'),
+                      label: const Text(
+                        'Drop-set',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       style: TextButton.styleFrom(
                         minimumSize: const Size(48, 48),
                         foregroundColor: fitnessColors.dropSetTag,

@@ -1220,23 +1220,31 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: context.appSpacing.space8,
+                      runSpacing: context.appSpacing.space4,
                       children: [
-                        Icon(
-                          Icons.bolt_rounded,
-                          size: 13,
-                          color: fitnessColors.dropSetTag,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.bolt_rounded,
+                              size: 13,
+                              color: fitnessColors.dropSetTag,
+                            ),
+                            AppSpacing.horizontalGap4,
+                            Text(
+                              'DROP-SET',
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: fitnessColors.dropSetTag,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'DROP-SET',
-                          style: context.textTheme.labelSmall?.copyWith(
-                            color: fitnessColors.dropSetTag,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                        const Spacer(),
                         InkWell(
                           onTap: _addAnotherDrop,
                           borderRadius: BorderRadius.circular(radius.small),
