@@ -7,6 +7,7 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
+import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
@@ -202,20 +203,17 @@ class _ImportPlanSheetState extends ConsumerState<ImportPlanSheet> {
                   ),
                 ),
                 const SizedBox(height: 14),
-                TextField(
+                AppInput(
                   key: const Key('import_plan_code_input'),
                   controller: _controller,
                   onChanged: _onInputChanged,
                   minLines: 2,
                   maxLines: 4,
+                  hint: 'LIFTR-PLAN-V1:...',
+                  fillColor: colors.surfaceSubtle,
                   style: context.textTheme.bodySmall?.copyWith(
                     color: colors.textPrimary,
                     fontFeatures: AppTypography.tabularFeatures,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'LIFTR-PLAN-V1:...',
-                    filled: true,
-                    fillColor: colors.surfaceSubtle,
                   ),
                 ),
                 const SizedBox(height: 8),

@@ -8,14 +8,19 @@ import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/errors/failures.dart';
 import 'package:personal_fitness_os/core/errors/result.dart';
 import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
+import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
 import 'package:personal_fitness_os/core/theme/app_theme.dart';
+import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
+import 'package:personal_fitness_os/features/auth/presentation/screens/login_screen.dart';
+import 'package:personal_fitness_os/features/auth/presentation/screens/register_screen.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/repositories/exercise_repository.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
 import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
 import 'package:personal_fitness_os/features/history/presentation/widgets/exercise_history_modal.dart';
+import 'package:personal_fitness_os/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:personal_fitness_os/features/profile/presentation/providers/profile_providers.dart';
 import 'package:personal_fitness_os/features/profile/presentation/screens/profile_screen.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
@@ -25,7 +30,9 @@ import 'package:personal_fitness_os/features/training/domain/entities/workout_ex
 import 'package:personal_fitness_os/features/training/domain/usecases/configure_set_templates.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
 import 'package:personal_fitness_os/features/training/presentation/screens/add_exercise_to_workout_screen.dart';
+import 'package:personal_fitness_os/features/training/presentation/screens/ai_workout_generator_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/screens/configure_sets_screen.dart';
+import 'package:personal_fitness_os/features/training/presentation/widgets/import_plan_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _ToggleErrorExerciseRepo implements ExerciseRepository {
@@ -463,6 +470,267 @@ void main() {
       expect(settings.age, 29);
       expect(settings.bodyFatPercent, 15.4);
       expect(find.text('82,5 kg · 180 cm · 29 anos'), findsOneWidget);
+    });
+  });
+
+  group('UX-05 Auth, onboarding, AI generator and import inputs', () {
+    testWidgets(
+        'LoginScreen uses AutofillGroup, AppInput, next focus, and Esqueci minha senha flow',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(375, 812));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final sentEmails = <String>[];
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            passwordResetSenderProvider.overrideWithValue(
+              (email) async => sentEmails.add(email),
+            ),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.dark(),
+            home: const LoginScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AutofillGroup), findsOneWidget);
+      expect(find.byType(AppInput), findsNWidgets(2));
+
+      final emailField = find.descendant(
+        of: find.byType(AppInput).at(0),
+        matching: find.byType(EditableText),
+      );
+      final passwordField = find.descendant(
+        of: find.byType(AppInput).at(1),
+        matching: find.byType(EditableText),
+      );
+
+      await tester.tap(emailField);
+      await tester.enterText(emailField, 'atleta@liftr.app');
+      await tester.testTextInput.receiveAction(TextInputAction.next);
+      await tester.pumpAndSettle();
+
+      final editablePassword = tester.widget<EditableText>(passwordField);
+      expect(editablePassword.focusNode.hasFocus, isTrue);
+
+      await tester.tap(find.text('Esqueci minha senha'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Redefinir senha'), findsOneWidget);
+      await tester.tap(find.text('Enviar link'));
+      await tester.pumpAndSettle();
+
+      expect(sentEmails, ['atleta@liftr.app']);
+      expect(find.textContaining('enviamos as instruções'), findsOneWidget);
+
+      await tester.tap(find.text('Fechar'));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+        'RegisterScreen uses AutofillGroup and 3 AppInput fields with focus traversal',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(375, 812));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.dark(),
+            home: const RegisterScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AutofillGroup), findsOneWidget);
+      expect(find.byType(AppInput), findsNWidgets(3));
+
+      final nameField = find.descendant(
+        of: find.byType(AppInput).at(0),
+        matching: find.byType(EditableText),
+      );
+      final emailField = find.descendant(
+        of: find.byType(AppInput).at(1),
+        matching: find.byType(EditableText),
+      );
+      await tester.tap(nameField);
+      await tester.testTextInput.receiveAction(TextInputAction.next);
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<EditableText>(emailField).focusNode.hasFocus, isTrue);
+    });
+
+    testWidgets(
+        'OnboardingScreen shows inline Step 0 validation, handles PopScope step back, and guards double submit',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(375, 812));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final router = GoRouter(
+        initialLocation: '/onboarding',
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (_, _) => const Scaffold(body: Text('Home')),
+          ),
+          GoRoute(
+            path: '/login',
+            builder: (_, _) => const Scaffold(body: Text('Login')),
+          ),
+          GoRoute(
+            path: '/onboarding',
+            builder: (_, _) => const OnboardingScreen(),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            profileControllerProvider
+                .overrideWith((ref) => _NoopProfileRemoteController(ref)),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.dark(),
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final stepInputs = find.byType(AppInput);
+      expect(stepInputs, findsNWidgets(4));
+
+      await tester.enterText(
+        find.descendant(
+          of: stepInputs.at(0),
+          matching: find.byType(TextFormField),
+        ),
+        '9',
+      );
+      await tester.pump();
+      expect(find.text('Entre 12 e 100 anos'), findsOneWidget);
+
+      await tester.enterText(
+        find.descendant(
+          of: stepInputs.at(0),
+          matching: find.byType(TextFormField),
+        ),
+        '28',
+      );
+      await tester.pump();
+      expect(find.text('Entre 12 e 100 anos'), findsNothing);
+
+      await tester.tap(find.text('Continuar'));
+      await tester.pumpAndSettle();
+      expect(find.text('Passo 2 de 6'), findsOneWidget);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Passo 1 de 6'), findsOneWidget);
+
+      for (var i = 0; i < 5; i++) {
+        final nextLabel = i == 4 ? 'Confirmar plano' : 'Continuar';
+        await tester.tap(find.text(nextLabel));
+        await tester.pumpAndSettle();
+      }
+      expect(find.text('Passo 6 de 6'), findsOneWidget);
+
+      final skipBtn = find.text('Pular e fazer depois');
+      await tester.ensureVisible(skipBtn);
+      await tester.tap(skipBtn);
+      await tester.pump();
+      await tester.tap(skipBtn, warnIfMissed: false);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Home'), findsOneWidget);
+    });
+
+    testWidgets(
+        'AiWorkoutGeneratorScreen gates offline state before wizard and uses AppInput on Step 5',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(375, 812));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            isOfflineModeProvider.overrideWithValue(true),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.dark(),
+            home: const AiWorkoutGeneratorScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Você está sem conexão com a internet'),
+        findsOneWidget,
+      );
+      expect(find.text(kOfflineDataSafetyNote), findsOneWidget);
+      expect(find.text('Voltar'), findsOneWidget);
+      expect(find.text('Continuar'), findsNothing);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            isOfflineModeProvider.overrideWithValue(false),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.dark(),
+            home: const AiWorkoutGeneratorScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      for (var i = 0; i < 4; i++) {
+        await tester.tap(find.text('Continuar'));
+        await tester.pumpAndSettle();
+      }
+      expect(find.text('Passo 5 de 5'), findsOneWidget);
+      expect(find.byKey(const Key('ai_restrictions_input')), findsOneWidget);
+      expect(
+        tester.widget<AppInput>(find.byKey(const Key('ai_restrictions_input'))),
+        isA<AppInput>(),
+      );
+    });
+
+    testWidgets('ImportPlanSheet uses AppInput for plan code entry',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(375, 812));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.dark(),
+            home: const Scaffold(body: ImportPlanSheet()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('import_plan_code_input')), findsOneWidget);
+      expect(
+        tester.widget<AppInput>(find.byKey(const Key('import_plan_code_input'))),
+        isA<AppInput>(),
+      );
     });
   });
 }

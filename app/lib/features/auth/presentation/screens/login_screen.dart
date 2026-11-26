@@ -9,11 +9,21 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
+import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_brand_mark.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/profile/presentation/providers/profile_providers.dart';
 import 'package:personal_fitness_os/routing/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+typedef PasswordResetSender = Future<void> Function(String email);
+
+final passwordResetSenderProvider = Provider<PasswordResetSender>((ref) {
+  return (email) async {
+    if (!SupabaseConfig.isConfigured) return;
+    await Supabase.instance.client.auth.resetPasswordForEmail(email);
+  };
+});
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -26,14 +36,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
+  final _emailFocus = FocusNode();
+  final _passwordFocus = FocusNode();
   bool _isLoading = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _emailFocus.dispose();
+    _passwordFocus.dispose();
     super.dispose();
+  }
+
+  Future<void> _showForgotPasswordDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => _ForgotPasswordDialog(
+        initialEmail: _emailController.text.trim(),
+        sendReset: ref.read(passwordResetSenderProvider),
+      ),
+    );
   }
 
   Future<void> _submit() async {
@@ -94,76 +117,72 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 36),
-                    Text(
-                      'E-mail',
-                      style: context.textTheme.labelMedium?.copyWith(
-                        color: colors.textSecondary,
+                    AutofillGroup(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          AppInput(
+                            label: 'E-mail',
+                            hint: 'voce@exemplo.com',
+                            controller: _emailController,
+                            focusNode: _emailFocus,
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
+                            autofillHints: const [AutofillHints.email],
+                            onFieldSubmitted: (_) =>
+                                _passwordFocus.requestFocus(),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Informe seu e-mail';
+                              }
+                              if (!value.contains('@')) {
+                                return 'Informe um e-mail válido';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          AppInput(
+                            label: 'Senha',
+                            hint: '••••••••',
+                            controller: _passwordController,
+                            focusNode: _passwordFocus,
+                            obscureText: true,
+                            textInputAction: TextInputAction.done,
+                            autofillHints: const [AutofillHints.password],
+                            onFieldSubmitted: (_) => _submit(),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Informe sua senha';
+                              }
+                              if (value.length < 6) {
+                                return 'Mínimo de 6 caracteres';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      style: context.textTheme.bodyLarge,
-                      decoration: const InputDecoration(
-                        hintText: 'voce@exemplo.com',
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Informe seu e-mail';
-                        }
-                        if (!value.contains('@')) {
-                          return 'Informe um e-mail válido';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Senha',
-                      style: context.textTheme.labelMedium?.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => _submit(),
-                      style: context.textTheme.bodyLarge,
-                      decoration: InputDecoration(
-                        hintText: '••••••••',
-                        suffixIcon: Semantics(
-                          label: _obscurePassword
-                              ? 'Mostrar senha'
-                              : 'Ocultar senha',
-                          button: true,
-                          child: IconButton(
-                            onPressed: () => setState(
-                              () => _obscurePassword = !_obscurePassword,
-                            ),
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_rounded
-                                  : Icons.visibility_off_rounded,
-                              color: colors.textTertiary,
-                            ),
+                    const SizedBox(height: 4),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed:
+                            _isLoading ? null : _showForgotPasswordDialog,
+                        style: TextButton.styleFrom(
+                          minimumSize: const Size(48, 48),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                        child: Text(
+                          'Esqueci minha senha',
+                          style: context.textTheme.labelMedium?.copyWith(
+                            color: colors.primaryLight,
                           ),
                         ),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Informe sua senha';
-                        }
-                        if (value.length < 6) {
-                          return 'Mínimo de 6 caracteres';
-                        }
-                        return null;
-                      },
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 20),
                     AppButton.primary(
                       label: 'Entrar',
                       isLoading: _isLoading,
@@ -229,6 +248,130 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ForgotPasswordDialog extends StatefulWidget {
+  const _ForgotPasswordDialog({
+    required this.initialEmail,
+    required this.sendReset,
+  });
+
+  final String initialEmail;
+  final PasswordResetSender sendReset;
+
+  @override
+  State<_ForgotPasswordDialog> createState() => _ForgotPasswordDialogState();
+}
+
+class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _emailController =
+      TextEditingController(text: widget.initialEmail);
+  bool _isSubmitting = false;
+  bool _sent = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_isSubmitting) return;
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+    });
+    try {
+      await widget.sendReset(_emailController.text.trim());
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+        _sent = true;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+        _errorMessage = userFacingMessage(e);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    return AlertDialog(
+      title: const Text('Redefinir senha'),
+      content: _sent
+          ? Text(
+              'Se existir uma conta para ${_emailController.text.trim()}, '
+              'enviamos as instruções para redefinir sua senha.',
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: colors.textSecondary,
+              ),
+            )
+          : Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Informe o e-mail da sua conta para receber o link de recuperação.',
+                    style: context.textTheme.bodySmall?.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  AppInput(
+                    label: 'E-mail',
+                    hint: 'voce@exemplo.com',
+                    controller: _emailController,
+                    autofocus: widget.initialEmail.isEmpty,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.done,
+                    autofillHints: const [AutofillHints.email],
+                    errorText: _errorMessage,
+                    onFieldSubmitted: (_) => _submit(),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Informe seu e-mail';
+                      }
+                      if (!value.contains('@')) {
+                        return 'Informe um e-mail válido';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+      actions: _sent
+          ? [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                child: const Text('Fechar'),
+              ),
+            ]
+          : [
+              TextButton(
+                onPressed:
+                    _isSubmitting ? null : () => Navigator.of(context).pop(),
+                style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                child: const Text('Cancelar'),
+              ),
+              TextButton(
+                onPressed: _isSubmitting ? null : _submit,
+                style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                child: Text(_isSubmitting ? 'Enviando...' : 'Enviar link'),
+              ),
+            ],
     );
   }
 }

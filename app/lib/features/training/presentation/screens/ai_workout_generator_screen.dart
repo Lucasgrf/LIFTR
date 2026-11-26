@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
+import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
@@ -13,6 +14,7 @@ import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
+import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
@@ -246,8 +248,11 @@ class _AiWorkoutGeneratorScreenState
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final showWizard =
-        !_isGenerating && _errorMessage == null && _generatedPlan == null;
+    final isOffline = ref.watch(isOfflineModeProvider);
+    final showWizard = !isOffline &&
+        !_isGenerating &&
+        _errorMessage == null &&
+        _generatedPlan == null;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -307,7 +312,7 @@ class _AiWorkoutGeneratorScreenState
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 child: ResponsiveContainer(
-                  child: _buildBodyContent(context),
+                  child: _buildBodyContent(context, isOffline: isOffline),
                 ),
               ),
             ),
@@ -385,7 +390,7 @@ class _AiWorkoutGeneratorScreenState
     );
   }
 
-  Widget _buildBodyContent(BuildContext context) {
+  Widget _buildBodyContent(BuildContext context, {required bool isOffline}) {
     if (_isGenerating) {
       return _buildGeneratingState(context);
     }
@@ -394,6 +399,9 @@ class _AiWorkoutGeneratorScreenState
     }
     if (_generatedPlan != null) {
       return _buildPreviewState(context, _generatedPlan!);
+    }
+    if (isOffline) {
+      return _buildOfflineState(context);
     }
 
     switch (_step) {
@@ -408,6 +416,56 @@ class _AiWorkoutGeneratorScreenState
       default:
         return _buildRestrictionsAndSummaryStep(context);
     }
+  }
+
+  Widget _buildOfflineState(BuildContext context) {
+    final colors = context.appColors;
+    final radius = context.appRadius;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(radius.large),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Icon(
+            Icons.wifi_off_rounded,
+            size: 36,
+            color: colors.warning,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Você está sem conexão com a internet',
+            style: context.textTheme.titleMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'A criação de treino com IA precisa de acesso à rede para montar e personalizar a sua ficha.',
+            style: context.textTheme.bodyMedium?.copyWith(
+              color: colors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            kOfflineDataSafetyNote,
+            style: context.textTheme.bodySmall?.copyWith(
+              color: colors.textTertiary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          AppButton.secondary(
+            label: 'Voltar',
+            onPressed: _handleBack,
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildStepHeader(
@@ -756,17 +814,14 @@ class _AiWorkoutGeneratorScreenState
           subtitle:
               'Informe dores articulares, exercícios que prefere evitar ou qualquer detalhe adicional.',
         ),
-        TextField(
+        AppInput(
           key: const Key('ai_restrictions_input'),
           controller: _restrictionsController,
           minLines: 2,
           maxLines: 4,
-          decoration: InputDecoration(
-            hintText:
-                'Ex: desconforto no ombro, foco em glúteos e posterior, evitar agachamento livre...',
-            filled: true,
-            fillColor: colors.surface,
-          ),
+          hint:
+              'Ex: desconforto no ombro, foco em glúteos e posterior, evitar agachamento livre...',
+          fillColor: colors.surface,
         ),
         const SizedBox(height: 20),
         Container(
