@@ -65,12 +65,19 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       context.go(isLoggedIn ? '/' : '/login');
     } catch (e, st) {
       if (!mounted) return;
+      final message = userFacingMessage(
+        e,
+        stackTrace: st,
+        context: 'ResetPasswordScreen._submit',
+      );
+      if (isExpiredOrUsedAuthLinkError(e)) {
+        ref.read(passwordRecoveryPendingProvider.notifier).state = false;
+        ref.read(passwordRecoveryErrorProvider.notifier).state = message;
+        context.go('/login');
+        return;
+      }
       context.showSnackBar(
-        userFacingMessage(
-          e,
-          stackTrace: st,
-          context: 'ResetPasswordScreen._submit',
-        ),
+        message,
         isError: true,
       );
     } finally {

@@ -873,6 +873,115 @@ void main() {
     });
 
     testWidgets(
+        'LoginScreen displays expired recovery link message and opens ForgotPasswordDialog on Solicitar novo link',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(375, 812));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      late ProviderContainer container;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            passwordRecoveryErrorProvider.overrideWith(
+              (_) =>
+                  'Este link de redefinição expirou ou já foi utilizado. Solicite um novo link para continuar.',
+            ),
+          ],
+          child: Consumer(
+            builder: (context, ref, _) {
+              container = ProviderScope.containerOf(context);
+              return MaterialApp(
+                theme: AppTheme.dark(),
+                home: const LoginScreen(),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'Este link de redefinição expirou ou já foi utilizado. Solicite um novo link para continuar.',
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Solicitar novo link'));
+      await tester.pumpAndSettle();
+
+      expect(container.read(passwordRecoveryErrorProvider), isNull);
+      expect(find.text('Redefinir senha'), findsOneWidget);
+    });
+
+    testWidgets(
+        'ResetPasswordScreen routes to /login with recovery error when updateUser reports expired link',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(375, 812));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final router = GoRouter(
+        initialLocation: '/reset-password',
+        routes: [
+          GoRoute(
+            path: '/login',
+            builder: (_, _) => const LoginScreen(),
+          ),
+          GoRoute(
+            path: '/reset-password',
+            builder: (_, _) => const ResetPasswordScreen(),
+          ),
+        ],
+      );
+
+      late ProviderContainer container;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            passwordRecoveryPendingProvider.overrideWith((_) => true),
+            passwordUpdaterProvider.overrideWithValue(
+              (_) async => throw const AuthException(
+                'Email link is invalid or has expired',
+                code: 'otp_expired',
+              ),
+            ),
+          ],
+          child: Consumer(
+            builder: (context, ref, _) {
+              container = ProviderScope.containerOf(context);
+              return MaterialApp.router(
+                theme: AppTheme.dark(),
+                routerConfig: router,
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final fields = find.byType(AppInput);
+      await tester.enterText(
+        find.descendant(of: fields.at(0), matching: find.byType(EditableText)),
+        'nova123',
+      );
+      await tester.enterText(
+        find.descendant(of: fields.at(1), matching: find.byType(EditableText)),
+        'nova123',
+      );
+      await tester.tap(find.text('Salvar nova senha'));
+      await tester.pumpAndSettle();
+
+      expect(container.read(passwordRecoveryPendingProvider), isFalse);
+      expect(
+        find.text(
+          'Este link de redefinição expirou ou já foi utilizado. Solicite um novo link para continuar.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Solicitar novo link'), findsOneWidget);
+    });
+
+    testWidgets(
         'LoginScreen invokes finishAutofillContext upon successful sign-in',
         (tester) async {
       await tester.binding.setSurfaceSize(const Size(375, 812));

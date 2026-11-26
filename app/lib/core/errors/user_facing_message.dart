@@ -48,6 +48,26 @@ bool isLocalStorageError(Object error) {
 String? offlineSafetyNoteFor(Object error) =>
     isLocalStorageError(error) ? null : kOfflineDataSafetyNote;
 
+/// Returns `true` when [error] indicates an expired or already-used password
+/// recovery / OTP deep link.
+bool isExpiredOrUsedAuthLinkError(Object error) {
+  final msg = switch (error) {
+    final AuthException e => '${e.code ?? ''} ${e.message}',
+    final Failure f => f.message,
+    _ => error.toString(),
+  }
+      .toLowerCase();
+  return msg.contains('otp_expired') ||
+      msg.contains('link is invalid') ||
+      msg.contains('has expired') ||
+      msg.contains('already been used') ||
+      msg.contains('invalid_grant') ||
+      msg.contains('token_expired') ||
+      msg.contains('flow_state_expired') ||
+      msg.contains('flow_state_not_found') ||
+      msg.contains('code verifier');
+}
+
 /// Translates technical exceptions and [Failure] objects into clear,
 /// non-technical PT-BR messages with cause and next step while logging the
 /// original error and stack trace.
@@ -66,6 +86,9 @@ String userFacingMessage(
   }
   if (error is CacheFailure) {
     return 'Não foi possível ler ou salvar os dados locais neste aparelho. Tente novamente.';
+  }
+  if (isExpiredOrUsedAuthLinkError(error)) {
+    return 'Este link de redefinição expirou ou já foi utilizado. Solicite um novo link para continuar.';
   }
   if (error is ValidationFailure && error.message.trim().isNotEmpty) {
     return error.message.trim();

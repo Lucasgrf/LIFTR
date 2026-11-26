@@ -97,5 +97,23 @@ void main() {
         kOfflineDataSafetyNote,
       );
     });
+
+    test('translates expired or already-used recovery links to friendly PT-BR copy',
+        () {
+      const expired = AuthException(
+        'Email link is invalid or has expired',
+        statusCode: '403',
+        code: 'otp_expired',
+      );
+      const invalidGrant = AuthException(
+        'invalid_grant: token has already been used',
+      );
+      expect(isExpiredOrUsedAuthLinkError(expired), isTrue);
+      expect(isExpiredOrUsedAuthLinkError(invalidGrant), isTrue);
+      expect(
+        userFacingMessage(expired),
+        'Este link de redefinição expirou ou já foi utilizado. Solicite um novo link para continuar.',
+      );
+    });
   });
 }

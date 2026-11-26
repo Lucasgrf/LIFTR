@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/constants/supabase_config.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/features/auth/presentation/screens/login_screen.dart';
 import 'package:personal_fitness_os/features/auth/presentation/screens/register_screen.dart';
 import 'package:personal_fitness_os/features/auth/presentation/screens/reset_password_screen.dart';
@@ -36,6 +37,7 @@ final authStateProvider = StateProvider<bool>((ref) {
 });
 
 final passwordRecoveryPendingProvider = StateProvider<bool>((ref) => false);
+final passwordRecoveryErrorProvider = StateProvider<String?>((ref) => null);
 
 /// Tracks the currently authenticated Supabase user ID so all user-specific
 /// caches (`SharedPreferences`) and in-memory Riverpod providers automatically
@@ -44,16 +46,36 @@ final activeUserIdProvider = StateProvider<String?>((ref) {
   if (!SupabaseConfig.isConfigured) return null;
   try {
     final auth = Supabase.instance.client.auth;
-    final sub = auth.onAuthStateChange.listen((data) {
-      final newUserId = data.session?.user.id;
-      ref.controller.state = newUserId;
-      ref.read(authStateProvider.notifier).state = data.session != null;
-      if (data.event == AuthChangeEvent.passwordRecovery) {
-        ref.read(passwordRecoveryPendingProvider.notifier).state = true;
-      } else if (data.event == AuthChangeEvent.signedOut) {
+    final sub = auth.onAuthStateChange.listen(
+      (data) {
+        final newUserId = data.session?.user.id;
+        ref.controller.state = newUserId;
+        ref.read(authStateProvider.notifier).state = data.session != null;
+        if (data.event == AuthChangeEvent.passwordRecovery) {
+          ref.read(passwordRecoveryErrorProvider.notifier).state = null;
+          ref.read(passwordRecoveryPendingProvider.notifier).state = true;
+        } else if (data.event == AuthChangeEvent.signedIn) {
+          ref.read(passwordRecoveryErrorProvider.notifier).state = null;
+        } else if (data.event == AuthChangeEvent.signedOut) {
+          ref.read(passwordRecoveryPendingProvider.notifier).state = false;
+        }
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        appErrorLogger(
+          error,
+          stackTrace: stackTrace,
+          context: 'AuthStateChange.recoveryLink',
+        );
         ref.read(passwordRecoveryPendingProvider.notifier).state = false;
-      }
-    });
+        ref.read(passwordRecoveryErrorProvider.notifier).state =
+            userFacingMessage(
+          error,
+          stackTrace: stackTrace,
+          context: 'AuthStateChange.recoveryLink',
+          logError: false,
+        );
+      },
+    );
     ref.onDispose(sub.cancel);
     return auth.currentUser?.id;
   } catch (_) {

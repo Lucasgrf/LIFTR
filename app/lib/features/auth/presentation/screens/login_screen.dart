@@ -12,7 +12,9 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/network/network_info.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_brand_mark.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
@@ -103,6 +105,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final radius = context.appRadius;
+    final spacing = context.appSpacing;
+    final recoveryError = ref.watch(passwordRecoveryErrorProvider);
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -128,6 +132,50 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 36),
+                    if (recoveryError != null) ...[
+                      AppCard(
+                        variant: AppCardVariant.accented,
+                        accentColor: colors.warning,
+                        padding: EdgeInsets.all(spacing.space16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              recoveryError,
+                              style: context.textTheme.bodyMedium?.copyWith(
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                            AppSpacing.verticalGap8,
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton(
+                                onPressed: () {
+                                  ref
+                                      .read(passwordRecoveryErrorProvider
+                                          .notifier)
+                                      .state = null;
+                                  _showForgotPasswordDialog();
+                                },
+                                style: TextButton.styleFrom(
+                                  minimumSize: const Size(48, 48),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
+                                ),
+                                child: Text(
+                                  'Solicitar novo link',
+                                  style: context.textTheme.labelLarge?.copyWith(
+                                    color: colors.primaryLight,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      AppSpacing.verticalGap16,
+                    ],
                     AutofillGroup(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
