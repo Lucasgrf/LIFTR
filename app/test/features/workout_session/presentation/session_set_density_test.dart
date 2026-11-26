@@ -21,6 +21,7 @@ import 'package:personal_fitness_os/features/workout_session/domain/entities/wor
 import 'package:personal_fitness_os/features/workout_session/domain/repositories/session_repository.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/screens/workout_session_screen.dart';
+import 'package:personal_fitness_os/features/workout_session/presentation/widgets/finish_workout_modal.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/logged_set_row.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/session_exercise_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -802,6 +803,284 @@ void main() {
       expect(logCalls.single.weightKg, 82.5);
       expect(logCalls.single.reps, 8);
       expect(find.text('+ Drop-set'), findsNothing);
+    });
+
+    testWidgets(
+        'Descartar alterações inline button has >= 48dp target with Semantics, restores saved values and collapses Set 1',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(375, 812));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final logCalls = <({int setNumber, double weightKg, int reps})>[];
+      const se = SessionExercise(
+        id: 'se-discard',
+        sessionId: 'sess-1',
+        exerciseId: 'ex-squat',
+        exercise: tSquat,
+        targetSetsCount: 2,
+        sets: [
+          LoggedSet(
+            id: 'ls-1',
+            sessionExerciseId: 'se-discard',
+            setNumber: 1,
+            weightKg: 80.0,
+            repsCompleted: 1,
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        wrapCard(
+          se: se,
+          onLogSet: ({
+            required sessionExerciseId,
+            required setNumber,
+            required setType,
+            required weightKg,
+            required repsCompleted,
+            durationSeconds,
+            rirActual,
+            restSeconds = 180,
+            dropSets = const [],
+            existingSetId,
+          }) async {
+            logCalls.add((
+              setNumber: setNumber,
+              weightKg: weightKg,
+              reps: repsCompleted,
+            ));
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Expand Set 1, edit weight & make reps invalid (0), then try collapsing
+      await tester.tap(find.bySemanticsLabel(RegExp(r'^Série 1,')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel('Aumentar carga'));
+      await tester.tap(find.bySemanticsLabel('Diminuir repetições'));
+      await tester.pump();
+
+      await tester.tap(find.bySemanticsLabel(RegExp(r'^Série 2,')));
+      await tester.pumpAndSettle();
+
+      final discardFinder =
+          find.bySemanticsLabel('Descartar alterações da série 1');
+      expect(discardFinder, findsOneWidget);
+      final discardSize = tester.getSize(discardFinder);
+      expect(discardSize.width, greaterThanOrEqualTo(48));
+      expect(discardSize.height, greaterThanOrEqualTo(48));
+      expect(logCalls, isEmpty);
+
+      // Tap Descartar alterações -> restores 80 kg x 1 and collapses Set 1 cleanly
+      await tester.tap(discardFinder);
+      await tester.pumpAndSettle();
+
+      expect(logCalls, isEmpty);
+      expect(find.text('+ Drop-set'), findsNothing);
+      expect(
+        find.bySemanticsLabel('Série 1, 80 kg, 1 repetições, concluída. Toque duas vezes para editar'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+        'tapping Finalizar with pending invalid edit shows Corrigir/Descartar dialog before opening FinishWorkoutModal',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(375, 812));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final initialSession = WorkoutSession(
+        id: 'sess-finish-guard',
+        userId: 'u-1',
+        workoutId: 'w-1',
+        workoutName: 'Treino A',
+        startedAt: DateTime(2026, 11, 20, 18, 0),
+        exercises: const [
+          SessionExercise(
+            id: 'se-1',
+            sessionId: 'sess-finish-guard',
+            exerciseId: 'ex-squat',
+            exercise: tSquat,
+            targetSetsCount: 1,
+            sets: [
+              LoggedSet(
+                id: 'ls-1',
+                sessionExerciseId: 'se-1',
+                setNumber: 1,
+                weightKg: 80.0,
+                repsCompleted: 1,
+              ),
+            ],
+          ),
+        ],
+      );
+      final fakeRepo = _FakeSessionRepo(initialSession);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            appClockProvider.overrideWithValue(
+              () => DateTime(2026, 11, 20, 18, 30),
+            ),
+            isOnlineStreamProvider.overrideWith((_) => Stream.value(true)),
+            liveSessionDetailProvider('sess-finish-guard')
+                .overrideWith((_) => fakeRepo.session),
+            progressionRepositoryProvider
+                .overrideWithValue(_EmptyProgressionRepo()),
+            sessionRepositoryProvider.overrideWithValue(fakeRepo),
+            exerciseListStateProvider
+                .overrideWith((ref) => _FakeExercisesNotifier(ref)),
+            historyListProvider.overrideWith((_) async => const []),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.dark(),
+            home: const WorkoutSessionScreen(sessionId: 'sess-finish-guard'),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // Expand Set 1 and set reps to 0 (invalid)
+      await tester.tap(find.bySemanticsLabel(RegExp(r'^Série 1,')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel('Diminuir repetições'));
+      await tester.pump();
+
+      // Tap Finalizar -> shows Corrigir / Descartar dialog
+      await tester.tap(find.bySemanticsLabel('Finalizar treino').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Há uma série com valores inválidos'), findsOneWidget);
+      expect(find.text('Corrigir'), findsOneWidget);
+      expect(find.text('Descartar'), findsOneWidget);
+
+      // Tap Corrigir -> stays on session screen with inline error
+      await tester.tap(find.text('Corrigir'));
+      await tester.pumpAndSettle();
+      expect(find.byType(FinishWorkoutModal), findsNothing);
+      expect(find.text('Informe as repetições (mín. 1).'), findsOneWidget);
+
+      // Tap Finalizar again and choose Descartar -> discards and opens FinishWorkoutModal
+      await tester.tap(find.bySemanticsLabel('Finalizar treino').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Descartar'));
+      await tester.pumpAndSettle();
+      expect(find.byType(FinishWorkoutModal), findsOneWidget);
+      expect(fakeRepo.loggedCalls, isEmpty);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets(
+        'PopScope back navigation with pending invalid edit shows Corrigir/Descartar dialog before popping',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(375, 812));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final initialSession = WorkoutSession(
+        id: 'sess-pop-guard',
+        userId: 'u-1',
+        workoutId: 'w-1',
+        workoutName: 'Treino A',
+        startedAt: DateTime(2026, 11, 20, 18, 0),
+        exercises: const [
+          SessionExercise(
+            id: 'se-1',
+            sessionId: 'sess-pop-guard',
+            exerciseId: 'ex-squat',
+            exercise: tSquat,
+            targetSetsCount: 1,
+            sets: [
+              LoggedSet(
+                id: 'ls-1',
+                sessionExerciseId: 'se-1',
+                setNumber: 1,
+                weightKg: 80.0,
+                repsCompleted: 1,
+              ),
+            ],
+          ),
+        ],
+      );
+      final fakeRepo = _FakeSessionRepo(initialSession);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            appClockProvider.overrideWithValue(
+              () => DateTime(2026, 11, 20, 18, 30),
+            ),
+            isOnlineStreamProvider.overrideWith((_) => Stream.value(true)),
+            liveSessionDetailProvider('sess-pop-guard')
+                .overrideWith((_) => fakeRepo.session),
+            progressionRepositoryProvider
+                .overrideWithValue(_EmptyProgressionRepo()),
+            sessionRepositoryProvider.overrideWithValue(fakeRepo),
+            exerciseListStateProvider
+                .overrideWith((ref) => _FakeExercisesNotifier(ref)),
+            historyListProvider.overrideWith((_) async => const []),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.dark(),
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const WorkoutSessionScreen(
+                          sessionId: 'sess-pop-guard',
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text('Abrir sessão'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Abrir sessão'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pump(const Duration(milliseconds: 350));
+
+      // Expand Set 1 and set reps to 0 (invalid)
+      await tester.tap(find.bySemanticsLabel(RegExp(r'^Série 1,')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel('Diminuir repetições'));
+      await tester.pump();
+
+      // Trigger PopScope via maybePop -> shows dialog, keeps screen open on Corrigir
+      final sessionEl = tester.element(find.byType(WorkoutSessionScreen));
+      await Navigator.of(sessionEl).maybePop();
+      await tester.pumpAndSettle();
+      expect(find.text('Há uma série com valores inválidos'), findsOneWidget);
+
+      await tester.tap(find.text('Corrigir'));
+      await tester.pumpAndSettle();
+      expect(find.byType(WorkoutSessionScreen), findsOneWidget);
+      expect(find.text('Informe as repetições (mín. 1).'), findsOneWidget);
+
+      // Trigger maybePop again and tap Descartar -> pops and shows active-session SnackBar
+      await Navigator.of(sessionEl).maybePop();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Descartar'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(WorkoutSessionScreen), findsNothing);
+      expect(
+        find.text('Treino continua ativo. Você pode retomá-lo em "Hoje".'),
+        findsOneWidget,
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
     });
   });
 }

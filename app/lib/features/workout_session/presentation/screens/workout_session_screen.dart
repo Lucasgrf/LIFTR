@@ -49,7 +49,81 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
   int _expandedIndex = 0;
   int _collapseManualSignal = 0;
   bool _leavingSession = false;
+  bool _popHandled = false;
   final Map<String, Exercise> _swappedExercises = {};
+  final Map<String, SessionExerciseGuard> _exerciseGuards = {};
+
+  bool get _hasPendingInvalidEdit =>
+      _exerciseGuards.values.any((g) => g.hasInvalidUnsavedEdit());
+
+  void _showActiveSessionRemainingSnackBar() {
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Treino continua ativo. Você pode retomá-lo em "Hoje".',
+        ),
+      ),
+    );
+  }
+
+  Future<bool> _resolveInvalidEditsBeforeLeave(
+    List<SessionExercise> exercises,
+  ) async {
+    if (!_hasPendingInvalidEdit) return true;
+    final shouldDiscard = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Há uma série com valores inválidos'),
+        content: const Text(
+          'Corrija os valores antes de continuar ou descarte as alterações não salvas.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Descartar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Corrigir'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return false;
+    if (shouldDiscard == true) {
+      for (final guard in _exerciseGuards.values) {
+        if (guard.hasInvalidUnsavedEdit()) {
+          guard.discardInvalidEdits();
+        }
+      }
+      return true;
+    }
+
+    for (var i = 0; i < exercises.length; i++) {
+      final guard = _exerciseGuards[exercises[i].id];
+      if (guard != null && guard.hasInvalidUnsavedEdit()) {
+        if (_expandedIndex != i) {
+          setState(() => _expandedIndex = i);
+        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) guard.focusInvalidEdit();
+        });
+        break;
+      }
+    }
+    return false;
+  }
+
+  Future<void> _handlePopWithInvalidEdits(
+    List<SessionExercise> exercises,
+  ) async {
+    final canLeave = await _resolveInvalidEditsBeforeLeave(exercises);
+    if (!canLeave || !mounted) return;
+    _showActiveSessionRemainingSnackBar();
+    _popHandled = true;
+    Navigator.of(context).pop();
+  }
 
   Future<void> _handleLogSet({
     required String sessionExerciseId,
@@ -293,7 +367,9 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
     }
   }
 
-  void _openFinishModal(WorkoutSession session) {
+  Future<void> _openFinishModal(WorkoutSession session) async {
+    final canProceed = await _resolveInvalidEditsBeforeLeave(session.exercises);
+    if (!canProceed || !mounted) return;
     final elapsedSeconds = SessionElapsedText.computeElapsedSeconds(
       session.startedAt,
       now: ref.read(appClockProvider)(),
@@ -335,16 +411,29 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
     );
 
     return PopScope(
-      canPop: true,
+      canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop || _leavingSession) return;
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Treino continua ativo. Você pode retomá-lo em "Hoje".',
-            ),
-          ),
-        );
+        if (didPop) {
+          if (_popHandled) {
+            _popHandled = false;
+            return;
+          }
+          if (!_leavingSession) {
+            _showActiveSessionRemainingSnackBar();
+          }
+          return;
+        }
+        if (!_hasPendingInvalidEdit) {
+          if (!_leavingSession) {
+            _showActiveSessionRemainingSnackBar();
+          }
+          _popHandled = true;
+          Navigator.of(context).pop();
+          return;
+        }
+        final exercises =
+            sessionAsync.asData?.value.exercises ?? const <SessionExercise>[];
+        _handlePopWithInvalidEdits(exercises);
       },
       child: Scaffold(
       backgroundColor: colors.background,
@@ -604,6 +693,13 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                         weightIncrement: increment,
                                         showRir: false,
                                         collapseSignal: _collapseManualSignal,
+                                        onRegisterExerciseGuard: (guard) {
+                                          if (guard == null) {
+                                            _exerciseGuards.remove(se.id);
+                                          } else {
+                                            _exerciseGuards[se.id] = guard;
+                                          }
+                                        },
                                         onToggleExpand: () => setState(() {
                                           _expandedIndex =
                                               _expandedIndex == index

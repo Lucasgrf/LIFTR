@@ -23,6 +23,12 @@ import 'package:personal_fitness_os/features/workout_session/domain/entities/ses
 import 'package:personal_fitness_os/features/workout_session/domain/services/initial_weight_estimator.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/logged_set_row.dart';
 
+typedef SessionExerciseGuard = ({
+  bool Function() hasInvalidUnsavedEdit,
+  VoidCallback focusInvalidEdit,
+  VoidCallback discardInvalidEdits,
+});
+
 class SessionExerciseCard extends ConsumerStatefulWidget {
   const SessionExerciseCard({
     super.key,
@@ -38,6 +44,7 @@ class SessionExerciseCard extends ConsumerStatefulWidget {
     this.weightIncrement = 2.5,
     this.showRir = true,
     this.collapseSignal = 0,
+    this.onRegisterExerciseGuard,
   });
 
   final SessionExercise sessionExercise;
@@ -63,6 +70,7 @@ class SessionExerciseCard extends ConsumerStatefulWidget {
   final double weightIncrement;
   final bool showRir;
   final int collapseSignal;
+  final void Function(SessionExerciseGuard? guard)? onRegisterExerciseGuard;
 
   @override
   ConsumerState<SessionExerciseCard> createState() =>
@@ -80,8 +88,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
   int? _pendingCompletedSetForAutoFocus;
   final Map<int, FocusNode> _rowFocusNodes = {};
   final Map<int, GlobalKey> _rowKeys = {};
-  final Map<int, bool Function({bool deferSetState})> _beforeCollapseHandlers =
-      {};
+  final Map<int, LoggedSetRowGuard> _rowGuards = {};
 
   FocusNode _focusNodeForSet(int setNumber) => _rowFocusNodes.putIfAbsent(
         setNumber,
@@ -92,8 +99,55 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
       _rowKeys.putIfAbsent(setNumber, GlobalKey.new);
 
   @override
+  void initState() {
+    super.initState();
+    widget.onRegisterExerciseGuard?.call(_buildExerciseGuard());
+  }
+
+  SessionExerciseGuard _buildExerciseGuard() => (
+        hasInvalidUnsavedEdit: _hasInvalidUnsavedEdit,
+        focusInvalidEdit: _focusInvalidEdit,
+        discardInvalidEdits: _discardInvalidEdits,
+      );
+
+  bool _hasInvalidUnsavedEdit() {
+    if (widget.sessionExercise.isCardio) return false;
+    return _rowGuards.values.any((g) => g.hasInvalidUnsavedEdit());
+  }
+
+  void _focusInvalidEdit() {
+    if (widget.sessionExercise.isCardio || !mounted) return;
+    final sortedKeys = _rowGuards.keys.toList()..sort();
+    for (final setNumber in sortedKeys) {
+      final guard = _rowGuards[setNumber];
+      if (guard != null && guard.hasInvalidUnsavedEdit()) {
+        setState(() {
+          _manuallyExpandedSetNumber = setNumber;
+        });
+        guard.showValidationErrors();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _ensureRowVisible(setNumber);
+        });
+        return;
+      }
+    }
+  }
+
+  void _discardInvalidEdits() {
+    for (final guard in _rowGuards.values) {
+      if (guard.hasInvalidUnsavedEdit()) {
+        guard.discardEdits();
+      }
+    }
+    if (mounted) {
+      setState(() => _manuallyExpandedSetNumber = null);
+    }
+  }
+
+  @override
   void dispose() {
-    _beforeCollapseHandlers.clear();
+    widget.onRegisterExerciseGuard?.call(null);
+    _rowGuards.clear();
     for (final node in _rowFocusNodes.values) {
       node.dispose();
     }
@@ -104,11 +158,15 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
   @override
   void didUpdateWidget(covariant SessionExerciseCard oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.onRegisterExerciseGuard != widget.onRegisterExerciseGuard) {
+      oldWidget.onRegisterExerciseGuard?.call(null);
+      widget.onRegisterExerciseGuard?.call(_buildExerciseGuard());
+    }
     if (oldWidget.sessionExercise.id != widget.sessionExercise.id) {
       _prefilledBySetNumber.clear();
       _draftBySetNumber.clear();
       _extraRowTypes.clear();
-      _beforeCollapseHandlers.clear();
+      _rowGuards.clear();
       _minRowCount = 0;
       _syncToken++;
       _isBulkCompleting = false;
@@ -157,8 +215,9 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
     final currentExpanded =
         _manuallyExpandedSetNumber ?? _firstPendingSetNumber();
     if (currentExpanded == null) return true;
-    final handler = _beforeCollapseHandlers[currentExpanded];
-    if (handler != null && !handler(deferSetState: deferSetState)) {
+    final guard = _rowGuards[currentExpanded];
+    if (guard != null &&
+        !guard.prepareForCollapse(deferSetState: deferSetState)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _ensureRowVisible(currentExpanded);
       });
@@ -1083,13 +1142,20 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                 syncToken: _syncToken,
                 focusNode: isCardio ? null : _focusNodeForSet(setNumber),
                 onRequestExpand: isCardio ? null : () => _expandSet(setNumber),
-                onRegisterBeforeCollapse: isCardio
+                onRegisterRowGuard: isCardio
                     ? null
-                    : (handler) {
-                        if (handler == null) {
-                          _beforeCollapseHandlers.remove(setNumber);
+                    : (guard) {
+                        if (guard == null) {
+                          _rowGuards.remove(setNumber);
                         } else {
-                          _beforeCollapseHandlers[setNumber] = handler;
+                          _rowGuards[setNumber] = guard;
+                        }
+                      },
+                onDiscardEdits: isCardio
+                    ? null
+                    : () {
+                        if (_manuallyExpandedSetNumber == setNumber) {
+                          setState(() => _manuallyExpandedSetNumber = null);
                         }
                       },
                 onApplyToRemaining: (!isCardio && hasRemainingUnlogged)

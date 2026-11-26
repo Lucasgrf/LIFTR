@@ -12,6 +12,13 @@ import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/logged_set.dart';
 
+typedef LoggedSetRowGuard = ({
+  bool Function({bool deferSetState}) prepareForCollapse,
+  bool Function() hasInvalidUnsavedEdit,
+  VoidCallback showValidationErrors,
+  VoidCallback discardEdits,
+});
+
 class LoggedSetRow extends StatefulWidget {
   const LoggedSetRow({
     super.key,
@@ -33,7 +40,8 @@ class LoggedSetRow extends StatefulWidget {
     this.onApplyToRemaining,
     this.onDraftChanged,
     this.onRequestExpand,
-    this.onRegisterBeforeCollapse,
+    this.onRegisterRowGuard,
+    this.onDiscardEdits,
     this.focusNode,
   });
 
@@ -63,8 +71,8 @@ class LoggedSetRow extends StatefulWidget {
   final void Function(double weightKg, int repsCompleted)? onApplyToRemaining;
   final void Function(double weightKg, int repsCompleted)? onDraftChanged;
   final VoidCallback? onRequestExpand;
-  final void Function(bool Function({bool deferSetState})? handler)?
-      onRegisterBeforeCollapse;
+  final void Function(LoggedSetRowGuard? guard)? onRegisterRowGuard;
+  final VoidCallback? onDiscardEdits;
   final FocusNode? focusNode;
 
   @override
@@ -130,13 +138,58 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     } else {
       _dropSets = <DropSetEntry>[];
     }
-    widget.onRegisterBeforeCollapse?.call(_handleBeforeCollapse);
+    widget.onRegisterRowGuard?.call(_buildRowGuard());
   }
 
   @override
   void dispose() {
-    widget.onRegisterBeforeCollapse?.call(null);
+    widget.onRegisterRowGuard?.call(null);
     super.dispose();
+  }
+
+  LoggedSetRowGuard _buildRowGuard() => (
+        prepareForCollapse: _handleBeforeCollapse,
+        hasInvalidUnsavedEdit: _hasInvalidUnsavedEdit,
+        showValidationErrors: _showValidationErrors,
+        discardEdits: _discardEdits,
+      );
+
+  bool _hasInvalidUnsavedEdit() {
+    if (widget.isCardio || !_hasUnsavedEdits) return false;
+    final validation = _validateStrengthInputs();
+    return validation.weightError != null || validation.repsError != null;
+  }
+
+  void _showValidationErrors() {
+    if (!mounted) return;
+    final validation = _validateStrengthInputs();
+    setState(() {
+      _weightError = validation.weightError;
+      _repsError = validation.repsError;
+    });
+  }
+
+  void _discardEdits({bool notifyParent = false}) {
+    final logged = widget.loggedSet;
+    if (logged == null || !mounted) return;
+    setState(() {
+      _weight = logged.weightKg;
+      _reps = logged.repsCompleted;
+      _durationMinutes = _resolveDurationMinutes();
+      _rir = logged.rirActual ?? widget.defaultRir;
+      _setType = logged.setType;
+      _dropSets = List<DropSetEntry>.from(logged.dropSets);
+      _userEditedWeight = false;
+      _userEditedReps = false;
+      _weightCleared = false;
+      _repsCleared = false;
+      _weightError = null;
+      _repsError = null;
+      _collapseHandledByGuard = false;
+    });
+    if (notifyParent) {
+      widget.onDiscardEdits?.call();
+    }
   }
 
   ({String? weightError, String? repsError}) _validateStrengthInputs() {
@@ -201,9 +254,9 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
   @override
   void didUpdateWidget(covariant LoggedSetRow oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.onRegisterBeforeCollapse != widget.onRegisterBeforeCollapse) {
-      oldWidget.onRegisterBeforeCollapse?.call(null);
-      widget.onRegisterBeforeCollapse?.call(_handleBeforeCollapse);
+    if (oldWidget.onRegisterRowGuard != widget.onRegisterRowGuard) {
+      oldWidget.onRegisterRowGuard?.call(null);
+      widget.onRegisterRowGuard?.call(_buildRowGuard());
     }
     if (widget.isExpanded && !oldWidget.isExpanded) {
       _collapseHandledByGuard = false;
@@ -1468,7 +1521,7 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
               ],
             ),
 
-        if (_weightError != null || _repsError != null)
+        if (_weightError != null || _repsError != null) ...[
           Padding(
             padding: EdgeInsets.only(
               top: context.appSpacing.space8,
@@ -1500,6 +1553,55 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
               ),
             ),
           ),
+          if (widget.loggedSet != null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Semantics(
+                label: 'Descartar alterações da série ${widget.setNumber}',
+                button: true,
+                excludeSemantics: true,
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: InkWell(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      _discardEdits(notifyParent: true);
+                    },
+                    borderRadius: BorderRadius.circular(radius.small),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minWidth: 48,
+                        minHeight: 48,
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: context.appSpacing.space8,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.undo_rounded,
+                              size: 14,
+                              color: colors.textSecondary,
+                            ),
+                            AppSpacing.horizontalGap4,
+                            Text(
+                              'Descartar alterações',
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: colors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
 
         // Drop-set sub-widget anchored directly below this set row
         if (isDropSet)
