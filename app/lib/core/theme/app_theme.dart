@@ -152,7 +152,7 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          minimumSize: const Size(48, 44),
+          minimumSize: const Size(48, 48),
           foregroundColor: colors.primaryLight,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radius.small),

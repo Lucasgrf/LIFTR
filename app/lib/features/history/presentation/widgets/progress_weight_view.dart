@@ -156,7 +156,9 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
               const SizedBox(height: 20),
 
               // Period pills
-              Row(
+              Wrap(
+                spacing: context.appSpacing.space8,
+                runSpacing: context.appSpacing.space8,
                 children: [
                   for (final option in const [
                     ('30D', 30),
@@ -164,35 +166,52 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
                     ('6M', 180),
                     ('Tudo', 0),
                   ])
-                    Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: InkWell(
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          setState(() => _selectedDays = option.$2);
-                        },
-                        borderRadius: BorderRadius.circular(radius.xs),
-                        child: Container(
-                          constraints: const BoxConstraints(
-                            minWidth: 44,
-                            minHeight: 34,
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: _selectedDays == option.$2
-                                ? colors.primary
-                                : colors.surfaceElevated,
-                            borderRadius: BorderRadius.circular(radius.xs),
-                          ),
-                          child: Text(
-                            option.$1,
-                            style: context.textTheme.labelSmall?.copyWith(
+                    Semantics(
+                      label: 'Período ${option.$1}',
+                      button: true,
+                      selected: _selectedDays == option.$2,
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: InkWell(
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() => _selectedDays = option.$2);
+                          },
+                          borderRadius: BorderRadius.circular(radius.xs),
+                          child: Ink(
+                            decoration: BoxDecoration(
                               color: _selectedDays == option.$2
-                                  ? colors.onPrimary
-                                  : colors.textSecondary,
-                              fontWeight: FontWeight.w700,
-                              fontFeatures: AppTypography.tabularFeatures,
+                                  ? colors.primary
+                                  : colors.surfaceElevated,
+                              borderRadius: BorderRadius.circular(radius.xs),
+                            ),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                minWidth: 48,
+                                minHeight: 48,
+                              ),
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: context.appSpacing.space12,
+                                ),
+                                child: Center(
+                                  widthFactor: 1,
+                                  child: Text(
+                                    option.$1,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style:
+                                        context.textTheme.labelSmall?.copyWith(
+                                      color: _selectedDays == option.$2
+                                          ? colors.onPrimary
+                                          : colors.textSecondary,
+                                      fontWeight: FontWeight.w700,
+                                      fontFeatures:
+                                          AppTypography.tabularFeatures,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -200,7 +219,7 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
                     ),
                 ],
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: context.appSpacing.space16),
 
               if (series.length < 2)
                 Container(

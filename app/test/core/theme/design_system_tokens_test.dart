@@ -212,5 +212,12 @@ void main() {
         expect(tester.takeException(), isNull);
       }
     });
+
+    test('A11Y-01 TextButtonThemeData enforces minimumSize 48x48 in dark and light themes', () {
+      for (final theme in [AppTheme.dark(), AppTheme.light()]) {
+        final resolvedSize = theme.textButtonTheme.style?.minimumSize?.resolve({});
+        expect(resolvedSize, const Size(48, 48));
+      }
+    });
   });
 }
