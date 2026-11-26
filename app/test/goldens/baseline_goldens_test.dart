@@ -551,6 +551,46 @@ void main() {
         await tester.pumpWidget(const SizedBox.shrink());
       });
 
+      if (themeLabel == 'dark') {
+        for (final spec in const [(360.0, 800.0), (393.0, 852.0), (412.0, 915.0)]) {
+          final width = spec.$1;
+          final height = spec.$2;
+          testWidgets('WorkoutSessionScreen active at ${width.toInt()}dp',
+              (tester) async {
+            await pumpGoldenWidget(
+              tester,
+              themeMode: themeMode,
+              prefs: prefs,
+              settle: false,
+              width: width,
+              height: height,
+              child: const WorkoutSessionScreen(sessionId: 'sess-active'),
+              overrides: [
+                liveSessionDetailProvider('sess-active')
+                    .overrideWith((_) async => tActiveSessionWithDrop),
+                progressionRepositoryProvider
+                    .overrideWithValue(_GoldenProgressionRepository()),
+                sessionRepositoryProvider
+                    .overrideWithValue(_GoldenSessionRepository()),
+                exerciseListStateProvider.overrideWith(
+                  (ref) => _GoldenExerciseListNotifier(ref, [tSquat, tBench]),
+                ),
+                historyListProvider
+                    .overrideWith((_) async => [tCompletedSession]),
+                isOnlineStreamProvider.overrideWith((_) => Stream.value(true)),
+              ],
+            );
+
+            await expectLater(
+              find.byType(MaterialApp),
+              matchesGoldenFile('pngs/workout_session_dark_${width.toInt()}.png'),
+            );
+
+            await tester.pumpWidget(const SizedBox.shrink());
+          });
+        }
+      }
+
       testWidgets('SessionSummaryScreen', (tester) async {
         await pumpGoldenWidget(
           tester,
