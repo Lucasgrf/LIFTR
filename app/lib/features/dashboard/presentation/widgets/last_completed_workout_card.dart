@@ -97,37 +97,47 @@ class LastCompletedWorkoutCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
+            SizedBox(
+              width: double.infinity,
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  Text(
                     session.workoutName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: context.textTheme.titleMedium,
                   ),
-                ),
-                if (session.mood != null) ...[
-                  const SizedBox(width: 6),
-                  WorkoutMoodChip(mood: session.mood!, compact: true),
+                  if (session.mood != null ||
+                      session.executionScore != null ||
+                      session.perceivedExertion != null)
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        if (session.mood != null)
+                          WorkoutMoodChip(mood: session.mood!, compact: true),
+                        if (session.executionScore != null)
+                          LiftrBadge(
+                            label: '${session.executionScore}%',
+                            tone: session.executionScore! >= 85
+                                ? LiftrBadgeTone.success
+                                : LiftrBadgeTone.neutral,
+                          ),
+                        if (session.perceivedExertion != null)
+                          LiftrBadge(
+                            label:
+                                'RPE ${session.perceivedExertion!.toStringAsFixed(1)}',
+                            tone: LiftrBadgeTone.brand,
+                          ),
+                      ],
+                    ),
                 ],
-                if (session.executionScore != null) ...[
-                  const SizedBox(width: 6),
-                  LiftrBadge(
-                    label: '${session.executionScore}%',
-                    tone: session.executionScore! >= 85
-                        ? LiftrBadgeTone.success
-                        : LiftrBadgeTone.neutral,
-                  ),
-                ],
-                if (session.perceivedExertion != null) ...[
-                  const SizedBox(width: 6),
-                  LiftrBadge(
-                    label: 'RPE ${session.perceivedExertion!.toStringAsFixed(1)}',
-                    tone: LiftrBadgeTone.brand,
-                  ),
-                ],
-              ],
+              ),
             ),
             const SizedBox(height: 10),
             Wrap(
