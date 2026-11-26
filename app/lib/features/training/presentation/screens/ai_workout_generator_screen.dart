@@ -730,45 +730,55 @@ class _AiWorkoutGeneratorScreenState
         const SizedBox(height: 24),
         Text('CARDIO EM TEMPO', style: AppTypography.eyebrow(context)),
         const SizedBox(height: 10),
-        Container(
+        AppCard(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: colors.surface,
-            borderRadius: BorderRadius.circular(radius.large),
-            border: Border.all(color: colors.border),
-          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Incluir cardio nas sessões',
-                          style: context.textTheme.titleSmall,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Registrado em minutos para comparação semanal',
-                          style: context.textTheme.bodySmall?.copyWith(
-                            color: colors.textSecondary,
+              MergeSemantics(
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(radius.medium),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() => _includeCardio = !_includeCardio);
+                    },
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 48),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Incluir cardio nas sessões',
+                                  style: context.textTheme.titleSmall,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Registrado em minutos para comparação semanal',
+                                  style: context.textTheme.bodySmall?.copyWith(
+                                    color: colors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                          Switch.adaptive(
+                            value: _includeCardio,
+                            activeTrackColor: colors.primary,
+                            onChanged: (val) {
+                              HapticFeedback.selectionClick();
+                              setState(() => _includeCardio = val);
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  Switch(
-                    value: _includeCardio,
-                    activeTrackColor: colors.primary,
-                    onChanged: (val) {
-                      HapticFeedback.selectionClick();
-                      setState(() => _includeCardio = val);
-                    },
-                  ),
-                ],
+                ),
               ),
               if (_includeCardio) ...[
                 const SizedBox(height: 14),

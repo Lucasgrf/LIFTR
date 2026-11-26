@@ -9,6 +9,8 @@ import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:personal_fitness_os/features/training/domain/constants/split_presets.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
@@ -20,19 +22,21 @@ class SwitchProgramSheet extends ConsumerStatefulWidget {
   const SwitchProgramSheet({
     super.key,
     required this.plans,
+    this.embedded = false,
   });
 
   final List<TrainingPlan> plans;
+  final bool embedded;
 
   static Future<void> show(
     BuildContext context, {
     required List<TrainingPlan> plans,
   }) {
-    return showModalBottomSheet<void>(
+    return showLiftrSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => SwitchProgramSheet(plans: plans),
+      isScrollable: false,
+      heightFactor: 0.84,
+      builder: (_) => SwitchProgramSheet(plans: plans, embedded: true),
     );
   }
 
@@ -114,61 +118,32 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
     final fitnessColors = context.fitnessColors;
     final templates = SplitPresets.featuredTemplates;
 
-    return Container(
-      height: MediaQuery.sizeOf(context).height * 0.84,
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(radius.xl)),
-        border: Border.all(color: colors.border),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 10),
-            Center(
-              child: Container(
-                width: 38,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colors.border,
-                  borderRadius: BorderRadius.circular(radius.full),
-                ),
+    final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        LiftrSheetHeader(
+          title: 'Trocar programa',
+          trailing: Semantics(
+            label: 'Fechar seleção de programa',
+            button: true,
+            child: IconButton(
+              onPressed: () => Navigator.pop(context),
+              constraints: const BoxConstraints(
+                minWidth: 48,
+                minHeight: 48,
+              ),
+              icon: Icon(
+                Icons.close_rounded,
+                color: colors.textSecondary,
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 12, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Trocar programa',
-                      style: context.textTheme.headlineMedium,
-                    ),
-                  ),
-                  Semantics(
-                    label: 'Fechar seleção de programa',
-                    button: true,
-                    child: IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      constraints: const BoxConstraints(
-                        minWidth: 48,
-                        minHeight: 48,
-                      ),
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-                children: [
+          ),
+        ),
+        const SizedBox(height: 12),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.only(top: 4, bottom: 16),
+            children: [
                   // Preserved history banner
                   Container(
                     padding: const EdgeInsets.all(14),
@@ -508,21 +483,39 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
                       ),
                     );
                   }),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-              child: AppButton.secondary(
-                label: 'Criar programa personalizado',
-                icon: Icons.add_rounded,
-                onPressed: () {
-                  Navigator.pop(context);
-                  context.push('/training/new');
-                },
-              ),
-            ),
-          ],
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: AppButton.secondary(
+            label: 'Criar programa personalizado',
+            icon: Icons.add_rounded,
+            onPressed: () {
+              Navigator.pop(context);
+              context.push('/training/new');
+            },
+          ),
+        ),
+      ],
+    );
+
+    if (widget.embedded) {
+      return body;
+    }
+
+    return Container(
+      height: MediaQuery.sizeOf(context).height * 0.84,
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(radius.xl)),
+        border: Border.all(color: colors.border),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+          child: body,
         ),
       ),
     );

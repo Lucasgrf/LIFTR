@@ -16,7 +16,7 @@ import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_brand_mark.dart';
-import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
@@ -94,98 +94,92 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final colors = context.appColors;
     final radius = context.appRadius;
 
-    showModalBottomSheet<void>(
+    showLiftrSheet<void>(
       context: context,
+      eyebrow: 'Fila rotativa · ${plan.name}',
+      title: 'Escolher treino de hoje',
       builder: (ctx) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              LiftrSheetHeader(
-                eyebrow: 'Fila rotativa · ${plan.name}',
-                title: 'Escolher treino de hoje',
-              ),
-              const SizedBox(height: 14),
-              if (orderedWorkouts.length > 1)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: colors.surfaceElevated,
-                      borderRadius: BorderRadius.circular(radius.small),
-                    ),
-                    child: Icon(
-                      Icons.skip_next_rounded,
-                      color: colors.primaryLight,
-                    ),
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (orderedWorkouts.length > 1)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: colors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(radius.small),
                   ),
-                  title: const Text('Pular treino atual'),
-                  subtitle: Text(
-                    'Move "${orderedWorkouts.first.name}" para o fim da fila',
-                    style: ctx.textTheme.bodySmall?.copyWith(
-                      color: colors.textSecondary,
-                    ),
+                  child: Icon(
+                    Icons.skip_next_rounded,
+                    color: colors.primaryLight,
                   ),
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    ref
-                        .read(workoutQueueProvider.notifier)
-                        .skipFirstToEnd(plan.id, orderedWorkouts);
-                    Navigator.pop(ctx);
-                  },
                 ),
-              const Divider(),
-              ...orderedWorkouts.asMap().entries.map((entry) {
-                final idx = entry.key;
-                final w = entry.value;
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: idx == 0
-                          ? colors.primaryMuted
-                          : colors.surfaceElevated,
-                      borderRadius: BorderRadius.circular(radius.small),
-                    ),
-                    child: Text(
-                      '${idx + 1}º',
-                      style: ctx.textTheme.labelMedium?.copyWith(
-                        color: idx == 0
-                            ? colors.primaryLight
-                            : colors.textSecondary,
-                        fontFeatures: AppTypography.tabularFeatures,
-                      ),
-                    ),
+                title: const Text('Pular treino atual'),
+                subtitle: Text(
+                  'Move "${orderedWorkouts.first.name}" para o fim da fila',
+                  style: ctx.textTheme.bodySmall?.copyWith(
+                    color: colors.textSecondary,
                   ),
-                  title: Text(w.name),
-                  subtitle: Text(
-                    '${w.exercises.length} exercícios · ${w.totalWorkingSetsCount} séries',
-                    style: ctx.textTheme.bodySmall?.copyWith(
-                      color: colors.textSecondary,
+                ),
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  ref
+                      .read(workoutQueueProvider.notifier)
+                      .skipFirstToEnd(plan.id, orderedWorkouts);
+                  Navigator.pop(ctx);
+                },
+              ),
+            const Divider(),
+            ...orderedWorkouts.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final w = entry.value;
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: idx == 0
+                        ? colors.primaryMuted
+                        : colors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(radius.small),
+                  ),
+                  child: Text(
+                    '${idx + 1}º',
+                    style: ctx.textTheme.labelMedium?.copyWith(
+                      color: idx == 0
+                          ? colors.primaryLight
+                          : colors.textSecondary,
                       fontFeatures: AppTypography.tabularFeatures,
                     ),
                   ),
-                  trailing: idx == 0
-                      ? Icon(Icons.check_rounded, color: colors.primary)
-                      : null,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    ref
-                        .read(workoutQueueProvider.notifier)
-                        .selectNext(plan.id, orderedWorkouts, w.id);
-                    Navigator.pop(ctx);
-                  },
-                );
-              }),
-            ],
-          ),
+                ),
+                title: Text(w.name),
+                subtitle: Text(
+                  '${w.exercises.length} exercícios · ${w.totalWorkingSetsCount} séries',
+                  style: ctx.textTheme.bodySmall?.copyWith(
+                    color: colors.textSecondary,
+                    fontFeatures: AppTypography.tabularFeatures,
+                  ),
+                ),
+                trailing: idx == 0
+                    ? Icon(Icons.check_rounded, color: colors.primary)
+                    : null,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  ref
+                      .read(workoutQueueProvider.notifier)
+                      .selectNext(plan.id, orderedWorkouts, w.id);
+                  Navigator.pop(ctx);
+                },
+              );
+            }),
+          ],
         );
       },
     );

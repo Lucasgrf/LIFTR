@@ -10,7 +10,7 @@ import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/utils/pt_br_number_utils.dart';
-import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/logged_set.dart';
 
 typedef LoggedSetRowGuard = ({
@@ -435,48 +435,42 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
 
   Future<void> _showSetTypePicker() async {
     final colors = context.appColors;
-    final chosen = await showModalBottomSheet<SetType>(
+    final chosen = await showLiftrSheet<SetType>(
       context: context,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            LiftrSheetHeader(
-              eyebrow: 'SÉRIE ${widget.setNumber}',
-              title: 'Tipo da série ${widget.setNumber}',
-            ),
-            const SizedBox(height: 12),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Série válida'),
-              subtitle: const Text('Conta para progressão e volume'),
-              trailing: _setType == SetType.working
-                  ? Icon(Icons.check_rounded, color: colors.primary)
-                  : null,
-              onTap: () => Navigator.pop(ctx, SetType.working),
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Aquecimento (AQ)'),
-              subtitle: const Text('Não entra na progressão nem no volume'),
-              trailing: _setType == SetType.warmup
-                  ? Icon(Icons.check_rounded, color: colors.primary)
-                  : null,
-              onTap: () => Navigator.pop(ctx, SetType.warmup),
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Drop-set (DROP)'),
-              subtitle: const Text('Redução de carga imediata após a série'),
-              trailing: _setType == SetType.dropSet
-                  ? Icon(Icons.check_rounded, color: colors.primary)
-                  : null,
-              onTap: () => Navigator.pop(ctx, SetType.dropSet),
-            ),
-          ],
-        ),
+      eyebrow: 'SÉRIE ${widget.setNumber}',
+      title: 'Tipo da série ${widget.setNumber}',
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Série válida'),
+            subtitle: const Text('Conta para progressão e volume'),
+            trailing: _setType == SetType.working
+                ? Icon(Icons.check_rounded, color: colors.primary)
+                : null,
+            onTap: () => Navigator.pop(ctx, SetType.working),
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Aquecimento (AQ)'),
+            subtitle: const Text('Não entra na progressão nem no volume'),
+            trailing: _setType == SetType.warmup
+                ? Icon(Icons.check_rounded, color: colors.primary)
+                : null,
+            onTap: () => Navigator.pop(ctx, SetType.warmup),
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Drop-set (DROP)'),
+            subtitle: const Text('Redução de carga imediata após a série'),
+            trailing: _setType == SetType.dropSet
+                ? Icon(Icons.check_rounded, color: colors.primary)
+                : null,
+            onTap: () => Navigator.pop(ctx, SetType.dropSet),
+          ),
+        ],
       ),
     );
     if (chosen != null && mounted) {

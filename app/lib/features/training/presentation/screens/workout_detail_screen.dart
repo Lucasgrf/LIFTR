@@ -9,6 +9,7 @@ import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_confirm_dialog.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
@@ -74,29 +75,16 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
   }
 
   Future<void> _deleteExercise(WorkoutExercise exercise) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: context.appColors.surfaceElevated,
-        title: const Text('Remover Exercício'),
-        content: Text(
+    final confirmed = await showLiftrConfirmDialog(
+      context,
+      title: 'Remover Exercício',
+      message:
           'Deseja remover "${exercise.exercise?.name ?? 'este exercício'}" deste treino?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: context.appColors.danger),
-            child: const Text('Remover'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Remover',
+      icon: Icons.delete_outline_rounded,
     );
 
-    if (confirmed == true) {
+    if (confirmed) {
       final repo = ref.read(trainingRepositoryProvider);
       final result = await repo.deleteWorkoutExercise(exercise.id);
 

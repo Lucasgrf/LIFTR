@@ -13,6 +13,7 @@ import 'package:personal_fitness_os/core/update/app_update_platform.dart';
 import 'package:personal_fitness_os/core/update/app_update_providers.dart';
 import 'package:personal_fitness_os/core/update/app_update_service.dart';
 import 'package:personal_fitness_os/core/update/app_update_widgets.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/features/settings/presentation/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -579,7 +580,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(find.byType(LiftrProgressBar), findsOneWidget);
       expect(find.text('Cancelar'), findsOneWidget);
 
       // 2. PermissionRequired state

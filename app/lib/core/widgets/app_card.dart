@@ -14,6 +14,8 @@ class AppCard extends StatelessWidget {
     this.onTap,
     this.backgroundColor,
     this.borderColor,
+    this.borderWidth = 1,
+    this.constraints,
     this.gradient,
     this.borderRadius,
     this.boxShadow,
@@ -26,6 +28,8 @@ class AppCard extends StatelessWidget {
   final VoidCallback? onTap;
   final Color? backgroundColor;
   final Color? borderColor;
+  final double borderWidth;
+  final BoxConstraints? constraints;
   final Gradient? gradient;
   final double? borderRadius;
   final List<BoxShadow>? boxShadow;
@@ -54,10 +58,14 @@ class AppCard extends StatelessWidget {
         break;
     }
 
-    final content = Padding(
+    final padded = Padding(
       padding: padding ?? const EdgeInsets.all(16.0),
       child: child,
     );
+
+    final content = constraints != null
+        ? ConstrainedBox(constraints: constraints!, child: padded)
+        : padded;
 
     final inner = Material(
       color: Colors.transparent,
@@ -79,7 +87,7 @@ class AppCard extends StatelessWidget {
             ? null
             : Border.all(
                 color: borderColor ?? defaultBorder,
-                width: 1,
+                width: borderWidth,
               ),
         boxShadow: boxShadow,
       ),

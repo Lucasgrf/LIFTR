@@ -25,6 +25,9 @@ class AppSpacing extends ThemeExtension<AppSpacing> {
   final double space48;
   final double space64;
 
+  /// Alias pointing to [space24] for generous bottom-sheet breathing room.
+  double get xxl => space24;
+
   @override
   AppSpacing copyWith({
     double? space2,

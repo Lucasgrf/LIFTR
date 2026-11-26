@@ -10,12 +10,12 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
-import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/utils/pt_br_number_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
-import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_list_group.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/profile/presentation/providers/profile_providers.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
@@ -241,16 +241,10 @@ class ProfileScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 22),
 
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
-                          child: Text(
-                            'DADOS CORPORAIS & OBJETIVO',
-                            style: AppTypography.eyebrow(context),
-                          ),
-                        ),
-                        _ProfileCardGroup(
+                        LiftrListGroup(
+                          header: 'DADOS CORPORAIS & OBJETIVO',
                           children: [
-                            _ProfileRow(
+                            LiftrListRow(
                               label: 'Dados corporais',
                               value:
                                   '${formatPtBrDecimal(settings.weightKg, trimTrailingZero: false)} kg · ${settings.heightCm} cm · ${settings.age} anos',
@@ -259,26 +253,26 @@ class ProfileScreen extends ConsumerWidget {
                                   : 'Sexo ${settings.biologicalSex}',
                               onTap: () => _showBodyDataSheet(context, settings),
                             ),
-                            _ProfileRow(
+                            LiftrListRow(
                               label: 'Objetivo atual',
                               value: settings.goal.label,
                               subtitle: settings.goal.weeklyRateTargetLabel,
                               onTap: () =>
                                   _showGoalPicker(context, ref, settings),
                             ),
-                            _ProfileRow(
+                            LiftrListRow(
                               label: 'Experiência',
                               value: settings.experience.label,
                               onTap: () =>
                                   _showExperiencePicker(context, ref, settings),
                             ),
-                            _ProfileRow(
+                            LiftrListRow(
                               label: 'Atividade diária',
                               value: settings.activityLevel.label,
                               onTap: () =>
                                   _showActivityPicker(context, ref, settings),
                             ),
-                            _ProfileRow(
+                            LiftrListRow(
                               label: 'Metas calculadas',
                               value:
                                   '${settings.estimatedDailyCalories} kcal · ${settings.estimatedDailyProteinGrams} g prot',
@@ -334,53 +328,47 @@ class ProfileScreen extends ConsumerWidget {
     required bool hasAvatar,
   }) {
     final colors = context.appColors;
-    showModalBottomSheet<void>(
+    showLiftrSheet<void>(
       context: context,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const LiftrSheetHeader(
-              eyebrow: 'ATLETA',
-              title: 'Foto de perfil',
-            ),
-            const SizedBox(height: 12),
+      eyebrow: 'ATLETA',
+      title: 'Foto de perfil',
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.camera_alt_rounded, color: colors.primary),
+            title: const Text('Tirar foto'),
+            onTap: () {
+              Navigator.pop(ctx);
+              _pickAndUploadAvatar(context, ref, ImageSource.camera);
+            },
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.photo_library_rounded, color: colors.primary),
+            title: const Text('Escolher da galeria'),
+            onTap: () {
+              Navigator.pop(ctx);
+              _pickAndUploadAvatar(context, ref, ImageSource.gallery);
+            },
+          ),
+          if (hasAvatar)
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.camera_alt_rounded, color: colors.primary),
-              title: const Text('Tirar foto'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickAndUploadAvatar(context, ref, ImageSource.camera);
-              },
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.photo_library_rounded, color: colors.primary),
-              title: const Text('Escolher da galeria'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickAndUploadAvatar(context, ref, ImageSource.gallery);
-              },
-            ),
-            if (hasAvatar)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(Icons.delete_outline_rounded, color: colors.danger),
-                title: Text(
-                  'Remover foto',
-                  style: context.textTheme.bodyMedium?.copyWith(color: colors.danger),
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  ref.read(profileControllerProvider.notifier).removeAvatar();
-                  context.showSnackBar('Foto removida.');
-                },
+              leading: Icon(Icons.delete_outline_rounded, color: colors.danger),
+              title: Text(
+                'Remover foto',
+                style: context.textTheme.bodyMedium?.copyWith(color: colors.danger),
               ),
-          ],
-        ),
+              onTap: () {
+                Navigator.pop(ctx);
+                ref.read(profileControllerProvider.notifier).removeAvatar();
+                context.showSnackBar('Foto removida.');
+              },
+            ),
+        ],
       ),
     );
   }
@@ -407,9 +395,9 @@ class ProfileScreen extends ConsumerWidget {
     BuildContext context,
     UserSettingsState settings,
   ) {
-    showModalBottomSheet<void>(
+    showLiftrSheet<void>(
       context: context,
-      isScrollControlled: true,
+      title: 'Dados corporais',
       builder: (_) => _BodyDataSheet(initialSettings: settings),
     );
   }
@@ -419,46 +407,38 @@ class ProfileScreen extends ConsumerWidget {
     WidgetRef ref,
     UserSettingsState settings,
   ) {
-    showModalBottomSheet<void>(
+    showLiftrSheet<void>(
       context: context,
+      eyebrow: 'METAS & NUTRIÇÃO',
+      title: 'Objetivo atual',
       builder: (ctx) {
         final colors = ctx.appColors;
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const LiftrSheetHeader(
-                eyebrow: 'METAS & NUTRIÇÃO',
-                title: 'Objetivo atual',
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: UserGoal.values.map((goal) {
+            final selected = settings.goal == goal;
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(goal.label, style: ctx.textTheme.titleMedium),
+              subtitle: Text(
+                goal.subtitle,
+                style: ctx.textTheme.bodySmall?.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
-              const SizedBox(height: 14),
-              ...UserGoal.values.map((goal) {
-                final selected = settings.goal == goal;
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(goal.label, style: ctx.textTheme.titleMedium),
-                  subtitle: Text(
-                    goal.subtitle,
-                    style: ctx.textTheme.bodySmall?.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                  trailing: selected
-                      ? Icon(Icons.check_rounded, color: colors.primary)
-                      : null,
-                  onTap: () {
-                    ref.read(userSettingsProvider.notifier).setGoal(goal);
-                    ref
-                        .read(profileControllerProvider.notifier)
-                        .syncSettingsToRemote();
-                    Navigator.pop(ctx);
-                  },
-                );
-              }),
-            ],
-          ),
+              trailing: selected
+                  ? Icon(Icons.check_rounded, color: colors.primary)
+                  : null,
+              onTap: () {
+                ref.read(userSettingsProvider.notifier).setGoal(goal);
+                ref
+                    .read(profileControllerProvider.notifier)
+                    .syncSettingsToRemote();
+                Navigator.pop(ctx);
+              },
+            );
+          }).toList(),
         );
       },
     );
@@ -469,46 +449,38 @@ class ProfileScreen extends ConsumerWidget {
     WidgetRef ref,
     UserSettingsState settings,
   ) {
-    showModalBottomSheet<void>(
+    showLiftrSheet<void>(
       context: context,
+      eyebrow: 'HISTÓRICO DE TREINO',
+      title: 'Experiência',
       builder: (ctx) {
         final colors = ctx.appColors;
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const LiftrSheetHeader(
-                eyebrow: 'HISTÓRICO DE TREINO',
-                title: 'Experiência',
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: UserExperience.values.map((exp) {
+            final selected = settings.experience == exp;
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(exp.label, style: ctx.textTheme.titleMedium),
+              subtitle: Text(
+                exp.subtitle,
+                style: ctx.textTheme.bodySmall?.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
-              const SizedBox(height: 14),
-              ...UserExperience.values.map((exp) {
-                final selected = settings.experience == exp;
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(exp.label, style: ctx.textTheme.titleMedium),
-                  subtitle: Text(
-                    exp.subtitle,
-                    style: ctx.textTheme.bodySmall?.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                  trailing: selected
-                      ? Icon(Icons.check_rounded, color: colors.primary)
-                      : null,
-                  onTap: () {
-                    ref.read(userSettingsProvider.notifier).setExperience(exp);
-                    ref
-                        .read(profileControllerProvider.notifier)
-                        .syncSettingsToRemote();
-                    Navigator.pop(ctx);
-                  },
-                );
-              }),
-            ],
-          ),
+              trailing: selected
+                  ? Icon(Icons.check_rounded, color: colors.primary)
+                  : null,
+              onTap: () {
+                ref.read(userSettingsProvider.notifier).setExperience(exp);
+                ref
+                    .read(profileControllerProvider.notifier)
+                    .syncSettingsToRemote();
+                Navigator.pop(ctx);
+              },
+            );
+          }).toList(),
         );
       },
     );
@@ -519,48 +491,40 @@ class ProfileScreen extends ConsumerWidget {
     WidgetRef ref,
     UserSettingsState settings,
   ) {
-    showModalBottomSheet<void>(
+    showLiftrSheet<void>(
       context: context,
+      eyebrow: 'GASTO ENERGÉTICO',
+      title: 'Atividade diária',
       builder: (ctx) {
         final colors = ctx.appColors;
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const LiftrSheetHeader(
-                eyebrow: 'GASTO ENERGÉTICO',
-                title: 'Atividade diária',
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: ActivityLevel.values.map((lvl) {
+            final selected = settings.activityLevel == lvl;
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(lvl.label, style: ctx.textTheme.titleMedium),
+              subtitle: Text(
+                lvl.subtitle,
+                style: ctx.textTheme.bodySmall?.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
-              const SizedBox(height: 14),
-              ...ActivityLevel.values.map((lvl) {
-                final selected = settings.activityLevel == lvl;
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(lvl.label, style: ctx.textTheme.titleMedium),
-                  subtitle: Text(
-                    lvl.subtitle,
-                    style: ctx.textTheme.bodySmall?.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                  trailing: selected
-                      ? Icon(Icons.check_rounded, color: colors.primary)
-                      : null,
-                  onTap: () {
-                    ref
-                        .read(userSettingsProvider.notifier)
-                        .setActivityLevel(lvl);
-                    ref
-                        .read(profileControllerProvider.notifier)
-                        .syncSettingsToRemote();
-                    Navigator.pop(ctx);
-                  },
-                );
-              }),
-            ],
-          ),
+              trailing: selected
+                  ? Icon(Icons.check_rounded, color: colors.primary)
+                  : null,
+              onTap: () {
+                ref
+                    .read(userSettingsProvider.notifier)
+                    .setActivityLevel(lvl);
+                ref
+                    .read(profileControllerProvider.notifier)
+                    .syncSettingsToRemote();
+                Navigator.pop(ctx);
+              },
+            );
+          }).toList(),
         );
       },
     );
@@ -655,115 +619,6 @@ class _ProfileAvatarCircle extends StatelessWidget {
     }
 
     return _fallback(context);
-  }
-}
-
-class _ProfileCardGroup extends StatelessWidget {
-  const _ProfileCardGroup({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final radius = context.appRadius;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(radius.large),
-        border: Border.all(color: colors.border),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(radius.large),
-        child: Column(
-          children: [
-            for (int i = 0; i < children.length; i++) ...[
-              children[i],
-              if (i < children.length - 1) const Divider(height: 1),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ProfileRow extends StatelessWidget {
-  const _ProfileRow({
-    required this.label,
-    required this.value,
-    this.subtitle,
-    this.showChevron = true,
-    this.onTap,
-  });
-
-  final String label;
-  final String value;
-  final String? subtitle;
-  final bool showChevron;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 56),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    label,
-                    style: context.textTheme.bodyMedium?.copyWith(
-                      color: colors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle!,
-                      style: context.textTheme.labelSmall?.copyWith(
-                        color: colors.textTertiary,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            if (value.isNotEmpty) ...[
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  value,
-                  textAlign: TextAlign.end,
-                  style: context.textTheme.labelMedium?.copyWith(
-                    color: colors.textSecondary,
-                    fontFeatures: AppTypography.tabularFeatures,
-                  ),
-                ),
-              ),
-            ],
-            if (showChevron) ...[
-              const SizedBox(width: 6),
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 18,
-                color: colors.textTertiary,
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
   }
 }
 
@@ -882,42 +737,28 @@ class _BodyDataSheetState extends ConsumerState<_BodyDataSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-    final spacing = context.appSpacing;
-
-    return SafeArea(
-      top: false,
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          spacing.space20,
-          spacing.space20,
-          spacing.space20,
-          bottomInset + spacing.space24,
-        ),
-        child: Form(
-          key: _formKey,
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Form(
+      key: _formKey,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
             children: [
-              Text('Dados corporais', style: context.textTheme.titleLarge),
-              AppSpacing.verticalGap12,
-              Row(
-                children: [
-                  ChoiceChip(
-                    label: const Text('Masculino'),
-                    selected: _sex == 'M',
-                    onSelected: (_) => setState(() => _sex = 'M'),
-                  ),
-                  AppSpacing.horizontalGap8,
-                  ChoiceChip(
-                    label: const Text('Feminino'),
-                    selected: _sex == 'F',
-                    onSelected: (_) => setState(() => _sex = 'F'),
-                  ),
-                ],
+              ChoiceChip(
+                label: const Text('Masculino'),
+                selected: _sex == 'M',
+                onSelected: (_) => setState(() => _sex = 'M'),
               ),
+              AppSpacing.horizontalGap8,
+              ChoiceChip(
+                label: const Text('Feminino'),
+                selected: _sex == 'F',
+                onSelected: (_) => setState(() => _sex = 'F'),
+              ),
+            ],
+          ),
               AppSpacing.verticalGap12,
               AppInput(
                 label: 'Peso (kg)',
@@ -994,9 +835,7 @@ class _BodyDataSheetState extends ConsumerState<_BodyDataSheet> {
                 label: 'Salvar',
                 onPressed: _submit,
               ),
-            ],
-          ),
-        ),
+        ],
       ),
     );
   }

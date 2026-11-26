@@ -9,6 +9,8 @@ import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/update/app_update_info.dart';
 import 'package:personal_fitness_os/core/update/app_update_providers.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
 
 class AppUpdateBanner extends StatelessWidget {
@@ -104,16 +106,19 @@ class AppUpdateBanner extends StatelessWidget {
 }
 
 Future<void> showAppUpdateSheet(BuildContext context) {
-  return showModalBottomSheet<void>(
+  return showLiftrSheet<void>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    builder: (ctx) => const AppUpdateSheet(),
+    builder: (ctx) => const AppUpdateSheet(embedded: true),
   );
 }
 
 class AppUpdateSheet extends ConsumerStatefulWidget {
-  const AppUpdateSheet({super.key});
+  const AppUpdateSheet({
+    super.key,
+    this.embedded = false,
+  });
+
+  final bool embedded;
 
   @override
   ConsumerState<AppUpdateSheet> createState() => _AppUpdateSheetState();
@@ -159,27 +164,29 @@ class _AppUpdateSheetState extends ConsumerState<AppUpdateSheet>
     final update = updateState.availableUpdate;
 
     if (update == null) {
+      final emptyContent = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const LiftrSheetHeader(title: 'Atualizações do app'),
+          const SizedBox(height: 8),
+          Text(
+            'Nenhuma nova versão disponível no momento.',
+            style: context.textTheme.bodyMedium?.copyWith(
+              color: colors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          AppButton.secondary(
+            label: 'Fechar',
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      );
+      if (widget.embedded) return emptyContent;
       return Padding(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('Atualizações do app', style: context.textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Text(
-              'Nenhuma nova versão disponível no momento.',
-              style: context.textTheme.bodyMedium?.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            AppButton.secondary(
-              label: 'Fechar',
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-        ),
+        child: emptyContent,
       );
     }
 
@@ -188,68 +195,64 @@ class _AppUpdateSheetState extends ConsumerState<AppUpdateSheet>
         ? 'v${update.versionName} (build ${update.buildNumber})'
         : 'v${update.versionName}';
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          LiftrSheetHeader(
-            eyebrow: 'Atualização do app',
-            title: 'Nova versão do LIFTR',
-            subtitle: '$remoteLabel · ${update.formattedSize}',
-            trailing: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: colors.primaryMuted,
-                borderRadius: BorderRadius.circular(radius.small),
-              ),
-              child: Icon(
-                Icons.system_update_rounded,
-                size: 20,
-                color: colors.primaryLight,
-              ),
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        LiftrSheetHeader(
+          eyebrow: 'Atualização do app',
+          title: 'Nova versão do LIFTR',
+          subtitle: '$remoteLabel · ${update.formattedSize}',
+          trailing: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: colors.primaryMuted,
+              borderRadius: BorderRadius.circular(radius.small),
+            ),
+            child: Icon(
+              Icons.system_update_rounded,
+              size: 20,
+              color: colors.primaryLight,
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            'Versão instalada: $installedLabel',
-            style: context.textTheme.bodySmall?.copyWith(
-              color: colors.textTertiary,
-              fontFeatures: AppTypography.tabularFeatures,
-            ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Versão instalada: $installedLabel',
+          style: context.textTheme.bodySmall?.copyWith(
+            color: colors.textTertiary,
+            fontFeatures: AppTypography.tabularFeatures,
           ),
-          if (update.releaseNotes.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            Container(
-              constraints: const BoxConstraints(maxHeight: 160),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colors.surfaceSubtle,
-                borderRadius: BorderRadius.circular(radius.medium),
-                border: Border.all(color: colors.border),
-              ),
-              child: SingleChildScrollView(
-                child: Text(
-                  update.releaseNotes,
-                  style: context.textTheme.bodySmall?.copyWith(
-                    color: colors.textSecondary,
-                    height: 1.4,
-                  ),
+        ),
+        if (update.releaseNotes.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          Container(
+            constraints: const BoxConstraints(maxHeight: 160),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colors.surfaceSubtle,
+              borderRadius: BorderRadius.circular(radius.medium),
+              border: Border.all(color: colors.border),
+            ),
+            child: SingleChildScrollView(
+              child: Text(
+                update.releaseNotes,
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: colors.textSecondary,
+                  height: 1.4,
                 ),
               ),
             ),
-          ],
-          const SizedBox(height: 18),
-          if (updateState.phase == AppUpdatePhase.downloading) ...[
-            LinearProgressIndicator(
-              value: updateState.progress,
-              backgroundColor: colors.surfaceSubtle,
-              color: colors.primary,
-              borderRadius: BorderRadius.circular(radius.full),
-              minHeight: 8,
-            ),
+          ),
+        ],
+        const SizedBox(height: 18),
+        if (updateState.phase == AppUpdatePhase.downloading) ...[
+          LiftrProgressBar(
+            progress: updateState.progress ?? 0.0,
+            height: 8,
+            trackColor: colors.surfaceSubtle,
+          ),
             const SizedBox(height: 8),
             Text(
               updateState.totalBytes > 0
@@ -373,7 +376,15 @@ class _AppUpdateSheetState extends ConsumerState<AppUpdateSheet>
             ),
           ],
         ],
-      ),
+    );
+
+    if (widget.embedded) {
+      return content;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+      child: content,
     );
   }
 }

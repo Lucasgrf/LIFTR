@@ -8,11 +8,13 @@ class ResponsiveContainer extends StatelessWidget {
     required this.child,
     this.maxWidth = 560,
     this.padding,
+    this.heightFactor,
   });
 
   final Widget child;
   final double maxWidth;
   final EdgeInsetsGeometry? padding;
+  final double? heightFactor;
 
   static double horizontalPaddingForWidth(double width) {
     if (width <= 375) return 16;
@@ -26,6 +28,7 @@ class ResponsiveContainer extends StatelessWidget {
 
     return Align(
       alignment: Alignment.topCenter,
+      heightFactor: heightFactor,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
         child: Padding(

@@ -16,7 +16,9 @@ import 'package:personal_fitness_os/core/update/app_update_providers.dart';
 import 'package:personal_fitness_os/core/update/app_update_service.dart';
 import 'package:personal_fitness_os/core/update/app_update_widgets.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
-import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_confirm_dialog.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_list_group.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 import 'package:personal_fitness_os/features/workout_session/data/repositories/session_repository_impl.dart';
@@ -179,10 +181,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const _SectionHeader('TREINO & EQUIPAMENTOS'),
-                        _SettingsCardGroup(
+                        LiftrListGroup(
+                          header: 'TREINO & EQUIPAMENTOS',
                           children: [
-                            _SettingsRow(
+                            LiftrListRow(
                               label: 'Descanso padrão',
                               value: _formatRestDuration(
                                 settings.defaultRestSeconds,
@@ -193,7 +195,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 settings.defaultRestSeconds,
                               ),
                             ),
-                            _SettingsRow(
+                            LiftrListRow(
                               label: 'Barra',
                               value:
                                   '+${settings.barbellIncrementKg.toStringAsFixed(1).replaceAll('.', ',')} kg',
@@ -206,7 +208,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     .setEquipmentIncrement(barbell: v),
                               ),
                             ),
-                            _SettingsRow(
+                            LiftrListRow(
                               label: 'Halter',
                               value:
                                   '+${settings.dumbbellIncrementKg.toStringAsFixed(1).replaceAll('.', ',')} kg',
@@ -219,7 +221,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     .setEquipmentIncrement(dumbbell: v),
                               ),
                             ),
-                            _SettingsRow(
+                            LiftrListRow(
                               label: 'Máquina / Polia',
                               value:
                                   '+${settings.machineIncrementKg.toStringAsFixed(1).replaceAll('.', ',')} kg',
@@ -236,10 +238,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                         const SizedBox(height: 22),
 
-                        const _SectionHeader('WHATSAPP'),
-                        _SettingsCardGroup(
+                        LiftrListGroup(
+                          header: 'WHATSAPP',
                           children: [
-                            _SettingsRow(
+                            LiftrListRow(
                               label: 'Vínculo',
                               value: settings.whatsappConnected
                                   ? 'Conectado'
@@ -256,7 +258,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     !settings.whatsappConnected,
                                   ),
                             ),
-                            _SettingsRow(
+                            LiftrListRow(
                               label: 'Relatório semanal',
                               value:
                                   '${settings.weeklyReportDay} · ${settings.weeklyReportTime}',
@@ -266,7 +268,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 settings,
                               ),
                             ),
-                            _SettingsToggleRow(
+                            LiftrListRow.toggle(
                               label: 'Horário silencioso',
                               subtitle: settings.quietHoursRange,
                               value: settings.quietHoursEnabled,
@@ -278,10 +280,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                         const SizedBox(height: 22),
 
-                        const _SectionHeader('SINCRONIZAÇÃO OFFLINE & DADOS'),
-                        _SettingsCardGroup(
+                        LiftrListGroup(
+                          header: 'SINCRONIZAÇÃO OFFLINE & DADOS',
                           children: [
-                            _SettingsToggleRow(
+                            LiftrListRow.toggle(
                               label: 'Simular modo offline',
                               value: simulatedOffline,
                               activeColor: colors.warning,
@@ -289,7 +291,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   .read(simulatedOfflineProvider.notifier)
                                   .state = val,
                             ),
-                            _SettingsRow(
+                            LiftrListRow(
                               label: 'Status local',
                               value: isOfflineState
                                   ? (pendingCount > 0
@@ -322,13 +324,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     }
                                   : null,
                             ),
-                            _SettingsRow(
+                            LiftrListRow(
                               label: 'Tema',
                               value: _themeLabel(themeMode),
                               onTap: () =>
                                   _showThemePicker(context, ref, themeMode),
                             ),
-                            _SettingsRow(
+                            LiftrListRow(
                               label: 'Exportar meus dados',
                               value: 'CSV / JSON',
                               onTap: () =>
@@ -338,15 +340,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                         const SizedBox(height: 22),
 
-                        const _SectionHeader('CONTA'),
-                        _SettingsCardGroup(
+                        LiftrListGroup(
+                          header: 'CONTA',
                           children: [
-                            _SettingsRow(
+                            LiftrListRow(
                               label: 'Meu Perfil',
                               value: 'Foto, dados e objetivo',
                               onTap: () => context.push('/profile'),
                             ),
-                            _SettingsRow(
+                            LiftrListRow(
                               label: 'Atualizações do app',
                               value: _updateRowValue(updateState),
                               subtitle: _updateRowSubtitle(updateState),
@@ -356,7 +358,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               onTap: () =>
                                   _handleUpdateCheck(context, updateState),
                             ),
-                            _SettingsRow(
+                            LiftrListRow(
                               label: 'Sair da conta',
                               labelColor: colors.danger,
                               value: '',
@@ -402,41 +404,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     int currentSeconds,
   ) {
     const options = [60, 90, 120, 150, 180, 240];
-    showModalBottomSheet<void>(
+    showLiftrSheet<void>(
       context: context,
+      eyebrow: 'SESSÃO DE TREINO',
+      title: 'Descanso padrão entre séries',
       builder: (ctx) {
         final colors = ctx.appColors;
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const LiftrSheetHeader(
-                eyebrow: 'SESSÃO DE TREINO',
-                title: 'Descanso padrão entre séries',
-              ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: options.map((val) {
-                  final selected = currentSeconds == val;
-                  return ChoiceChip(
-                    label: Text(_formatRestDuration(val)),
-                    selected: selected,
-                    selectedColor: colors.primaryMuted,
-                    onSelected: (_) {
-                      ref
-                          .read(userSettingsProvider.notifier)
-                          .setDefaultRestSeconds(val);
-                      Navigator.pop(ctx);
-                    },
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
+        return Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: options.map((val) {
+            final selected = currentSeconds == val;
+            return ChoiceChip(
+              label: Text(_formatRestDuration(val)),
+              selected: selected,
+              selectedColor: colors.primaryMuted,
+              onSelected: (_) {
+                ref
+                    .read(userSettingsProvider.notifier)
+                    .setDefaultRestSeconds(val);
+                Navigator.pop(ctx);
+              },
+            );
+          }).toList(),
         );
       },
     );
@@ -449,41 +439,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     required ValueChanged<double> onSelect,
   }) {
     const options = [0.5, 1.0, 1.25, 2.0, 2.5, 5.0];
-    showModalBottomSheet<void>(
+    showLiftrSheet<void>(
       context: context,
+      eyebrow: 'PROGRESSÃO DE CARGA',
+      title: title,
       builder: (ctx) {
         final colors = ctx.appColors;
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              LiftrSheetHeader(
-                eyebrow: 'PROGRESSÃO DE CARGA',
-                title: title,
+        return Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: options.map((val) {
+            final selected = (current - val).abs() < 0.01;
+            return ChoiceChip(
+              label: Text(
+                '+${val.toStringAsFixed(val % 1 == 0 ? 1 : 2).replaceAll('.', ',')} kg',
               ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: options.map((val) {
-                  final selected = (current - val).abs() < 0.01;
-                  return ChoiceChip(
-                    label: Text(
-                      '+${val.toStringAsFixed(val % 1 == 0 ? 1 : 2).replaceAll('.', ',')} kg',
-                    ),
-                    selected: selected,
-                    selectedColor: colors.primaryMuted,
-                    onSelected: (_) {
-                      onSelect(val);
-                      Navigator.pop(ctx);
-                    },
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
+              selected: selected,
+              selectedColor: colors.primaryMuted,
+              onSelected: (_) {
+                onSelect(val);
+                Navigator.pop(ctx);
+              },
+            );
+          }).toList(),
         );
       },
     );
@@ -500,41 +478,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ('Segunda-feira', '08:00'),
       ('Sexta-feira', '18:00'),
     ];
-    showModalBottomSheet<void>(
+    showLiftrSheet<void>(
       context: context,
+      eyebrow: 'WHATSAPP COACH',
+      title: 'Relatório semanal',
       builder: (ctx) {
         final colors = ctx.appColors;
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const LiftrSheetHeader(
-                eyebrow: 'WHATSAPP COACH',
-                title: 'Relatório semanal',
-              ),
-              const SizedBox(height: 12),
-              ...schedules.map((item) {
-                final selected =
-                    settings.weeklyReportDay == item.$1 &&
-                    settings.weeklyReportTime == item.$2;
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text('${item.$1} · ${item.$2}'),
-                  trailing: selected
-                      ? Icon(Icons.check_rounded, color: colors.primary)
-                      : null,
-                  onTap: () {
-                    ref
-                        .read(userSettingsProvider.notifier)
-                        .setWeeklyReportSchedule(item.$1, item.$2);
-                    Navigator.pop(ctx);
-                  },
-                );
-              }),
-            ],
-          ),
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: schedules.map((item) {
+            final selected =
+                settings.weeklyReportDay == item.$1 &&
+                settings.weeklyReportTime == item.$2;
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text('${item.$1} · ${item.$2}'),
+              trailing: selected
+                  ? Icon(Icons.check_rounded, color: colors.primary)
+                  : null,
+              onTap: () {
+                ref
+                    .read(userSettingsProvider.notifier)
+                    .setWeeklyReportSchedule(item.$1, item.$2);
+                Navigator.pop(ctx);
+              },
+            );
+          }).toList(),
         );
       },
     );
@@ -545,39 +515,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     WidgetRef ref,
     ThemeMode currentMode,
   ) {
-    showModalBottomSheet<void>(
+    showLiftrSheet<void>(
       context: context,
+      eyebrow: 'PREFERÊNCIAS',
+      title: 'Aparência do app',
       builder: (ctx) {
         final colors = ctx.appColors;
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const LiftrSheetHeader(
-                eyebrow: 'PREFERÊNCIAS',
-                title: 'Aparência do app',
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final mode in [
+              ThemeMode.dark,
+              ThemeMode.light,
+              ThemeMode.system,
+            ])
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(_themeLabel(mode)),
+                trailing: currentMode == mode
+                    ? Icon(Icons.check_rounded, color: colors.primary)
+                    : null,
+                onTap: () {
+                  ref.read(themeModeProvider.notifier).setThemeMode(mode);
+                  Navigator.pop(ctx);
+                },
               ),
-              const SizedBox(height: 12),
-              for (final mode in [
-                ThemeMode.dark,
-                ThemeMode.light,
-                ThemeMode.system,
-              ])
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(_themeLabel(mode)),
-                  trailing: currentMode == mode
-                      ? Icon(Icons.check_rounded, color: colors.primary)
-                      : null,
-                  onTap: () {
-                    ref.read(themeModeProvider.notifier).setThemeMode(mode);
-                    Navigator.pop(ctx);
-                  },
-                ),
-            ],
-          ),
+          ],
         );
       },
     );
@@ -606,79 +570,58 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       },
     });
 
-    showModalBottomSheet<void>(
+    showLiftrSheet<void>(
       context: context,
-      isScrollControlled: true,
+      eyebrow: 'BACKUP PORTÁTIL',
+      title: 'Exportar dados',
       builder: (ctx) {
         final colors = ctx.appColors;
         final radius = ctx.appRadius;
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const LiftrSheetHeader(
-                eyebrow: 'BACKUP PORTÁTIL',
-                title: 'Exportar dados',
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: colors.surfaceSubtle,
+                borderRadius: BorderRadius.circular(radius.medium),
+                border: Border.all(color: colors.border),
               ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: colors.surfaceSubtle,
-                  borderRadius: BorderRadius.circular(radius.medium),
-                  border: Border.all(color: colors.border),
-                ),
-                child: SelectableText(
-                  payload,
-                  style: ctx.textTheme.bodySmall?.copyWith(
-                    color: colors.textSecondary,
-                    fontFeatures: AppTypography.tabularFeatures,
-                  ),
+              child: SelectableText(
+                payload,
+                style: ctx.textTheme.bodySmall?.copyWith(
+                  color: colors.textSecondary,
+                  fontFeatures: AppTypography.tabularFeatures,
                 ),
               ),
-              const SizedBox(height: 16),
-              AppButton.primary(
-                label: 'Copiar JSON',
-                icon: Icons.copy_rounded,
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(text: payload));
-                  Navigator.pop(ctx);
-                  context.showSnackBar('Dados copiados para a área de transferência');
-                },
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 16),
+            AppButton.primary(
+              label: 'Copiar JSON',
+              icon: Icons.copy_rounded,
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: payload));
+                Navigator.pop(ctx);
+                context.showSnackBar('Dados copiados para a área de transferência');
+              },
+            ),
+          ],
         );
       },
     );
   }
 
   Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
-    final colors = context.appColors;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Sair da conta?'),
-        content: const Text(
-          'Seus treinos locais continuam salvos no aparelho.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: colors.danger),
-            child: const Text('Sair'),
-          ),
-        ],
-      ),
+    final confirmed = await showLiftrConfirmDialog(
+      context,
+      title: 'Sair da conta?',
+      message: 'Seus treinos locais continuam salvos no aparelho.',
+      confirmLabel: 'Sair',
+      icon: Icons.logout_rounded,
     );
 
-    if (confirmed == true) {
+    if (confirmed) {
       ref.read(restTimerNotifierProvider.notifier).stop();
       if (SupabaseConfig.isConfigured) {
         try {
@@ -690,192 +633,5 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         context.go('/login');
       }
     }
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader(this.title);
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
-      child: Text(title, style: AppTypography.eyebrow(context)),
-    );
-  }
-}
-
-class _SettingsCardGroup extends StatelessWidget {
-  const _SettingsCardGroup({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final radius = context.appRadius;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(radius.large),
-        border: Border.all(color: colors.border),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(radius.large),
-        child: Column(
-          children: [
-            for (int i = 0; i < children.length; i++) ...[
-              children[i],
-              if (i < children.length - 1) const Divider(height: 1),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsRow extends StatelessWidget {
-  const _SettingsRow({
-    required this.label,
-    required this.value,
-    this.subtitle,
-    this.valueColor,
-    this.labelColor,
-    this.showChevron = true,
-    this.onTap,
-  });
-
-  final String label;
-  final String value;
-  final String? subtitle;
-  final Color? valueColor;
-  final Color? labelColor;
-  final bool showChevron;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 56),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    label,
-                    style: context.textTheme.bodyMedium?.copyWith(
-                      color: labelColor ?? colors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle!,
-                      style: context.textTheme.labelSmall?.copyWith(
-                        color: colors.textTertiary,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            if (value.isNotEmpty) ...[
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  value,
-                  textAlign: TextAlign.end,
-                  style: context.textTheme.labelMedium?.copyWith(
-                    color: valueColor ?? colors.textSecondary,
-                    fontFeatures: AppTypography.tabularFeatures,
-                  ),
-                ),
-              ),
-            ],
-            if (showChevron) ...[
-              const SizedBox(width: 6),
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 18,
-                color: colors.textTertiary,
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsToggleRow extends StatelessWidget {
-  const _SettingsToggleRow({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-    this.subtitle,
-    this.activeColor,
-  });
-
-  final String label;
-  final String? subtitle;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-  final Color? activeColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-
-    return Container(
-      constraints: const BoxConstraints(minHeight: 56),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  label,
-                  style: context.textTheme.bodyMedium?.copyWith(
-                    color: colors.textPrimary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle!,
-                    style: context.textTheme.labelSmall?.copyWith(
-                      color: colors.textTertiary,
-                      fontFeatures: AppTypography.tabularFeatures,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          Switch(
-            value: value,
-            activeTrackColor: activeColor ?? colors.primary,
-            onChanged: onChanged,
-          ),
-        ],
-      ),
-    );
   }
 }

@@ -4,8 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
-import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
 import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
@@ -19,6 +20,7 @@ class SwapExerciseSheet extends ConsumerStatefulWidget {
     this.subtitle,
     this.title,
     this.closeSemanticLabel,
+    this.embedded = false,
   });
 
   final Exercise? currentExercise;
@@ -27,6 +29,7 @@ class SwapExerciseSheet extends ConsumerStatefulWidget {
   final String? subtitle;
   final String? title;
   final String? closeSemanticLabel;
+  final bool embedded;
 
   static Future<void> show(
     BuildContext context, {
@@ -37,10 +40,10 @@ class SwapExerciseSheet extends ConsumerStatefulWidget {
     String? title,
     String? closeSemanticLabel,
   }) {
-    return showModalBottomSheet<void>(
+    return showLiftrSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      isScrollable: false,
+      heightFactor: 0.78,
       builder: (_) => SwapExerciseSheet(
         currentExercise: currentExercise,
         onSelect: onSelect,
@@ -48,6 +51,7 @@ class SwapExerciseSheet extends ConsumerStatefulWidget {
         subtitle: subtitle,
         title: title,
         closeSemanticLabel: closeSemanticLabel,
+        embedded: true,
       ),
     );
   }
@@ -121,6 +125,119 @@ class _SwapExerciseSheetState extends ConsumerState<SwapExerciseSheet> {
         .where((e) => !usedIds.contains(e.id) && !suggestedIds.contains(e.id))
         .toList();
 
+    final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        LiftrSheetHeader(
+          eyebrow: (widget.eyebrow != null || widget.subtitle == null)
+              ? (widget.eyebrow ??
+                  (currentMuscle.isNotEmpty
+                      ? currentMuscle.toUpperCase()
+                      : 'SUBSTITUIÇÃO'))
+              : null,
+          title: widget.title ?? 'Trocar exercício',
+          subtitle: widget.subtitle,
+          trailing: Semantics(
+            label: widget.closeSemanticLabel ?? 'Fechar troca de exercício',
+            button: true,
+            child: IconButton(
+              onPressed: () => Navigator.pop(context),
+              constraints: const BoxConstraints(
+                minWidth: 48,
+                minHeight: 48,
+              ),
+              icon: Icon(
+                Icons.close_rounded,
+                color: colors.textSecondary,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        TextField(
+          controller: _searchController,
+          onChanged: (value) => setState(() => _query = value.trim()),
+          decoration: InputDecoration(
+            hintText: 'Buscar exercício...',
+            prefixIcon: Icon(
+              Icons.search_rounded,
+              color: colors.textTertiary,
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.only(top: 4, bottom: 24),
+            children: [
+              if (usedList.isNotEmpty) ...[
+                const _SheetSectionLabel('JÁ USADOS POR VOCÊ'),
+                ...usedList.map(
+                  (ex) => _SwapOptionRow(
+                    exercise: ex,
+                    subtitle:
+                        'Última carga: ${lastWeightByExerciseId[ex.id]?.toStringAsFixed(1).replaceAll('.0', '') ?? '--'} kg',
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      widget.onSelect(ex);
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (suggestedList.isNotEmpty) ...[
+                const _SheetSectionLabel('SUGERIDOS PARA O MESMO GRUPO'),
+                ...suggestedList.map(
+                  (ex) => _SwapOptionRow(
+                    exercise: ex,
+                    subtitle: 'Mesmo grupo muscular',
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      widget.onSelect(ex);
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (catalogList.isNotEmpty) ...[
+                const _SheetSectionLabel('CATÁLOGO COMPLETO'),
+                ...catalogList.map(
+                  (ex) => _SwapOptionRow(
+                    exercise: ex,
+                    subtitle: ex.primaryMuscleGroup,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      widget.onSelect(ex);
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
+              ],
+              if (usedList.isEmpty &&
+                  suggestedList.isEmpty &&
+                  catalogList.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 32),
+                  child: Text(
+                    'Nenhum exercício encontrado para "$_query".',
+                    textAlign: TextAlign.center,
+                    style: context.textTheme.bodyMedium?.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    if (widget.embedded) {
+      return body;
+    }
+
     return Container(
       height: MediaQuery.sizeOf(context).height * 0.78,
       decoration: BoxDecoration(
@@ -130,154 +247,9 @@ class _SwapExerciseSheetState extends ConsumerState<SwapExerciseSheet> {
       ),
       child: SafeArea(
         top: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 10),
-            Center(
-              child: Container(
-                width: 38,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colors.border,
-                  borderRadius: BorderRadius.circular(radius.full),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 14, 10, 0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (widget.eyebrow != null ||
-                            widget.subtitle == null) ...[
-                          Text(
-                            widget.eyebrow ??
-                                (currentMuscle.isNotEmpty
-                                    ? currentMuscle.toUpperCase()
-                                    : 'SUBSTITUIÇÃO'),
-                            style: AppTypography.eyebrow(context),
-                          ),
-                          SizedBox(height: context.appSpacing.space4),
-                        ],
-                        Text(
-                          widget.title ?? 'Trocar exercício',
-                          style: context.textTheme.headlineMedium,
-                        ),
-                        if (widget.subtitle != null) ...[
-                          SizedBox(height: context.appSpacing.space4),
-                          Text(
-                            widget.subtitle!,
-                            style: context.textTheme.bodySmall?.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  Semantics(
-                    label:
-                        widget.closeSemanticLabel ?? 'Fechar troca de exercício',
-                    button: true,
-                    child: IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      constraints: const BoxConstraints(
-                        minWidth: 48,
-                        minHeight: 48,
-                      ),
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 14, 18, 10),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (value) => setState(() => _query = value.trim()),
-                decoration: InputDecoration(
-                  hintText: 'Buscar exercício...',
-                  prefixIcon: Icon(
-                    Icons.search_rounded,
-                    color: colors.textTertiary,
-                  ),
-                ),
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(18, 4, 18, 24),
-                children: [
-                  if (usedList.isNotEmpty) ...[
-                    const _SheetSectionLabel('JÁ USADOS POR VOCÊ'),
-                    ...usedList.map(
-                      (ex) => _SwapOptionRow(
-                        exercise: ex,
-                        subtitle:
-                            'Última carga: ${lastWeightByExerciseId[ex.id]?.toStringAsFixed(1).replaceAll('.0', '') ?? '--'} kg',
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          widget.onSelect(ex);
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  if (suggestedList.isNotEmpty) ...[
-                    const _SheetSectionLabel('SUGERIDOS PARA O MESMO GRUPO'),
-                    ...suggestedList.map(
-                      (ex) => _SwapOptionRow(
-                        exercise: ex,
-                        subtitle: 'Mesmo grupo muscular',
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          widget.onSelect(ex);
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  if (catalogList.isNotEmpty) ...[
-                    const _SheetSectionLabel('CATÁLOGO COMPLETO'),
-                    ...catalogList.map(
-                      (ex) => _SwapOptionRow(
-                        exercise: ex,
-                        subtitle: ex.primaryMuscleGroup,
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          widget.onSelect(ex);
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ),
-                  ],
-                  if (usedList.isEmpty &&
-                      suggestedList.isEmpty &&
-                      catalogList.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 32),
-                      child: Text(
-                        'Nenhum exercício encontrado para "$_query".',
-                        textAlign: TextAlign.center,
-                        style: context.textTheme.bodyMedium?.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+          child: body,
         ),
       ),
     );

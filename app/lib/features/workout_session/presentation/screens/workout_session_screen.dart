@@ -16,7 +16,9 @@ import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_confirm_dialog.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/core/widgets/offline_banner_widget.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
@@ -71,28 +73,18 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
     List<SessionExercise> exercises,
   ) async {
     if (!_hasPendingInvalidEdit) return true;
-    final shouldDiscard = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Há uma série com valores inválidos'),
-        content: const Text(
+    final shouldDiscard = await showLiftrConfirmDialog(
+      context,
+      title: 'Há uma série com valores inválidos',
+      message:
           'Corrija os valores antes de continuar ou descarte as alterações não salvas.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Descartar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Corrigir'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Descartar',
+      cancelLabel: 'Corrigir',
+      icon: Icons.warning_amber_rounded,
     );
 
     if (!mounted) return false;
-    if (shouldDiscard == true) {
+    if (shouldDiscard) {
       for (final guard in _exerciseGuards.values) {
         if (guard.hasInvalidUnsavedEdit()) {
           guard.discardInvalidEdits();
@@ -301,64 +293,16 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
   }
 
   Future<void> _confirmAbandonSession() async {
-    final colors = context.appColors;
-    final radius = context.appRadius;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        contentPadding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: colors.danger.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(radius.medium),
-              ),
-              child: Icon(Icons.close_rounded, color: colors.danger),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              'Descartar treino?',
-              style: ctx.textTheme.titleLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'As séries registradas nesta sessão serão perdidas.',
-              style: ctx.textTheme.bodySmall?.copyWith(
-                color: colors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            AppButton.destructive(
-              label: 'Descartar treino',
-              onPressed: () => Navigator.of(ctx).pop(true),
-            ),
-            const SizedBox(height: 6),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: TextButton(
-                onPressed: () => Navigator.of(ctx).pop(false),
-                child: Text(
-                  'Continuar treinando',
-                  style: ctx.textTheme.labelMedium?.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    final confirmed = await showLiftrConfirmDialog(
+      context,
+      title: 'Descartar treino?',
+      message: 'As séries registradas nesta sessão serão perdidas.',
+      confirmLabel: 'Descartar treino',
+      cancelLabel: 'Continuar treinando',
+      icon: Icons.close_rounded,
     );
 
-    if (confirmed == true) {
+    if (confirmed) {
       final useCase = ref.read(abandonWorkoutSessionUseCaseProvider);
       await useCase.execute(widget.sessionId);
       ref.read(restTimerNotifierProvider.notifier).stop();
@@ -375,13 +319,12 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
       session.startedAt,
       now: ref.read(appClockProvider)(),
     );
-    showModalBottomSheet<void>(
+    showLiftrSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (ctx) => FinishWorkoutModal(
         session: session,
         elapsedSeconds: elapsedSeconds,
+        embedded: true,
         onFinished: () {
           ref.read(restTimerNotifierProvider.notifier).stop();
           if (mounted) {
