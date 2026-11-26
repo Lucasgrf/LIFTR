@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
+import 'package:personal_fitness_os/core/providers/clock_provider.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
@@ -27,6 +27,7 @@ import 'package:personal_fitness_os/features/workout_session/domain/services/res
 import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/finish_workout_modal.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/rest_timer_widget.dart';
+import 'package:personal_fitness_os/features/workout_session/presentation/widgets/session_elapsed_text.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/session_exercise_card.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/swap_exercise_sheet.dart';
 
@@ -44,36 +45,8 @@ class WorkoutSessionScreen extends ConsumerStatefulWidget {
 }
 
 class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
-  Timer? _ticker;
-  int _elapsedSeconds = 0;
   int _expandedIndex = 0;
   final Map<String, Exercise> _swappedExercises = {};
-
-  @override
-  void initState() {
-    super.initState();
-    _startTicker();
-  }
-
-  void _startTicker() {
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) {
-        setState(() => _elapsedSeconds++);
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _ticker?.cancel();
-    super.dispose();
-  }
-
-  String _formatElapsed(int totalSeconds) {
-    final m = totalSeconds ~/ 60;
-    final s = totalSeconds % 60;
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-  }
 
   Future<void> _handleLogSet({
     required String sessionExerciseId,
@@ -257,13 +230,17 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
   }
 
   void _openFinishModal(WorkoutSession session) {
+    final elapsedSeconds = SessionElapsedText.computeElapsedSeconds(
+      session.startedAt,
+      now: ref.read(appClockProvider)(),
+    );
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => FinishWorkoutModal(
         session: session,
-        elapsedSeconds: _elapsedSeconds,
+        elapsedSeconds: elapsedSeconds,
         onFinished: () {
           ref.read(restTimerNotifierProvider.notifier).stop();
           context.go('/session/${session.id}/summary');
@@ -324,13 +301,16 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
             final allCompleted = totalProgressUnits > 0 &&
                 completedProgressUnits >= totalProgressUnits;
             final cardioSeconds = session.totalCardioDurationSeconds;
-            final subtitleText = [
-              _formatElapsed(_elapsedSeconds),
+            final metaParts = [
               if (totalTargetSets > 0 || completedSets > 0)
                 '$completedSets/$totalTargetSets séries',
               if (cardioSeconds > 0)
                 '${formatCardioSeconds(cardioSeconds)} cardio',
-            ].join(' · ');
+            ];
+            final subtitleStyle = context.textTheme.labelSmall?.copyWith(
+              color: colors.textSecondary,
+              fontFeatures: AppTypography.tabularFeatures,
+            );
 
             return Column(
               children: [
@@ -371,16 +351,23 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                     style: context.textTheme.titleLarge,
                                   ),
                                   const SizedBox(height: 2),
-                                  Text(
-                                    subtitleText,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: context.textTheme.labelSmall
-                                        ?.copyWith(
-                                      color: colors.textSecondary,
-                                      fontFeatures:
-                                          AppTypography.tabularFeatures,
-                                    ),
+                                  Row(
+                                    children: [
+                                      SessionElapsedText(
+                                        startedAt: session.startedAt,
+                                        nowProvider: ref.watch(appClockProvider),
+                                        style: subtitleStyle,
+                                      ),
+                                      if (metaParts.isNotEmpty)
+                                        Flexible(
+                                          child: Text(
+                                            ' · ${metaParts.join(' · ')}',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: subtitleStyle,
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ],
                               ),
