@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 
 enum AppButtonType { primary, secondary, text, destructive }
 
@@ -69,9 +70,6 @@ class _AppButtonState extends State<AppButton> {
     final radius = context.appRadius;
     final motion = context.appMotion;
     final isDisabled = widget.onPressed == null || widget.isLoading;
-    final hasSolidFill =
-        widget._type == AppButtonType.primary ||
-        widget._type == AppButtonType.destructive;
 
     final Color fgColor;
     switch (widget._type) {
@@ -100,18 +98,19 @@ class _AppButtonState extends State<AppButton> {
               valueColor: AlwaysStoppedAnimation<Color>(fgColor),
             ),
           ),
-          const SizedBox(width: 8),
+          AppSpacing.horizontalGap8,
         ] else if (widget.icon != null) ...[
           Icon(widget.icon, size: 20, color: fgColor),
-          const SizedBox(width: 8),
+          AppSpacing.horizontalGap8,
         ],
         Flexible(
           child: Text(
             widget.label,
+            textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: hasSolidFill || isDisabled ? fgColor : null,
+                  color: fgColor,
                 ),
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -121,12 +120,15 @@ class _AppButtonState extends State<AppButton> {
     final Widget button;
     switch (widget._type) {
       case AppButtonType.primary:
-        button = SizedBox(
-          width: double.infinity,
-          height: 52,
+        button = ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 52),
           child: ElevatedButton(
             onPressed: isDisabled ? null : _handleTap,
             style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.symmetric(
+                horizontal: context.appSpacing.space16,
+                vertical: context.appSpacing.space12,
+              ),
               backgroundColor: colors.primary,
               foregroundColor: colors.onPrimary,
               disabledBackgroundColor: colors.surfaceElevated,
@@ -142,12 +144,15 @@ class _AppButtonState extends State<AppButton> {
         );
         break;
       case AppButtonType.destructive:
-        button = SizedBox(
-          width: double.infinity,
-          height: 52,
+        button = ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 52),
           child: ElevatedButton(
             onPressed: isDisabled ? null : _handleTap,
             style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.symmetric(
+                horizontal: context.appSpacing.space16,
+                vertical: context.appSpacing.space12,
+              ),
               backgroundColor: colors.danger,
               foregroundColor: colors.onPrimary,
               disabledBackgroundColor: colors.surfaceElevated,
@@ -163,12 +168,15 @@ class _AppButtonState extends State<AppButton> {
         );
         break;
       case AppButtonType.secondary:
-        button = SizedBox(
-          width: double.infinity,
-          height: 52,
+        button = ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 52),
           child: OutlinedButton(
             onPressed: isDisabled ? null : _handleTap,
             style: OutlinedButton.styleFrom(
+              padding: EdgeInsets.symmetric(
+                horizontal: context.appSpacing.space16,
+                vertical: context.appSpacing.space12,
+              ),
               foregroundColor: colors.textPrimary,
               disabledForegroundColor: colors.textDisabled,
               side: BorderSide(

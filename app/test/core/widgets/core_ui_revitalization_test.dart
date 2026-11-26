@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_theme.dart';
 import 'package:personal_fitness_os/core/update/app_update_info.dart';
 import 'package:personal_fitness_os/core/update/app_update_widgets.dart';
@@ -213,6 +214,124 @@ void main() {
       expect(offlineClose.height, greaterThanOrEqualTo(44));
       expect(updateClose.width, greaterThanOrEqualTo(48));
       expect(updateClose.height, greaterThanOrEqualTo(44));
+    });
+
+    testWidgets(
+        'AppButton uses fgColor on text variant and satisfies 320dp @ 1.3x/2.0x and a11y guidelines',
+        (tester) async {
+      for (final theme in [AppTheme.dark(), AppTheme.light()]) {
+        final expectedPrimaryLight = theme.extension<AppColors>()!.primaryLight;
+        for (final scale in [1.3, 2.0]) {
+          await tester.pumpWidget(
+            MediaQuery(
+              data: MediaQueryData(
+                size: const Size(320, 640),
+                textScaler: TextScaler.linear(scale),
+                disableAnimations: true,
+              ),
+              child: MaterialApp(
+                theme: theme,
+                home: Scaffold(
+                  body: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        AppButton.primary(
+                          label: 'Iniciar treino longo da semana',
+                          icon: Icons.play_arrow_rounded,
+                          onPressed: () {},
+                        ),
+                        const SizedBox(height: 12),
+                        AppButton.secondary(
+                          label: 'Ver histórico completo',
+                          onPressed: () {},
+                        ),
+                        const SizedBox(height: 12),
+                        AppButton.text(
+                          label: 'Esqueci minha senha',
+                          onPressed: () {},
+                        ),
+                        const SizedBox(height: 12),
+                        AppButton.destructive(
+                          label: 'Descartar sessão atual',
+                          onPressed: () {},
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final textWidget = tester.widget<Text>(find.text('Esqueci minha senha'));
+          expect(textWidget.style?.color, expectedPrimaryLight);
+          expect(textWidget.maxLines, 2);
+          expect(tester.takeException(), isNull);
+
+          final a11yHandle = tester.ensureSemantics();
+          await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+          await expectLater(tester, meetsGuideline(textContrastGuideline));
+          a11yHandle.dispose();
+        }
+      }
+    });
+
+    testWidgets(
+        'AppInput supports obscureText toggle, textInputAction, onFieldSubmitted and autofillHints',
+        (tester) async {
+      final controller = TextEditingController(text: 'segredo123');
+      String? submittedValue;
+
+      await tester.pumpWidget(
+        wrap(
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: AppInput(
+              label: 'Senha',
+              controller: controller,
+              obscureText: true,
+              textInputAction: TextInputAction.done,
+              autofillHints: const [AutofillHints.password],
+              textCapitalization: TextCapitalization.none,
+              onFieldSubmitted: (v) => submittedValue = v,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      var editable = tester.widget<EditableText>(find.byType(EditableText));
+      expect(editable.obscureText, isTrue);
+      expect(editable.textInputAction, TextInputAction.done);
+      expect(editable.autofillHints, contains(AutofillHints.password));
+
+      final toggleButton = find.byTooltip('Mostrar senha');
+      expect(toggleButton, findsOneWidget);
+      expect(tester.getSize(toggleButton).width, greaterThanOrEqualTo(48));
+      expect(tester.getSize(toggleButton).height, greaterThanOrEqualTo(48));
+
+      await tester.tap(toggleButton);
+      await tester.pumpAndSettle();
+
+      editable = tester.widget<EditableText>(find.byType(EditableText));
+      expect(editable.obscureText, isFalse);
+      expect(find.byTooltip('Ocultar senha'), findsOneWidget);
+
+      await tester.tap(find.byType(TextFormField));
+      await tester.pump();
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      expect(submittedValue, 'segredo123');
+
+      final a11yHandle = tester.ensureSemantics();
+      await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+      await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+      a11yHandle.dispose();
     });
   });
 }
