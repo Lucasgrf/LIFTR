@@ -156,6 +156,32 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
     );
   }
 
+  Widget _buildInputPair(
+    BuildContext context, {
+    required Widget first,
+    required Widget second,
+  }) {
+    final stackVertically = MediaQuery.sizeOf(context).width < 360 ||
+        MediaQuery.textScalerOf(context).scale(14) > 18;
+    if (stackVertically) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          first,
+          AppSpacing.verticalGap8,
+          second,
+        ],
+      );
+    }
+    return Row(
+      children: [
+        Expanded(child: first),
+        AppSpacing.horizontalGap8,
+        Expanded(child: second),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final workoutAsync = ref.watch(
@@ -235,41 +261,52 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                               ),
                             ),
                           ),
-                          const Spacer(),
-                          DropdownButton<SetType>(
-                            value: template.setType,
-                            dropdownColor: context.appColors.surfaceElevated,
-                            underline: const SizedBox(),
-                            items: const [
-                              DropdownMenuItem(
-                                value: SetType.warmup,
-                                child: Text('Aquecimento'),
+                          AppSpacing.horizontalGap8,
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerRight,
+                                child: DropdownButton<SetType>(
+                                  value: template.setType,
+                                  dropdownColor:
+                                      context.appColors.surfaceElevated,
+                                  underline: const SizedBox(),
+                                  items: const [
+                                    DropdownMenuItem(
+                                      value: SetType.warmup,
+                                      child: Text('Aquecimento'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: SetType.rampUp,
+                                      child: Text('Reconhecimento'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: SetType.working,
+                                      child: Text('Válida (Trabalho)'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: SetType.dropSet,
+                                      child: Text('Drop-set'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: SetType.mobility,
+                                      child: Text('Mobilidade'),
+                                    ),
+                                  ],
+                                  onChanged: (newType) {
+                                    if (newType != null) {
+                                      setState(() {
+                                        final cur = _sets[idx];
+                                        _sets[idx] =
+                                            cur.copyWith(setType: newType);
+                                      });
+                                    }
+                                  },
+                                ),
                               ),
-                              DropdownMenuItem(
-                                value: SetType.rampUp,
-                                child: Text('Reconhecimento'),
-                              ),
-                              DropdownMenuItem(
-                                value: SetType.working,
-                                child: Text('Válida (Trabalho)'),
-                              ),
-                              DropdownMenuItem(
-                                value: SetType.dropSet,
-                                child: Text('Drop-set'),
-                              ),
-                              DropdownMenuItem(
-                                value: SetType.mobility,
-                                child: Text('Mobilidade'),
-                              ),
-                            ],
-                            onChanged: (newType) {
-                              if (newType != null) {
-                                setState(() {
-                                  final cur = _sets[idx];
-                                  _sets[idx] = cur.copyWith(setType: newType);
-                                });
-                              }
-                            },
+                            ),
                           ),
                           IconButton(
                             icon: const Icon(Icons.delete_outline_rounded, size: 20),
@@ -285,103 +322,90 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                       ),
                       AppSpacing.verticalGap12,
                       if (isCardio)
-                        Row(
-                          children: [
-                            Expanded(
-                              child: AppNumericInput(
-                                label: 'Min. mín.',
-                                value: (template.targetRepsMin ?? 15).toDouble(),
-                                min: 1,
-                                max: 180,
-                                unit: 'min',
-                                onChanged: (v) {
-                                  final nextMin = v.round();
-                                  setState(() {
-                                    final cur = _sets[idx];
-                                    final curMax = cur.targetRepsMax ?? nextMin;
-                                    final nextMax =
-                                        nextMin > curMax ? nextMin : curMax;
-                                    _sets[idx] = cur.copyWith(
-                                      targetRepsMin: nextMin,
-                                      targetRepsMax: nextMax,
-                                    );
-                                  });
-                                },
-                              ),
-                            ),
-                            AppSpacing.horizontalGap8,
-                            Expanded(
-                              child: AppNumericInput(
-                                label: 'Min. máx.',
-                                value: (template.targetRepsMax ?? 20).toDouble(),
-                                min: 1,
-                                max: 180,
-                                unit: 'min',
-                                onChanged: (v) {
-                                  final nextMax = v.round();
-                                  setState(() {
-                                    final cur = _sets[idx];
-                                    final curMin = cur.targetRepsMin ?? nextMax;
-                                    final nextMin =
-                                        nextMax < curMin ? nextMax : curMin;
-                                    _sets[idx] = cur.copyWith(
-                                      targetRepsMin: nextMin,
-                                      targetRepsMax: nextMax,
-                                    );
-                                  });
-                                },
-                              ),
-                            ),
-                          ],
+                        _buildInputPair(
+                          context,
+                          first: AppNumericInput(
+                            label: 'Min. mín.',
+                            value: (template.targetRepsMin ?? 15).toDouble(),
+                            min: 1,
+                            max: 180,
+                            unit: 'min',
+                            onChanged: (v) {
+                              final nextMin = v.round();
+                              setState(() {
+                                final cur = _sets[idx];
+                                final curMax = cur.targetRepsMax ?? nextMin;
+                                final nextMax =
+                                    nextMin > curMax ? nextMin : curMax;
+                                _sets[idx] = cur.copyWith(
+                                  targetRepsMin: nextMin,
+                                  targetRepsMax: nextMax,
+                                );
+                              });
+                            },
+                          ),
+                          second: AppNumericInput(
+                            label: 'Min. máx.',
+                            value: (template.targetRepsMax ?? 20).toDouble(),
+                            min: 1,
+                            max: 180,
+                            unit: 'min',
+                            onChanged: (v) {
+                              final nextMax = v.round();
+                              setState(() {
+                                final cur = _sets[idx];
+                                final curMin = cur.targetRepsMin ?? nextMax;
+                                final nextMin =
+                                    nextMax < curMin ? nextMax : curMin;
+                                _sets[idx] = cur.copyWith(
+                                  targetRepsMin: nextMin,
+                                  targetRepsMax: nextMax,
+                                );
+                              });
+                            },
+                          ),
                         )
                       else ...[
-                        Row(
-                          children: [
-                            Expanded(
-                              child: AppNumericInput(
-                                label: 'Reps mín.',
-                                value: (template.targetRepsMin ?? 8).toDouble(),
-                                min: 1,
-                                max: 50,
-                                onChanged: (v) {
-                                  final nextMin = v.round();
-                                  setState(() {
-                                    final cur = _sets[idx];
-                                    final curMax = cur.targetRepsMax ?? nextMin;
-                                    final nextMax =
-                                        nextMin > curMax ? nextMin : curMax;
-                                    _sets[idx] = cur.copyWith(
-                                      targetRepsMin: nextMin,
-                                      targetRepsMax: nextMax,
-                                    );
-                                  });
-                                },
-                              ),
-                            ),
-                            AppSpacing.horizontalGap8,
-                            Expanded(
-                              child: AppNumericInput(
-                                label: 'Reps máx.',
-                                value:
-                                    (template.targetRepsMax ?? 12).toDouble(),
-                                min: 1,
-                                max: 50,
-                                onChanged: (v) {
-                                  final nextMax = v.round();
-                                  setState(() {
-                                    final cur = _sets[idx];
-                                    final curMin = cur.targetRepsMin ?? nextMax;
-                                    final nextMin =
-                                        nextMax < curMin ? nextMax : curMin;
-                                    _sets[idx] = cur.copyWith(
-                                      targetRepsMin: nextMin,
-                                      targetRepsMax: nextMax,
-                                    );
-                                  });
-                                },
-                              ),
-                            ),
-                          ],
+                        _buildInputPair(
+                          context,
+                          first: AppNumericInput(
+                            label: 'Reps mín.',
+                            value: (template.targetRepsMin ?? 8).toDouble(),
+                            min: 1,
+                            max: 50,
+                            onChanged: (v) {
+                              final nextMin = v.round();
+                              setState(() {
+                                final cur = _sets[idx];
+                                final curMax = cur.targetRepsMax ?? nextMin;
+                                final nextMax =
+                                    nextMin > curMax ? nextMin : curMax;
+                                _sets[idx] = cur.copyWith(
+                                  targetRepsMin: nextMin,
+                                  targetRepsMax: nextMax,
+                                );
+                              });
+                            },
+                          ),
+                          second: AppNumericInput(
+                            label: 'Reps máx.',
+                            value: (template.targetRepsMax ?? 12).toDouble(),
+                            min: 1,
+                            max: 50,
+                            onChanged: (v) {
+                              final nextMax = v.round();
+                              setState(() {
+                                final cur = _sets[idx];
+                                final curMin = cur.targetRepsMin ?? nextMax;
+                                final nextMin =
+                                    nextMax < curMin ? nextMax : curMin;
+                                _sets[idx] = cur.copyWith(
+                                  targetRepsMin: nextMin,
+                                  targetRepsMax: nextMax,
+                                );
+                              });
+                            },
+                          ),
                         ),
                         AppSpacing.verticalGap8,
                         Row(

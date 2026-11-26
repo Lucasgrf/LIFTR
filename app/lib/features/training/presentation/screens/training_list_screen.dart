@@ -165,35 +165,35 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
                       // Header
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'PROGRAMA ATIVO',
-                                    style: AppTypography.eyebrow(context),
+                        child: Builder(
+                          builder: (context) {
+                            final isCompact =
+                                MediaQuery.sizeOf(context).width < 360 ||
+                                    MediaQuery.textScalerOf(context).scale(14) >
+                                        18;
+                            final titleBlock = Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'PROGRAMA ATIVO',
+                                  style: AppTypography.eyebrow(context),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  'Treino',
+                                  style: context.textTheme.displayMedium,
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  '${activePlan.name} · ${orderedWorkouts.length} sessões',
+                                  style: context.textTheme.bodySmall?.copyWith(
+                                    color: colors.textSecondary,
+                                    fontFeatures: AppTypography.tabularFeatures,
                                   ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    'Treino',
-                                    style: context.textTheme.displayMedium,
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    '${activePlan.name} · ${orderedWorkouts.length} sessões',
-                                    style: context.textTheme.bodySmall?.copyWith(
-                                      color: colors.textSecondary,
-                                      fontFeatures:
-                                          AppTypography.tabularFeatures,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            TextButton(
+                                ),
+                              ],
+                            );
+                            final switchBtn = TextButton(
                               onPressed: () => SwitchProgramSheet.show(
                                 context,
                                 plans: plans,
@@ -203,25 +203,50 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
                                 foregroundColor: colors.primaryLight,
                               ),
                               child: const Text('Trocar programa'),
-                            ),
-                          ],
+                            );
+
+                            if (isCompact) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  titleBlock,
+                                  const SizedBox(height: 4),
+                                  switchBtn,
+                                ],
+                              );
+                            }
+
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(child: titleBlock),
+                                switchBtn,
+                              ],
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(height: 12),
 
                       // Rotating Queue Header
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Fila rotativa',
-                            style: context.textTheme.titleMedium,
-                          ),
-                          Text(
-                            'ARRASTE PARA ORDENAR',
-                            style: AppTypography.eyebrow(context),
-                          ),
-                        ],
+                      SizedBox(
+                        width: double.infinity,
+                        child: Wrap(
+                          alignment: WrapAlignment.spaceBetween,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: [
+                            Text(
+                              'Fila rotativa',
+                              style: context.textTheme.titleMedium,
+                            ),
+                            Text(
+                              'ARRASTE PARA ORDENAR',
+                              style: AppTypography.eyebrow(context),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 10),
 
@@ -368,117 +393,166 @@ class _QueueWorkoutCard extends StatelessWidget {
         borderRadius: radius.large,
         onTap: onEdit,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: isNext ? 62 : 50),
-          child: Row(
-            children: [
-              ReorderableDragStartListener(
-                index: index,
-                child: Semantics(
-                  label: 'Reordenar ${workout.name}',
-                  child: SizedBox(
-                    width: 40,
-                    height: 48,
-                    child: Icon(
-                      Icons.drag_handle_rounded,
-                      color: colors.textTertiary,
-                      size: 20,
-                    ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxWidth < 310 ||
+                MediaQuery.textScalerOf(context).scale(14) > 18;
+
+            final dragHandle = ReorderableDragStartListener(
+              index: index,
+              child: Semantics(
+                label: 'Reordenar ${workout.name}',
+                child: SizedBox(
+                  width: 40,
+                  height: 48,
+                  child: Icon(
+                    Icons.drag_handle_rounded,
+                    color: colors.textTertiary,
+                    size: 20,
                   ),
                 ),
               ),
-              const SizedBox(width: 4),
-              if (isNext)
-                const LiftrBadge(
-                  label: 'Próximo',
-                  tone: LiftrBadgeTone.brand,
-                )
-              else
-                SizedBox(
-                  width: 36,
-                  child: Text(
-                    '${index + 1}º',
-                    textAlign: TextAlign.center,
-                    style: context.textTheme.labelMedium?.copyWith(
-                      color: colors.textTertiary,
-                      fontFeatures: AppTypography.tabularFeatures,
-                    ),
-                  ),
-                ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      workout.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.textTheme.titleSmall,
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      '${workout.totalExercisesCount} exercícios · ${workout.totalWorkingSetsCount} séries',
-                      style: context.textTheme.labelSmall?.copyWith(
-                        color: colors.textSecondary,
+            );
+
+            final orderBadge = isNext
+                ? const LiftrBadge(
+                    label: 'Próximo',
+                    tone: LiftrBadgeTone.brand,
+                  )
+                : SizedBox(
+                    width: 36,
+                    child: Text(
+                      '${index + 1}º',
+                      textAlign: TextAlign.center,
+                      style: context.textTheme.labelMedium?.copyWith(
+                        color: colors.textTertiary,
                         fontFeatures: AppTypography.tabularFeatures,
                       ),
                     ),
-                  ],
+                  );
+
+            final infoColumn = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  workout.name,
+                  maxLines: isCompact ? 2 : 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.textTheme.titleSmall,
                 ),
-              ),
-              if (isNext) ...[
-                const SizedBox(width: 6),
-                SizedBox(
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: isStarting ? null : onStart,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(64, 48),
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      backgroundColor: colors.primary,
-                      foregroundColor: colors.onPrimary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(radius.small),
-                      ),
-                    ),
-                    child: const Text('Iniciar'),
-                  ),
-                ),
-                PopupMenuButton<String>(
-                  icon: Icon(
-                    Icons.more_vert_rounded,
+                const SizedBox(height: 3),
+                Text(
+                  '${workout.totalExercisesCount} exercícios · ${workout.totalWorkingSetsCount} séries',
+                  style: context.textTheme.labelSmall?.copyWith(
                     color: colors.textSecondary,
+                    fontFeatures: AppTypography.tabularFeatures,
                   ),
-                  color: colors.surfaceElevated,
-                  onSelected: (value) {
-                    if (value == 'edit') {
-                      onEdit();
-                    } else if (value == 'skip') {
-                      onSkipToEnd?.call();
-                    }
-                  },
-                  itemBuilder: (ctx) => [
-                    const PopupMenuItem(
-                      value: 'edit',
-                      child: Text('Editar sessão'),
+                ),
+              ],
+            );
+
+            final startButton = ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: ElevatedButton(
+                onPressed: isStarting ? null : onStart,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(64, 48),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  backgroundColor: colors.primary,
+                  foregroundColor: colors.onPrimary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(radius.small),
+                  ),
+                ),
+                child: const Text('Iniciar'),
+              ),
+            );
+
+            final menuButton = PopupMenuButton<String>(
+              icon: Icon(
+                Icons.more_vert_rounded,
+                color: colors.textSecondary,
+              ),
+              color: colors.surfaceElevated,
+              onSelected: (value) {
+                if (value == 'edit') {
+                  onEdit();
+                } else if (value == 'skip') {
+                  onSkipToEnd?.call();
+                }
+              },
+              itemBuilder: (ctx) => [
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: Text('Editar sessão'),
+                ),
+                if (onSkipToEnd != null)
+                  const PopupMenuItem(
+                    value: 'skip',
+                    child: Text('Pular para o fim da fila'),
+                  ),
+              ],
+            );
+
+            final trailingChevron = Icon(
+              Icons.chevron_right_rounded,
+              color: colors.textTertiary,
+              size: 20,
+            );
+
+            if (isCompact) {
+              return ConstrainedBox(
+                constraints: BoxConstraints(minHeight: isNext ? 62 : 50),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        dragHandle,
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              orderBadge,
+                              const SizedBox(height: 4),
+                              infoColumn,
+                            ],
+                          ),
+                        ),
+                        if (isNext) menuButton else trailingChevron,
+                      ],
                     ),
-                    if (onSkipToEnd != null)
-                      const PopupMenuItem(
-                        value: 'skip',
-                        child: Text('Pular para o fim da fila'),
-                      ),
+                    if (isNext) ...[
+                      const SizedBox(height: 8),
+                      startButton,
+                    ],
                   ],
                 ),
-              ] else
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: colors.textTertiary,
-                  size: 20,
-                ),
-            ],
-          ),
+              );
+            }
+
+            return ConstrainedBox(
+              constraints: BoxConstraints(minHeight: isNext ? 62 : 50),
+              child: Row(
+                children: [
+                  dragHandle,
+                  const SizedBox(width: 4),
+                  orderBadge,
+                  const SizedBox(width: 10),
+                  Expanded(child: infoColumn),
+                  if (isNext) ...[
+                    const SizedBox(width: 6),
+                    startButton,
+                    menuButton,
+                  ] else
+                    trailingChevron,
+                ],
+              ),
+            );
+          },
         ),
       ),
     );

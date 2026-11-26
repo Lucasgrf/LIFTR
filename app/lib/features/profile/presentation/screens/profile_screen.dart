@@ -748,14 +748,15 @@ class _BodyDataSheetState extends ConsumerState<_BodyDataSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
+          Wrap(
+            spacing: context.appSpacing.space8,
+            runSpacing: context.appSpacing.space8,
             children: [
               ChoiceChip(
                 label: const Text('Masculino'),
                 selected: _sex == 'M',
                 onSelected: (_) => setState(() => _sex = 'M'),
               ),
-              AppSpacing.horizontalGap8,
               ChoiceChip(
                 label: const Text('Feminino'),
                 selected: _sex == 'F',

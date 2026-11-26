@@ -308,77 +308,89 @@ class _AddExerciseToWorkoutScreenState
                 const Divider(height: 24),
 
                 // Rep Range
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Faixa de Repetições',
-                      style: context.textTheme.bodyMedium?.copyWith(
-                        color: context.appColors.textPrimary,
-                        fontWeight: FontWeight.w600,
+                SizedBox(
+                  width: double.infinity,
+                  child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      Text(
+                        'Faixa de Repetições',
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: context.appColors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    Row(
-                      children: [
-                        _buildSmallNumberSelector(
-                          value: _repsMin,
-                          onChanged: (v) => setState(() => _repsMin = v),
-                          min: 1,
-                          max: _repsMax,
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8),
-                          child: Text('a'),
-                        ),
-                        _buildSmallNumberSelector(
-                          value: _repsMax,
-                          onChanged: (v) => setState(() => _repsMax = v),
-                          min: _repsMin,
-                          max: 50,
-                        ),
-                        const SizedBox(width: 6),
-                        const Text('reps'),
-                      ],
-                    ),
-                  ],
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildSmallNumberSelector(
+                            value: _repsMin,
+                            onChanged: (v) => setState(() => _repsMin = v),
+                            min: 1,
+                            max: _repsMax,
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 8),
+                            child: Text('a'),
+                          ),
+                          _buildSmallNumberSelector(
+                            value: _repsMax,
+                            onChanged: (v) => setState(() => _repsMax = v),
+                            min: _repsMin,
+                            max: 50,
+                          ),
+                          const SizedBox(width: 6),
+                          const Text('reps'),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
                 const Divider(height: 24),
 
                 // Rest seconds
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Tempo de Descanso',
-                      style: context.textTheme.bodyMedium?.copyWith(
-                        color: context.appColors.textPrimary,
-                        fontWeight: FontWeight.w600,
+                SizedBox(
+                  width: double.infinity,
+                  child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      Text(
+                        'Tempo de Descanso',
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: context.appColors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    DropdownButton<int>(
-                      value: _restSeconds,
-                      dropdownColor: context.appColors.surfaceElevated,
-                      items: AddExerciseToWorkoutScreen.restDropdownValuesFor(
-                        _restSeconds,
-                      )
-                          .map(
-                            (v) => DropdownMenuItem<int>(
-                              value: v,
-                              child: Text(
-                                AddExerciseToWorkoutScreen.formatRestOptionLabel(
-                                  v,
+                      DropdownButton<int>(
+                        value: _restSeconds,
+                        dropdownColor: context.appColors.surfaceElevated,
+                        items: AddExerciseToWorkoutScreen.restDropdownValuesFor(
+                          _restSeconds,
+                        )
+                            .map(
+                              (v) => DropdownMenuItem<int>(
+                                value: v,
+                                child: Text(
+                                  AddExerciseToWorkoutScreen
+                                      .formatRestOptionLabel(v),
                                 ),
                               ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) {
-                        if (v != null) {
-                          setState(() => _restSeconds = v);
-                        }
-                      },
-                    ),
-                  ],
+                            )
+                            .toList(),
+                        onChanged: (v) {
+                          if (v != null) {
+                            setState(() => _restSeconds = v);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

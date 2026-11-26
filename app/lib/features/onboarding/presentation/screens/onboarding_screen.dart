@@ -421,7 +421,37 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
+  Widget _buildPair(
+    BuildContext context, {
+    required bool isNarrow,
+    required Widget first,
+    required Widget second,
+    CrossAxisAlignment rowCrossAxisAlignment = CrossAxisAlignment.start,
+  }) {
+    if (isNarrow) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          first,
+          const SizedBox(height: 12),
+          second,
+        ],
+      );
+    }
+    return Row(
+      crossAxisAlignment: rowCrossAxisAlignment,
+      children: [
+        Expanded(child: first),
+        const SizedBox(width: 12),
+        Expanded(child: second),
+      ],
+    );
+  }
+
   Widget _buildBodyDataStep(BuildContext context) {
+    final isNarrow = MediaQuery.sizeOf(context).width < 360 ||
+        MediaQuery.textScalerOf(context).scale(14) > 18;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -431,84 +461,68 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           subtitle:
               'Usamos isso apenas para calcular suas metas iniciais de carga e gasto calórico.',
         ),
-        Row(
-          children: [
-            Expanded(
-              child: _SelectableOptionCard(
-                title: 'Masculino',
-                selected: _sex == 'M',
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  setState(() => _sex = 'M');
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _SelectableOptionCard(
-                title: 'Feminino',
-                selected: _sex == 'F',
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  setState(() => _sex = 'F');
-                },
-              ),
-            ),
-          ],
+        _buildPair(
+          context,
+          isNarrow: isNarrow,
+          rowCrossAxisAlignment: CrossAxisAlignment.center,
+          first: _SelectableOptionCard(
+            title: 'Masculino',
+            selected: _sex == 'M',
+            onTap: () {
+              HapticFeedback.lightImpact();
+              setState(() => _sex = 'M');
+            },
+          ),
+          second: _SelectableOptionCard(
+            title: 'Feminino',
+            selected: _sex == 'F',
+            onTap: () {
+              HapticFeedback.lightImpact();
+              setState(() => _sex = 'F');
+            },
+          ),
         ),
         const SizedBox(height: 18),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: _NumericStepInput(
-                label: 'Idade',
-                controller: _ageController,
-                suffix: 'anos',
-                decimal: false,
-                errorText: _ageError,
-                onChanged: (_) => setState(() {}),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _NumericStepInput(
-                label: 'Altura',
-                controller: _heightController,
-                suffix: 'cm',
-                decimal: false,
-                errorText: _heightError,
-                onChanged: (_) => setState(() {}),
-              ),
-            ),
-          ],
+        _buildPair(
+          context,
+          isNarrow: isNarrow,
+          first: _NumericStepInput(
+            label: 'Idade',
+            controller: _ageController,
+            suffix: 'anos',
+            decimal: false,
+            errorText: _ageError,
+            onChanged: (_) => setState(() {}),
+          ),
+          second: _NumericStepInput(
+            label: 'Altura',
+            controller: _heightController,
+            suffix: 'cm',
+            decimal: false,
+            errorText: _heightError,
+            onChanged: (_) => setState(() {}),
+          ),
         ),
         const SizedBox(height: 12),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: _NumericStepInput(
-                label: 'Peso atual',
-                controller: _weightController,
-                suffix: 'kg',
-                decimal: true,
-                errorText: _weightError,
-                onChanged: (_) => setState(() {}),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _NumericStepInput(
-                label: '% Gordura (opc.)',
-                controller: _bodyFatController,
-                suffix: '%',
-                decimal: true,
-                errorText: _bodyFatError,
-                onChanged: (_) => setState(() {}),
-              ),
-            ),
-          ],
+        _buildPair(
+          context,
+          isNarrow: isNarrow,
+          first: _NumericStepInput(
+            label: 'Peso atual',
+            controller: _weightController,
+            suffix: 'kg',
+            decimal: true,
+            errorText: _weightError,
+            onChanged: (_) => setState(() {}),
+          ),
+          second: _NumericStepInput(
+            label: '% Gordura (opc.)',
+            controller: _bodyFatController,
+            suffix: '%',
+            decimal: true,
+            errorText: _bodyFatError,
+            onChanged: (_) => setState(() {}),
+          ),
         ),
       ],
     );
