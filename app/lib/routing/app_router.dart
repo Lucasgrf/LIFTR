@@ -4,19 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/constants/supabase_config.dart';
 import 'package:personal_fitness_os/features/auth/presentation/screens/login_screen.dart';
 import 'package:personal_fitness_os/features/auth/presentation/screens/register_screen.dart';
-import 'package:personal_fitness_os/features/body/presentation/screens/body_measurements_screen.dart';
-import 'package:personal_fitness_os/features/body/presentation/screens/body_overview_screen.dart';
-import 'package:personal_fitness_os/features/body/presentation/screens/progress_photos_screen.dart';
-import 'package:personal_fitness_os/features/body/presentation/screens/weight_history_screen.dart';
-import 'package:personal_fitness_os/features/calendar/presentation/screens/activity_calendar_screen.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/screens/create_custom_exercise_screen.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/screens/exercise_detail_screen.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/screens/exercise_list_screen.dart';
-import 'package:personal_fitness_os/features/goals/presentation/screens/goal_detail_screen.dart';
-import 'package:personal_fitness_os/features/goals/presentation/screens/goals_screen.dart';
 import 'package:personal_fitness_os/features/history/presentation/screens/history_screen.dart';
-import 'package:personal_fitness_os/features/nutrition/presentation/screens/nutrition_screen.dart';
 import 'package:personal_fitness_os/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:personal_fitness_os/features/profile/presentation/screens/profile_screen.dart';
 import 'package:personal_fitness_os/features/settings/presentation/screens/settings_screen.dart';
@@ -222,51 +214,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(
-        path: '/nutrition',
-        builder: (context, state) => const NutritionScreen(),
-        routes: [
-          GoRoute(
-            path: 'meal/:mealId',
-            builder: (context, state) => Scaffold(
-              appBar: AppBar(
-                title: Text('Meal ${state.pathParameters['mealId']}'),
-              ),
-            ),
-          ),
-        ],
-      ),
-      GoRoute(
-        path: '/body',
-        builder: (context, state) => const BodyOverviewScreen(),
-        routes: [
-          GoRoute(
-            path: 'weight',
-            builder: (context, state) => const WeightHistoryScreen(),
-          ),
-          GoRoute(
-            path: 'measurements',
-            builder: (context, state) => const BodyMeasurementsScreen(),
-          ),
-          GoRoute(
-            path: 'photos',
-            builder: (context, state) => const ProgressPhotosScreen(),
-          ),
-        ],
-      ),
-      GoRoute(
-        path: '/goals',
-        builder: (context, state) => const GoalsScreen(),
-        routes: [
-          GoRoute(
-            path: ':goalId',
-            builder: (context, state) {
-              final goalId = state.pathParameters['goalId']!;
-              return GoalDetailScreen(goalId: goalId);
-            },
-          ),
-        ],
-      ),
-      GoRoute(
         path: '/session/:sessionId',
         builder: (context, state) {
           final sessionId = state.pathParameters['sessionId']!;
@@ -281,10 +228,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             },
           ),
         ],
-      ),
-      GoRoute(
-        path: '/calendar',
-        builder: (context, state) => const ActivityCalendarScreen(),
       ),
       GoRoute(
         path: '/weekly-comparison',

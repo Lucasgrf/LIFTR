@@ -4,10 +4,8 @@ import 'package:personal_fitness_os/features/body/data/repositories/weight_repos
 import 'package:personal_fitness_os/features/body/domain/entities/weight_entry.dart';
 import 'package:personal_fitness_os/features/body/domain/entities/weight_stats.dart';
 import 'package:personal_fitness_os/features/body/domain/repositories/weight_repository.dart';
-import 'package:personal_fitness_os/features/body/domain/usecases/delete_weight_entry.dart';
 import 'package:personal_fitness_os/features/body/domain/usecases/get_weight_history.dart';
 import 'package:personal_fitness_os/features/body/domain/usecases/get_weight_stats.dart';
-import 'package:personal_fitness_os/features/body/domain/usecases/log_weight_entry.dart';
 import 'package:personal_fitness_os/features/progression/presentation/providers/progression_providers.dart';
 
 final weightRemoteDataSourceProvider = Provider<WeightRemoteDataSource>((ref) {
@@ -18,10 +16,6 @@ final weightRepositoryProvider = Provider<WeightRepository>((ref) {
   return WeightRepositoryImpl(ref.watch(weightRemoteDataSourceProvider));
 });
 
-final logWeightEntryUseCaseProvider = Provider<LogWeightEntryUseCase>((ref) {
-  return LogWeightEntryUseCase(ref.watch(weightRepositoryProvider));
-});
-
 final getWeightHistoryUseCaseProvider =
     Provider<GetWeightHistoryUseCase>((ref) {
   return GetWeightHistoryUseCase(ref.watch(weightRepositoryProvider));
@@ -29,11 +23,6 @@ final getWeightHistoryUseCaseProvider =
 
 final getWeightStatsUseCaseProvider = Provider<GetWeightStatsUseCase>((ref) {
   return GetWeightStatsUseCase(ref.watch(weightRepositoryProvider));
-});
-
-final deleteWeightEntryUseCaseProvider =
-    Provider<DeleteWeightEntryUseCase>((ref) {
-  return DeleteWeightEntryUseCase(ref.watch(weightRepositoryProvider));
 });
 
 final weightStatsProvider =
