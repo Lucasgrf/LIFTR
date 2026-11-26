@@ -430,6 +430,16 @@ class _HeroCardioCard extends StatelessWidget {
     'D',
   ];
 
+  static const List<String> _weekdayFullNames = [
+    'Segunda-feira',
+    'Terça-feira',
+    'Quarta-feira',
+    'Quinta-feira',
+    'Sexta-feira',
+    'Sábado',
+    'Domingo',
+  ];
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -507,70 +517,84 @@ class _HeroCardioCard extends StatelessWidget {
             ),
           ),
           AppSpacing.verticalGap16,
-          ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 102),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(7, (idx) {
-                final dayItem = idx < data.currentWeekDailyCardio.length
-                    ? data.currentWeekDailyCardio[idx]
-                    : DailyCardioBreakdown(
-                        day: current.weekStart.add(Duration(days: idx)),
-                      );
-                final mins = dayItem.totalMinutes;
-                final barHeight = mins <= 0
-                    ? 6.0
-                    : (44.0 * (mins / maxMinutes)).clamp(10.0, 44.0);
-                final dayLabel = _weekdayInitials[
-                    (dayItem.day.weekday - 1).clamp(0, 6)];
-
-                return Expanded(
-                  child: Semantics(
-                    label: '$dayLabel: $mins minutos de cardio',
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            mins > 0 ? '${mins}m' : '',
-                            maxLines: 1,
-                            style: context.textTheme.labelSmall?.copyWith(
-                              color: colors.primaryLight,
-                              fontFeatures: AppTypography.tabularFeatures,
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: context.appSpacing.space4),
-                        Container(
-                          width: 18,
-                          height: barHeight,
-                          decoration: BoxDecoration(
-                            color: mins > 0
-                                ? colors.primary
-                                : colors.surfaceElevated,
-                            borderRadius: BorderRadius.circular(radius.xs),
-                          ),
-                        ),
-                        SizedBox(height: context.appSpacing.space8),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            dayLabel,
-                            maxLines: 1,
-                            style: context.textTheme.labelSmall?.copyWith(
-                              color: mins > 0
-                                  ? colors.textPrimary
-                                  : colors.textTertiary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final minColumnWidth = constraints.maxWidth / 7;
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minWidth: constraints.maxWidth,
+                    minHeight: 102,
                   ),
-                );
-              }),
-            ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: List.generate(7, (idx) {
+                      final dayItem = idx < data.currentWeekDailyCardio.length
+                          ? data.currentWeekDailyCardio[idx]
+                          : DailyCardioBreakdown(
+                              day: current.weekStart.add(Duration(days: idx)),
+                            );
+                      final mins = dayItem.totalMinutes;
+                      final barHeight = mins <= 0
+                          ? 6.0
+                          : (44.0 * (mins / maxMinutes)).clamp(10.0, 44.0);
+                      final weekdayIdx = (dayItem.day.weekday - 1).clamp(0, 6);
+                      final dayLabel = _weekdayInitials[weekdayIdx];
+                      final fullDayName = _weekdayFullNames[weekdayIdx];
+
+                      return ConstrainedBox(
+                        constraints: BoxConstraints(minWidth: minColumnWidth),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: Semantics(
+                            label: '$fullDayName: $mins minutos de cardio',
+                            excludeSemantics: true,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Text(
+                                  mins > 0 ? '${mins}m' : '',
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  style: context.textTheme.labelSmall?.copyWith(
+                                    color: colors.primaryLight,
+                                    fontFeatures: AppTypography.tabularFeatures,
+                                  ),
+                                ),
+                                SizedBox(height: context.appSpacing.space4),
+                                Container(
+                                  width: 18,
+                                  height: barHeight,
+                                  decoration: BoxDecoration(
+                                    color: mins > 0
+                                        ? colors.primary
+                                        : colors.surfaceElevated,
+                                    borderRadius: BorderRadius.circular(radius.xs),
+                                  ),
+                                ),
+                                SizedBox(height: context.appSpacing.space8),
+                                Text(
+                                  dayLabel,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  style: context.textTheme.labelSmall?.copyWith(
+                                    color: mins > 0
+                                        ? colors.textPrimary
+                                        : colors.textTertiary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+              );
+            },
           ),
           if (data.currentWeekStandaloneCardio.isNotEmpty) ...[
             const SizedBox(height: 14),
