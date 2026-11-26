@@ -6,6 +6,7 @@ import 'package:personal_fitness_os/core/errors/failures.dart';
 import 'package:personal_fitness_os/core/errors/result.dart';
 import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_brand_mark.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
 import 'package:personal_fitness_os/features/auth/presentation/screens/login_screen.dart';
 import 'package:personal_fitness_os/features/auth/presentation/screens/register_screen.dart';
 import 'package:personal_fitness_os/features/body/domain/entities/weight_entry.dart';
@@ -34,9 +35,12 @@ import 'package:personal_fitness_os/features/training/presentation/providers/tra
 import 'package:personal_fitness_os/features/training/presentation/screens/ai_workout_generator_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/screens/configure_sets_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/screens/training_list_screen.dart';
+import 'package:personal_fitness_os/features/training/presentation/widgets/import_plan_sheet.dart';
+import 'package:personal_fitness_os/features/training/presentation/widgets/switch_program_sheet.dart';
 import 'package:personal_fitness_os/features/weekly_comparison/domain/entities/weekly_comparison_data.dart';
 import 'package:personal_fitness_os/features/weekly_comparison/domain/entities/weekly_snapshot.dart';
 import 'package:personal_fitness_os/features/weekly_comparison/presentation/providers/weekly_comparison_providers.dart';
+import 'package:personal_fitness_os/features/weekly_comparison/presentation/widgets/log_cardio_modal.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/logged_set.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/session_exercise.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
@@ -44,6 +48,8 @@ import 'package:personal_fitness_os/features/workout_session/domain/repositories
 import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/screens/session_summary_screen.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/screens/workout_session_screen.dart';
+import 'package:personal_fitness_os/features/workout_session/presentation/widgets/finish_workout_modal.dart';
+import 'package:personal_fitness_os/features/workout_session/presentation/widgets/swap_exercise_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'golden_test_helpers.dart';
@@ -981,4 +987,150 @@ void main() {
       });
     });
   }
+
+  group('Dark 375dp — Migrated Sheets', () {
+    Future<void> pumpSheetLauncher(
+      WidgetTester tester, {
+      required void Function(BuildContext context) onOpen,
+      List<Override> overrides = const [],
+    }) async {
+      await pumpGoldenWidget(
+        tester,
+        themeMode: ThemeMode.dark,
+        prefs: prefs,
+        overrides: overrides,
+        child: Scaffold(
+          body: Builder(
+            builder: (ctx) => Center(
+              child: ElevatedButton(
+                onPressed: () => onOpen(ctx),
+                child: const Text('Abrir sheet'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Abrir sheet'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('SwapExerciseSheet (with results)', (tester) async {
+      const legPress = Exercise(
+        id: 'ex-leg-press',
+        name: 'Leg Press 45°',
+        primaryMuscleGroup: 'legs',
+        equipment: 'machine',
+      );
+      const rdl = Exercise(
+        id: 'ex-rdl',
+        name: 'Stiff com Barra',
+        primaryMuscleGroup: 'legs',
+        equipment: 'barbell',
+      );
+      const bentRow = Exercise(
+        id: 'ex-row',
+        name: 'Remada Curvada',
+        primaryMuscleGroup: 'back',
+        equipment: 'barbell',
+      );
+
+      await pumpSheetLauncher(
+        tester,
+        overrides: [
+          exerciseListStateProvider.overrideWith(
+            (ref) => _GoldenExerciseListNotifier(
+              ref,
+              const [tSquat, tBench, legPress, rdl, bentRow],
+            ),
+          ),
+          historyListProvider.overrideWith((_) async => [tCompletedSession]),
+        ],
+        onOpen: (ctx) {
+          SwapExerciseSheet.show(
+            ctx,
+            currentExercise: tSquat,
+            onSelect: (_) {},
+          );
+        },
+      );
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('pngs/swap_exercise_sheet_dark.png'),
+      );
+    });
+
+    testWidgets('FinishWorkoutModal', (tester) async {
+      await pumpSheetLauncher(
+        tester,
+        overrides: [
+          sessionPreviousWeightsProvider(tActiveSessionWithDrop.id)
+              .overrideWith((_) async => {'ex-squat': 75.0, 'ex-bench': 60.0}),
+        ],
+        onOpen: (ctx) {
+          showLiftrSheet<void>(
+            context: ctx,
+            builder: (_) => FinishWorkoutModal(
+              session: tActiveSessionWithDrop,
+              elapsedSeconds: 2880,
+              embedded: true,
+              onFinished: () {},
+            ),
+          );
+        },
+      );
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('pngs/finish_workout_modal_dark.png'),
+      );
+    });
+
+    testWidgets('LogCardioModal', (tester) async {
+      await pumpSheetLauncher(
+        tester,
+        onOpen: (ctx) => LogCardioModal.show(ctx),
+      );
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('pngs/log_cardio_modal_dark.png'),
+      );
+    });
+
+    testWidgets('SwitchProgramSheet', (tester) async {
+      const secondaryPlan = TrainingPlan(
+        id: 'p-2',
+        userId: 'u-1',
+        name: 'PPL Hipertrofia',
+        isActive: false,
+        workouts: [tLowerA, tUpperB],
+      );
+
+      await pumpSheetLauncher(
+        tester,
+        onOpen: (ctx) => SwitchProgramSheet.show(
+          ctx,
+          plans: const [tPlan, secondaryPlan],
+        ),
+      );
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('pngs/switch_program_sheet_dark.png'),
+      );
+    });
+
+    testWidgets('ImportPlanSheet', (tester) async {
+      await pumpSheetLauncher(
+        tester,
+        onOpen: (ctx) => ImportPlanSheet.show(ctx),
+      );
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('pngs/import_plan_sheet_dark.png'),
+      );
+    });
+  });
 }
