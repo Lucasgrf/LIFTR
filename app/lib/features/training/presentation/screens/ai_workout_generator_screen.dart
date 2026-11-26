@@ -202,11 +202,15 @@ class _AiWorkoutGeneratorScreenState
         _errorMessage = e.message;
         _isGenerating = false;
       });
-    } catch (e) {
+    } catch (e, st) {
       _progressTimer?.cancel();
       if (!mounted) return;
       setState(() {
-        _errorMessage = userFacingMessage(e);
+        _errorMessage = userFacingMessage(
+          e,
+          stackTrace: st,
+          context: 'AiWorkoutGeneratorScreen._generatePlan',
+        );
         _isGenerating = false;
       });
     }
@@ -238,7 +242,10 @@ class _AiWorkoutGeneratorScreenState
       },
       (failure) {
         context.showSnackBar(
-          userFacingMessage(failure),
+          userFacingMessage(
+            failure,
+            context: 'AiWorkoutGeneratorScreen._applyGeneratedPlan',
+          ),
           isError: true,
         );
       },
@@ -447,14 +454,6 @@ class _AiWorkoutGeneratorScreenState
             'A criação de treino com IA precisa de acesso à rede para montar e personalizar a sua ficha.',
             style: context.textTheme.bodyMedium?.copyWith(
               color: colors.textSecondary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            kOfflineDataSafetyNote,
-            style: context.textTheme.bodySmall?.copyWith(
-              color: colors.textTertiary,
             ),
             textAlign: TextAlign.center,
           ),

@@ -475,5 +475,62 @@ void main() {
       expect(ops.single.payload['rpe_actual'], 8.5);
       expect(ops.single.payload['drop_sets'], hasLength(2));
     });
+
+    test(
+        'online restoreLoggedSet re-inserts same id after remote delete and falls back to update on 23505',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final local = SessionLocalDataSource(prefs);
+      await local.saveSession(
+        WorkoutSessionModel(
+          id: 'session-1',
+          userId: 'user-1',
+          startedAt: DateTime(2026, 11, 26, 10, 0),
+          status: 'in_progress',
+          exercises: const [
+            SessionExerciseModel(
+              id: 'se-1',
+              sessionId: 'session-1',
+              exerciseId: 'ex-1',
+            ),
+          ],
+        ),
+      );
+
+      final repo = SessionRepositoryImpl(
+        mockDataSource,
+        localDataSource: local,
+        isOfflineMode: () => false,
+      );
+
+      // 1) Row was hard-deleted on server -> insert with original UUID succeeds
+      when(() => mockDataSource.insertLoggedSet(any()))
+          .thenAnswer((_) async => LoggedSetModel.fromDomain(originalDropSet));
+
+      final restoredAfterDelete = await repo.restoreLoggedSet(originalDropSet);
+      expect(restoredAfterDelete.isSuccess, isTrue);
+      verify(
+        () => mockDataSource.insertLoggedSet(
+          any(that: containsPair('id', originalDropSet.id)),
+        ),
+      ).called(1);
+
+      // 2) Row still exists on server -> insert hits 23505 -> falls back to updateLoggedSet
+      when(() => mockDataSource.insertLoggedSet(any())).thenThrow(
+        const PostgrestException(
+          message: 'duplicate key value violates unique constraint',
+          code: '23505',
+        ),
+      );
+      when(() => mockDataSource.updateLoggedSet(originalDropSet.id, any()))
+          .thenAnswer((_) async => LoggedSetModel.fromDomain(originalDropSet));
+
+      final restoredIdempotent = await repo.restoreLoggedSet(originalDropSet);
+      expect(restoredIdempotent.isSuccess, isTrue);
+      verify(
+        () => mockDataSource.updateLoggedSet(originalDropSet.id, any()),
+      ).called(1);
+    });
   });
 }

@@ -63,8 +63,12 @@ class WeeklyComparisonScreen extends ConsumerWidget {
       ),
       body: comparisonAsync.when(
         loading: () => const SafeArea(child: LiftrScreenSkeleton()),
-        error: (err, _) => ErrorStateWidget(
-          message: userFacingMessage(err),
+        error: (err, st) => ErrorStateWidget(
+          message: userFacingMessage(
+            err,
+            stackTrace: st,
+            context: 'WeeklyComparisonScreen.build',
+          ),
           safetyNote: kOfflineDataSafetyNote,
           onRetry: () => ref.invalidate(weeklyComparisonProvider),
         ),

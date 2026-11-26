@@ -30,19 +30,22 @@ class AddExerciseToWorkoutScreen extends ConsumerStatefulWidget {
 
   static const List<int> restOptions = [60, 90, 120, 150, 180, 240];
 
-  /// Snaps any arbitrary rest duration (in seconds) to the closest option
-  /// offered by the prescription dropdown.
-  static int normalizeRestSeconds(int seconds) {
-    var best = restOptions.first;
-    var bestDiff = (best - seconds).abs();
-    for (final opt in restOptions.skip(1)) {
-      final diff = (opt - seconds).abs();
-      if (diff < bestDiff) {
-        best = opt;
-        bestDiff = diff;
-      }
+  /// Builds the rest duration options for the dropdown, preserving any
+  /// custom [currentSeconds] value outside [restOptions] without mutating it.
+  static List<int> restDropdownValuesFor(int currentSeconds) {
+    if (restOptions.contains(currentSeconds)) {
+      return restOptions;
     }
-    return best;
+    return [...restOptions, currentSeconds]..sort();
+  }
+
+  static String formatRestOptionLabel(int seconds) {
+    if (!restOptions.contains(seconds)) {
+      return '${seconds}s (personalizado)';
+    }
+    final mins = seconds ~/ 60;
+    final secs = (seconds % 60).toString().padLeft(2, '0');
+    return '${seconds}s ($mins:$secs)';
   }
 
   final String planId;
@@ -137,7 +140,10 @@ class _AddExerciseToWorkoutScreenState
         context.pop();
       },
       (failure) {
-        context.showSnackBar(userFacingMessage(failure), isError: true);
+        context.showSnackBar(
+          userFacingMessage(failure, context: 'AddExerciseToWorkoutScreen._submit'),
+          isError: true,
+        );
       },
     );
   }
@@ -184,8 +190,12 @@ class _AddExerciseToWorkoutScreenState
           Expanded(
             child: filteredExercisesAsync.when(
               loading: () => const LoadingWidget(),
-              error: (err, _) => ErrorStateWidget(
-                message: userFacingMessage(err),
+              error: (err, st) => ErrorStateWidget(
+                message: userFacingMessage(
+                  err,
+                  stackTrace: st,
+                  context: 'AddExerciseToWorkoutScreen.build',
+                ),
                 safetyNote: kOfflineDataSafetyNote,
                 onRetry: () =>
                     ref.read(exerciseListStateProvider.notifier).refresh(),
@@ -218,10 +228,7 @@ class _AddExerciseToWorkoutScreenState
                               );
                         setState(() {
                           _selectedExercise = exercise;
-                          _restSeconds =
-                              AddExerciseToWorkoutScreen.normalizeRestSeconds(
-                            recommendedRest,
-                          );
+                          _restSeconds = recommendedRest;
                         });
                       },
                     );
@@ -349,26 +356,25 @@ class _AddExerciseToWorkoutScreenState
                       ),
                     ),
                     DropdownButton<int>(
-                      value: AddExerciseToWorkoutScreen.normalizeRestSeconds(
-                        _restSeconds,
-                      ),
+                      value: _restSeconds,
                       dropdownColor: context.appColors.surfaceElevated,
-                      items: const [
-                        DropdownMenuItem(value: 60, child: Text('60s (1:00)')),
-                        DropdownMenuItem(value: 90, child: Text('90s (1:30)')),
-                        DropdownMenuItem(value: 120, child: Text('120s (2:00)')),
-                        DropdownMenuItem(value: 150, child: Text('150s (2:30)')),
-                        DropdownMenuItem(value: 180, child: Text('180s (3:00)')),
-                        DropdownMenuItem(value: 240, child: Text('240s (4:00)')),
-                      ],
+                      items: AddExerciseToWorkoutScreen.restDropdownValuesFor(
+                        _restSeconds,
+                      )
+                          .map(
+                            (v) => DropdownMenuItem<int>(
+                              value: v,
+                              child: Text(
+                                AddExerciseToWorkoutScreen.formatRestOptionLabel(
+                                  v,
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(),
                       onChanged: (v) {
                         if (v != null) {
-                          setState(
-                            () => _restSeconds =
-                                AddExerciseToWorkoutScreen.normalizeRestSeconds(
-                              v,
-                            ),
-                          );
+                          setState(() => _restSeconds = v);
                         }
                       },
                     ),

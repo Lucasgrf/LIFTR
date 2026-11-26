@@ -21,8 +21,12 @@ class ProgressWorkoutsView extends ConsumerWidget {
 
     return historyAsync.when(
       loading: () => const LiftrScreenSkeleton(showHero: false, itemCount: 3),
-      error: (err, _) => ErrorStateWidget(
-        message: userFacingMessage(err),
+      error: (err, st) => ErrorStateWidget(
+        message: userFacingMessage(
+          err,
+          stackTrace: st,
+          context: 'ProgressWorkoutsView.build',
+        ),
         safetyNote: kOfflineDataSafetyNote,
         onRetry: () => ref.invalidate(historyListProvider),
       ),

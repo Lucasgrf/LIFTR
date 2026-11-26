@@ -118,10 +118,14 @@ class SupabaseAiWorkoutRemoteDataSource implements AiWorkoutRemoteDataSource {
         message:
             'Sem conexão com a internet. Verifique sua rede e tente novamente.',
       );
-    } catch (e) {
+    } catch (e, st) {
       throw AiWorkoutException(
         code: AiWorkoutErrorCode.unknown,
-        message: userFacingMessage(e),
+        message: userFacingMessage(
+          e,
+          stackTrace: st,
+          context: 'SupabaseAiWorkoutRemoteDataSource.generateWorkoutPlan',
+        ),
       );
     }
   }

@@ -119,10 +119,14 @@ class ProfileController extends StateNotifier<ProfileControllerState> {
           );
       state = state.copyWith(isUploadingAvatar: false);
       return true;
-    } catch (e) {
+    } catch (e, st) {
       state = state.copyWith(
         isUploadingAvatar: false,
-        errorMessage: userFacingMessage(e),
+        errorMessage: userFacingMessage(
+          e,
+          stackTrace: st,
+          context: 'ProfileController.uploadAvatar',
+        ),
       );
       return false;
     }

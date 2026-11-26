@@ -80,8 +80,12 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
       backgroundColor: colors.background,
       body: plansAsync.when(
         loading: () => const SafeArea(child: LiftrScreenSkeleton()),
-        error: (error, _) => ErrorStateWidget(
-          message: userFacingMessage(error),
+        error: (error, st) => ErrorStateWidget(
+          message: userFacingMessage(
+            error,
+            stackTrace: st,
+            context: 'TrainingListScreen.build',
+          ),
           safetyNote: kOfflineDataSafetyNote,
           onRetry: () => ref.read(trainingPlansStateProvider.notifier).refresh(),
         ),

@@ -447,8 +447,12 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
             Expanded(
               child: sessionAsync.when(
                 loading: () => const LiftrScreenSkeleton(showHero: false),
-                error: (err, _) => ErrorStateWidget(
-                  message: userFacingMessage(err),
+                error: (err, st) => ErrorStateWidget(
+                  message: userFacingMessage(
+                    err,
+                    stackTrace: st,
+                    context: 'WorkoutSessionScreen.build',
+                  ),
                   safetyNote: kOfflineDataSafetyNote,
                   onRetry: () =>
                       ref.invalidate(liveSessionDetailProvider(widget.sessionId)),

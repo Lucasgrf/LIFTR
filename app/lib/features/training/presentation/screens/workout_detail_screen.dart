@@ -175,8 +175,12 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
       ),
       body: workoutAsync.when(
         loading: () => const LoadingWidget(),
-        error: (error, _) => ErrorStateWidget(
-          message: userFacingMessage(error),
+        error: (error, st) => ErrorStateWidget(
+          message: userFacingMessage(
+            error,
+            stackTrace: st,
+            context: 'WorkoutDetailScreen.build',
+          ),
           safetyNote: kOfflineDataSafetyNote,
           onRetry: () => ref.refresh(
             workoutDetailProvider((planId: widget.planId!, workoutId: widget.workoutId)),

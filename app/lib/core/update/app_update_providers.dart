@@ -316,11 +316,15 @@ class AppUpdateNotifier extends StateNotifier<AppUpdateState> {
           errorMessage: e.message,
         );
       }
-    } catch (e) {
+    } catch (e, st) {
       if (mounted) {
         state = state.copyWith(
           phase: AppUpdatePhase.error,
-          errorMessage: userFacingMessage(e),
+          errorMessage: userFacingMessage(
+            e,
+            stackTrace: st,
+            context: 'AppUpdateNotifier.downloadAndInstall',
+          ),
         );
       }
     } finally {

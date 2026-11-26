@@ -210,8 +210,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       backgroundColor: colors.background,
       body: dashboardAsync.when(
         loading: () => const SafeArea(child: LiftrScreenSkeleton()),
-        error: (err, _) => ErrorStateWidget(
-          message: userFacingMessage(err),
+        error: (err, st) => ErrorStateWidget(
+          message: userFacingMessage(
+            err,
+            stackTrace: st,
+            context: 'DashboardScreen.build',
+          ),
           safetyNote: kOfflineDataSafetyNote,
           onRetry: () => ref.invalidate(dashboardDataProvider),
         ),

@@ -215,8 +215,12 @@ class SessionSummaryScreen extends ConsumerWidget {
       backgroundColor: colors.background,
       body: sessionAsync.when(
         loading: () => const SafeArea(child: LiftrScreenSkeleton()),
-        error: (err, _) => ErrorStateWidget(
-          message: userFacingMessage(err),
+        error: (err, st) => ErrorStateWidget(
+          message: userFacingMessage(
+            err,
+            stackTrace: st,
+            context: 'SessionSummaryScreen.build',
+          ),
           safetyNote: kOfflineDataSafetyNote,
           onRetry: () => ref.invalidate(liveSessionDetailProvider(sessionId)),
         ),

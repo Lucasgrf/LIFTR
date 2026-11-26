@@ -101,8 +101,12 @@ class _ExerciseDetailScreenState extends ConsumerState<ExerciseDetailScreen> {
       ),
       body: exerciseAsync.when(
         loading: () => const LoadingWidget(),
-        error: (error, _) => ErrorStateWidget(
-          message: userFacingMessage(error),
+        error: (error, st) => ErrorStateWidget(
+          message: userFacingMessage(
+            error,
+            stackTrace: st,
+            context: 'ExerciseDetailScreen.build',
+          ),
           safetyNote: kOfflineDataSafetyNote,
           onRetry: () => ref.refresh(exerciseDetailProvider(widget.exerciseId)),
         ),

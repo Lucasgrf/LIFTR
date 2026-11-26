@@ -37,8 +37,12 @@ class _ProgressConsistencyViewState
 
     return historyAsync.when(
       loading: () => const LiftrScreenSkeleton(showHero: false, itemCount: 2),
-      error: (err, _) => ErrorStateWidget(
-        message: userFacingMessage(err),
+      error: (err, st) => ErrorStateWidget(
+        message: userFacingMessage(
+          err,
+          stackTrace: st,
+          context: 'ProgressConsistencyView.build',
+        ),
         safetyNote: kOfflineDataSafetyNote,
         onRetry: () => ref.invalidate(historyListProvider),
       ),

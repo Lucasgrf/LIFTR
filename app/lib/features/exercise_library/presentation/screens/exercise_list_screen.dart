@@ -92,8 +92,12 @@ class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
           Expanded(
             child: filteredExercisesAsync.when(
               loading: () => const LoadingWidget(),
-              error: (error, _) => ErrorStateWidget(
-                message: userFacingMessage(error),
+              error: (error, st) => ErrorStateWidget(
+                message: userFacingMessage(
+                  error,
+                  stackTrace: st,
+                  context: 'ExerciseListScreen.build',
+                ),
                 safetyNote: kOfflineDataSafetyNote,
                 onRetry: () => ref.read(exerciseListStateProvider.notifier).refresh(),
               ),

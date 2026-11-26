@@ -26,19 +26,13 @@ class ConfigureSetsScreen extends ConsumerStatefulWidget {
 
   static const List<int> restOptions = [0, 60, 90, 120, 150, 180, 240];
 
-  /// Snaps any arbitrary rest duration (in seconds) to the closest option
-  /// offered by [ConfigureSetsScreen].
-  static int normalizeRestSeconds(int seconds) {
-    var best = restOptions.first;
-    var bestDiff = (best - seconds).abs();
-    for (final opt in restOptions.skip(1)) {
-      final diff = (opt - seconds).abs();
-      if (diff < bestDiff) {
-        best = opt;
-        bestDiff = diff;
-      }
+  /// Builds the rest duration options for the dropdown, preserving any
+  /// custom [currentSeconds] value outside [restOptions] without mutating it.
+  static List<int> restDropdownValuesFor(int currentSeconds) {
+    if (restOptions.contains(currentSeconds)) {
+      return restOptions;
     }
-    return best;
+    return [...restOptions, currentSeconds]..sort();
   }
 
   final String planId;
@@ -56,13 +50,7 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
 
   void _initSets(List<SetTemplate> initial) {
     if (!_initialized) {
-      _sets.addAll(
-        initial.map(
-          (s) => s.copyWith(
-            restSeconds: ConfigureSetsScreen.normalizeRestSeconds(s.restSeconds),
-          ),
-        ),
-      );
+      _sets.addAll(initial);
       if (_sets.isEmpty) {
         _sets.add(
           const SetTemplate(
@@ -116,7 +104,7 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                   (type == SetType.working || type == SetType.dropSet)
               ? 2
               : null,
-          restSeconds: ConfigureSetsScreen.normalizeRestSeconds(rest),
+          restSeconds: rest,
         ),
       );
     });
@@ -160,7 +148,10 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
         context.pop();
       },
       (failure) {
-        context.showSnackBar(userFacingMessage(failure), isError: true);
+        context.showSnackBar(
+          userFacingMessage(failure, context: 'ConfigureSetsScreen._save'),
+          isError: true,
+        );
       },
     );
   }
@@ -178,8 +169,12 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
       ),
       body: workoutAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => ErrorStateWidget(
-          message: userFacingMessage(err),
+        error: (err, st) => ErrorStateWidget(
+          message: userFacingMessage(
+            err,
+            stackTrace: st,
+            context: 'ConfigureSetsScreen.build',
+          ),
           safetyNote: kOfflineDataSafetyNote,
           onRetry: () => ref.invalidate(
             workoutDetailProvider(
@@ -448,21 +443,23 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                             ),
                           ),
                           DropdownButton<int>(
-                            value: ConfigureSetsScreen.normalizeRestSeconds(
-                              template.restSeconds,
-                            ),
+                            value: template.restSeconds,
                             dropdownColor: context.appColors.surfaceElevated,
                             isDense: true,
                             underline: const SizedBox(),
-                            items: const [
-                              DropdownMenuItem(value: 0, child: Text('Sem descanso')),
-                              DropdownMenuItem(value: 60, child: Text('60s')),
-                              DropdownMenuItem(value: 90, child: Text('90s')),
-                              DropdownMenuItem(value: 120, child: Text('120s')),
-                              DropdownMenuItem(value: 150, child: Text('150s')),
-                              DropdownMenuItem(value: 180, child: Text('180s')),
-                              DropdownMenuItem(value: 240, child: Text('240s')),
-                            ],
+                            items: ConfigureSetsScreen.restDropdownValuesFor(
+                              template.restSeconds,
+                            ).map((v) {
+                              final label = v == 0
+                                  ? 'Sem descanso'
+                                  : ConfigureSetsScreen.restOptions.contains(v)
+                                      ? '${v}s'
+                                      : '${v}s (personalizado)';
+                              return DropdownMenuItem<int>(
+                                value: v,
+                                child: Text(label),
+                              );
+                            }).toList(),
                             onChanged: (v) {
                               if (v != null) {
                                 setState(() {

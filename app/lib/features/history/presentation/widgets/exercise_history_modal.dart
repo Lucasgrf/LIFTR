@@ -76,8 +76,12 @@ class ExerciseHistoryModal extends ConsumerWidget {
           Expanded(
             child: historyAsync.when(
               loading: () => const LiftrScreenSkeleton(showHero: false),
-              error: (err, _) => ErrorStateWidget(
-                message: userFacingMessage(err),
+              error: (err, st) => ErrorStateWidget(
+                message: userFacingMessage(
+                  err,
+                  stackTrace: st,
+                  context: 'ExerciseHistoryModal.build',
+                ),
                 safetyNote: kOfflineDataSafetyNote,
                 onRetry: () => ref.invalidate(exerciseHistoryProvider(exerciseId)),
               ),

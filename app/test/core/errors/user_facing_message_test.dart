@@ -57,5 +57,32 @@ void main() {
       expect(msg, isNot(contains('foo.dart')));
       expect(msg, isNot(contains('Null check')));
     });
+
+    test('invokes appErrorLogger with original error, stackTrace, and context',
+        () {
+      final prevLogger = appErrorLogger;
+      Object? capturedError;
+      StackTrace? capturedStack;
+      String? capturedContext;
+      appErrorLogger = (err, {stackTrace, context}) {
+        capturedError = err;
+        capturedStack = stackTrace;
+        capturedContext = context;
+      };
+      addTearDown(() => appErrorLogger = prevLogger);
+
+      final trace = StackTrace.fromString('fake stack trace line 1');
+      final original = Exception('db failure detail');
+      final msg = userFacingMessage(
+        original,
+        stackTrace: trace,
+        context: 'UnitTest.scope',
+      );
+
+      expect(msg, contains('Algo deu errado'));
+      expect(capturedError, same(original));
+      expect(capturedStack, same(trace));
+      expect(capturedContext, 'UnitTest.scope');
+    });
   });
 }

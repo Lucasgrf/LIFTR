@@ -79,8 +79,12 @@ class _TrainingPlanDetailScreenState
       ),
       body: planAsync.when(
         loading: () => const LoadingWidget(),
-        error: (error, _) => ErrorStateWidget(
-          message: userFacingMessage(error),
+        error: (error, st) => ErrorStateWidget(
+          message: userFacingMessage(
+            error,
+            stackTrace: st,
+            context: 'TrainingPlanDetailScreen.build',
+          ),
           safetyNote: kOfflineDataSafetyNote,
           onRetry: () => ref.invalidate(trainingPlanDetailProvider(widget.planId)),
         ),

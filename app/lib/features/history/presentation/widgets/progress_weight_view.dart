@@ -85,9 +85,12 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
 
     return historyAsync.when(
       loading: () => const LiftrScreenSkeleton(showHero: false, itemCount: 2),
-      error: (err, _) => ErrorStateWidget(
-        message: userFacingMessage(err),
-        safetyNote: kOfflineDataSafetyNote,
+      error: (err, st) => ErrorStateWidget(
+        message: userFacingMessage(
+          err,
+          stackTrace: st,
+          context: 'ProgressWeightView.build',
+        ),
         onRetry: () {
           ref.invalidate(weightHistoryProvider);
           ref.invalidate(weightStatsProvider);

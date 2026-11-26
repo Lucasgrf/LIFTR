@@ -17,11 +17,13 @@ import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/features/auth/presentation/screens/login_screen.dart';
 import 'package:personal_fitness_os/features/auth/presentation/screens/register_screen.dart';
 import 'package:personal_fitness_os/features/auth/presentation/screens/reset_password_screen.dart';
+import 'package:personal_fitness_os/features/body/presentation/providers/weight_providers.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/repositories/exercise_repository.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
 import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
 import 'package:personal_fitness_os/features/history/presentation/widgets/exercise_history_modal.dart';
+import 'package:personal_fitness_os/features/history/presentation/widgets/progress_weight_view.dart';
 import 'package:personal_fitness_os/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:personal_fitness_os/features/profile/presentation/providers/profile_providers.dart';
 import 'package:personal_fitness_os/features/profile/presentation/screens/profile_screen.dart';
@@ -254,24 +256,69 @@ void main() {
       expect(find.byType(ErrorStateWidget), findsNothing);
       expect(find.text('Agachamento Livre'), findsOneWidget);
     });
+
+    testWidgets(
+        'ProgressWeightView renders ErrorStateWidget without kOfflineDataSafetyNote (remote-only)',
+        (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            weightHistoryProvider.overrideWith(
+              (_) => Future.error(
+                const NetworkFailure('No network'),
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.dark(),
+            home: const Scaffold(body: ProgressWeightView()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ErrorStateWidget), findsOneWidget);
+      expect(find.textContaining('Sem conexão com a internet'), findsOneWidget);
+      expect(find.text(kOfflineDataSafetyNote), findsNothing);
+    });
   });
 
-  group('UX-02 Forms, normalized rest & PT-BR decimals', () {
-    test('normalizeRestSeconds snaps off-list durations to closest option', () {
-      expect(AddExerciseToWorkoutScreen.normalizeRestSeconds(45), 60);
-      expect(AddExerciseToWorkoutScreen.normalizeRestSeconds(100), 90);
-      expect(AddExerciseToWorkoutScreen.normalizeRestSeconds(110), 120);
-      expect(AddExerciseToWorkoutScreen.normalizeRestSeconds(200), 180);
-      expect(AddExerciseToWorkoutScreen.normalizeRestSeconds(300), 240);
+  group('UX-02 Forms, preserved rest durations & PT-BR decimals', () {
+    test('restDropdownValuesFor preserves custom off-list values without snapping',
+        () {
+      expect(
+        AddExerciseToWorkoutScreen.restDropdownValuesFor(90),
+        [60, 90, 120, 150, 180, 240],
+      );
+      expect(
+        AddExerciseToWorkoutScreen.restDropdownValuesFor(100),
+        [60, 90, 100, 120, 150, 180, 240],
+      );
+      expect(
+        AddExerciseToWorkoutScreen.formatRestOptionLabel(100),
+        '100s (personalizado)',
+      );
+      expect(
+        AddExerciseToWorkoutScreen.formatRestOptionLabel(120),
+        '120s (2:00)',
+      );
 
-      expect(ConfigureSetsScreen.normalizeRestSeconds(15), 0);
-      expect(ConfigureSetsScreen.normalizeRestSeconds(45), 60);
-      expect(ConfigureSetsScreen.normalizeRestSeconds(105), 90);
-      expect(ConfigureSetsScreen.normalizeRestSeconds(220), 240);
+      expect(
+        ConfigureSetsScreen.restDropdownValuesFor(100),
+        [0, 60, 90, 100, 120, 150, 180, 240],
+      );
+      expect(
+        ConfigureSetsScreen.restDropdownValuesFor(120),
+        [0, 60, 90, 120, 150, 180, 240],
+      );
     });
 
     testWidgets(
-        'AddExerciseToWorkoutScreen handles cardio 60s recommendation and renders normalized dropdown',
+        'AddExerciseToWorkoutScreen handles cardio 60s recommendation and renders dropdown',
         (tester) async {
       final repo = _ToggleErrorExerciseRepo()..shouldFail = false;
 
@@ -299,7 +346,7 @@ void main() {
     });
 
     testWidgets(
-        'ConfigureSetsScreen renders 48dp steppers for Reps & RIR, normalizes off-list rest and saves updated values',
+        'ConfigureSetsScreen shows 100s (personalizado) and preserves 100s when saved untouched',
         (tester) async {
       final recorder = _RecordingConfigureSetTemplatesUseCase();
       const workout = Workout(
@@ -328,7 +375,7 @@ void main() {
                 targetRepsMax: 10,
                 targetRirMin: 1,
                 targetRirMax: 2,
-                restSeconds: 110, // off-list value -> normalized to 120s
+                restSeconds: 100, // custom value must be preserved when untouched
               ),
             ],
           ),
@@ -377,8 +424,8 @@ void main() {
       await tester.tap(find.text('Abrir'));
       await tester.pumpAndSettle();
 
-      // Normalized rest dropdown shows 120s instead of crashing on 110s
-      expect(find.text('120s'), findsOneWidget);
+      // Custom off-list rest shows "(personalizado)" without mutating stored value
+      expect(find.text('100s (personalizado)'), findsOneWidget);
 
       // Verify >= 48x48dp touch targets on all stepper buttons
       final incRepsMin = find.bySemanticsLabel('Aumentar Reps mín.');
@@ -402,7 +449,7 @@ void main() {
       final saved = recorder.savedTemplates!.single;
       expect(saved.targetRepsMin, 9);
       expect(saved.targetRirMin, 2);
-      expect(saved.restSeconds, 120);
+      expect(saved.restSeconds, 100);
     });
 
     testWidgets(
@@ -956,7 +1003,7 @@ void main() {
         find.text('Você está sem conexão com a internet'),
         findsOneWidget,
       );
-      expect(find.text(kOfflineDataSafetyNote), findsOneWidget);
+      expect(find.text(kOfflineDataSafetyNote), findsNothing);
       expect(find.text('Voltar'), findsOneWidget);
       expect(find.text('Continuar'), findsNothing);
 

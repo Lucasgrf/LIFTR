@@ -751,7 +751,14 @@ class SessionRepositoryImpl implements SessionRepository {
     }
 
     try {
-      final model = await _remoteDataSource.insertLoggedSet(data);
+      LoggedSetModel model;
+      try {
+        model = await _remoteDataSource.insertLoggedSet(data);
+      } on PostgrestException catch (e) {
+        if (e.code != '23505') rethrow;
+        // Row still exists remotely (e.g., an earlier delete didn't land); update in place.
+        model = await _remoteDataSource.updateLoggedSet(set.id, data);
+      }
       await _upsertSetInCache(set.sessionExerciseId, model);
       return Success(model.toDomain());
     } on PostgrestException catch (e, stack) {
