@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_fitness_os/core/errors/failures.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
@@ -9,6 +11,7 @@ import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_confirm_dialog.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
@@ -64,7 +67,10 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
         Navigator.pop(context);
       },
       (failure) => context.showSnackBar(
-        'Erro ao ativar programa: ${failure.message}',
+        userFacingMessage(
+          failure,
+          context: 'SwitchProgramSheet._activatePlan',
+        ),
         isError: true,
       ),
     );
@@ -72,6 +78,17 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
 
   Future<void> _createFromTemplate(SplitPreset template) async {
     if (_busyKey != null) return;
+    final confirmed = await showLiftrConfirmDialog(
+      context,
+      title: 'Criar e ativar "${template.name}"?',
+      message:
+          'Um novo programa com ${template.sessions.length} sessões será criado e ativado. Seu histórico de cargas continua preservado.',
+      confirmLabel: 'Criar e ativar',
+      icon: Icons.fitness_center_rounded,
+      isDestructive: false,
+    );
+    if (!confirmed || !mounted) return;
+
     setState(() => _busyKey = template.id);
 
     final createResult = await ref
@@ -85,24 +102,43 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
     await createResult.fold(
       (plan) async {
         final addWorkout = ref.read(addWorkoutToPlanUseCaseProvider);
+        var failedCount = 0;
+        Failure? firstFailure;
         for (int i = 0; i < template.sessions.length; i++) {
-          await addWorkout.execute(
+          final addResult = await addWorkout.execute(
             trainingPlanId: plan.id,
             name: template.sessions[i],
             sortOrder: i,
             estimatedDurationMinutes: 50,
           );
+          addResult.fold(
+            (_) {},
+            (failure) {
+              failedCount++;
+              firstFailure ??= failure;
+            },
+          );
         }
-        if (!mounted) return;
         ref.read(trainingPlansStateProvider.notifier).refresh();
         ref.invalidate(dashboardDataProvider);
-        context.showSnackBar('Programa "${plan.name}" criado e ativado!');
+        if (!mounted) return;
+        if (failedCount > 0 && firstFailure != null) {
+          context.showSnackBar(
+            'Programa "${plan.name}" criado, mas falhou ao adicionar $failedCount sessão(ões). ${userFacingMessage(firstFailure!, context: 'SwitchProgramSheet._createFromTemplate')}',
+            isError: true,
+          );
+        } else {
+          context.showSnackBar('Programa "${plan.name}" criado e ativado!');
+        }
         Navigator.pop(context);
       },
       (failure) async {
         if (!mounted) return;
         context.showSnackBar(
-          'Erro ao criar programa: ${failure.message}',
+          userFacingMessage(
+            failure,
+            context: 'SwitchProgramSheet._createFromTemplate',
+          ),
           isError: true,
         );
       },

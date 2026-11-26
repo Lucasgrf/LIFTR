@@ -217,16 +217,14 @@ class SupabaseProfileRemoteDataSource implements ProfileRemoteDataSource {
       } catch (_) {}
     }
 
-    try {
-      await _client.auth.updateUser(
-        UserAttributes(
-          data: {
-            'avatar_url': null,
-            'avatar_storage_path': null,
-          },
-        ),
-      );
-    } catch (_) {}
+    await _client.auth.updateUser(
+      UserAttributes(
+        data: {
+          'avatar_url': null,
+          'avatar_storage_path': null,
+        },
+      ),
+    );
 
     try {
       await _client.from('user_profiles').update({

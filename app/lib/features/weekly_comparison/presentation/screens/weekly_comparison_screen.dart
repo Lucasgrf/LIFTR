@@ -14,6 +14,7 @@ import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_confirm_dialog.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
@@ -175,15 +176,38 @@ class WeeklyComparisonScreen extends ConsumerWidget {
                       _HeroCardioCard(
                         data: data,
                         onDeleteStandalone: (log) async {
+                          final confirmed = await showLiftrConfirmDialog(
+                            context,
+                            title: 'Remover cardio?',
+                            message:
+                                'Deseja remover "${log.modality}" (${formatCardioSeconds(log.durationSeconds)}) desta semana?',
+                            confirmLabel: 'Remover',
+                            icon: Icons.delete_outline_rounded,
+                            isDestructive: true,
+                          );
+                          if (!confirmed || !context.mounted) return;
                           final repo =
                               ref.read(weeklyComparisonRepositoryProvider);
-                          await repo.deleteStandaloneCardio(log.id);
-                          ref.invalidate(weeklyComparisonProvider);
-                          ref.invalidate(currentWeekSummaryProvider);
-                          ref.invalidate(dashboardDataProvider);
-                          if (context.mounted) {
-                            context.showSnackBar('Cardio removido.');
-                          }
+                          final result = await repo.deleteStandaloneCardio(log.id);
+                          if (!context.mounted) return;
+                          result.fold(
+                            (_) {
+                              ref.invalidate(weeklyComparisonProvider);
+                              ref.invalidate(currentWeekSummaryProvider);
+                              ref.invalidate(dashboardDataProvider);
+                              context.showSnackBar('Cardio removido.');
+                            },
+                            (failure) {
+                              context.showSnackBar(
+                                userFacingMessage(
+                                  failure,
+                                  context:
+                                      'WeeklyComparisonScreen.deleteStandaloneCardio',
+                                ),
+                                isError: true,
+                              );
+                            },
+                          );
                         },
                       ),
                       const SizedBox(height: 16),

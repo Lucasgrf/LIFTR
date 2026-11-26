@@ -112,9 +112,26 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
   }
 
   void _removeSet(int index) {
+    final removed = _sets[index];
     setState(() {
       _sets.removeAt(index);
     });
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    messenger?.hideCurrentSnackBar();
+    messenger?.showSnackBar(
+      SnackBar(
+        content: Text('Série ${index + 1} removida'),
+        action: SnackBarAction(
+          label: 'Desfazer',
+          onPressed: () {
+            if (!mounted) return;
+            setState(() {
+              _sets.insert(index.clamp(0, _sets.length), removed);
+            });
+          },
+        ),
+      ),
+    );
   }
 
   Future<void> _save() async {

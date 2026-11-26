@@ -132,14 +132,34 @@ class ProfileController extends StateNotifier<ProfileControllerState> {
     }
   }
 
-  Future<void> removeAvatar() async {
-    final storagePath = _ref.read(userSettingsProvider).avatarStoragePath;
+  Future<bool> removeAvatar() async {
+    final settings = _ref.read(userSettingsProvider);
+    final previousUrl = settings.avatarUrl;
+    final previousStoragePath = settings.avatarStoragePath;
+
+    state = state.copyWith(clearError: true);
     _ref.read(userSettingsProvider.notifier).updateProfileIdentity(
           clearAvatar: true,
         );
     final remote = _remoteDataSource;
-    if (remote != null) {
-      await remote.removeAvatar(storagePath);
+    if (remote == null) return true;
+
+    try {
+      await remote.removeAvatar(previousStoragePath);
+      return true;
+    } catch (e, st) {
+      _ref.read(userSettingsProvider.notifier).updateProfileIdentity(
+            avatarUrl: previousUrl,
+            avatarStoragePath: previousStoragePath,
+          );
+      state = state.copyWith(
+        errorMessage: userFacingMessage(
+          e,
+          stackTrace: st,
+          context: 'ProfileController.removeAvatar',
+        ),
+      );
+      return false;
     }
   }
 

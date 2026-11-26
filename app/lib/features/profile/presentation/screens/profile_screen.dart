@@ -15,6 +15,7 @@ import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_confirm_dialog.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_list_group.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
@@ -344,18 +345,18 @@ class ProfileScreen extends ConsumerWidget {
             contentPadding: EdgeInsets.zero,
             leading: Icon(Icons.camera_alt_rounded, color: colors.primary),
             title: const Text('Tirar foto'),
-            onTap: () {
+            onTap: () async {
               Navigator.pop(ctx);
-              _pickAndUploadAvatar(context, ref, ImageSource.camera);
+              await _pickAndUploadAvatar(context, ref, ImageSource.camera);
             },
           ),
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: Icon(Icons.photo_library_rounded, color: colors.primary),
             title: const Text('Escolher da galeria'),
-            onTap: () {
+            onTap: () async {
               Navigator.pop(ctx);
-              _pickAndUploadAvatar(context, ref, ImageSource.gallery);
+              await _pickAndUploadAvatar(context, ref, ImageSource.gallery);
             },
           ),
           if (hasAvatar)
@@ -366,10 +367,31 @@ class ProfileScreen extends ConsumerWidget {
                 'Remover foto',
                 style: context.textTheme.bodyMedium?.copyWith(color: colors.danger),
               ),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(ctx);
-                ref.read(profileControllerProvider.notifier).removeAvatar();
-                context.showSnackBar('Foto removida.');
+                final confirmed = await showLiftrConfirmDialog(
+                  context,
+                  title: 'Remover foto de perfil?',
+                  message:
+                      'Sua foto de perfil será removida e substituída pelas suas iniciais.',
+                  confirmLabel: 'Remover',
+                  icon: Icons.delete_outline_rounded,
+                  isDestructive: true,
+                );
+                if (!confirmed || !context.mounted) return;
+                final ok = await ref
+                    .read(profileControllerProvider.notifier)
+                    .removeAvatar();
+                if (!context.mounted) return;
+                if (ok) {
+                  context.showSnackBar('Foto removida.');
+                } else {
+                  final err = ref.read(profileControllerProvider).errorMessage;
+                  context.showSnackBar(
+                    err ?? 'Erro ao remover foto de perfil.',
+                    isError: true,
+                  );
+                }
               },
             ),
         ],
