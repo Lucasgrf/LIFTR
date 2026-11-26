@@ -78,6 +78,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     initialLocation: '/',
+    onException: (_, state, router) => router.go('/'),
     redirect: (context, state) {
       final location = state.matchedLocation;
       final isAuthRoute =
