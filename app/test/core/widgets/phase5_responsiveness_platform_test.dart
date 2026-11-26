@@ -32,7 +32,10 @@ import 'package:personal_fitness_os/features/training/domain/entities/training_p
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout_exercise.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
+import 'package:personal_fitness_os/features/training/presentation/screens/add_exercise_to_workout_screen.dart';
+import 'package:personal_fitness_os/features/training/presentation/screens/add_workout_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/screens/configure_sets_screen.dart';
+import 'package:personal_fitness_os/features/training/presentation/screens/create_training_plan_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/screens/training_list_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/screens/training_plan_detail_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/widgets/import_plan_sheet.dart';
@@ -410,6 +413,17 @@ void main() {
           ],
         );
         expect(tester.takeException(), isNull, reason: 'WeeklyComparisonScreen');
+        expect(
+          find.descendant(
+            of: find.byType(WeeklyComparisonScreen),
+            matching: find.byType(FittedBox),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.bySemanticsLabel('Segunda-feira: 15 minutos de cardio'),
+          findsOneWidget,
+        );
 
         // 8. ExerciseListScreen (with MuscleFilterChips)
         await pumpAt320_2x(
@@ -524,6 +538,75 @@ void main() {
           label: 'ImportPlanSheet',
           onOpen: (ctx) => ImportPlanSheet.show(ctx),
         );
+      },
+    );
+
+    testWidgets(
+      'OnboardingScreen (steps 0-1) and ConfigureSetsScreen render cleanly at 375dp @ textScaler 2.0',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        tester.view.physicalSize = const Size(375, 812);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        await tester.pumpWidget(
+          ProviderScope(
+            key: UniqueKey(),
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              appClockProvider.overrideWithValue(() => fixedNow),
+              isOnlineStreamProvider.overrideWith((_) => Stream.value(true)),
+            ],
+            child: MediaQuery(
+              data: const MediaQueryData(
+                size: Size(375, 812),
+                textScaler: TextScaler.linear(2.0),
+              ),
+              child: MaterialApp(
+                theme: AppTheme.dark(),
+                home: const OnboardingScreen(),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: 'Onboarding step 0 @ 375');
+
+        await tester.tap(find.text('Continuar'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: 'Onboarding step 1 @ 375');
+
+        await tester.pumpWidget(
+          ProviderScope(
+            key: UniqueKey(),
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              appClockProvider.overrideWithValue(() => fixedNow),
+              workoutDetailProvider((planId: 'plan-1', workoutId: 'w-1'))
+                  .overrideWith((_) async => sampleWorkoutA),
+            ],
+            child: MediaQuery(
+              data: const MediaQueryData(
+                size: Size(375, 812),
+                textScaler: TextScaler.linear(2.0),
+              ),
+              child: MaterialApp(
+                theme: AppTheme.dark(),
+                home: const ConfigureSetsScreen(
+                  planId: 'plan-1',
+                  workoutId: 'w-1',
+                  workoutExerciseId: 'we-1',
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: 'ConfigureSetsScreen @ 375');
       },
     );
   });
@@ -701,6 +784,141 @@ void main() {
             matching: find.byWidgetPredicate((w) => w is SafeArea && !w.top),
           ),
           findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'Screens with SafeArea(top: false) respect lateral viewPadding in landscape (812x375)',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        tester.view.physicalSize = const Size(812, 375);
+        tester.view.devicePixelRatio = 1.0;
+        tester.view.viewPadding =
+            const FakeViewPadding(left: 44, right: 44, bottom: 21);
+        tester.view.padding =
+            const FakeViewPadding(left: 44, right: 44, bottom: 21);
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+          tester.view.resetViewPadding();
+          tester.view.resetPadding();
+        });
+
+        Future<void> verifyLandscapeScreen({
+          required String label,
+          required Widget screen,
+          List<Override> overrides = const [],
+        }) async {
+          await tester.pumpWidget(
+            ProviderScope(
+              key: UniqueKey(),
+              overrides: [
+                sharedPreferencesProvider.overrideWithValue(prefs),
+                appClockProvider.overrideWithValue(() => fixedNow),
+                isOnlineStreamProvider.overrideWith((_) => Stream.value(true)),
+                ...overrides,
+              ],
+              child: MediaQuery(
+                data: const MediaQueryData(
+                  size: Size(812, 375),
+                  padding: EdgeInsets.only(left: 44, right: 44, bottom: 21),
+                  viewPadding: EdgeInsets.only(left: 44, right: 44, bottom: 21),
+                ),
+                child: MaterialApp(
+                  theme: AppTheme.dark(),
+                  home: screen,
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull, reason: label);
+
+          final safeAreaFinder = find.byWidgetPredicate(
+            (w) => w is SafeArea && !w.top && w.left && w.right && w.bottom,
+          );
+          expect(safeAreaFinder, findsOneWidget, reason: '$label SafeArea');
+
+          final containerFinder = find.descendant(
+            of: safeAreaFinder,
+            matching: find.byType(ResponsiveContainer),
+          );
+          expect(containerFinder, findsWidgets, reason: '$label container');
+          final rect = tester.getRect(containerFinder.first);
+          expect(rect.left, greaterThanOrEqualTo(44), reason: '$label left');
+          expect(rect.right, lessThanOrEqualTo(812 - 44), reason: '$label right');
+        }
+
+        await verifyLandscapeScreen(
+          label: 'ExerciseListScreen',
+          screen: const ExerciseListScreen(),
+          overrides: [
+            exerciseListStateProvider.overrideWith(
+              (ref) => _TestExerciseListNotifier(ref, const [sampleExercise]),
+            ),
+          ],
+        );
+
+        await verifyLandscapeScreen(
+          label: 'ExerciseDetailScreen',
+          screen: const ExerciseDetailScreen(exerciseId: 'ex-1'),
+          overrides: [
+            exerciseDetailProvider('ex-1')
+                .overrideWith((_) async => sampleExercise),
+            exerciseHistoryProvider('ex-1').overrideWith((_) async => const []),
+          ],
+        );
+
+        await verifyLandscapeScreen(
+          label: 'CreateCustomExerciseScreen',
+          screen: const CreateCustomExerciseScreen(),
+        );
+
+        await verifyLandscapeScreen(
+          label: 'TrainingPlanDetailScreen',
+          screen: const TrainingPlanDetailScreen(planId: 'plan-1'),
+          overrides: [
+            trainingPlanDetailProvider('plan-1')
+                .overrideWith((_) async => samplePlan),
+          ],
+        );
+
+        await verifyLandscapeScreen(
+          label: 'CreateTrainingPlanScreen',
+          screen: const CreateTrainingPlanScreen(),
+        );
+
+        await verifyLandscapeScreen(
+          label: 'AddWorkoutScreen',
+          screen: const AddWorkoutScreen(planId: 'plan-1'),
+        );
+
+        await verifyLandscapeScreen(
+          label: 'AddExerciseToWorkoutScreen',
+          screen: const AddExerciseToWorkoutScreen(
+            planId: 'plan-1',
+            workoutId: 'w-1',
+          ),
+          overrides: [
+            exerciseListStateProvider.overrideWith(
+              (ref) => _TestExerciseListNotifier(ref, const [sampleExercise]),
+            ),
+          ],
+        );
+
+        await verifyLandscapeScreen(
+          label: 'ConfigureSetsScreen',
+          screen: const ConfigureSetsScreen(
+            planId: 'plan-1',
+            workoutId: 'w-1',
+            workoutExerciseId: 'we-1',
+          ),
+          overrides: [
+            workoutDetailProvider((planId: 'plan-1', workoutId: 'w-1'))
+                .overrideWith((_) async => sampleWorkoutA),
+          ],
         );
       },
     );
