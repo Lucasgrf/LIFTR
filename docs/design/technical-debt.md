@@ -42,3 +42,20 @@ Registro de dívidas técnicas identificadas durante a execução da auditoria d
   1. **Backend (Edge Function `delete-account`):** autenticar o JWT do usuário logado, executar com `service_role` a remoção dos dados do usuário nas tabelas Postgres e buckets de Storage (ex.: avatar) e chamar `auth.admin.deleteUser(userId)` para apagar o registro em `auth.users`.
   2. **Frontend (`Configurações → Conta → Excluir conta`):** exigir confirmação destrutiva via `showLiftrConfirmDialog(..., isDestructive: true)` (e reautenticação recente quando aplicável), chamar a Edge Function, limpar o banco local Drift / `SharedPreferences` da conta e encerrar a sessão redirecionando para `/login`.
   3. **Portal web (Google Play):** disponibilizar URL web pública autenticada/verificável para solicitar exclusão da conta e dos dados associados sem precisar reinstalar o aplicativo, e cadastrar essa URL no Google Play Console.
+
+## 7. [BLOQUEADOR DE PUBLICAÇÃO NO GOOGLE PLAY — Prioridade Máxima] Atualizador próprio de APK (sideload) e permissão `REQUEST_INSTALL_PACKAGES`
+
+- **Impacto / Compliance:** Apps distribuídos pela Google Play Store **não podem baixar nem instalar binários executáveis (APKs) fora da loja**, e o uso de `REQUEST_INSTALL_PACKAGES` é restrito pela política de segurança da Play Store.
+- **Como funciona hoje:**
+  1. `AppUpdateService` (`app/lib/core/update/app_update_service.dart`) consulta `https://api.github.com/repos/Lucasgrf/LIFTR/releases/latest` (silenciosamente a cada 6 horas via `AppShell` -> `checkSilentlyIfDue`, e manualmente em `Configurações → Atualizações do app`), selecionando o asset `.apk` (preferindo `arm64`) e o respectivo `.sha256` em `AppUpdateInfo.tryFromGitHubReleaseJson`.
+  2. `downloadAndVerifyApk` baixa o APK para `<cacheDir>/updates/liftr-build-<N>.apk`, valida o checksum SHA-256 com `package:crypto` e aciona a instalação via `MethodChannel('com.personalfitnessos.liftr/app_updater')` no `MainActivity.kt` (`canRequestPackageInstalls`, `Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES`, `FileProvider` `${applicationId}.fileprovider` e `Intent.ACTION_VIEW` com `application/vnd.android.package-archive`).
+  3. `app/android/app/src/main/AndroidManifest.xml` declara `<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>`.
+- **Solução esperada (NÃO implementar nesta branch):**
+  1. Separar flavors de distribuição (ex.: `play` vs `direct`/`sideload`) ou flag de build (`--dart-define`).
+  2. Na build `play`, omitir `REQUEST_INSTALL_PACKAGES` do manifesto e desativar `AppUpdateService`, banner de atualização e entrada de autoatualização em `SettingsScreen`.
+  3. Substituir o mecanismo nas builds da loja pela **Google Play In-App Updates API**.
+
+## 8. [Backlog — Não bloqueador] Ausência de UI para exclusão de planos de treino
+
+- **Contexto:** `deleteTrainingPlanUseCaseProvider` (em `app/lib/features/training/presentation/providers/training_providers.dart`) e os respectivos métodos de domínio/dados existem desde o commit `27eda13`, mas nunca tiveram ponto de chamada na UI.
+- **Ação futura:** Expor a opção de excluir plano (por exemplo em `TrainingPlanDetailScreen` e/ou `SwitchProgramSheet`), protegida por `showLiftrConfirmDialog(..., isDestructive: true)` e tratando a reativação de outro plano caso o plano ativo seja excluído.
