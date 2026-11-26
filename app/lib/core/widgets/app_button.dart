@@ -14,6 +14,7 @@ class AppButton extends StatefulWidget {
     required this.onPressed,
     this.isLoading = false,
     this.icon,
+    this.autofocus = false,
   }) : _type = AppButtonType.primary;
 
   const AppButton.secondary({
@@ -22,6 +23,7 @@ class AppButton extends StatefulWidget {
     required this.onPressed,
     this.isLoading = false,
     this.icon,
+    this.autofocus = false,
   }) : _type = AppButtonType.secondary;
 
   const AppButton.text({
@@ -30,6 +32,7 @@ class AppButton extends StatefulWidget {
     required this.onPressed,
     this.isLoading = false,
     this.icon,
+    this.autofocus = false,
   }) : _type = AppButtonType.text;
 
   const AppButton.destructive({
@@ -38,12 +41,14 @@ class AppButton extends StatefulWidget {
     required this.onPressed,
     this.isLoading = false,
     this.icon,
+    this.autofocus = false,
   }) : _type = AppButtonType.destructive;
 
   final String label;
   final VoidCallback? onPressed;
   final bool isLoading;
   final IconData? icon;
+  final bool autofocus;
   final AppButtonType _type;
 
   @override
@@ -123,6 +128,7 @@ class _AppButtonState extends State<AppButton> {
         button = ConstrainedBox(
           constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 52),
           child: ElevatedButton(
+            autofocus: widget.autofocus,
             onPressed: isDisabled ? null : _handleTap,
             style: ElevatedButton.styleFrom(
               padding: EdgeInsets.symmetric(
@@ -147,6 +153,7 @@ class _AppButtonState extends State<AppButton> {
         button = ConstrainedBox(
           constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 52),
           child: ElevatedButton(
+            autofocus: widget.autofocus,
             onPressed: isDisabled ? null : _handleTap,
             style: ElevatedButton.styleFrom(
               padding: EdgeInsets.symmetric(
@@ -171,6 +178,7 @@ class _AppButtonState extends State<AppButton> {
         button = ConstrainedBox(
           constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 52),
           child: OutlinedButton(
+            autofocus: widget.autofocus,
             onPressed: isDisabled ? null : _handleTap,
             style: OutlinedButton.styleFrom(
               padding: EdgeInsets.symmetric(
@@ -195,6 +203,7 @@ class _AppButtonState extends State<AppButton> {
         break;
       case AppButtonType.text:
         button = TextButton(
+          autofocus: widget.autofocus,
           onPressed: isDisabled ? null : _handleTap,
           style: TextButton.styleFrom(
             minimumSize: const Size(48, 48),

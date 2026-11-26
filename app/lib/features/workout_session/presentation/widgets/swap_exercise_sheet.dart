@@ -168,7 +168,7 @@ class _SwapExerciseSheetState extends ConsumerState<SwapExerciseSheet> {
         const SizedBox(height: 10),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.only(top: 4, bottom: 24),
+            padding: EdgeInsets.only(top: 4, bottom: widget.embedded ? 0 : 24),
             children: [
               if (usedList.isNotEmpty) ...[
                 const _SheetSectionLabel('JÁ USADOS POR VOCÊ'),

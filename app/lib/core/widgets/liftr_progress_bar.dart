@@ -13,6 +13,7 @@ class LiftrProgressBar extends StatelessWidget {
     this.trackColor,
     this.borderRadius = 999,
     this.duration,
+    this.semanticLabel,
   });
 
   final double progress;
@@ -21,39 +22,45 @@ class LiftrProgressBar extends StatelessWidget {
   final Color? trackColor;
   final double borderRadius;
   final Duration? duration;
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final motion = context.appMotion;
     final clamped = progress.clamp(0.0, 1.0);
+    final percent = (clamped * 100).round();
     final resolvedDuration = motion.resolve(context, duration ?? motion.standard);
     final fillColor = color ?? colors.primary;
     final bgColor = trackColor ?? colors.surfaceElevated;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
-      child: Container(
-        height: height,
-        width: double.infinity,
-        color: bgColor,
-        child: TweenAnimationBuilder<double>(
-          tween: Tween<double>(end: clamped),
-          duration: resolvedDuration,
-          curve: motion.curveStandard,
-          builder: (context, value, child) {
-            return Transform.scale(
-              scaleX: value,
-              alignment: Alignment.centerLeft,
-              child: child,
-            );
-          },
-          child: Container(
-            width: double.infinity,
-            height: height,
-            decoration: BoxDecoration(
-              color: fillColor,
-              borderRadius: BorderRadius.circular(borderRadius),
+    return Semantics(
+      label: semanticLabel,
+      value: '$percent%',
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: Container(
+          height: height,
+          width: double.infinity,
+          color: bgColor,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween<double>(end: clamped),
+            duration: resolvedDuration,
+            curve: motion.curveStandard,
+            builder: (context, value, child) {
+              return Transform.scale(
+                scaleX: value,
+                alignment: Alignment.centerLeft,
+                child: child,
+              );
+            },
+            child: Container(
+              width: double.infinity,
+              height: height,
+              decoration: BoxDecoration(
+                color: fillColor,
+                borderRadius: BorderRadius.circular(borderRadius),
+              ),
             ),
           ),
         ),

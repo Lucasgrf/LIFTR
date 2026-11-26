@@ -67,16 +67,19 @@ Future<bool> showLiftrConfirmDialog(
               if (isDestructive)
                 AppButton.destructive(
                   label: confirmLabel,
+                  autofocus: false,
                   onPressed: () => Navigator.of(ctx).pop(true),
                 )
               else
                 AppButton.primary(
                   label: confirmLabel,
+                  autofocus: false,
                   onPressed: () => Navigator.of(ctx).pop(true),
                 ),
               SizedBox(height: spacing.space8),
               AppButton.text(
                 label: cancelLabel,
+                autofocus: isDestructive,
                 onPressed: () => Navigator.of(ctx).pop(false),
               ),
             ],
