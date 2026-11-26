@@ -62,8 +62,6 @@ class LoggedSetRow extends StatefulWidget {
 }
 
 class _LoggedSetRowState extends State<LoggedSetRow> {
-  late TextEditingController _weightController;
-  late TextEditingController _repsController;
   late double _weight;
   late int _reps;
   late int _durationMinutes;
@@ -105,8 +103,6 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     _weight = widget.loggedSet?.weightKg ?? widget.defaultWeight;
     _reps = widget.loggedSet?.repsCompleted ?? widget.defaultReps;
     _durationMinutes = _resolveDurationMinutes();
-    _weightController = TextEditingController(text: _formatWeight(_weight));
-    _repsController = TextEditingController(text: _reps > 0 ? '$_reps' : '');
     _rir = widget.loggedSet?.rirActual ?? widget.defaultRir;
     _setType = widget.loggedSet?.setType ?? widget.initialType;
     final existingDrops = widget.loggedSet?.dropSets;
@@ -126,8 +122,6 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
       _weight = widget.loggedSet!.weightKg;
       _reps = widget.loggedSet!.repsCompleted;
       _durationMinutes = _resolveDurationMinutes();
-      _weightController.text = _formatWeight(_weight);
-      _repsController.text = '$_reps';
       _rir = widget.loggedSet!.rirActual ?? widget.defaultRir;
       _setType = widget.loggedSet!.setType;
       _dropSets = List<DropSetEntry>.from(widget.loggedSet!.dropSets);
@@ -148,7 +142,6 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
       if (!_userEditedWeight &&
           (forceSync || oldWidget.defaultWeight != widget.defaultWeight)) {
         _weight = widget.defaultWeight;
-        _weightController.text = _formatWeight(_weight);
         if (_setType == SetType.dropSet &&
             _dropSets.length == 1 &&
             _dropSets.first.weightKg == 0 &&
@@ -159,16 +152,8 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
       if (!_userEditedReps &&
           (forceSync || oldWidget.defaultReps != widget.defaultReps)) {
         _reps = widget.defaultReps;
-        _repsController.text = '$_reps';
       }
     }
-  }
-
-  @override
-  void dispose() {
-    _weightController.dispose();
-    _repsController.dispose();
-    super.dispose();
   }
 
   DropSetEntry _createSuggestedDrop({
@@ -198,7 +183,6 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     setState(() {
       _userEditedWeight = true;
       _weight = (_weight + delta).clamp(0.0, 999.0);
-      _weightController.text = _formatWeight(_weight);
     });
     widget.onDraftChanged?.call(_weight, _reps);
   }
@@ -208,7 +192,6 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     setState(() {
       _userEditedReps = true;
       _reps = (_reps + delta).clamp(0, 999);
-      _repsController.text = '$_reps';
     });
     widget.onDraftChanged?.call(_weight, _reps);
   }
@@ -583,28 +566,38 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
               ? 'Série drop-set. Toque para alternar tipo'
               : 'Série ${widget.setNumber}. Toque para alternar aquecimento ou drop-set',
       button: true,
-      child: InkWell(
-        onTap: _cycleSetType,
-        onLongPress: _showSetTypePicker,
-        borderRadius: BorderRadius.circular(radius.small),
-        child: Container(
-          width: 34,
-          height: 34,
-          padding: EdgeInsets.symmetric(horizontal: context.appSpacing.space4),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(radius.small),
-          ),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              label,
-              maxLines: 1,
-              style: context.textTheme.labelMedium?.copyWith(
-                color: fg,
-                fontWeight: FontWeight.w700,
-                fontFeatures: AppTypography.tabularFeatures,
+      excludeSemantics: true,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: _cycleSetType,
+          onLongPress: _showSetTypePicker,
+          borderRadius: BorderRadius.circular(radius.small),
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: Center(
+              child: Container(
+                width: 34,
+                height: 34,
+                padding: EdgeInsets.symmetric(horizontal: context.appSpacing.space4),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: bg,
+                  borderRadius: BorderRadius.circular(radius.small),
+                ),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    style: context.textTheme.labelMedium?.copyWith(
+                      color: fg,
+                      fontWeight: FontWeight.w700,
+                      fontFeatures: AppTypography.tabularFeatures,
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -635,7 +628,7 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                   onTap: () => _selectSetType(SetType.dropSet),
                   borderRadius: BorderRadius.circular(radius.small),
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(minHeight: 48),
+                    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                     child: Center(
                       widthFactor: 1,
                       child: Container(
@@ -678,7 +671,7 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                   onTap: _isSaving ? null : _handleSave,
                   borderRadius: BorderRadius.circular(radius.small),
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(minHeight: 48),
+                    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                     child: Center(
                       widthFactor: 1,
                       child: Container(
@@ -729,7 +722,7 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                         },
                   borderRadius: BorderRadius.circular(radius.small),
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(minHeight: 48),
+                    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                     child: Center(
                       widthFactor: 1,
                       child: Container(
@@ -782,7 +775,7 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                         },
                   borderRadius: BorderRadius.circular(radius.small),
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(minHeight: 48),
+                    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                     child: Center(
                       widthFactor: 1,
                       child: Container(
@@ -832,10 +825,98 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     final hasPendingEdit = isDone && _hasUnsavedEdits;
 
     if (widget.isCardio) {
+      final cardioBadge = Semantics(
+        label: 'Bloco de cardio ${widget.setNumber}',
+        child: Container(
+          width: 34,
+          height: 34,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isDone
+                ? fitnessColors.progressUp.withValues(alpha: 0.18)
+                : colors.surfaceElevated,
+            borderRadius: BorderRadius.circular(radius.small),
+          ),
+          child: Icon(
+            Icons.directions_run_rounded,
+            size: 18,
+            color: isDone ? fitnessColors.progressUp : colors.textSecondary,
+          ),
+        ),
+      );
+      final cardioStepper = _TactileStepper(
+        valueText: '$_durationMinutes min',
+        valueLabel: 'Editar tempo de cardio: $_durationMinutes min',
+        decrementLabel: 'Diminuir tempo de cardio',
+        incrementLabel: 'Aumentar tempo de cardio',
+        onDecrement: () => _stepDuration(-5),
+        onIncrement: () => _stepDuration(5),
+        onTapValue: () => _editNumericDialog(
+          title: 'Tempo de cardio (min)',
+          initialValue: '$_durationMinutes',
+          decimal: false,
+          quickRepsOptions: const [10, 15, 20, 30, 45],
+          onConfirm: (val) {
+            final parsed = int.tryParse(val.trim());
+            if (parsed != null && parsed > 0) {
+              setState(() {
+                _durationMinutes = parsed.clamp(1, 300);
+              });
+            }
+          },
+        ),
+      );
+      final cardioCheckButton = Semantics(
+        label: isDone && !hasPendingEdit
+            ? 'Desfazer bloco de cardio ${widget.setNumber}'
+            : 'Marcar bloco de cardio ${widget.setNumber} como concluído',
+        button: true,
+        selected: isDone,
+        child: InkWell(
+          onTap: _isSaving ? null : _handleCheckPressed,
+          onLongPress: isDone ? widget.onDelete : null,
+          borderRadius: BorderRadius.circular(radius.medium),
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: Center(
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: isDone
+                      ? fitnessColors.progressUp
+                      : colors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(radius.medium),
+                  border: Border.all(
+                    color: isDone ? fitnessColors.progressUp : colors.border,
+                  ),
+                ),
+                child: _isSaving
+                    ? Padding(
+                        padding: EdgeInsets.all(context.appSpacing.space8),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: colors.onPrimary,
+                        ),
+                      )
+                    : Icon(
+                        Icons.check_rounded,
+                        size: 21,
+                        color: isDone
+                            ? fitnessColors.onSuccess
+                            : colors.textTertiary,
+                      ),
+              ),
+            ),
+          ),
+        ),
+      );
+
       return Container(
         constraints: const BoxConstraints(minHeight: 58),
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-        margin: const EdgeInsets.only(bottom: 7),
+        padding: EdgeInsets.all(context.appSpacing.space8),
+        margin: EdgeInsets.only(bottom: context.appSpacing.space8),
         decoration: BoxDecoration(
           color: isDone
               ? fitnessColors.progressUp.withValues(alpha: 0.08)
@@ -850,167 +931,48 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                Semantics(
-                  label: 'Bloco de cardio ${widget.setNumber}',
-                  child: Container(
-                    width: 34,
-                    height: 34,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: isDone
-                          ? fitnessColors.progressUp.withValues(alpha: 0.18)
-                          : colors.surfaceElevated,
-                      borderRadius: BorderRadius.circular(radius.small),
-                    ),
-                    child: Icon(
-                      Icons.directions_run_rounded,
-                      size: 18,
-                      color: isDone
-                          ? fitnessColors.progressUp
-                          : colors.textSecondary,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _TactileStepper(
-                    valueText: '$_durationMinutes min',
-                    decrementLabel: 'Diminuir tempo de cardio',
-                    incrementLabel: 'Aumentar tempo de cardio',
-                    onDecrement: () => _stepDuration(-5),
-                    onIncrement: () => _stepDuration(5),
-                    onTapValue: () => _editNumericDialog(
-                      title: 'Tempo de cardio (min)',
-                      initialValue: '$_durationMinutes',
-                      decimal: false,
-                      quickRepsOptions: const [10, 15, 20, 30, 45],
-                      onConfirm: (val) {
-                        final parsed = int.tryParse(val.trim());
-                        if (parsed != null && parsed > 0) {
-                          setState(() {
-                            _durationMinutes = parsed.clamp(1, 300);
-                          });
-                        }
-                      },
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Semantics(
-                  label: isDone && !hasPendingEdit
-                      ? 'Desfazer bloco de cardio ${widget.setNumber}'
-                      : 'Marcar bloco de cardio ${widget.setNumber} como concluído',
-                  button: true,
-                  selected: isDone,
-                  child: InkWell(
-                    onTap: _isSaving ? null : _handleCheckPressed,
-                    onLongPress: isDone ? widget.onDelete : null,
-                    borderRadius: BorderRadius.circular(radius.medium),
-                    child: SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: Center(
-                        child: Container(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: isDone
-                                ? fitnessColors.progressUp
-                                : colors.surfaceElevated,
-                            borderRadius: BorderRadius.circular(radius.medium),
-                            border: Border.all(
-                              color: isDone
-                                  ? fitnessColors.progressUp
-                                  : colors.border,
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth >= 272.0) {
+                  return Row(
+                    children: [
+                      cardioBadge,
+                      AppSpacing.horizontalGap8,
+                      Expanded(child: cardioStepper),
+                      AppSpacing.horizontalGap8,
+                      cardioCheckButton,
+                    ],
+                  );
+                }
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        cardioBadge,
+                        AppSpacing.horizontalGap8,
+                        Expanded(
+                          child: Text(
+                            'Bloco ${widget.setNumber}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.textTheme.labelMedium?.copyWith(
+                              color: colors.textSecondary,
                             ),
                           ),
-                          child: _isSaving
-                              ? Padding(
-                                  padding: const EdgeInsets.all(10),
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: colors.onPrimary,
-                                  ),
-                                )
-                              : Icon(
-                                  Icons.check_rounded,
-                                  size: 21,
-                                  color: isDone
-                                      ? fitnessColors.onSuccess
-                                      : colors.textTertiary,
-                                ),
                         ),
-                      ),
+                        AppSpacing.horizontalGap8,
+                        cardioCheckButton,
+                      ],
                     ),
-                  ),
-                ),
-              ],
+                    AppSpacing.verticalGap8,
+                    cardioStepper,
+                  ],
+                );
+              },
             ),
-            if (isDone)
-              _buildCompletedActionsStrip(context)
-            else if (!widget.isCardio &&
-                widget.onApplyToRemaining != null &&
-                (_userEditedWeight || _userEditedReps))
-              Padding(
-                padding: const EdgeInsets.only(top: 6, left: 38),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Semantics(
-                    label: 'Aplicar carga e repetições às séries restantes',
-                    button: true,
-                    child: InkWell(
-                      onTap: _isSaving
-                          ? null
-                          : () {
-                              HapticFeedback.lightImpact();
-                              widget.onApplyToRemaining!(_weight, _reps);
-                            },
-                      borderRadius: BorderRadius.circular(radius.small),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(minHeight: 48),
-                        child: Center(
-                          widthFactor: 1,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.surfaceElevated,
-                              borderRadius: BorderRadius.circular(radius.small),
-                              border: Border.all(color: colors.borderSubtle),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.copy_all_rounded,
-                                  size: 14,
-                                  color: colors.primaryLight,
-                                ),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(
-                                    'Aplicar às restantes',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: context.textTheme.labelSmall?.copyWith(
-                                      color: colors.primaryLight,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+            if (isDone) _buildCompletedActionsStrip(context),
           ],
         ),
       );
@@ -1018,12 +980,151 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
 
     final isDropSet = _setType == SetType.dropSet;
 
+    final weightStepper = _TactileStepper(
+      valueText: _formatWeight(_weight),
+      unitLabel: 'kg',
+      valueLabel: 'Editar carga: ${_formatWeight(_weight)} kg',
+      decrementLabel: 'Diminuir carga',
+      incrementLabel: 'Aumentar carga',
+      onDecrement: () => _stepWeight(-widget.weightIncrement),
+      onIncrement: () => _stepWeight(widget.weightIncrement),
+      onTapValue: () => _editNumericDialog(
+        title: 'Carga (kg)',
+        initialValue: _formatWeight(_weight),
+        decimal: true,
+        quickWeightDeltas: const [-5.0, -2.5, 2.5, 5.0],
+        onConfirm: (val) {
+          final parsed = double.tryParse(val.trim().replaceAll(',', '.'));
+          if (parsed != null && parsed >= 0) {
+            setState(() {
+              _userEditedWeight = true;
+              _weight = parsed.clamp(0.0, 999.0);
+            });
+            widget.onDraftChanged?.call(_weight, _reps);
+          }
+        },
+      ),
+    );
+
+    final repsStepper = _TactileStepper(
+      valueText: '$_reps',
+      unitLabel: 'reps',
+      valueLabel: 'Editar repetições: $_reps reps',
+      decrementLabel: 'Diminuir repetições',
+      incrementLabel: 'Aumentar repetições',
+      onDecrement: () => _stepReps(-1),
+      onIncrement: () => _stepReps(1),
+      onTapValue: () => _editNumericDialog(
+        title: 'Repetições',
+        initialValue: '$_reps',
+        decimal: false,
+        quickRepsOptions: const [6, 8, 10, 12, 15],
+        onConfirm: (val) {
+          final parsed = int.tryParse(val.trim());
+          if (parsed != null && parsed >= 0) {
+            setState(() {
+              _userEditedReps = true;
+              _reps = parsed.clamp(0, 999);
+            });
+            widget.onDraftChanged?.call(_weight, _reps);
+          }
+        },
+      ),
+    );
+
+    final rirSelector = Container(
+      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+      padding: EdgeInsets.symmetric(horizontal: context.appSpacing.space8),
+      decoration: BoxDecoration(
+        color: colors.surfaceElevated,
+        borderRadius: BorderRadius.circular(radius.small),
+      ),
+      alignment: Alignment.center,
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int?>(
+          value: _rir,
+          isDense: true,
+          dropdownColor: colors.surfaceElevated,
+          style: context.textTheme.labelSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: colors.textPrimary,
+            fontFeatures: AppTypography.tabularFeatures,
+          ),
+          items: [0, 1, 2, 3, 4].map((val) {
+            return DropdownMenuItem<int?>(
+              value: val,
+              child: Text('RIR $val'),
+            );
+          }).toList(),
+          onChanged: (v) => setState(() => _rir = v),
+        ),
+      ),
+    );
+
+    final checkButton = Semantics(
+      label: hasPendingEdit
+          ? 'Atualizar série ${widget.setNumber}'
+          : isDone
+              ? 'Desfazer série ${widget.setNumber}'
+              : 'Marcar série ${widget.setNumber} como concluída',
+      button: true,
+      selected: isDone,
+      child: InkWell(
+        onTap: _isSaving ? null : _handleCheckPressed,
+        onLongPress: isDone ? widget.onDelete : null,
+        borderRadius: BorderRadius.circular(radius.medium),
+        child: SizedBox(
+          width: 48,
+          height: 48,
+          child: Center(
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: hasPendingEdit
+                    ? colors.primaryMuted
+                    : isDone
+                        ? fitnessColors.progressUp
+                        : colors.surfaceElevated,
+                borderRadius: BorderRadius.circular(radius.medium),
+                border: Border.all(
+                  color: hasPendingEdit
+                      ? colors.primary
+                      : isDone
+                          ? fitnessColors.progressUp
+                          : colors.border,
+                ),
+              ),
+              child: _isSaving
+                  ? Padding(
+                      padding: EdgeInsets.all(context.appSpacing.space8),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colors.onPrimary,
+                      ),
+                    )
+                  : Icon(
+                      Icons.check_rounded,
+                      size: 21,
+                      color: hasPendingEdit
+                          ? colors.primaryLight
+                          : isDone
+                              ? fitnessColors.onSuccess
+                              : colors.textTertiary,
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+
     return GestureDetector(
       onLongPress: _showSetTypePicker,
+      excludeFromSemantics: true,
       child: Container(
         constraints: const BoxConstraints(minHeight: 58),
-        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 6),
-        margin: const EdgeInsets.only(bottom: 7),
+        padding: EdgeInsets.all(context.appSpacing.space8),
+        margin: EdgeInsets.only(bottom: context.appSpacing.space8),
         decoration: BoxDecoration(
           color: isDone
               ? fitnessColors.progressUp.withValues(alpha: 0.08)
@@ -1042,171 +1143,66 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                _buildBadge(context),
-                const SizedBox(width: 4),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final wideBreakpoint = widget.showRir ? 520.0 : 448.0;
+                if (constraints.maxWidth >= wideBreakpoint) {
+                  return Row(
+                    children: [
+                      _buildBadge(context),
+                      AppSpacing.horizontalGap8,
+                      Expanded(flex: 12, child: weightStepper),
+                      AppSpacing.horizontalGap8,
+                      Expanded(flex: 10, child: repsStepper),
+                      if (widget.showRir) ...[
+                        AppSpacing.horizontalGap8,
+                        rirSelector,
+                      ],
+                      AppSpacing.horizontalGap8,
+                      checkButton,
+                    ],
+                  );
+                }
 
-                // Weight Stepper
-                Expanded(
-                  flex: 12,
-                  child: _TactileStepper(
-                    valueText: _formatWeight(_weight),
-                    decrementLabel: 'Diminuir carga',
-                    incrementLabel: 'Aumentar carga',
-                    onDecrement: () => _stepWeight(-widget.weightIncrement),
-                    onIncrement: () => _stepWeight(widget.weightIncrement),
-                    onTapValue: () => _editNumericDialog(
-                      title: 'Carga (kg)',
-                      initialValue: _formatWeight(_weight),
-                      decimal: true,
-                      quickWeightDeltas: const [-5.0, -2.5, 2.5, 5.0],
-                      onConfirm: (val) {
-                        final parsed = double.tryParse(
-                          val.trim().replaceAll(',', '.'),
-                        );
-                        if (parsed != null && parsed >= 0) {
-                          setState(() {
-                            _userEditedWeight = true;
-                            _weight = parsed.clamp(0.0, 999.0);
-                            _weightController.text = _formatWeight(_weight);
-                          });
-                          widget.onDraftChanged?.call(_weight, _reps);
-                        }
-                      },
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        _buildBadge(context),
+                        AppSpacing.horizontalGap8,
+                        Expanded(child: weightStepper),
+                      ],
                     ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-
-                // Reps Stepper
-                Expanded(
-                  flex: 10,
-                  child: _TactileStepper(
-                    valueText: '$_reps',
-                    decrementLabel: 'Diminuir repetições',
-                    incrementLabel: 'Aumentar repetições',
-                    onDecrement: () => _stepReps(-1),
-                    onIncrement: () => _stepReps(1),
-                    onTapValue: () => _editNumericDialog(
-                      title: 'Repetições',
-                      initialValue: '$_reps',
-                      decimal: false,
-                      quickRepsOptions: const [6, 8, 10, 12, 15],
-                      onConfirm: (val) {
-                        final parsed = int.tryParse(val.trim());
-                        if (parsed != null && parsed >= 0) {
-                          setState(() {
-                            _userEditedReps = true;
-                            _reps = parsed.clamp(0, 999);
-                            _repsController.text = '$_reps';
-                          });
-                          widget.onDraftChanged?.call(_weight, _reps);
-                        }
-                      },
+                    AppSpacing.verticalGap8,
+                    Row(
+                      children: [
+                        Expanded(child: repsStepper),
+                        AppSpacing.horizontalGap8,
+                        checkButton,
+                      ],
                     ),
-                  ),
-                ),
-
-                if (widget.showRir) ...[
-                  const SizedBox(width: 4),
-                  Container(
-                    height: 44,
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    decoration: BoxDecoration(
-                      color: colors.surfaceElevated,
-                      borderRadius: BorderRadius.circular(radius.small),
-                    ),
-                    alignment: Alignment.center,
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<int?>(
-                        value: _rir,
-                        isDense: true,
-                        dropdownColor: colors.surfaceElevated,
-                        style: context.textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: colors.textPrimary,
-                          fontFeatures: AppTypography.tabularFeatures,
-                        ),
-                        items: [0, 1, 2, 3, 4].map((val) {
-                          return DropdownMenuItem<int?>(
-                            value: val,
-                            child: Text('RIR $val'),
-                          );
-                        }).toList(),
-                        onChanged: (v) => setState(() => _rir = v),
+                    if (widget.showRir) ...[
+                      AppSpacing.verticalGap8,
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: rirSelector,
                       ),
-                    ),
-                  ),
-                ],
-
-                const SizedBox(width: 4),
-
-                // Check / Undo / Update Button
-                Semantics(
-                  label: hasPendingEdit
-                      ? 'Atualizar série ${widget.setNumber}'
-                      : isDone
-                          ? 'Desfazer série ${widget.setNumber}'
-                          : 'Marcar série ${widget.setNumber} como concluída',
-                  button: true,
-                  selected: isDone,
-                  child: InkWell(
-                    onTap: _isSaving ? null : _handleCheckPressed,
-                    onLongPress: isDone ? widget.onDelete : null,
-                    borderRadius: BorderRadius.circular(radius.medium),
-                    child: SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: Center(
-                        child: Container(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: hasPendingEdit
-                                ? colors.primaryMuted
-                                : isDone
-                                    ? fitnessColors.progressUp
-                                    : colors.surfaceElevated,
-                            borderRadius: BorderRadius.circular(radius.medium),
-                            border: Border.all(
-                              color: hasPendingEdit
-                                  ? colors.primary
-                                  : isDone
-                                      ? fitnessColors.progressUp
-                                      : colors.border,
-                            ),
-                          ),
-                          child: _isSaving
-                              ? Padding(
-                                  padding: EdgeInsets.all(context.appSpacing.space8),
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: colors.onPrimary,
-                                  ),
-                                )
-                              : Icon(
-                                  Icons.check_rounded,
-                                  size: 21,
-                                  color: hasPendingEdit
-                                      ? colors.primaryLight
-                                      : isDone
-                                          ? fitnessColors.onSuccess
-                                          : colors.textTertiary,
-                                ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+                    ],
+                  ],
+                );
+              },
             ),
 
             // Drop-set sub-widget anchored directly below this set row
             if (isDropSet)
               Container(
-                margin: const EdgeInsets.only(top: 8, left: 10),
-                padding: const EdgeInsets.fromLTRB(8, 8, 6, 8),
+                margin: EdgeInsets.only(
+                  top: context.appSpacing.space8,
+                  left: context.appSpacing.space4,
+                ),
+                padding: EdgeInsets.all(context.appSpacing.space8),
                 decoration: BoxDecoration(
                   color: fitnessColors.dropSetTag.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(radius.small),
@@ -1218,7 +1214,7 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                   ),
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Wrap(
                       alignment: WrapAlignment.spaceBetween,
@@ -1245,31 +1241,54 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                             ),
                           ],
                         ),
-                        InkWell(
-                          onTap: _addAnotherDrop,
-                          borderRadius: BorderRadius.circular(radius.small),
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: context.appSpacing.space8,
-                              vertical: context.appSpacing.space4,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.add_rounded,
-                                  size: 14,
-                                  color: fitnessColors.dropSetTag,
+                        Semantics(
+                          label: 'Adicionar outro drop',
+                          button: true,
+                          excludeSemantics: true,
+                          child: Material(
+                            type: MaterialType.transparency,
+                            child: InkWell(
+                              onTap: _addAnotherDrop,
+                              borderRadius:
+                                  BorderRadius.circular(radius.small),
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  minWidth: 48,
+                                  minHeight: 48,
                                 ),
-                                SizedBox(width: context.appSpacing.space4),
-                                Text(
-                                  'Outro drop',
-                                  style: context.textTheme.labelSmall?.copyWith(
-                                    color: fitnessColors.dropSetTag,
-                                    fontWeight: FontWeight.w700,
+                                child: Center(
+                                  widthFactor: 1,
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: context.appSpacing.space8,
+                                      vertical: context.appSpacing.space4,
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.add_rounded,
+                                          size: 14,
+                                          color: fitnessColors.dropSetTag,
+                                        ),
+                                        AppSpacing.horizontalGap4,
+                                        Flexible(
+                                          child: Text(
+                                            'Outro drop',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: context.textTheme.labelSmall
+                                                ?.copyWith(
+                                              color: fitnessColors.dropSetTag,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
                           ),
                         ),
@@ -1278,9 +1297,9 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                     for (var i = 0; i < _dropSets.length; i++)
                       Padding(
                         padding: EdgeInsets.only(top: context.appSpacing.space8),
-                        child: Row(
-                          children: [
-                            SizedBox(
+                        child: LayoutBuilder(
+                          builder: (context, dropConstraints) {
+                            final dIndicator = SizedBox(
                               width: 28,
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1292,97 +1311,134 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                                   ),
                                   Text(
                                     _dropSets.length > 1 ? 'D${i + 1}' : '',
-                                    style: context.textTheme.labelSmall?.copyWith(
+                                    style:
+                                        context.textTheme.labelSmall?.copyWith(
                                       color: fitnessColors.dropSetTag,
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              flex: 12,
-                              child: _TactileStepper(
-                                height: 38,
-                                valueText: _formatWeight(_dropSets[i].weightKg),
-                                decrementLabel: 'Diminuir carga do drop ${i + 1}',
-                                incrementLabel: 'Aumentar carga do drop ${i + 1}',
-                                onDecrement: () =>
-                                    _stepDropWeight(i, -widget.weightIncrement),
-                                onIncrement: () =>
-                                    _stepDropWeight(i, widget.weightIncrement),
-                                onTapValue: () => _editNumericDialog(
-                                  title: 'Carga do drop (kg)',
-                                  initialValue:
-                                      _formatWeight(_dropSets[i].weightKg),
-                                  decimal: true,
-                                  quickWeightDeltas: const [-5.0, -2.5, 2.5, 5.0],
-                                  onConfirm: (val) {
-                                    final parsed = double.tryParse(
-                                      val.trim().replaceAll(',', '.'),
-                                    );
-                                    if (parsed != null && parsed >= 0) {
-                                      setState(() {
-                                        _dropSets[i] = _dropSets[i].copyWith(
-                                          weightKg: parsed.clamp(0.0, 999.0),
-                                        );
-                                      });
-                                    }
-                                  },
-                                ),
+                            );
+                            final dropWeightStepper = _TactileStepper(
+                              valueText: _formatWeight(_dropSets[i].weightKg),
+                              unitLabel: 'kg',
+                              valueLabel:
+                                  'Editar carga do drop ${i + 1}: ${_formatWeight(_dropSets[i].weightKg)} kg',
+                              decrementLabel:
+                                  'Diminuir carga do drop ${i + 1}',
+                              incrementLabel:
+                                  'Aumentar carga do drop ${i + 1}',
+                              onDecrement: () =>
+                                  _stepDropWeight(i, -widget.weightIncrement),
+                              onIncrement: () =>
+                                  _stepDropWeight(i, widget.weightIncrement),
+                              onTapValue: () => _editNumericDialog(
+                                title: 'Carga do drop (kg)',
+                                initialValue:
+                                    _formatWeight(_dropSets[i].weightKg),
+                                decimal: true,
+                                quickWeightDeltas: const [-5.0, -2.5, 2.5, 5.0],
+                                onConfirm: (val) {
+                                  final parsed = double.tryParse(
+                                    val.trim().replaceAll(',', '.'),
+                                  );
+                                  if (parsed != null && parsed >= 0) {
+                                    setState(() {
+                                      _dropSets[i] = _dropSets[i].copyWith(
+                                        weightKg: parsed.clamp(0.0, 999.0),
+                                      );
+                                    });
+                                  }
+                                },
                               ),
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              flex: 10,
-                              child: _TactileStepper(
-                                height: 38,
-                                valueText: '+${_dropSets[i].repsCompleted}',
-                                decrementLabel:
-                                    'Diminuir repetições do drop ${i + 1}',
-                                incrementLabel:
-                                    'Aumentar repetições do drop ${i + 1}',
-                                onDecrement: () => _stepDropReps(i, -1),
-                                onIncrement: () => _stepDropReps(i, 1),
-                                onTapValue: () => _editNumericDialog(
-                                  title: 'Repetições do drop',
-                                  initialValue: '${_dropSets[i].repsCompleted}',
-                                  decimal: false,
-                                  quickRepsOptions: const [3, 5, 6, 8, 10],
-                                  onConfirm: (val) {
-                                    final parsed = int.tryParse(val.trim());
-                                    if (parsed != null && parsed > 0) {
-                                      setState(() {
-                                        _dropSets[i] = _dropSets[i].copyWith(
-                                          repsCompleted: parsed.clamp(1, 999),
-                                        );
-                                      });
-                                    }
-                                  },
-                                ),
+                            );
+                            final dropRepsStepper = _TactileStepper(
+                              valueText: '+${_dropSets[i].repsCompleted}',
+                              unitLabel: 'reps',
+                              valueLabel:
+                                  'Editar repetições do drop ${i + 1}: ${_dropSets[i].repsCompleted} reps',
+                              decrementLabel:
+                                  'Diminuir repetições do drop ${i + 1}',
+                              incrementLabel:
+                                  'Aumentar repetições do drop ${i + 1}',
+                              onDecrement: () => _stepDropReps(i, -1),
+                              onIncrement: () => _stepDropReps(i, 1),
+                              onTapValue: () => _editNumericDialog(
+                                title: 'Repetições do drop',
+                                initialValue: '${_dropSets[i].repsCompleted}',
+                                decimal: false,
+                                quickRepsOptions: const [3, 5, 6, 8, 10],
+                                onConfirm: (val) {
+                                  final parsed = int.tryParse(val.trim());
+                                  if (parsed != null && parsed > 0) {
+                                    setState(() {
+                                      _dropSets[i] = _dropSets[i].copyWith(
+                                        repsCompleted: parsed.clamp(1, 999),
+                                      );
+                                    });
+                                  }
+                                },
                               ),
-                            ),
-                            const SizedBox(width: 2),
-                            Semantics(
+                            );
+                            final removeButton = Semantics(
                               label: 'Remover drop ${i + 1}',
                               button: true,
-                              child: InkWell(
-                                onTap: () => _removeDrop(i),
-                                borderRadius:
-                                    BorderRadius.circular(radius.small),
-                                child: SizedBox(
-                                  width: 40,
-                                  height: 38,
-                                  child: Icon(
-                                    Icons.close_rounded,
-                                    size: 16,
-                                    color: colors.textTertiary,
+                              child: Material(
+                                type: MaterialType.transparency,
+                                child: InkWell(
+                                  onTap: () => _removeDrop(i),
+                                  borderRadius:
+                                      BorderRadius.circular(radius.small),
+                                  child: SizedBox(
+                                    width: 48,
+                                    height: 48,
+                                    child: Icon(
+                                      Icons.close_rounded,
+                                      size: 16,
+                                      color: colors.textTertiary,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
+                            );
+
+                            if (dropConstraints.maxWidth >= 420.0) {
+                              return Row(
+                                children: [
+                                  dIndicator,
+                                  AppSpacing.horizontalGap8,
+                                  Expanded(flex: 12, child: dropWeightStepper),
+                                  AppSpacing.horizontalGap8,
+                                  Expanded(flex: 10, child: dropRepsStepper),
+                                  AppSpacing.horizontalGap8,
+                                  removeButton,
+                                ],
+                              );
+                            }
+
+                            return Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Row(
+                                  children: [
+                                    dIndicator,
+                                    AppSpacing.horizontalGap4,
+                                    Expanded(child: dropWeightStepper),
+                                  ],
+                                ),
+                                AppSpacing.verticalGap8,
+                                Row(
+                                  children: [
+                                    Expanded(child: dropRepsStepper),
+                                    AppSpacing.horizontalGap8,
+                                    removeButton,
+                                  ],
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ),
                   ],
@@ -1395,7 +1451,10 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                 widget.onApplyToRemaining != null &&
                 (_userEditedWeight || _userEditedReps))
               Padding(
-                padding: const EdgeInsets.only(top: 6, left: 38),
+                padding: EdgeInsets.only(
+                  top: context.appSpacing.space8,
+                  left: context.appSpacing.space12,
+                ),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Semantics(
@@ -1410,13 +1469,16 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                             },
                       borderRadius: BorderRadius.circular(radius.small),
                       child: ConstrainedBox(
-                        constraints: const BoxConstraints(minHeight: 48),
+                        constraints: const BoxConstraints(
+                          minWidth: 48,
+                          minHeight: 48,
+                        ),
                         child: Center(
                           widthFactor: 1,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 6,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: context.appSpacing.space8,
+                              vertical: context.appSpacing.space8,
                             ),
                             decoration: BoxDecoration(
                               color: colors.surfaceElevated,
@@ -1431,13 +1493,14 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                                   size: 14,
                                   color: colors.primaryLight,
                                 ),
-                                const SizedBox(width: 4),
+                                AppSpacing.horizontalGap4,
                                 Flexible(
                                   child: Text(
                                     'Aplicar às restantes',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: context.textTheme.labelSmall?.copyWith(
+                                    style:
+                                        context.textTheme.labelSmall?.copyWith(
                                       color: colors.primaryLight,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -1462,21 +1525,23 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
 class _TactileStepper extends StatelessWidget {
   const _TactileStepper({
     required this.valueText,
+    this.unitLabel,
+    this.valueLabel,
     required this.decrementLabel,
     required this.incrementLabel,
     required this.onDecrement,
     required this.onIncrement,
     required this.onTapValue,
-    this.height = 44,
   });
 
   final String valueText;
+  final String? unitLabel;
+  final String? valueLabel;
   final String decrementLabel;
   final String incrementLabel;
   final VoidCallback onDecrement;
   final VoidCallback onIncrement;
   final VoidCallback onTapValue;
-  final double height;
 
   @override
   Widget build(BuildContext context) {
@@ -1484,65 +1549,87 @@ class _TactileStepper extends StatelessWidget {
     final radius = context.appRadius;
 
     return Container(
-      height: height,
+      constraints: const BoxConstraints(minHeight: 48),
       decoration: BoxDecoration(
         color: colors.surfaceElevated,
         borderRadius: BorderRadius.circular(radius.small),
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final showDividers = constraints.maxWidth >= 56;
-          final buttonWidth = constraints.maxWidth < 44
-              ? (constraints.maxWidth * 0.24).clamp(6.0, 14.0)
-              : (constraints.maxWidth * 0.28).clamp(14.0, 30.0);
-          final iconSize = constraints.maxWidth < 44
-              ? 11.0
-              : (constraints.maxWidth < 68 ? 14.0 : 16.0);
-          final horizPad = constraints.maxWidth < 68 ? 1.0 : 2.0;
-          return Row(
-            children: [
-              Semantics(
-                label: decrementLabel,
-                button: true,
-                child: InkWell(
-                  onTap: onDecrement,
-                  borderRadius: BorderRadius.horizontal(
-                    left: Radius.circular(radius.small),
-                  ),
-                  child: SizedBox(
-                    width: buttonWidth,
-                    height: height,
-                    child: Icon(
-                      Icons.remove_rounded,
-                      size: iconSize,
-                      color: colors.textSecondary,
-                    ),
+      child: Row(
+        children: [
+          Semantics(
+            label: decrementLabel,
+            button: true,
+            child: Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                onTap: onDecrement,
+                borderRadius: BorderRadius.horizontal(
+                  left: Radius.circular(radius.small),
+                ),
+                child: const SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: Icon(
+                    Icons.remove_rounded,
+                    size: 18,
                   ),
                 ),
               ),
-              if (showDividers)
-                Container(
-                  width: 1,
-                  height: height * 0.45,
-                  color: colors.border.withValues(alpha: 0.45),
-                ),
-              Expanded(
+            ),
+          ),
+          AppSpacing.horizontalGap8,
+          Expanded(
+            child: Semantics(
+              label: valueLabel ??
+                  'Editar $valueText${unitLabel != null ? ' $unitLabel' : ''}',
+              button: true,
+              excludeSemantics: true,
+              child: Material(
+                type: MaterialType.transparency,
                 child: InkWell(
                   onTap: onTapValue,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: horizPad),
-                    child: Center(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          valueText,
-                          maxLines: 1,
-                          softWrap: false,
-                          style: context.textTheme.titleMedium?.copyWith(
-                            fontSize: height < 42 ? 13 : 14,
-                            fontWeight: FontWeight.w700,
-                            color: colors.textPrimary,
-                            fontFeatures: AppTypography.tabularFeatures,
+                  borderRadius: BorderRadius.circular(radius.small),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minWidth: 48,
+                      minHeight: 48,
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: context.appSpacing.space4,
+                      ),
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                valueText,
+                                maxLines: 1,
+                                softWrap: false,
+                                style: context.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: colors.textPrimary,
+                                  fontFeatures: AppTypography.tabularFeatures,
+                                ),
+                              ),
+                              if (unitLabel != null) ...[
+                                AppSpacing.horizontalGap4,
+                                Text(
+                                  unitLabel!,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  style:
+                                      context.textTheme.labelSmall?.copyWith(
+                                    color: colors.textTertiary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                       ),
@@ -1550,34 +1637,31 @@ class _TactileStepper extends StatelessWidget {
                   ),
                 ),
               ),
-              if (showDividers)
-                Container(
-                  width: 1,
-                  height: height * 0.45,
-                  color: colors.border.withValues(alpha: 0.45),
+            ),
+          ),
+          AppSpacing.horizontalGap8,
+          Semantics(
+            label: incrementLabel,
+            button: true,
+            child: Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                onTap: onIncrement,
+                borderRadius: BorderRadius.horizontal(
+                  right: Radius.circular(radius.small),
                 ),
-              Semantics(
-                label: incrementLabel,
-                button: true,
-                child: InkWell(
-                  onTap: onIncrement,
-                  borderRadius: BorderRadius.horizontal(
-                    right: Radius.circular(radius.small),
-                  ),
-                  child: SizedBox(
-                    width: buttonWidth,
-                    height: height,
-                    child: Icon(
-                      Icons.add_rounded,
-                      size: iconSize,
-                      color: colors.textSecondary,
-                    ),
+                child: const SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: Icon(
+                    Icons.add_rounded,
+                    size: 18,
                   ),
                 ),
               ),
-            ],
-          );
-        },
+            ),
+          ),
+        ],
       ),
     );
   }

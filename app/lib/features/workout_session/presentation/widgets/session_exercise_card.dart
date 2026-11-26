@@ -737,130 +737,141 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
           const SizedBox(height: 8),
 
           // Column Labels
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: context.appSpacing.space4),
-            child: isCardio
-                ? Row(
-                    children: [
-                      SizedBox(
-                        width: 34,
-                        child: Text(
-                          'BL.',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: context.textTheme.labelSmall?.copyWith(
-                            color: colors.textTertiary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      AppSpacing.horizontalGap8,
-                      Expanded(
-                        child: Text(
-                          'TEMPO (MIN)',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: context.textTheme.labelSmall?.copyWith(
-                            color: colors.textTertiary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      AppSpacing.horizontalGap8,
-                      SizedBox(
-                        width: 48,
-                        child: Text(
-                          'FEITO',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: context.textTheme.labelSmall?.copyWith(
-                            color: colors.textTertiary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      SizedBox(
-                        width: 34,
-                        child: Text(
-                          'SÉR.',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: context.textTheme.labelSmall?.copyWith(
-                            color: colors.textTertiary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      AppSpacing.horizontalGap4,
-                      Expanded(
-                        flex: 12,
-                        child: Text(
-                          'KG',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: context.textTheme.labelSmall?.copyWith(
-                            color: colors.textTertiary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      AppSpacing.horizontalGap4,
-                      Expanded(
-                        flex: 10,
-                        child: Text(
-                          'REPS',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: context.textTheme.labelSmall?.copyWith(
-                            color: colors.textTertiary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      if (widget.showRir) ...[
-                        AppSpacing.horizontalGap4,
-                        SizedBox(
-                          width: 58,
-                          child: Text(
-                            'RIR',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: context.textTheme.labelSmall?.copyWith(
-                              color: colors.textTertiary,
-                              fontWeight: FontWeight.w700,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (!isCardio &&
+                  constraints.maxWidth < (widget.showRir ? 520.0 : 448.0)) {
+                return const SizedBox.shrink();
+              }
+              return Padding(
+                padding: EdgeInsets.only(
+                  left: context.appSpacing.space4,
+                  right: context.appSpacing.space4,
+                  bottom: context.appSpacing.space8,
+                ),
+                child: isCardio
+                    ? Row(
+                        children: [
+                          SizedBox(
+                            width: 34,
+                            child: Text(
+                              'BL.',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: colors.textTertiary,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                      AppSpacing.horizontalGap4,
-                      SizedBox(
-                        width: 44,
-                        child: Text(
-                          'FEITO',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: context.textTheme.labelSmall?.copyWith(
-                            color: colors.textTertiary,
-                            fontWeight: FontWeight.w700,
+                          AppSpacing.horizontalGap8,
+                          Expanded(
+                            child: Text(
+                              'TEMPO (MIN)',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: colors.textTertiary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
-                        ),
+                          AppSpacing.horizontalGap8,
+                          SizedBox(
+                            width: 48,
+                            child: Text(
+                              'FEITO',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: colors.textTertiary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          SizedBox(
+                            width: 48,
+                            child: Text(
+                              'SÉR.',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: colors.textTertiary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          AppSpacing.horizontalGap8,
+                          Expanded(
+                            flex: 12,
+                            child: Text(
+                              'KG',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: colors.textTertiary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          AppSpacing.horizontalGap8,
+                          Expanded(
+                            flex: 10,
+                            child: Text(
+                              'REPS',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: colors.textTertiary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          if (widget.showRir) ...[
+                            AppSpacing.horizontalGap8,
+                            SizedBox(
+                              width: 58,
+                              child: Text(
+                                'RIR',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: colors.textTertiary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                          AppSpacing.horizontalGap8,
+                          SizedBox(
+                            width: 48,
+                            child: Text(
+                              'FEITO',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: colors.textTertiary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+              );
+            },
           ),
-          const SizedBox(height: 8),
 
           // Set Rows
           ...List.generate(_totalRowsCount, (idx) {

@@ -44,7 +44,7 @@ void main() {
       overrides: overrides,
       child: MaterialApp(
         theme: AppTheme.dark(),
-        home: Scaffold(body: child),
+        home: Scaffold(body: SingleChildScrollView(child: child)),
       ),
     );
   }
