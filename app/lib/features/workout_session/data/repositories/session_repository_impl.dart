@@ -285,96 +285,106 @@ class SessionRepositoryImpl implements SessionRepository {
       }
     }
 
-    for (final op in ops) {
-      try {
-        switch (op.type) {
-          case PendingSessionOpType.startSession:
-            final sessionPayload = Map<String, dynamic>.from(
-              op.payload['session'] as Map? ?? const {},
-            );
-            try {
-              await _remoteDataSource.insertSession(sessionPayload);
-            } on PostgrestException catch (e) {
-              if (e.code != '23505') rethrow;
-            }
-            final exList = (op.payload['exercises'] as List<dynamic>?) ?? const [];
-            for (final exRaw in exList) {
-              if (exRaw is Map) {
-                try {
-                  await _remoteDataSource.insertSessionExercise(
-                    Map<String, dynamic>.from(exRaw),
-                  );
-                } on PostgrestException catch (e) {
-                  if (e.code != '23505') rethrow;
+    while (true) {
+      final ops = local.getPendingOps();
+      if (ops.isEmpty) break;
+
+      for (final op in ops) {
+        if (!local.hasPendingOp(op.id)) continue;
+        local.markOpInFlight(op);
+        try {
+          switch (op.type) {
+            case PendingSessionOpType.startSession:
+              final sessionPayload = Map<String, dynamic>.from(
+                op.payload['session'] as Map? ?? const {},
+              );
+              try {
+                await _remoteDataSource.insertSession(sessionPayload);
+              } on PostgrestException catch (e) {
+                if (e.code != '23505') rethrow;
+              }
+              final exList =
+                  (op.payload['exercises'] as List<dynamic>?) ?? const [];
+              for (final exRaw in exList) {
+                if (exRaw is Map) {
+                  try {
+                    await _remoteDataSource.insertSessionExercise(
+                      Map<String, dynamic>.from(exRaw),
+                    );
+                  } on PostgrestException catch (e) {
+                    if (e.code != '23505') rethrow;
+                  }
                 }
               }
-            }
-            break;
+              break;
 
-          case PendingSessionOpType.logSet:
-            try {
-              await _remoteDataSource.insertLoggedSet(op.payload);
-            } on PostgrestException catch (e) {
-              if (e.code != '23505') rethrow;
-            }
-            break;
+            case PendingSessionOpType.logSet:
+              try {
+                await _remoteDataSource.insertLoggedSet(op.payload);
+              } on PostgrestException catch (e) {
+                if (e.code != '23505') rethrow;
+              }
+              break;
 
-          case PendingSessionOpType.updateSet:
-            final setId = op.payload['set_id'] as String?;
-            final data = Map<String, dynamic>.from(
-              op.payload['data'] as Map? ?? const {},
-            );
-            if (setId != null) {
-              await _remoteDataSource.updateLoggedSet(setId, data);
-            }
-            break;
+            case PendingSessionOpType.updateSet:
+              final setId = op.payload['set_id'] as String?;
+              final data = Map<String, dynamic>.from(
+                op.payload['data'] as Map? ?? const {},
+              );
+              if (setId != null) {
+                await _remoteDataSource.updateLoggedSet(setId, data);
+              }
+              break;
 
-          case PendingSessionOpType.deleteSet:
-            final setId = op.payload['set_id'] as String?;
-            if (setId != null) {
-              await _remoteDataSource.deleteLoggedSet(setId);
-            }
-            break;
+            case PendingSessionOpType.deleteSet:
+              final setId = op.payload['set_id'] as String?;
+              if (setId != null) {
+                await _remoteDataSource.deleteLoggedSet(setId);
+              }
+              break;
 
-          case PendingSessionOpType.addExercise:
-            try {
-              await _remoteDataSource.insertSessionExercise(op.payload);
-            } on PostgrestException catch (e) {
-              if (e.code != '23505') rethrow;
-            }
-            break;
+            case PendingSessionOpType.addExercise:
+              try {
+                await _remoteDataSource.insertSessionExercise(op.payload);
+              } on PostgrestException catch (e) {
+                if (e.code != '23505') rethrow;
+              }
+              break;
 
-          case PendingSessionOpType.swapExercise:
-            final seId = op.payload['session_exercise_id'] as String?;
-            final data = Map<String, dynamic>.from(
-              op.payload['data'] as Map? ?? const {},
-            );
-            if (seId != null) {
-              await _remoteDataSource.updateSessionExercise(seId, data);
-            }
-            break;
+            case PendingSessionOpType.swapExercise:
+              final seId = op.payload['session_exercise_id'] as String?;
+              final data = Map<String, dynamic>.from(
+                op.payload['data'] as Map? ?? const {},
+              );
+              if (seId != null) {
+                await _remoteDataSource.updateSessionExercise(seId, data);
+              }
+              break;
 
-          case PendingSessionOpType.finishSession:
-          case PendingSessionOpType.abandonSession:
-            final sessionId = op.payload['session_id'] as String?;
-            final data = Map<String, dynamic>.from(
-              op.payload['data'] as Map? ?? const {},
-            );
-            if (sessionId != null) {
-              await _remoteDataSource.updateSession(sessionId, data);
-            }
-            break;
-        }
-        await local.removeOp(op.id);
-      } catch (e) {
-        if (isNetworkError(e)) {
-          _onConnectivityFallback?.call(true);
+            case PendingSessionOpType.finishSession:
+            case PendingSessionOpType.abandonSession:
+              final sessionId = op.payload['session_id'] as String?;
+              final data = Map<String, dynamic>.from(
+                op.payload['data'] as Map? ?? const {},
+              );
+              if (sessionId != null) {
+                await _remoteDataSource.updateSession(sessionId, data);
+              }
+              break;
+          }
+          await local.removeOp(op.id);
+        } catch (e) {
+          if (isNetworkError(e)) {
+            _onConnectivityFallback?.call(true);
+            _notifyPendingCount();
+            return false;
+          }
+          // Keep other errors isolated; stop further dependent ops for safety.
           _notifyPendingCount();
           return false;
+        } finally {
+          local.clearOpInFlight(op);
         }
-        // Keep other errors isolated; stop further dependent ops for safety.
-        _notifyPendingCount();
-        return false;
       }
     }
 
@@ -735,7 +745,8 @@ class SessionRepositoryImpl implements SessionRepository {
       return Success(restoredModel.toDomain());
     }
 
-    if (local != null && await _shouldUseOffline()) {
+    if (local != null &&
+        (await _shouldUseOffline() || local.isDeleteInFlight(set.id))) {
       return restoreOffline();
     }
 

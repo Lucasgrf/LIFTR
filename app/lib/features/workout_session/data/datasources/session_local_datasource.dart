@@ -68,6 +68,28 @@ class SessionLocalDataSource {
 
   final SharedPreferences _prefs;
   final String? userId;
+  final Set<String> _inFlightOpIds = <String>{};
+  final Set<String> _inFlightDeleteSetIds = <String>{};
+
+  void markOpInFlight(PendingSessionOp op) {
+    _inFlightOpIds.add(op.id);
+    if (op.type == PendingSessionOpType.deleteSet) {
+      final setId = op.payload['set_id'] as String?;
+      if (setId != null) _inFlightDeleteSetIds.add(setId);
+    }
+  }
+
+  void clearOpInFlight(PendingSessionOp op) {
+    _inFlightOpIds.remove(op.id);
+    if (op.type == PendingSessionOpType.deleteSet) {
+      final setId = op.payload['set_id'] as String?;
+      if (setId != null) _inFlightDeleteSetIds.remove(setId);
+    }
+  }
+
+  bool isDeleteInFlight(String setId) => _inFlightDeleteSetIds.contains(setId);
+
+  bool hasPendingOp(String opId) => getPendingOps().any((o) => o.id == opId);
 
   String get _effectiveSessionsKey {
     final trimmed = userId?.trim() ?? '';
@@ -215,15 +237,19 @@ class SessionLocalDataSource {
   Future<bool> cancelPendingSetOpsIfUnsynced(String setId) async {
     final ops = getPendingOps();
     final hasUnsyncedInsert = ops.any(
-      (o) => o.type == PendingSessionOpType.logSet && o.payload['id'] == setId,
+      (o) =>
+          o.type == PendingSessionOpType.logSet &&
+          o.payload['id'] == setId &&
+          !_inFlightOpIds.contains(o.id),
     );
     if (!hasUnsyncedInsert) return false;
     ops.removeWhere(
       (o) =>
-          (o.type == PendingSessionOpType.logSet &&
-              o.payload['id'] == setId) ||
-          (o.type == PendingSessionOpType.updateSet &&
-              o.payload['set_id'] == setId),
+          !_inFlightOpIds.contains(o.id) &&
+          ((o.type == PendingSessionOpType.logSet &&
+                  o.payload['id'] == setId) ||
+              (o.type == PendingSessionOpType.updateSet &&
+                  o.payload['set_id'] == setId)),
     );
     await _writeOps(ops);
     return true;
@@ -231,18 +257,23 @@ class SessionLocalDataSource {
 
   /// If a set was deleted offline before sync, drop its pending `deleteSet` op
   /// directly and return `true` so restoring it requires no remote re-insert.
+  /// Returns `false` if the delete is already in-flight so the caller enqueues
+  /// a restore operation instead.
   Future<bool> cancelPendingDeleteOp(String setId) async {
+    if (_inFlightDeleteSetIds.contains(setId)) return false;
     final ops = getPendingOps();
     final hasPendingDelete = ops.any(
       (o) =>
           o.type == PendingSessionOpType.deleteSet &&
-          o.payload['set_id'] == setId,
+          o.payload['set_id'] == setId &&
+          !_inFlightOpIds.contains(o.id),
     );
     if (!hasPendingDelete) return false;
     ops.removeWhere(
       (o) =>
           o.type == PendingSessionOpType.deleteSet &&
-          o.payload['set_id'] == setId,
+          o.payload['set_id'] == setId &&
+          !_inFlightOpIds.contains(o.id),
     );
     await _writeOps(ops);
     return true;

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
@@ -339,6 +341,139 @@ void main() {
       expect(ops.single.payload['rpe_actual'], 8.5);
       expect(ops.single.payload['rir_actual'], 1);
       expect(ops.single.payload['set_type'], 'drop_set');
+    });
+
+    test(
+        'restore during in-flight deleteSet sync enqueues logSet with same id and syncs after delete finishes',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final local = SessionLocalDataSource(prefs);
+      await local.saveSession(
+        WorkoutSessionModel(
+          id: 'session-1',
+          userId: 'user-1',
+          startedAt: DateTime(2026, 11, 26, 10, 0),
+          status: 'in_progress',
+          exercises: [
+            SessionExerciseModel(
+              id: 'se-1',
+              sessionId: 'session-1',
+              exerciseId: 'ex-1',
+              sets: [LoggedSetModel.fromDomain(originalDropSet)],
+            ),
+          ],
+        ),
+      );
+
+      var offline = true;
+      final repo = SessionRepositoryImpl(
+        mockDataSource,
+        localDataSource: local,
+        isOfflineMode: () => offline,
+      );
+
+      await repo.deleteLoggedSet(originalDropSet.id);
+      expect(
+        local.getPendingOps().map((o) => o.type).toList(),
+        [PendingSessionOpType.deleteSet],
+      );
+
+      final callOrder = <String>[];
+      final deleteCompleter = Completer<void>();
+      when(() => mockDataSource.deleteLoggedSet(originalDropSet.id))
+          .thenAnswer((_) async {
+        callOrder.add('delete:${originalDropSet.id}');
+        await deleteCompleter.future;
+      });
+      when(() => mockDataSource.insertLoggedSet(any())).thenAnswer((inv) async {
+        final payload = inv.positionalArguments.first as Map;
+        callOrder.add('insert:${payload['id']}');
+        return LoggedSetModel.fromDomain(originalDropSet);
+      });
+
+      // Sync starts while user is back online and deleteSet becomes in-flight.
+      offline = false;
+      final syncFuture = repo.syncPendingOperations();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(local.isDeleteInFlight(originalDropSet.id), isTrue);
+      expect(callOrder, ['delete:set-drop-1']);
+
+      // User taps Desfazer while deleteSet is still in-flight!
+      final restoreResult = await repo.restoreLoggedSet(originalDropSet);
+      expect(restoreResult.isSuccess, isTrue);
+
+      // Local cache is restored immediately and logSet (same id) is queued after deleteSet.
+      expect(
+        local.getSessionById('session-1')!.exercises.single.sets.single.id,
+        originalDropSet.id,
+      );
+      final pendingTypes = local.getPendingOps().map((o) => o.type).toList();
+      expect(
+        pendingTypes,
+        [PendingSessionOpType.deleteSet, PendingSessionOpType.logSet],
+      );
+      expect(local.getPendingOps().last.payload['id'], originalDropSet.id);
+      expect(callOrder, ['delete:set-drop-1']);
+
+      // Complete in-flight deleteSet -> worker automatically drains restored logSet next.
+      deleteCompleter.complete();
+      final synced = await syncFuture;
+
+      expect(synced, isTrue);
+      expect(callOrder, ['delete:set-drop-1', 'insert:set-drop-1']);
+      expect(local.getPendingOps(), isEmpty);
+      expect(
+        local.getSessionById('session-1')!.exercises.single.sets.single.id,
+        originalDropSet.id,
+      );
+    });
+
+    test(
+        'restore when deleteSet was already removed from outbox enqueues logSet with original id and metadata',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final local = SessionLocalDataSource(prefs);
+      await local.saveSession(
+        WorkoutSessionModel(
+          id: 'session-1',
+          userId: 'user-1',
+          startedAt: DateTime(2026, 11, 26, 10, 0),
+          status: 'in_progress',
+          exercises: const [
+            SessionExerciseModel(
+              id: 'se-1',
+              sessionId: 'session-1',
+              exerciseId: 'ex-1',
+            ),
+          ],
+        ),
+      );
+
+      final offlineRepo = SessionRepositoryImpl(
+        mockDataSource,
+        localDataSource: local,
+        isOfflineMode: () => true,
+      );
+
+      // Outbox is already empty (e.g. deleteSet was already popped and sent).
+      expect(local.getPendingOps(), isEmpty);
+
+      final restoreResult = await offlineRepo.restoreLoggedSet(originalDropSet);
+      expect(restoreResult.isSuccess, isTrue);
+
+      final ops = local.getPendingOps();
+      expect(ops, hasLength(1));
+      expect(ops.single.type, PendingSessionOpType.logSet);
+      expect(ops.single.payload['id'], originalDropSet.id);
+      expect(
+        ops.single.payload['completed_at'],
+        originalDropSet.completedAt!.toIso8601String(),
+      );
+      expect(ops.single.payload['rpe_actual'], 8.5);
+      expect(ops.single.payload['drop_sets'], hasLength(2));
     });
   });
 }
