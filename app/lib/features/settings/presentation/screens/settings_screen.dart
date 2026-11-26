@@ -348,16 +348,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               value: 'Foto, dados e objetivo',
                               onTap: () => context.push('/profile'),
                             ),
-                            LiftrListRow(
-                              label: 'Atualizações do app',
-                              value: _updateRowValue(updateState),
-                              subtitle: _updateRowSubtitle(updateState),
-                              valueColor: updateState.availableUpdate != null
-                                  ? colors.primaryLight
-                                  : null,
-                              onTap: () =>
-                                  _handleUpdateCheck(context, updateState),
-                            ),
+                            if (Theme.of(context).platform != TargetPlatform.iOS)
+                              LiftrListRow(
+                                label: 'Atualizações do app',
+                                value: _updateRowValue(updateState),
+                                subtitle: _updateRowSubtitle(updateState),
+                                valueColor:
+                                    updateState.availableUpdate != null
+                                        ? colors.primaryLight
+                                        : null,
+                                onTap: () =>
+                                    _handleUpdateCheck(context, updateState),
+                              ),
                             LiftrListRow(
                               label: 'Sair da conta',
                               labelColor: colors.danger,

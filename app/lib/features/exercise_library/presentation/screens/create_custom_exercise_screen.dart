@@ -144,13 +144,15 @@ class _CreateCustomExerciseScreenState
       appBar: AppBar(
         title: const Text('Novo Exercício'),
       ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(0, 12, 0, 40),
-          child: ResponsiveContainer(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      body: SafeArea(
+        top: false,
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(0, 12, 0, 40),
+            child: ResponsiveContainer(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Section: Basic Info
               Text(
@@ -424,6 +426,7 @@ class _CreateCustomExerciseScreenState
             ],
             ),
           ),
+        ),
         ),
       ),
     );

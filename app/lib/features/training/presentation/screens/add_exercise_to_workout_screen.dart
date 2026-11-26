@@ -163,84 +163,87 @@ class _AddExerciseToWorkoutScreenState
       appBar: AppBar(
         title: const Text('Selecionar Exercício'),
       ),
-      body: ResponsiveContainer(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: AppInput(
-                hint: 'Buscar exercício por nome...',
-                controller: _searchController,
-                prefix: Icon(Icons.search_rounded, color: context.appColors.textTertiary),
-                suffix: searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear_rounded, size: 18),
-                        onPressed: () {
-                          _searchController.clear();
-                          ref.read(exerciseSearchQueryProvider.notifier).state = '';
-                        },
-                      )
-                    : null,
-                onChanged: (value) {
-                  ref.read(exerciseSearchQueryProvider.notifier).state = value;
-                },
-              ),
-            ),
-            const MuscleFilterChips(horizontalPadding: 0),
-            const SizedBox(height: 8),
-
-            Expanded(
-              child: filteredExercisesAsync.when(
-                loading: () => const LoadingWidget(),
-                error: (err, st) => ErrorStateWidget(
-                  message: userFacingMessage(
-                    err,
-                    stackTrace: st,
-                    context: 'AddExerciseToWorkoutScreen.build',
-                  ),
-                  safetyNote: offlineSafetyNoteFor(err),
-                  onRetry: () =>
-                      ref.read(exerciseListStateProvider.notifier).refresh(),
+      body: SafeArea(
+        top: false,
+        child: ResponsiveContainer(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: AppInput(
+                  hint: 'Buscar exercício por nome...',
+                  controller: _searchController,
+                  prefix: Icon(Icons.search_rounded, color: context.appColors.textTertiary),
+                  suffix: searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear_rounded, size: 18),
+                          onPressed: () {
+                            _searchController.clear();
+                            ref.read(exerciseSearchQueryProvider.notifier).state = '';
+                          },
+                        )
+                      : null,
+                  onChanged: (value) {
+                    ref.read(exerciseSearchQueryProvider.notifier).state = value;
+                  },
                 ),
-                data: (exercises) {
-                  if (exercises.isEmpty) {
-                    return const EmptyStateWidget(
-                      icon: Icons.search_off_rounded,
-                      title: 'Nenhum exercício encontrado',
-                      subtitle: 'Tente alterar os termos de busca.',
-                    );
-                  }
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.only(bottom: 24),
-                    itemCount: exercises.length,
-                    itemBuilder: (context, index) {
-                      final exercise = exercises[index];
-                      return ExerciseCard(
-                        exercise: exercise,
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        onTap: () {
-                          final recommendedRest = exercise.isCardio
-                              ? 60
-                              : RestDurationResolver.resolve(
-                                  targetRepsMin: _repsMin,
-                                  targetRepsMax: _repsMax,
-                                  movementPattern: exercise.movementPattern,
-                                  primaryMuscleGroup: exercise.primaryMuscleGroup,
-                                  equipment: exercise.equipment,
-                                );
-                          setState(() {
-                            _selectedExercise = exercise;
-                            _restSeconds = recommendedRest;
-                          });
-                        },
-                      );
-                    },
-                  );
-                },
               ),
-            ),
-          ],
+              const MuscleFilterChips(horizontalPadding: 0),
+              const SizedBox(height: 8),
+
+              Expanded(
+                child: filteredExercisesAsync.when(
+                  loading: () => const LoadingWidget(),
+                  error: (err, st) => ErrorStateWidget(
+                    message: userFacingMessage(
+                      err,
+                      stackTrace: st,
+                      context: 'AddExerciseToWorkoutScreen.build',
+                    ),
+                    safetyNote: offlineSafetyNoteFor(err),
+                    onRetry: () =>
+                        ref.read(exerciseListStateProvider.notifier).refresh(),
+                  ),
+                  data: (exercises) {
+                    if (exercises.isEmpty) {
+                      return const EmptyStateWidget(
+                        icon: Icons.search_off_rounded,
+                        title: 'Nenhum exercício encontrado',
+                        subtitle: 'Tente alterar os termos de busca.',
+                      );
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      itemCount: exercises.length,
+                      itemBuilder: (context, index) {
+                        final exercise = exercises[index];
+                        return ExerciseCard(
+                          exercise: exercise,
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          onTap: () {
+                            final recommendedRest = exercise.isCardio
+                                ? 60
+                                : RestDurationResolver.resolve(
+                                    targetRepsMin: _repsMin,
+                                    targetRepsMax: _repsMax,
+                                    movementPattern: exercise.movementPattern,
+                                    primaryMuscleGroup: exercise.primaryMuscleGroup,
+                                    equipment: exercise.equipment,
+                                  );
+                            setState(() {
+                              _selectedExercise = exercise;
+                              _restSeconds = recommendedRest;
+                            });
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -265,19 +268,21 @@ class _AddExerciseToWorkoutScreenState
             onPressed: () => setState(() => _selectedExercise = null),
           ),
         ),
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(0, 12, 0, 40),
-          children: [
-            ResponsiveContainer(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-          // Selected Exercise Card
-          ExerciseCard(
-            exercise: exercise,
-            margin: const EdgeInsets.symmetric(vertical: 8),
-          ),
-          const SizedBox(height: 16),
+        body: SafeArea(
+          top: false,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(0, 12, 0, 40),
+            children: [
+              ResponsiveContainer(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+            // Selected Exercise Card
+            ExerciseCard(
+              exercise: exercise,
+              margin: const EdgeInsets.symmetric(vertical: 8),
+            ),
+            const SizedBox(height: 16),
 
           // Working Sets count
           AppCard(
@@ -418,6 +423,7 @@ class _AddExerciseToWorkoutScreenState
               ),
             ),
           ],
+        ),
         ),
       ),
     );

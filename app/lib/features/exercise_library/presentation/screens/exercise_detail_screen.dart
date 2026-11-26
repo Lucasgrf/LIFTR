@@ -100,27 +100,29 @@ class _ExerciseDetailScreenState extends ConsumerState<ExerciseDetailScreen> {
       appBar: AppBar(
         title: const Text('Detalhes do Exercício'),
       ),
-      body: exerciseAsync.when(
-        loading: () => const LoadingWidget(),
-        error: (error, st) => ErrorStateWidget(
-          message: userFacingMessage(
-            error,
-            stackTrace: st,
-            context: 'ExerciseDetailScreen.build',
+      body: SafeArea(
+        top: false,
+        child: exerciseAsync.when(
+          loading: () => const LoadingWidget(),
+          error: (error, st) => ErrorStateWidget(
+            message: userFacingMessage(
+              error,
+              stackTrace: st,
+              context: 'ExerciseDetailScreen.build',
+            ),
+            safetyNote: offlineSafetyNoteFor(error),
+            onRetry: () => ref.refresh(exerciseDetailProvider(widget.exerciseId)),
           ),
-          safetyNote: offlineSafetyNoteFor(error),
-          onRetry: () => ref.refresh(exerciseDetailProvider(widget.exerciseId)),
-        ),
-        data: (exercise) {
-          _initializeNotes(exercise.personalNotes);
-          final primaryMuscleLabel = ExerciseCard.getMuscleLabel(exercise.primaryMuscleGroup);
-          final equipmentLabel = ExerciseCard.getEquipmentLabel(exercise.equipment);
+          data: (exercise) {
+            _initializeNotes(exercise.personalNotes);
+            final primaryMuscleLabel = ExerciseCard.getMuscleLabel(exercise.primaryMuscleGroup);
+            final equipmentLabel = ExerciseCard.getEquipmentLabel(exercise.equipment);
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(0, 8, 0, 40),
-            child: ResponsiveContainer(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(0, 8, 0, 40),
+              child: ResponsiveContainer(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header Card
                 AppCard(
@@ -354,6 +356,7 @@ class _ExerciseDetailScreenState extends ConsumerState<ExerciseDetailScreen> {
             ),
           );
         },
+        ),
       ),
     );
   }

@@ -194,8 +194,10 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
       appBar: AppBar(
         title: const Text('Configurar Séries do Exercício'),
       ),
-      body: workoutAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+      body: SafeArea(
+        top: false,
+        child: workoutAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, st) => ErrorStateWidget(
           message: userFacingMessage(
             err,
@@ -552,6 +554,7 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
             ],
           );
         },
+        ),
       ),
     );
   }

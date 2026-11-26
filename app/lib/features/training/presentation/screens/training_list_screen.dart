@@ -325,7 +325,7 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
                               minimumSize: const Size(48, 48),
                               foregroundColor: colors.textSecondary,
                             ),
-                            icon: const Icon(Icons.ios_share_rounded, size: 17),
+                            icon: Icon(Icons.adaptive.share, size: 17),
                             label: const Text('Compartilhar plano'),
                           ),
                           TextButton.icon(

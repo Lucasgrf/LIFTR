@@ -351,7 +351,7 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
                                     minHeight: 48,
                                   ),
                                   icon: Icon(
-                                    Icons.ios_share_rounded,
+                                    Icons.adaptive.share,
                                     size: 18,
                                     color: colors.textSecondary,
                                   ),
