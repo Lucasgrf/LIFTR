@@ -38,7 +38,8 @@ class SupabaseAiWorkoutRemoteDataSource implements AiWorkoutRemoteDataSource {
   final SupabaseClient? _client;
 
   SupabaseClient _resolveClient() {
-    if (_client != null) return _client!;
+    final client = _client;
+    if (client != null) return client;
     if (!SupabaseConfig.isConfigured) {
       throw const AiWorkoutException(
         code: AiWorkoutErrorCode.network,

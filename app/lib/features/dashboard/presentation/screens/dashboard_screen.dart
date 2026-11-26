@@ -235,7 +235,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             color: colors.primary,
             onRefresh: () async {
               ref.invalidate(currentWeekSummaryProvider);
-              await ref.refresh(dashboardDataProvider.future);
+              ref.invalidate(dashboardDataProvider);
+              await ref.read(dashboardDataProvider.future);
             },
             child: ListView(
               padding: const EdgeInsets.fromLTRB(0, 12, 0, 32),

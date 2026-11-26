@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:personal_fitness_os/features/history/domain/entities/exercise_history_record.dart';
 import 'package:personal_fitness_os/features/history/domain/entities/history_event_type.dart';
 import 'package:personal_fitness_os/features/history/domain/entities/timeline_event.dart';
