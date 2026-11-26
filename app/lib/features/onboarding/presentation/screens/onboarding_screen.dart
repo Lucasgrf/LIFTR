@@ -315,13 +315,27 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Text(
-                        'Passo ${_step + 1} de $_totalSteps',
-                        style: context.textTheme.labelMedium?.copyWith(
-                          color: colors.textSecondary,
-                          fontFeatures: AppTypography.tabularFeatures,
+                      if (MediaQuery.sizeOf(context).width < 360 ||
+                          MediaQuery.textScalerOf(context).scale(14) > 18)
+                        Flexible(
+                          child: Text(
+                            'Passo ${_step + 1} de $_totalSteps',
+                            maxLines: 2,
+                            textAlign: TextAlign.end,
+                            style: context.textTheme.labelMedium?.copyWith(
+                              color: colors.textSecondary,
+                              fontFeatures: AppTypography.tabularFeatures,
+                            ),
+                          ),
+                        )
+                      else
+                        Text(
+                          'Passo ${_step + 1} de $_totalSteps',
+                          style: context.textTheme.labelMedium?.copyWith(
+                            color: colors.textSecondary,
+                            fontFeatures: AppTypography.tabularFeatures,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ],

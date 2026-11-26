@@ -177,10 +177,15 @@ class _MuscleBarItem extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
+          SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 6,
+              runSpacing: 2,
+              children: [
+                Text(
                   entry.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -188,19 +193,18 @@ class _MuscleBarItem extends StatelessWidget {
                     color: colors.textSecondary,
                   ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                '${entry.sets} séries',
-                style: context.textTheme.labelSmall?.copyWith(
-                  color: entry.sets >= targetSets
-                      ? colors.primaryLight
-                      : colors.textTertiary,
-                  fontWeight: FontWeight.w600,
-                  fontFeatures: AppTypography.tabularFeatures,
+                Text(
+                  '${entry.sets} séries',
+                  style: context.textTheme.labelSmall?.copyWith(
+                    color: entry.sets >= targetSets
+                        ? colors.primaryLight
+                        : colors.textTertiary,
+                    fontWeight: FontWeight.w600,
+                    fontFeatures: AppTypography.tabularFeatures,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 6),
           LiftrProgressBar(

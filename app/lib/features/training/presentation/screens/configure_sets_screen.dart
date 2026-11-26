@@ -161,6 +161,7 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
     BuildContext context, {
     required Widget first,
     required Widget second,
+    double horizontalGap = 8,
   }) {
     final stackVertically = MediaQuery.sizeOf(context).width < 360 ||
         MediaQuery.textScalerOf(context).scale(14) > 18;
@@ -177,7 +178,7 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
     return Row(
       children: [
         Expanded(child: first),
-        AppSpacing.horizontalGap8,
+        SizedBox(width: horizontalGap),
         Expanded(child: second),
       ],
     );
@@ -248,14 +249,21 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                   padding: EdgeInsets.all(context.appSpacing.space16),
                   child: Column(
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      Builder(
+                        builder: (context) {
+                          final badge = Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
-                              color: SetTemplateRow.getSetTypeColor(context, template.setType)
-                                  .withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(context.appRadius.small),
+                              color: SetTemplateRow.getSetTypeColor(
+                                context,
+                                template.setType,
+                              ).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(
+                                context.appRadius.small,
+                              ),
                             ),
                             child: Text(
                               'Série ${idx + 1}',
@@ -267,56 +275,67 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ),
-                          AppSpacing.horizontalGap8,
-                          Expanded(
-                            child: Align(
-                              alignment: Alignment.centerRight,
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.centerRight,
-                                child: DropdownButton<SetType>(
-                                  value: template.setType,
-                                  dropdownColor:
-                                      context.appColors.surfaceElevated,
-                                  underline: const SizedBox(),
-                                  items: const [
-                                    DropdownMenuItem(
-                                      value: SetType.warmup,
-                                      child: Text('Aquecimento'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: SetType.rampUp,
-                                      child: Text('Reconhecimento'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: SetType.working,
-                                      child: Text('Válida (Trabalho)'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: SetType.dropSet,
-                                      child: Text('Drop-set'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: SetType.mobility,
-                                      child: Text('Mobilidade'),
-                                    ),
-                                  ],
-                                  onChanged: (newType) {
-                                    if (newType != null) {
-                                      setState(() {
-                                        final cur = _sets[idx];
-                                        _sets[idx] =
-                                            cur.copyWith(setType: newType);
-                                      });
-                                    }
-                                  },
+                          );
+                          final isCompact =
+                              MediaQuery.sizeOf(context).width < 360 ||
+                                  MediaQuery.textScalerOf(context).scale(14) >
+                                      18;
+                          final typeDropdown = DropdownButton<SetType>(
+                            value: template.setType,
+                            isExpanded: isCompact,
+                            dropdownColor: context.appColors.surfaceElevated,
+                            underline: const SizedBox(),
+                            items: const [
+                              DropdownMenuItem(
+                                value: SetType.warmup,
+                                child: Text(
+                                  'Aquecimento',
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
+                              DropdownMenuItem(
+                                value: SetType.rampUp,
+                                child: Text(
+                                  'Reconhecimento',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: SetType.working,
+                                child: Text(
+                                  'Válida (Trabalho)',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: SetType.dropSet,
+                                child: Text(
+                                  'Drop-set',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: SetType.mobility,
+                                child: Text(
+                                  'Mobilidade',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                            onChanged: (newType) {
+                              if (newType != null) {
+                                setState(() {
+                                  final cur = _sets[idx];
+                                  _sets[idx] = cur.copyWith(setType: newType);
+                                });
+                              }
+                            },
+                          );
+                          final deleteButton = IconButton(
+                            icon: const Icon(
+                              Icons.delete_outline_rounded,
+                              size: 20,
                             ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline_rounded, size: 20),
                             color: context.appColors.danger,
                             tooltip: 'Remover série',
                             constraints: const BoxConstraints(
@@ -324,8 +343,39 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                               minHeight: 48,
                             ),
                             onPressed: () => _removeSet(idx),
-                          ),
-                        ],
+                          );
+
+                          if (isCompact) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Flexible(child: badge),
+                                    deleteButton,
+                                  ],
+                                ),
+                                typeDropdown,
+                              ],
+                            );
+                          }
+
+                          return Row(
+                            children: [
+                              badge,
+                              AppSpacing.horizontalGap8,
+                              Expanded(
+                                child: Align(
+                                  alignment: Alignment.centerRight,
+                                  child: typeDropdown,
+                                ),
+                              ),
+                              deleteButton,
+                            ],
+                          );
+                        },
                       ),
                       AppSpacing.verticalGap12,
                       if (isCardio)
@@ -415,92 +465,100 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                           ),
                         ),
                         AppSpacing.verticalGap8,
-                        Row(
-                          children: [
-                            Expanded(
-                              child: AppNumericInput(
-                                label: 'RIR mín.',
-                                value: (template.targetRirMin ?? 1).toDouble(),
-                                min: 0,
-                                max: 5,
-                                onChanged: (v) {
-                                  final nextMin = v.round();
-                                  setState(() {
-                                    final cur = _sets[idx];
-                                    final curMax = cur.targetRirMax ?? nextMin;
-                                    final nextMax =
-                                        nextMin > curMax ? nextMin : curMax;
-                                    _sets[idx] = cur.copyWith(
-                                      targetRirMin: nextMin,
-                                      targetRirMax: nextMax,
-                                    );
-                                  });
-                                },
-                              ),
-                            ),
-                            AppSpacing.horizontalGap8,
-                            Expanded(
-                              child: AppNumericInput(
-                                label: 'RIR máx.',
-                                value: (template.targetRirMax ?? 2).toDouble(),
-                                min: 0,
-                                max: 5,
-                                onChanged: (v) {
-                                  final nextMax = v.round();
-                                  setState(() {
-                                    final cur = _sets[idx];
-                                    final curMin = cur.targetRirMin ?? nextMax;
-                                    final nextMin =
-                                        nextMax < curMin ? nextMax : curMin;
-                                    _sets[idx] = cur.copyWith(
-                                      targetRirMin: nextMin,
-                                      targetRirMax: nextMax,
-                                    );
-                                  });
-                                },
-                              ),
-                            ),
-                          ],
+                        _buildInputPair(
+                          context,
+                          first: AppNumericInput(
+                            label: 'RIR mín.',
+                            value: (template.targetRirMin ?? 1).toDouble(),
+                            min: 0,
+                            max: 5,
+                            onChanged: (v) {
+                              final nextMin = v.round();
+                              setState(() {
+                                final cur = _sets[idx];
+                                final curMax = cur.targetRirMax ?? nextMin;
+                                final nextMax =
+                                    nextMin > curMax ? nextMin : curMax;
+                                _sets[idx] = cur.copyWith(
+                                  targetRirMin: nextMin,
+                                  targetRirMax: nextMax,
+                                );
+                              });
+                            },
+                          ),
+                          second: AppNumericInput(
+                            label: 'RIR máx.',
+                            value: (template.targetRirMax ?? 2).toDouble(),
+                            min: 0,
+                            max: 5,
+                            onChanged: (v) {
+                              final nextMax = v.round();
+                              setState(() {
+                                final cur = _sets[idx];
+                                final curMin = cur.targetRirMin ?? nextMax;
+                                final nextMin =
+                                    nextMax < curMin ? nextMax : curMin;
+                                _sets[idx] = cur.copyWith(
+                                  targetRirMin: nextMin,
+                                  targetRirMax: nextMax,
+                                );
+                              });
+                            },
+                          ),
                         ),
                       ],
                       AppSpacing.verticalGap8,
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Descanso',
-                            style: context.textTheme.bodyMedium?.copyWith(
-                              color: context.appColors.textSecondary,
+                      SizedBox(
+                        width: double.infinity,
+                        child: Wrap(
+                          alignment: WrapAlignment.spaceBetween,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: [
+                            Text(
+                              'Descanso',
+                              style: context.textTheme.bodyMedium?.copyWith(
+                                color: context.appColors.textSecondary,
+                              ),
                             ),
-                          ),
-                          DropdownButton<int>(
-                            value: template.restSeconds,
-                            dropdownColor: context.appColors.surfaceElevated,
-                            isDense: true,
-                            underline: const SizedBox(),
-                            items: ConfigureSetsScreen.restDropdownValuesFor(
-                              template.restSeconds,
-                            ).map((v) {
-                              final label = v == 0
-                                  ? 'Sem descanso'
-                                  : ConfigureSetsScreen.restOptions.contains(v)
-                                      ? '${v}s'
-                                      : '${v}s (personalizado)';
-                              return DropdownMenuItem<int>(
-                                value: v,
-                                child: Text(label),
-                              );
-                            }).toList(),
-                            onChanged: (v) {
-                              if (v != null) {
-                                setState(() {
-                                  final cur = _sets[idx];
-                                  _sets[idx] = cur.copyWith(restSeconds: v);
-                                });
-                              }
-                            },
-                          ),
-                        ],
+                            DropdownButton<int>(
+                              value: template.restSeconds,
+                              isExpanded:
+                                  MediaQuery.sizeOf(context).width < 360 ||
+                                      MediaQuery.textScalerOf(context)
+                                              .scale(14) >
+                                          18,
+                              dropdownColor: context.appColors.surfaceElevated,
+                              isDense: true,
+                              underline: const SizedBox(),
+                              items: ConfigureSetsScreen.restDropdownValuesFor(
+                                template.restSeconds,
+                              ).map((v) {
+                                final label = v == 0
+                                    ? 'Sem descanso'
+                                    : ConfigureSetsScreen.restOptions.contains(v)
+                                        ? '${v}s'
+                                        : '${v}s (personalizado)';
+                                return DropdownMenuItem<int>(
+                                  value: v,
+                                  child: Text(
+                                    label,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (v) {
+                                if (v != null) {
+                                  setState(() {
+                                    final cur = _sets[idx];
+                                    _sets[idx] = cur.copyWith(restSeconds: v);
+                                  });
+                                }
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -516,29 +574,24 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                   label: const Text('+ Bloco de cardio'),
                 )
               else
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _addSet(SetType.warmup),
-                        icon: const Icon(Icons.add_rounded, size: 16),
-                        label: const Text('+ Aquecimento'),
-                      ),
+                _buildInputPair(
+                  context,
+                  horizontalGap: 10,
+                  first: OutlinedButton.icon(
+                    onPressed: () => _addSet(SetType.warmup),
+                    icon: const Icon(Icons.add_rounded, size: 16),
+                    label: const Text('+ Aquecimento'),
+                  ),
+                  second: OutlinedButton.icon(
+                    onPressed: () => _addSet(
+                      SetType.working,
+                      movementPattern: exercise.exercise?.movementPattern,
+                      primaryMuscleGroup: exercise.exercise?.primaryMuscleGroup,
+                      equipment: exercise.exercise?.equipment,
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _addSet(
-                          SetType.working,
-                          movementPattern: exercise.exercise?.movementPattern,
-                          primaryMuscleGroup: exercise.exercise?.primaryMuscleGroup,
-                          equipment: exercise.exercise?.equipment,
-                        ),
-                        icon: const Icon(Icons.add_rounded, size: 16),
-                        label: const Text('+ Série Válida'),
-                      ),
-                    ),
-                  ],
+                    icon: const Icon(Icons.add_rounded, size: 16),
+                    label: const Text('+ Série Válida'),
+                  ),
                 ),
               const SizedBox(height: 32),
 
