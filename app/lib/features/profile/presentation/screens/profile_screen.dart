@@ -12,6 +12,7 @@ import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/utils/pt_br_number_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_list_group.dart';
@@ -107,13 +108,9 @@ class ProfileScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // Avatar & Identity Card
-                        Container(
+                        AppCard(
+                          borderRadius: radius.xl,
                           padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: colors.surface,
-                            borderRadius: BorderRadius.circular(radius.xl),
-                            border: Border.all(color: colors.border),
-                          ),
                           child: Column(
                             children: [
                               Semantics(
@@ -187,36 +184,43 @@ class ProfileScreen extends ConsumerWidget {
                                 ),
                               ),
                               const SizedBox(height: 14),
-                              InkWell(
-                                onTap: () => _showEditNameDialog(
-                                  context,
-                                  ref,
-                                  displayName,
-                                ),
-                                borderRadius:
-                                    BorderRadius.circular(radius.small),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
+                              Semantics(
+                                label: 'Editar nome de exibição',
+                                button: true,
+                                child: InkWell(
+                                  onTap: () => _showEditNameDialog(
+                                    context,
+                                    ref,
+                                    displayName,
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Flexible(
-                                        child: Text(
-                                          displayName,
-                                          style: context.textTheme.headlineSmall,
-                                          textAlign: TextAlign.center,
+                                  borderRadius:
+                                      BorderRadius.circular(radius.small),
+                                  child: Container(
+                                    constraints:
+                                        const BoxConstraints(minHeight: 48),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 8,
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            displayName,
+                                            style:
+                                                context.textTheme.headlineSmall,
+                                            textAlign: TextAlign.center,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Icon(
-                                        Icons.edit_rounded,
-                                        size: 16,
-                                        color: colors.textTertiary,
-                                      ),
-                                    ],
+                                        const SizedBox(width: 6),
+                                        Icon(
+                                          Icons.edit_rounded,
+                                          size: 16,
+                                          color: colors.textTertiary,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),

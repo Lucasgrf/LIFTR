@@ -30,76 +30,81 @@ class AppUpdateBanner extends StatelessWidget {
     final colors = context.appColors;
     final radius = context.appRadius;
 
-    return Container(
-      width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 44),
-      padding: const EdgeInsets.only(left: 12),
-      decoration: BoxDecoration(
-        color: colors.primaryMuted,
-        border: Border(
-          bottom: BorderSide(
-            color: colors.primary.withValues(alpha: 0.28),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.system_update_rounded,
-            size: 16,
-            color: colors.primaryLight,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Nova versão v${updateInfo.versionName} disponível',
-              style: context.textTheme.labelSmall?.copyWith(
-                color: colors.textPrimary,
-                fontWeight: FontWeight.w600,
-                fontFeatures: AppTypography.tabularFeatures,
-              ),
-              overflow: TextOverflow.ellipsis,
+    return Material(
+      color: colors.primaryMuted,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: colors.primary.withValues(alpha: 0.28),
+              width: 1,
             ),
           ),
-          const SizedBox(width: 4),
-          Semantics(
-            label: 'Atualizar aplicativo',
-            button: true,
-            child: InkWell(
-              onTap: onUpdateTap,
-              borderRadius: BorderRadius.circular(radius.small),
-              child: Container(
-                constraints: const BoxConstraints(minWidth: 48, minHeight: 44),
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                alignment: Alignment.center,
+        ),
+        child: Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(minHeight: 48),
+          padding: const EdgeInsets.only(left: 12),
+          child: Row(
+            children: [
+              Icon(
+                Icons.system_update_rounded,
+                size: 16,
+                color: colors.primaryLight,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
                 child: Text(
-                  'Atualizar',
+                  'Nova versão v${updateInfo.versionName} disponível',
                   style: context.textTheme.labelSmall?.copyWith(
-                    color: colors.primaryLight,
-                    fontWeight: FontWeight.w700,
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontFeatures: AppTypography.tabularFeatures,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Semantics(
+                label: 'Atualizar aplicativo',
+                button: true,
+                child: InkWell(
+                  onTap: onUpdateTap,
+                  borderRadius: BorderRadius.circular(radius.small),
+                  child: Container(
+                    constraints:
+                        const BoxConstraints(minWidth: 48, minHeight: 48),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Atualizar',
+                      style: context.textTheme.labelSmall?.copyWith(
+                        color: colors.primaryLight,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
-          Semantics(
-            label: 'Ocultar aviso de atualização',
-            button: true,
-            child: InkWell(
-              onTap: onDismiss,
-              child: SizedBox(
-                width: 48,
-                height: 44,
-                child: Icon(
-                  Icons.close_rounded,
-                  size: 16,
-                  color: colors.textTertiary,
+              Semantics(
+                label: 'Ocultar aviso de atualização',
+                button: true,
+                child: InkWell(
+                  onTap: onDismiss,
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 16,
+                      color: colors.textTertiary,
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

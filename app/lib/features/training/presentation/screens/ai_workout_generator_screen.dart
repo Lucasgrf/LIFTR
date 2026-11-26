@@ -598,35 +598,36 @@ class _AiWorkoutGeneratorScreenState
                   label: '$days dias por semana',
                   selected: isSelected,
                   button: true,
-                  child: InkWell(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      setState(() {
-                        _daysPerWeek = days;
-                        _preferredSplit = null;
-                      });
-                    },
-                    borderRadius: BorderRadius.circular(radius.medium),
-                    child: Container(
-                      height: 48,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? colors.primary
-                            : colors.surfaceElevated,
-                        borderRadius: BorderRadius.circular(radius.medium),
-                        border: Border.all(
-                          color: isSelected ? colors.primary : colors.border,
-                          width: 1.5,
-                        ),
+                  child: Material(
+                    color: isSelected ? colors.primary : colors.surfaceElevated,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(radius.medium),
+                      side: BorderSide(
+                        color: isSelected ? colors.primary : colors.border,
+                        width: 1.5,
                       ),
-                      child: Text(
-                        '$days',
-                        style: context.textTheme.titleLarge?.copyWith(
-                          color: isSelected
-                              ? colors.onPrimary
-                              : colors.textPrimary,
-                          fontFeatures: AppTypography.tabularFeatures,
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() {
+                          _daysPerWeek = days;
+                          _preferredSplit = null;
+                        });
+                      },
+                      child: SizedBox(
+                        height: 48,
+                        child: Center(
+                          child: Text(
+                            '$days',
+                            style: context.textTheme.titleLarge?.copyWith(
+                              color: isSelected
+                                  ? colors.onPrimary
+                                  : colors.textPrimary,
+                              fontFeatures: AppTypography.tabularFeatures,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -1204,85 +1205,76 @@ class _StudyOptionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final radius = context.appRadius;
 
     return Semantics(
       selected: selected,
       button: true,
-      child: InkWell(
+      child: AppCard(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(radius.large),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 58),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: selected
-                ? colors.primary.withValues(alpha: 0.12)
-                : colors.surface,
-            borderRadius: BorderRadius.circular(radius.large),
-            border: Border.all(
-              color: selected ? colors.primary : colors.border,
-              width: selected ? 1.5 : 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Text(
-                          title,
-                          style: context.textTheme.titleSmall?.copyWith(
-                            color: colors.textPrimary,
-                          ),
-                        ),
-                        if (badgeLabel != null)
-                          LiftrBadge(
-                            label: badgeLabel!,
-                            tone: LiftrBadgeTone.brand,
-                          ),
-                      ],
-                    ),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 4),
+        backgroundColor: selected
+            ? colors.primary.withValues(alpha: 0.12)
+            : colors.surface,
+        borderColor: selected ? colors.primary : colors.border,
+        borderWidth: selected ? 1.5 : 1,
+        constraints: const BoxConstraints(minHeight: 58),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
                       Text(
-                        subtitle!,
-                        style: context.textTheme.bodySmall?.copyWith(
-                          color: colors.textSecondary,
+                        title,
+                        style: context.textTheme.titleSmall?.copyWith(
+                          color: colors.textPrimary,
                         ),
                       ),
+                      if (badgeLabel != null)
+                        LiftrBadge(
+                          label: badgeLabel!,
+                          tone: LiftrBadgeTone.brand,
+                        ),
                     ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: selected ? colors.primary : Colors.transparent,
-                  border: Border.all(
-                    color: selected ? colors.primary : colors.border,
-                    width: 1.5,
                   ),
-                ),
-                child: selected
-                    ? Icon(
-                        Icons.check_rounded,
-                        size: 16,
-                        color: colors.onPrimary,
-                      )
-                    : null,
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle!,
+                      style: context.textTheme.bodySmall?.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected ? colors.primary : Colors.transparent,
+                border: Border.all(
+                  color: selected ? colors.primary : colors.border,
+                  width: 1.5,
+                ),
+              ),
+              child: selected
+                  ? Icon(
+                      Icons.check_rounded,
+                      size: 16,
+                      color: colors.onPrimary,
+                    )
+                  : null,
+            ),
+          ],
         ),
       ),
     );
@@ -1308,24 +1300,26 @@ class _SelectableChip extends StatelessWidget {
     return Semantics(
       selected: selected,
       button: true,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(radius.medium),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 48, minWidth: 56),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: selected ? colors.primary : colors.surfaceElevated,
-            borderRadius: BorderRadius.circular(radius.medium),
-            border: Border.all(
-              color: selected ? colors.primary : colors.border,
-            ),
+      child: Material(
+        color: selected ? colors.primary : colors.surfaceElevated,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radius.medium),
+          side: BorderSide(
+            color: selected ? colors.primary : colors.border,
           ),
-          child: Text(
-            label,
-            style: context.textTheme.labelMedium?.copyWith(
-              color: selected ? colors.onPrimary : colors.textPrimary,
-              fontFeatures: AppTypography.tabularFeatures,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 48, minWidth: 56),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Text(
+              label,
+              style: context.textTheme.labelMedium?.copyWith(
+                color: selected ? colors.onPrimary : colors.textPrimary,
+                fontFeatures: AppTypography.tabularFeatures,
+              ),
             ),
           ),
         ),

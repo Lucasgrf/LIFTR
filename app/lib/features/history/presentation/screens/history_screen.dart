@@ -6,6 +6,7 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/body/presentation/providers/weight_providers.dart';
 import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
@@ -70,21 +71,14 @@ class HistoryScreen extends ConsumerWidget {
                   Semantics(
                     label: 'Abrir comparação semanal e cardio',
                     button: true,
-                    child: InkWell(
+                    child: AppCard(
                       onTap: () => context.push('/weekly-comparison'),
-                      borderRadius: BorderRadius.circular(radius.large),
-                      child: Container(
-                        constraints: const BoxConstraints(minHeight: 56),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.surface,
-                          borderRadius: BorderRadius.circular(radius.large),
-                          border: Border.all(color: colors.border),
-                        ),
-                        child: Row(
+                      constraints: const BoxConstraints(minHeight: 56),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      child: Row(
                           children: [
                             Container(
                               width: 34,
@@ -134,7 +128,6 @@ class HistoryScreen extends ConsumerWidget {
                             ),
                           ],
                         ),
-                      ),
                     ),
                   ),
                   const SizedBox(height: 12),

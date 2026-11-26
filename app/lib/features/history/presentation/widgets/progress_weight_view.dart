@@ -11,8 +11,9 @@ import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
-import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/features/body/domain/entities/weight_entry.dart';
 import 'package:personal_fitness_os/features/body/presentation/providers/weight_providers.dart';
@@ -78,7 +79,6 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final radius = context.appRadius;
-    final fitnessColors = context.fitnessColors;
     final historyAsync = ref.watch(weightHistoryProvider);
     final statsAsync = ref.watch(weightStatsProvider);
     final settings = ref.watch(userSettingsProvider);
@@ -114,13 +114,9 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
         final rateText =
             'Ritmo: $rateSign${deltaPerWeek.toStringAsFixed(2).replaceAll('.', ',')} kg/sem';
 
-        return Container(
+        return AppCard(
+          borderRadius: radius.xl,
           padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: colors.surface,
-            borderRadius: BorderRadius.circular(radius.xl),
-            border: Border.all(color: colors.border),
-          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -145,16 +141,14 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  _RateChip(
-                    text: rateText,
-                    color: colors.primaryLight,
-                    bg: colors.primaryMuted,
+                  LiftrBadge(
+                    label: rateText,
+                    tone: LiftrBadgeTone.brand,
                   ),
-                  _RateChip(
-                    text:
+                  LiftrBadge(
+                    label:
                         'Alvo (${settings.goal.label}): ${settings.goal.weeklyRateTargetLabel}',
-                    color: fitnessColors.progressUp,
-                    bg: fitnessColors.progressUp.withValues(alpha: 0.12),
+                    tone: LiftrBadgeTone.success,
                   ),
                 ],
               ),
@@ -262,38 +256,6 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
           ),
         );
       },
-    );
-  }
-}
-
-class _RateChip extends StatelessWidget {
-  const _RateChip({
-    required this.text,
-    required this.color,
-    required this.bg,
-  });
-
-  final String text;
-  final Color color;
-  final Color bg;
-
-  @override
-  Widget build(BuildContext context) {
-    final radius = context.appRadius;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(radius.full),
-      ),
-      child: Text(
-        text,
-        style: context.textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w700,
-          fontFeatures: AppTypography.tabularFeatures,
-        ),
-      ),
     );
   }
 }

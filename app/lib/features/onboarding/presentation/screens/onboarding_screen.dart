@@ -14,7 +14,9 @@ import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/utils/pt_br_number_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/profile/presentation/providers/profile_providers.dart';
@@ -620,35 +622,36 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               label: '$days dias por semana',
               selected: isSelected,
               button: true,
-              child: InkWell(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  setState(() {
-                    _daysPerWeek = days;
-                    _splitOptionIndex = 0;
-                  });
-                },
-                borderRadius: BorderRadius.circular(radius.medium),
-                child: Container(
-                  width: 52,
-                  height: 52,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? colors.primary
-                        : colors.surfaceElevated,
-                    borderRadius: BorderRadius.circular(radius.medium),
-                    border: Border.all(
-                      color: isSelected ? colors.primary : colors.border,
-                      width: 1.5,
-                    ),
+              child: Material(
+                color: isSelected ? colors.primary : colors.surfaceElevated,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(radius.medium),
+                  side: BorderSide(
+                    color: isSelected ? colors.primary : colors.border,
+                    width: 1.5,
                   ),
-                  child: Text(
-                    '$days',
-                    style: context.textTheme.titleLarge?.copyWith(
-                      color:
-                          isSelected ? colors.onPrimary : colors.textPrimary,
-                      fontFeatures: AppTypography.tabularFeatures,
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    setState(() {
+                      _daysPerWeek = days;
+                      _splitOptionIndex = 0;
+                    });
+                  },
+                  child: SizedBox(
+                    width: 52,
+                    height: 52,
+                    child: Center(
+                      child: Text(
+                        '$days',
+                        style: context.textTheme.titleLarge?.copyWith(
+                          color:
+                              isSelected ? colors.onPrimary : colors.textPrimary,
+                          fontFeatures: AppTypography.tabularFeatures,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -657,15 +660,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           }).toList(),
         ),
         const SizedBox(height: 24),
-        Container(
+        AppCard(
+          borderRadius: radius.xl,
+          borderColor: colors.primary.withValues(alpha: 0.45),
           padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: colors.surface,
-            borderRadius: BorderRadius.circular(radius.xl),
-            border: Border.all(
-              color: colors.primary.withValues(alpha: 0.45),
-            ),
-          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -677,21 +675,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   spacing: 8,
                   runSpacing: 4,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.primaryMuted,
-                        borderRadius: BorderRadius.circular(radius.full),
-                      ),
-                      child: Text(
-                        'Sugestão automática',
-                        style: context.textTheme.labelMedium?.copyWith(
-                          color: colors.primaryLight,
-                        ),
-                      ),
+                    const LiftrBadge(
+                      label: 'Sugestão automática',
+                      tone: LiftrBadgeTone.brand,
                     ),
                     TextButton(
                       onPressed: () {
@@ -759,33 +745,36 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     label: 'Divisão ${option.name}',
                     selected: isSelected,
                     button: true,
-                    child: InkWell(
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        setState(() => _splitOptionIndex = idx);
-                      },
-                      borderRadius: BorderRadius.circular(radius.medium),
-                      child: Container(
-                        constraints: const BoxConstraints(minHeight: 44),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+                    child: Material(
+                      color: isSelected
+                          ? colors.primary
+                          : colors.surfaceElevated,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(radius.medium),
+                        side: BorderSide(
+                          color: isSelected ? colors.primary : colors.border,
                         ),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? colors.primary
-                              : colors.surfaceElevated,
-                          borderRadius: BorderRadius.circular(radius.medium),
-                          border: Border.all(
-                            color: isSelected ? colors.primary : colors.border,
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _splitOptionIndex = idx);
+                        },
+                        child: Container(
+                          constraints: const BoxConstraints(minHeight: 48),
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
                           ),
-                        ),
-                        child: Text(
-                          option.shortLabel,
-                          style: context.textTheme.labelMedium?.copyWith(
-                            color: isSelected
-                                ? colors.onPrimary
-                                : colors.textPrimary,
+                          child: Text(
+                            option.shortLabel,
+                            style: context.textTheme.labelMedium?.copyWith(
+                              color: isSelected
+                                  ? colors.onPrimary
+                                  : colors.textPrimary,
+                            ),
                           ),
                         ),
                       ),
@@ -842,14 +831,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: colors.surface,
-            borderRadius: BorderRadius.circular(radius.large),
-            border: Border.all(color: colors.border),
-          ),
-          child: const Column(
+        const AppCard(
+          padding: EdgeInsets.all(16),
+          child: Column(
             children: [
               _BulletRow(
                 icon: Icons.restaurant_rounded,
@@ -918,28 +902,20 @@ class _SelectableOptionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final radius = context.appRadius;
 
     return Semantics(
       selected: selected,
       button: true,
-      child: InkWell(
+      child: AppCard(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(radius.large),
-        child: Container(
-          constraints: BoxConstraints(minHeight: minHeight),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: selected
-                ? colors.primary.withValues(alpha: 0.12)
-                : colors.surface,
-            borderRadius: BorderRadius.circular(radius.large),
-            border: Border.all(
-              color: selected ? colors.primary : colors.border,
-              width: selected ? 1.5 : 1,
-            ),
-          ),
-          child: Row(
+        backgroundColor: selected
+            ? colors.primary.withValues(alpha: 0.12)
+            : colors.surface,
+        borderColor: selected ? colors.primary : colors.border,
+        borderWidth: selected ? 1.5 : 1,
+        constraints: BoxConstraints(minHeight: minHeight),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
             children: [
               Expanded(
                 child: Column(
@@ -986,7 +962,6 @@ class _SelectableOptionCard extends StatelessWidget {
               ),
             ],
           ),
-        ),
       ),
     );
   }

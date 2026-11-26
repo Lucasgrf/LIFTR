@@ -7,6 +7,7 @@ import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
@@ -154,38 +155,38 @@ class _LogCardioModalState extends ConsumerState<LogCardioModal> {
               label: mod,
               button: true,
               selected: selected,
-              child: InkWell(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() => _modality = mod);
-                },
-                borderRadius: BorderRadius.circular(radius.full),
-                child: Container(
-                  constraints: const BoxConstraints(
-                    minHeight: 48,
-                    minWidth: 48,
+              child: Material(
+                color: selected ? colors.primaryMuted : colors.surfaceElevated,
+                shape: StadiumBorder(
+                  side: BorderSide(
+                    color: selected ? colors.primary : colors.border,
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? colors.primaryMuted
-                        : colors.surfaceElevated,
-                    borderRadius: BorderRadius.circular(radius.full),
-                    border: Border.all(
-                      color: selected ? colors.primary : colors.border,
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  customBorder: const StadiumBorder(),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() => _modality = mod);
+                  },
+                  child: Container(
+                    constraints: const BoxConstraints(
+                      minHeight: 48,
+                      minWidth: 48,
                     ),
-                  ),
-                  child: Text(
-                    mod,
-                    style: context.textTheme.labelMedium?.copyWith(
-                      color: selected
-                          ? colors.primaryLight
-                          : colors.textPrimary,
-                      fontWeight:
-                          selected ? FontWeight.w700 : FontWeight.w500,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    child: Text(
+                      mod,
+                      style: context.textTheme.labelMedium?.copyWith(
+                        color: selected
+                            ? colors.primaryLight
+                            : colors.textPrimary,
+                        fontWeight:
+                            selected ? FontWeight.w700 : FontWeight.w500,
+                      ),
                     ),
                   ),
                 ),
@@ -201,49 +202,50 @@ class _LogCardioModalState extends ConsumerState<LogCardioModal> {
           ),
         ),
         const SizedBox(height: 8),
-        Container(
+        AppCard(
+          backgroundColor: colors.surfaceElevated,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: colors.surfaceElevated,
-            borderRadius: BorderRadius.circular(radius.large),
-            border: Border.all(color: colors.border),
-          ),
           child: Row(
             children: [
               Semantics(
                 label: 'Diminuir 5 minutos',
                 button: true,
-                child: InkWell(
-                  onTap: () => _stepMinutes(-5),
-                  borderRadius: BorderRadius.circular(radius.medium),
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: colors.surface,
-                      borderRadius: BorderRadius.circular(radius.medium),
-                      border: Border.all(color: colors.border),
-                    ),
-                    child: Icon(
-                      Icons.remove_rounded,
-                      color: colors.textPrimary,
+                child: Material(
+                  color: colors.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(radius.medium),
+                    side: BorderSide(color: colors.border),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () => _stepMinutes(-5),
+                    child: SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Icon(
+                        Icons.remove_rounded,
+                        color: colors.textPrimary,
+                      ),
                     ),
                   ),
                 ),
               ),
               Expanded(
-                child: InkWell(
-                  onTap: _editMinutesDialog,
-                  borderRadius: BorderRadius.circular(radius.small),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text(
-                      formatCardioSeconds(_minutes * 60),
-                      textAlign: TextAlign.center,
-                      style: context.textTheme.displaySmall?.copyWith(
-                        color: colors.primaryLight,
-                        fontFeatures: AppTypography.tabularFeatures,
+                child: Semantics(
+                  label: 'Editar duração de cardio',
+                  button: true,
+                  child: InkWell(
+                    onTap: _editMinutesDialog,
+                    borderRadius: BorderRadius.circular(radius.small),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        formatCardioSeconds(_minutes * 60),
+                        textAlign: TextAlign.center,
+                        style: context.textTheme.displaySmall?.copyWith(
+                          color: colors.primaryLight,
+                          fontFeatures: AppTypography.tabularFeatures,
+                        ),
                       ),
                     ),
                   ),
@@ -252,21 +254,22 @@ class _LogCardioModalState extends ConsumerState<LogCardioModal> {
               Semantics(
                 label: 'Aumentar 5 minutos',
                 button: true,
-                child: InkWell(
-                  onTap: () => _stepMinutes(5),
-                  borderRadius: BorderRadius.circular(radius.medium),
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: colors.surface,
-                      borderRadius: BorderRadius.circular(radius.medium),
-                      border: Border.all(color: colors.border),
-                    ),
-                    child: Icon(
-                      Icons.add_rounded,
-                      color: colors.textPrimary,
+                child: Material(
+                  color: colors.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(radius.medium),
+                    side: BorderSide(color: colors.border),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () => _stepMinutes(5),
+                    child: SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Icon(
+                        Icons.add_rounded,
+                        color: colors.textPrimary,
+                      ),
                     ),
                   ),
                 ),
@@ -284,38 +287,38 @@ class _LogCardioModalState extends ConsumerState<LogCardioModal> {
               label: '$preset minutos',
               button: true,
               selected: isSelected,
-              child: InkWell(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() => _minutes = preset);
-                },
-                borderRadius: BorderRadius.circular(radius.small),
-                child: Container(
-                  constraints: const BoxConstraints(
-                    minHeight: 48,
-                    minWidth: 52,
+              child: Material(
+                color: isSelected ? colors.primary : colors.surfaceElevated,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(radius.small),
+                  side: BorderSide(
+                    color: isSelected ? colors.primary : colors.border,
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? colors.primary
-                        : colors.surfaceElevated,
-                    borderRadius: BorderRadius.circular(radius.small),
-                    border: Border.all(
-                      color: isSelected ? colors.primary : colors.border,
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() => _minutes = preset);
+                  },
+                  child: Container(
+                    constraints: const BoxConstraints(
+                      minHeight: 48,
+                      minWidth: 52,
                     ),
-                  ),
-                  child: Text(
-                    '${preset}m',
-                    style: context.textTheme.labelMedium?.copyWith(
-                      color: isSelected
-                          ? colors.onPrimary
-                          : colors.textSecondary,
-                      fontFeatures: AppTypography.tabularFeatures,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '${preset}m',
+                      style: context.textTheme.labelMedium?.copyWith(
+                        color: isSelected
+                            ? colors.onPrimary
+                            : colors.textSecondary,
+                        fontFeatures: AppTypography.tabularFeatures,
+                      ),
                     ),
                   ),
                 ),

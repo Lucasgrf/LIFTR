@@ -4,9 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
-import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
@@ -127,7 +127,6 @@ class _ProgressExercisesViewState extends ConsumerState<ProgressExercisesView> {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final radius = context.appRadius;
     final fitnessColors = context.fitnessColors;
     final historyAsync = ref.watch(historyListProvider);
 
@@ -206,21 +205,14 @@ class _ProgressExercisesViewState extends ConsumerState<ProgressExercisesView> {
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: InkWell(
+                child: AppCard(
                   onTap: () => ExerciseHistoryModal.show(
                     context,
                     exerciseId: item.id,
                     exerciseName: item.name,
                   ),
-                  borderRadius: BorderRadius.circular(radius.large),
-                  child: Container(
-                    padding: const EdgeInsets.all(15),
-                    decoration: BoxDecoration(
-                      color: colors.surface,
-                      borderRadius: BorderRadius.circular(radius.large),
-                      border: Border.all(color: colors.border),
-                    ),
-                    child: Row(
+                  padding: const EdgeInsets.all(15),
+                  child: Row(
                       children: [
                         Expanded(
                           child: Column(
@@ -271,7 +263,6 @@ class _ProgressExercisesViewState extends ConsumerState<ProgressExercisesView> {
                         ),
                       ],
                     ),
-                  ),
                 ),
               );
             }),

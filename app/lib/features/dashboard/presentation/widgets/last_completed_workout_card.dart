@@ -9,6 +9,7 @@ import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/workout_mood_icon.dart';
@@ -48,17 +49,10 @@ class LastCompletedWorkoutCard extends StatelessWidget {
       session.totalVolumeKg.round(),
     );
 
-    return InkWell(
+    return AppCard(
       onTap: onTap ?? () => context.push('/session/${session.id}/summary'),
-      borderRadius: BorderRadius.circular(radius.large),
-      child: Container(
-        padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: BorderRadius.circular(radius.large),
-          border: Border.all(color: colors.border),
-        ),
-        child: Column(
+      padding: const EdgeInsets.all(15),
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -174,7 +168,6 @@ class LastCompletedWorkoutCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 }

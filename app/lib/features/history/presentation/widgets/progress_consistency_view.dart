@@ -10,6 +10,7 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
@@ -129,13 +130,9 @@ class _ProgressConsistencyViewState
               container: true,
               explicitChildNodes: true,
               label: 'Mapa de consistência das últimas 12 semanas',
-              child: Container(
+              child: AppCard(
+                variant: AppCardVariant.subtle,
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: colors.surfaceSubtle,
-                  borderRadius: BorderRadius.circular(radius.large),
-                  border: Border.all(color: colors.border),
-                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -243,55 +240,47 @@ class _ProgressConsistencyViewState
             SizedBox(height: context.appSpacing.space12),
 
             // Selected Day Detail Strip
-            InkWell(
+            AppCard(
               onTap: selectedSessions.isNotEmpty
                   ? () => context.push(
                         '/session/${selectedSessions.first.id}/summary',
                       )
                   : null,
-              borderRadius: BorderRadius.circular(radius.medium),
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 48),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                decoration: BoxDecoration(
-                  color: colors.surface,
-                  borderRadius: BorderRadius.circular(radius.medium),
-                  border: Border.all(color: colors.border),
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      DateFormat("d 'de' MMM", 'pt_BR').format(selectedDay),
+              borderRadius: radius.medium,
+              constraints: const BoxConstraints(minHeight: 48),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              child: Row(
+                children: [
+                  Text(
+                    DateFormat("d 'de' MMM", 'pt_BR').format(selectedDay),
+                    style: context.textTheme.labelMedium?.copyWith(
+                      color: colors.textSecondary,
+                      fontFeatures: AppTypography.tabularFeatures,
+                    ),
+                  ),
+                  const Spacer(),
+                  Flexible(
+                    child: Text(
+                      selectedSessions.isEmpty
+                          ? 'Dia de descanso'
+                          : '${selectedSessions.first.workoutName} · ${selectedSessions.first.totalWorkingSetsCount} séries · ${mathMaxOne(selectedSessions.first.durationSeconds ~/ 60)} min',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: context.textTheme.labelMedium?.copyWith(
-                        color: colors.textSecondary,
+                        color: colors.textPrimary,
                         fontFeatures: AppTypography.tabularFeatures,
                       ),
                     ),
-                    const Spacer(),
-                    Flexible(
-                      child: Text(
-                        selectedSessions.isEmpty
-                            ? 'Dia de descanso'
-                            : '${selectedSessions.first.workoutName} · ${selectedSessions.first.totalWorkingSetsCount} séries · ${mathMaxOne(selectedSessions.first.durationSeconds ~/ 60)} min',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.textTheme.labelMedium?.copyWith(
-                          color: colors.textPrimary,
-                          fontFeatures: AppTypography.tabularFeatures,
-                        ),
-                      ),
+                  ),
+                  if (selectedSessions.isNotEmpty) ...[
+                    const SizedBox(width: 6),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 18,
+                      color: colors.textTertiary,
                     ),
-                    if (selectedSessions.isNotEmpty) ...[
-                      const SizedBox(width: 6),
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        size: 18,
-                        color: colors.textTertiary,
-                      ),
-                    ],
                   ],
-                ),
+                ],
               ),
             ),
           ],
@@ -327,15 +316,9 @@ class _StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final radius = context.appRadius;
 
-    return Container(
+    return AppCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(radius.large),
-        border: Border.all(color: colors.border),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

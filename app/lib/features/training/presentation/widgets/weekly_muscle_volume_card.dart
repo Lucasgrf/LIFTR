@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
-import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 
@@ -28,9 +28,6 @@ class WeeklyMuscleVolumeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final radius = context.appRadius;
-
     final counts = <String, int>{
       'chest': 0,
       'back': 0,
@@ -66,13 +63,8 @@ class WeeklyMuscleVolumeCard extends StatelessWidget {
       (prev, e) => e.sets > prev ? e.sets : prev,
     );
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(radius.large),
-        border: Border.all(color: colors.border),
-      ),
+    return AppCard(
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

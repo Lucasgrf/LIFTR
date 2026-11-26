@@ -25,62 +25,66 @@ class OfflineBannerWidget extends StatelessWidget {
       liveRegion: true,
       explicitChildNodes: true,
       label: text,
-      child: Container(
-        width: double.infinity,
-        constraints: const BoxConstraints(minHeight: 44),
-        padding: EdgeInsets.only(
-          left: 12,
-          right: onDismiss != null ? 0 : 12,
-        ),
-        decoration: BoxDecoration(
-          color: colors.surfaceSubtle,
-          border: Border(
-            bottom: BorderSide(
-              color: colors.warning.withValues(alpha: 0.35),
-              width: 1,
-            ),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (onDismiss != null) const SizedBox(width: 48),
-            Icon(
-              Icons.wifi_off_rounded,
-              size: 16,
-              color: colors.warning,
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                text,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.textTheme.labelSmall?.copyWith(
-                  color: colors.warning,
-                  fontWeight: FontWeight.w600,
-                  fontFeatures: AppTypography.tabularFeatures,
-                ),
+      child: Material(
+        color: colors.surfaceSubtle,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: colors.warning.withValues(alpha: 0.35),
+                width: 1,
               ),
             ),
-            if (onDismiss != null)
-              Semantics(
-                label: 'Ocultar aviso offline',
-                button: true,
-                child: InkWell(
-                  onTap: onDismiss,
-                  child: SizedBox(
-                    width: 48,
-                    height: 44,
-                    child: Icon(
-                      Icons.close_rounded,
-                      size: 16,
+          ),
+          child: Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(minHeight: 48),
+            padding: EdgeInsets.only(
+              left: 12,
+              right: onDismiss != null ? 0 : 12,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (onDismiss != null) const SizedBox(width: 48),
+                Icon(
+                  Icons.wifi_off_rounded,
+                  size: 16,
+                  color: colors.warning,
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    text,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.labelSmall?.copyWith(
                       color: colors.warning,
+                      fontWeight: FontWeight.w600,
+                      fontFeatures: AppTypography.tabularFeatures,
                     ),
                   ),
                 ),
-              ),
-          ],
+                if (onDismiss != null)
+                  Semantics(
+                    label: 'Ocultar aviso offline',
+                    button: true,
+                    child: InkWell(
+                      onTap: onDismiss,
+                      child: SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: Icon(
+                          Icons.close_rounded,
+                          size: 16,
+                          color: colors.warning,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );

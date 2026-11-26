@@ -11,6 +11,7 @@ import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
@@ -34,7 +35,6 @@ class WeeklyComparisonScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.appColors;
-    final radius = context.appRadius;
     final offset = ref.watch(weeklyComparisonOffsetProvider);
     final comparisonAsync = ref.watch(weeklyComparisonProvider);
 
@@ -88,15 +88,10 @@ class WeeklyComparisonScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // 1. Week Navigator Strip
-                      Container(
+                      AppCard(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 6,
                           vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.surface,
-                          borderRadius: BorderRadius.circular(radius.large),
-                          border: Border.all(color: colors.border),
                         ),
                         child: Row(
                           children: [
@@ -194,13 +189,8 @@ class WeeklyComparisonScreen extends ConsumerWidget {
                       const SizedBox(height: 16),
 
                       // 3. Weekly Comparison Matrix
-                      Container(
+                      AppCard(
                         padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: colors.surface,
-                          borderRadius: BorderRadius.circular(radius.large),
-                          border: Border.all(color: colors.border),
-                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -476,13 +466,10 @@ class _HeroCardioCard extends StatelessWidget {
       );
     }
 
-    return Container(
+    return AppCard(
+      borderRadius: radius.xl,
+      borderColor: colors.primary.withValues(alpha: 0.38),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(radius.xl),
-        border: Border.all(color: colors.primary.withValues(alpha: 0.38)),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

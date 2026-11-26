@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
-import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/workout_mood_icon.dart';
 
@@ -58,23 +58,10 @@ class HistoryWorkoutCard extends StatelessWidget {
                       if (session.mood != null)
                         WorkoutMoodChip(mood: session.mood!, compact: true),
                       if (session.perceivedExertion != null)
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: context.appSpacing.space8,
-                            vertical: context.appSpacing.space2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.primary.withValues(alpha: 0.15),
-                            borderRadius:
-                                BorderRadius.circular(context.appRadius.small),
-                          ),
-                          child: Text(
-                            'RPE ${session.perceivedExertion!.toStringAsFixed(1)}',
-                            style: context.textTheme.labelSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colors.primary,
-                            ),
-                          ),
+                        LiftrBadge(
+                          label:
+                              'RPE ${session.perceivedExertion!.toStringAsFixed(1)}',
+                          tone: LiftrBadgeTone.brand,
                         ),
                     ],
                   ),

@@ -114,65 +114,71 @@ class _AppShellState extends ConsumerState<AppShell> {
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: colors.surfaceSubtle,
-          border: Border(
-            top: BorderSide(color: colors.border, width: 1),
+      bottomNavigationBar: Material(
+        color: colors.surfaceSubtle,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(color: colors.border, width: 1),
+            ),
           ),
-        ),
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: 64,
-            child: Row(
-              children: List.generate(_destinations.length, (index) {
-                final item = _destinations[index];
-                final isSelected = selectedIndex == index;
-                final fg = isSelected ? colors.primaryLight : colors.textTertiary;
+          child: SafeArea(
+            top: false,
+            child: SizedBox(
+              height: 64,
+              child: Row(
+                children: List.generate(_destinations.length, (index) {
+                  final item = _destinations[index];
+                  final isSelected = selectedIndex == index;
+                  final fg =
+                      isSelected ? colors.primaryLight : colors.textTertiary;
 
-                return Expanded(
-                  child: Semantics(
-                    label: item.label,
-                    selected: isSelected,
-                    button: true,
-                    child: InkWell(
-                      onTap: () => _goBranch(index),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          AnimatedContainer(
-                            duration: motion.resolve(context, motion.fast),
-                            curve: motion.curveStandard,
-                            width: isSelected ? 24 : 0,
-                            height: 2.5,
-                            margin: const EdgeInsets.only(bottom: 7),
-                            decoration: BoxDecoration(
-                              color: colors.primary,
-                              borderRadius: BorderRadius.circular(radius.full),
+                  return Expanded(
+                    child: Semantics(
+                      label: item.label,
+                      selected: isSelected,
+                      button: true,
+                      child: InkWell(
+                        onTap: () => _goBranch(index),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            AnimatedContainer(
+                              duration: motion.resolve(context, motion.fast),
+                              curve: motion.curveStandard,
+                              width: isSelected ? 24 : 0,
+                              height: 2.5,
+                              margin: const EdgeInsets.only(bottom: 7),
+                              decoration: BoxDecoration(
+                                color: colors.primary,
+                                borderRadius:
+                                    BorderRadius.circular(radius.full),
+                              ),
                             ),
-                          ),
-                          Icon(
-                            isSelected ? item.activeIcon : item.icon,
-                            size: 22,
-                            color: fg,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            item.label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.textTheme.labelSmall?.copyWith(
+                            Icon(
+                              isSelected ? item.activeIcon : item.icon,
+                              size: 22,
                               color: fg,
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 4),
+                            Text(
+                              item.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: fg,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              }),
+                  );
+                }),
+              ),
             ),
           ),
         ),

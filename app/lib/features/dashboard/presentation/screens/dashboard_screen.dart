@@ -287,20 +287,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             Semantics(
                               label: 'Abrir perfil',
                               button: true,
-                              child: InkWell(
-                                onTap: () => context.push('/profile'),
-                                borderRadius: BorderRadius.circular(999),
-                                child: Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    color: colors.surface,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: colors.border),
-                                  ),
-                                  child: _HeaderAvatarThumb(
-                                    avatarUrl: settings.avatarUrl,
-                                    storagePath: settings.avatarStoragePath,
+                              child: Material(
+                                color: colors.surface,
+                                shape: CircleBorder(
+                                  side: BorderSide(color: colors.border),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: InkWell(
+                                  onTap: () => context.push('/profile'),
+                                  child: SizedBox(
+                                    width: 48,
+                                    height: 48,
+                                    child: _HeaderAvatarThumb(
+                                      avatarUrl: settings.avatarUrl,
+                                      storagePath: settings.avatarStoragePath,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -309,23 +310,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             Semantics(
                               label: 'Abrir configurações',
                               button: true,
-                              child: InkWell(
-                                onTap: () => context.push('/settings'),
-                                borderRadius:
-                                    BorderRadius.circular(radius.medium),
-                                child: Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    color: colors.surface,
-                                    borderRadius:
-                                        BorderRadius.circular(radius.medium),
-                                    border: Border.all(color: colors.border),
-                                  ),
-                                  child: Icon(
-                                    Icons.settings_rounded,
-                                    color: colors.textSecondary,
-                                    size: 22,
+                              child: Material(
+                                color: colors.surface,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(radius.medium),
+                                  side: BorderSide(color: colors.border),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: InkWell(
+                                  onTap: () => context.push('/settings'),
+                                  child: SizedBox(
+                                    width: 48,
+                                    height: 48,
+                                    child: Icon(
+                                      Icons.settings_rounded,
+                                      color: colors.textSecondary,
+                                      size: 22,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -406,12 +408,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ],
                         ),
                         const SizedBox(height: 10),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: colors.surface,
-                            borderRadius: BorderRadius.circular(radius.large),
-                            border: Border.all(color: colors.border),
-                          ),
+                        AppCard(
+                          padding: EdgeInsets.zero,
                           child: Column(
                             children: [
                               for (var i = 0;

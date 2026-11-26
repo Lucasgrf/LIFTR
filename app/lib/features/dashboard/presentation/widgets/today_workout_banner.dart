@@ -37,7 +37,6 @@ class TodayWorkoutBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final radius = context.appRadius;
     final fitnessColors = context.fitnessColors;
 
     // 1. Ongoing active session
@@ -50,34 +49,10 @@ class TodayWorkoutBanner extends StatelessWidget {
           children: [
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: fitnessColors.progressUp.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(radius.full),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.timer_rounded,
-                        size: 14,
-                        color: fitnessColors.progressUp,
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        'EM ANDAMENTO',
-                        style: context.textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: fitnessColors.progressUp,
-                          letterSpacing: 0.6,
-                        ),
-                      ),
-                    ],
-                  ),
+                const LiftrBadge(
+                  label: 'EM ANDAMENTO',
+                  tone: LiftrBadgeTone.success,
+                  icon: Icons.timer_rounded,
                 ),
                 const Spacer(),
                 Text(

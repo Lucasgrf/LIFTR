@@ -261,14 +261,9 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
         ),
         const SizedBox(height: 14),
         // Automatic RPE & Execution Score card
-        Container(
-          width: double.infinity,
+        AppCard(
+          backgroundColor: colors.surfaceElevated,
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: colors.surfaceElevated,
-            borderRadius: BorderRadius.circular(radius.large),
-            border: Border.all(color: colors.border),
-          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

@@ -16,6 +16,7 @@ import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_brand_mark.dart';
@@ -762,13 +763,8 @@ class SessionSummaryScreen extends ConsumerWidget {
                                 ),
                               ),
                               const SizedBox(height: 10),
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: colors.surface,
-                                  borderRadius:
-                                      BorderRadius.circular(radius.large),
-                                  border: Border.all(color: colors.border),
-                                ),
+                              AppCard(
+                                padding: EdgeInsets.zero,
                                 child: Column(
                                   children: [
                                     for (var i = 0;
