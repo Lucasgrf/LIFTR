@@ -502,57 +502,81 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                       LayoutBuilder(
                         builder: (context, constraints) {
                           final isCompact = constraints.maxWidth < 300;
-                          return SizedBox(
-                            width: double.infinity,
-                            child: Wrap(
-                              alignment: WrapAlignment.spaceBetween,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              spacing: 8,
-                              runSpacing: 4,
-                              children: [
-                                Text(
-                                  'Descanso',
-                                  style: context.textTheme.bodyMedium?.copyWith(
-                                    color: context.appColors.textSecondary,
+                          final restValues =
+                              ConfigureSetsScreen.restDropdownValuesFor(
+                            template.restSeconds,
+                          );
+                          String formatRest(int v) => v == 0
+                              ? 'Sem descanso'
+                              : ConfigureSetsScreen.restOptions.contains(v)
+                                  ? '${v}s'
+                                  : '${v}s (personalizado)';
+                          final labelWidget = Text(
+                            'Descanso',
+                            style: context.textTheme.bodyMedium?.copyWith(
+                              color: context.appColors.textSecondary,
+                            ),
+                          );
+                          final restDropdown = DropdownButton<int>(
+                            value: template.restSeconds,
+                            isExpanded: true,
+                            alignment: isCompact
+                                ? AlignmentDirectional.centerStart
+                                : AlignmentDirectional.centerEnd,
+                            dropdownColor: context.appColors.surfaceElevated,
+                            isDense: true,
+                            underline: const SizedBox(),
+                            selectedItemBuilder: (context) => [
+                              for (final v in restValues)
+                                Align(
+                                  alignment: isCompact
+                                      ? AlignmentDirectional.centerStart
+                                      : AlignmentDirectional.centerEnd,
+                                  child: Text(
+                                    formatRest(v),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                DropdownButton<int>(
-                                  value: template.restSeconds,
-                                  isExpanded: isCompact,
-                                  dropdownColor:
-                                      context.appColors.surfaceElevated,
-                                  isDense: true,
-                                  underline: const SizedBox(),
-                                  items:
-                                      ConfigureSetsScreen.restDropdownValuesFor(
-                                    template.restSeconds,
-                                  ).map((v) {
-                                    final label = v == 0
-                                        ? 'Sem descanso'
-                                        : ConfigureSetsScreen.restOptions
-                                                .contains(v)
-                                            ? '${v}s'
-                                            : '${v}s (personalizado)';
-                                    return DropdownMenuItem<int>(
-                                      value: v,
-                                      child: Text(
-                                        label,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    );
-                                  }).toList(),
-                                  onChanged: (v) {
-                                    if (v != null) {
-                                      setState(() {
-                                        final cur = _sets[idx];
-                                        _sets[idx] =
-                                            cur.copyWith(restSeconds: v);
-                                      });
-                                    }
-                                  },
-                                ),
+                            ],
+                            items: restValues
+                                .map(
+                                  (v) => DropdownMenuItem<int>(
+                                    value: v,
+                                    child: Text(
+                                      formatRest(v),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (v) {
+                              if (v != null) {
+                                setState(() {
+                                  final cur = _sets[idx];
+                                  _sets[idx] = cur.copyWith(restSeconds: v);
+                                });
+                              }
+                            },
+                          );
+
+                          if (isCompact) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                labelWidget,
+                                AppSpacing.verticalGap4,
+                                restDropdown,
                               ],
-                            ),
+                            );
+                          }
+
+                          return Row(
+                            children: [
+                              labelWidget,
+                              AppSpacing.horizontalGap8,
+                              Expanded(child: restDropdown),
+                            ],
                           );
                         },
                       ),
@@ -567,7 +591,11 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                 OutlinedButton.icon(
                   onPressed: () => _addSet(SetType.working, isCardio: true),
                   icon: const Icon(Icons.add_rounded, size: 16),
-                  label: const Text('+ Bloco de cardio'),
+                  label: const Text(
+                    '+ Bloco de cardio',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 )
               else
                 _buildInputPair(
@@ -576,7 +604,11 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                   first: OutlinedButton.icon(
                     onPressed: () => _addSet(SetType.warmup),
                     icon: const Icon(Icons.add_rounded, size: 16),
-                    label: const Text('+ Aquecimento'),
+                    label: const Text(
+                      '+ Aquecimento',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   second: OutlinedButton.icon(
                     onPressed: () => _addSet(
@@ -586,7 +618,11 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                       equipment: exercise.exercise?.equipment,
                     ),
                     icon: const Icon(Icons.add_rounded, size: 16),
-                    label: const Text('+ Série Válida'),
+                    label: const Text(
+                      '+ Série Válida',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
               const SizedBox(height: 32),
