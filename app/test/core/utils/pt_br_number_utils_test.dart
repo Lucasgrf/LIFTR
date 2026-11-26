@@ -1,15 +1,27 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
 import 'package:personal_fitness_os/core/utils/pt_br_number_utils.dart';
+import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('pt_br_number_utils', () {
-    test('parsePtBrDouble parses PT-BR commas, dot decimals and thousands separators', () {
+    test('parsePtBrDouble parses PT-BR commas, dot decimals, trailing comma and thousands', () {
+      expect(parsePtBrDouble('80,'), 80.0);
+      expect(parsePtBrDouble('80,'), isA<double>());
+      expect(parsePtBrDouble('80,5'), 80.5);
+      expect(parsePtBrDouble('80,5'), isA<double>());
+      expect(parsePtBrDouble('80.5'), 80.5);
       expect(parsePtBrDouble('82,5'), 82.5);
       expect(parsePtBrDouble('82.5'), 82.5);
+      expect(parsePtBrDouble('1.000'), 1000.0);
+      expect(parsePtBrDouble('1.000'), isA<double>());
       expect(parsePtBrDouble(' 1.200,75 '), 1200.75);
       expect(parsePtBrDouble('1,200.75'), 1200.75);
       expect(parsePtBrDouble('100'), 100.0);
       expect(parsePtBrDouble('0,25'), 0.25);
+      expect(parsePtBrDouble('0.125'), 0.125);
     });
 
     test('parsePtBrDouble rejects empty or malformed inputs', () {
@@ -29,17 +41,36 @@ void main() {
       expect(formatPtBrDecimal(-0.0), '0');
     });
 
-    test('PtBrDecimalInputFormatter allows comma/dot up to maxDecimalDigits and blocks junk', () {
+    test('PtBrDecimalInputFormatter handles 80,, 80,5, pasted 80.5, 1.000 and empty string', () {
       final formatter = PtBrDecimalInputFormatter(maxDecimalDigits: 1);
       const old = TextEditingValue(text: '82,5');
 
       expect(
-        formatter.formatEditUpdate(const TextEditingValue(), const TextEditingValue(text: '82,5')).text,
-        '82,5',
+        formatter.formatEditUpdate(const TextEditingValue(text: '80'), const TextEditingValue(text: '80,')).text,
+        '80,',
       );
       expect(
-        formatter.formatEditUpdate(const TextEditingValue(), const TextEditingValue(text: '82.5')).text,
-        '82.5',
+        formatter.formatEditUpdate(const TextEditingValue(text: '80,'), const TextEditingValue(text: '80,5')).text,
+        '80,5',
+      );
+      expect(
+        formatter.formatEditUpdate(const TextEditingValue(), const TextEditingValue(text: '80.5')).text,
+        '80.5',
+      );
+      expect(
+        formatter.formatEditUpdate(old, const TextEditingValue(text: '')).text,
+        '',
+      );
+      // "1.000" has 3 digits after dot, exceeding maxDecimalDigits (1 or 2)
+      expect(
+        formatter.formatEditUpdate(const TextEditingValue(text: '1.0'), const TextEditingValue(text: '1.000')).text,
+        '1.0',
+      );
+      expect(
+        PtBrDecimalInputFormatter(maxDecimalDigits: 2)
+            .formatEditUpdate(const TextEditingValue(text: '1.00'), const TextEditingValue(text: '1.000'))
+            .text,
+        '1.00',
       );
       expect(
         formatter.formatEditUpdate(old, const TextEditingValue(text: '82,55')).text,
@@ -53,6 +84,37 @@ void main() {
         formatter.formatEditUpdate(old, const TextEditingValue(text: '82a')).text,
         '82,5',
       );
+    });
+
+    test('UserSettings persists parsed PT-BR weights consistently as double', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      final c1 = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(c1.dispose);
+
+      c1.read(userSettingsProvider.notifier).updateBodyData(
+            weightKg: parsePtBrDouble('80,5'),
+          );
+      await Future<void>.delayed(Duration.zero);
+
+      final c2 = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(c2.dispose);
+
+      final reloaded = c2.read(userSettingsProvider);
+      expect(reloaded.weightKg, 80.5);
+      expect(reloaded.weightKg, isA<double>());
+      expect(reloaded.toJson()['weightKg'], isA<double>());
+
+      c2.read(userSettingsProvider.notifier).updateBodyData(
+            weightKg: parsePtBrDouble('80,'),
+          );
+      expect(c2.read(userSettingsProvider).weightKg, 80.0);
+      expect(c2.read(userSettingsProvider).weightKg, isA<double>());
     });
   });
 }

@@ -977,6 +977,133 @@ void main() {
     });
 
     testWidgets(
+        'OnboardingScreen Step 0 back routes to /login when stack cannot pop, and _finish releases _isSubmitting on error',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(375, 812));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      // Part 1: Step 0 back goes to /login when GoRouter cannot pop
+      final loginRouter = GoRouter(
+        initialLocation: '/onboarding',
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (_, _) => const Scaffold(body: Text('Home')),
+          ),
+          GoRoute(
+            path: '/login',
+            builder: (_, _) => const Scaffold(body: Text('LoginTarget')),
+          ),
+          GoRoute(
+            path: '/onboarding',
+            builder: (_, _) => const OnboardingScreen(),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            profileControllerProvider
+                .overrideWith((ref) => _NoopProfileRemoteController(ref)),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.dark(),
+            routerConfig: loginRouter,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('LoginTarget'), findsOneWidget);
+    });
+
+    testWidgets(
+        'OnboardingScreen releases _isSubmitting and shows error snackbar when _finish fails, allowing retry',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(375, 812));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      var shouldThrow = true;
+      final retryRouter = GoRouter(
+        initialLocation: '/onboarding',
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (_, _) => const Scaffold(body: Text('HomeAfterRetry')),
+          ),
+          GoRoute(
+            path: '/login',
+            builder: (_, _) => const Scaffold(body: Text('LoginTarget')),
+          ),
+          GoRoute(
+            path: '/onboarding',
+            builder: (_, _) => const OnboardingScreen(),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            profileControllerProvider
+                .overrideWith((ref) => _NoopProfileRemoteController(ref)),
+            onboardingCompleteHookProvider.overrideWithValue(
+              (_) async {
+                if (shouldThrow) {
+                  throw const ServerFailure('503 Service Unavailable');
+                }
+              },
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.dark(),
+            routerConfig: retryRouter,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      for (var i = 0; i < 5; i++) {
+        final nextLabel = i == 4 ? 'Confirmar plano' : 'Continuar';
+        await tester.tap(find.text(nextLabel));
+        await tester.pumpAndSettle();
+      }
+      expect(find.text('Passo 6 de 6'), findsOneWidget);
+
+      final skipBtn = find.text('Pular e fazer depois');
+      await tester.ensureVisible(skipBtn);
+      await tester.tap(skipBtn);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('servidor está temporariamente indisponível'),
+        findsOneWidget,
+      );
+      expect(find.text('Passo 6 de 6'), findsOneWidget);
+
+      ScaffoldMessenger.of(
+        tester.element(find.byType(OnboardingScreen)),
+      ).hideCurrentSnackBar();
+      await tester.pumpAndSettle();
+
+      // Retry succeeds because _isSubmitting was released in finally
+      shouldThrow = false;
+      await tester.ensureVisible(skipBtn);
+      await tester.tap(skipBtn);
+      await tester.pumpAndSettle();
+      expect(find.text('HomeAfterRetry'), findsOneWidget);
+    });
+
+    testWidgets(
         'AiWorkoutGeneratorScreen gates offline state before wizard and uses AppInput on Step 5',
         (tester) async {
       await tester.binding.setSurfaceSize(const Size(375, 812));

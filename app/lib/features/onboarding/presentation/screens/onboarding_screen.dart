@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/constants/supabase_config.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_motion.dart';
@@ -21,6 +22,11 @@ import 'package:personal_fitness_os/features/settings/presentation/providers/set
 import 'package:personal_fitness_os/features/training/domain/constants/split_presets.dart';
 import 'package:personal_fitness_os/routing/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+typedef OnboardingCompleteHook = Future<void> Function(WidgetRef ref);
+
+final onboardingCompleteHookProvider =
+    Provider<OnboardingCompleteHook?>((ref) => null);
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -200,7 +206,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
       final targetRoute = openAiGenerator ? '/training/ai-generator' : '/';
 
+      final completeHook = ref.read(onboardingCompleteHookProvider);
+      if (completeHook != null) {
+        await completeHook(ref);
+      }
+
       if (!SupabaseConfig.isConfigured) {
+        if (!mounted) return;
         syncActiveAuthSession(ref, isLoggedIn: true);
         context.go(targetRoute);
         return;
@@ -238,6 +250,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       if (!mounted) return;
       context.showSnackBar('Perfil salvo! Entre na sua conta para sincronizar.');
       context.go('/login');
+    } catch (e, st) {
+      if (mounted) {
+        context.showSnackBar(
+          userFacingMessage(
+            e,
+            stackTrace: st,
+            context: 'OnboardingScreen._finish',
+          ),
+          isError: true,
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);

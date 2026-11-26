@@ -33,6 +33,16 @@ double? parsePtBrDouble(String? raw) {
           parts.skip(1).every((p) => p.length == 3 && RegExp(r'^\d+$').hasMatch(p));
       if (!validGrouping) return null;
       normalized = normalized.replaceAll('.', '');
+    } else if (dotCount == 1) {
+      // Treat PT-BR 3-digit grouping such as "1.000" as 1000, while keeping
+      // genuine small decimals like "0.125" or "80.5".
+      final parts = normalized.split('.');
+      final isPtBrThousands =
+          RegExp(r'^[1-9]\d{0,2}$').hasMatch(parts[0]) &&
+          RegExp(r'^\d{3}$').hasMatch(parts[1]);
+      if (isPtBrThousands) {
+        normalized = '${parts[0]}${parts[1]}';
+      }
     }
   }
 
