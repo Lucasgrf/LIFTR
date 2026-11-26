@@ -438,6 +438,57 @@ void main() {
     ],
   );
 
+  final tActiveSessionFourSets = WorkoutSession(
+    id: 'sess-4sets',
+    userId: 'u-1',
+    workoutId: 'w-lower-a',
+    workoutName: 'Lower A',
+    startedAt: kFixedGoldenNow.subtract(
+      const Duration(minutes: 42, seconds: 15),
+    ),
+    durationSeconds: 2535,
+    exercises: const [
+      SessionExercise(
+        id: 'se-4sets-1',
+        sessionId: 'sess-4sets',
+        exerciseId: 'ex-squat',
+        exercise: tSquat,
+        targetSetsCount: 4,
+        targetRepsMin: 8,
+        targetRepsMax: 12,
+        sets: [
+          LoggedSet(
+            id: 'ls-4-1',
+            sessionExerciseId: 'se-4sets-1',
+            setNumber: 1,
+            setType: SetType.working,
+            weightKg: 80.0,
+            repsCompleted: 10,
+          ),
+          LoggedSet(
+            id: 'ls-4-2',
+            sessionExerciseId: 'se-4sets-1',
+            setNumber: 2,
+            setType: SetType.dropSet,
+            weightKg: 80.0,
+            repsCompleted: 10,
+            dropSets: [
+              DropSetEntry(weightKg: 60.0, repsCompleted: 8),
+            ],
+          ),
+          LoggedSet(
+            id: 'ls-4-3',
+            sessionExerciseId: 'se-4sets-1',
+            setNumber: 3,
+            setType: SetType.working,
+            weightKg: 80.0,
+            repsCompleted: 9,
+          ),
+        ],
+      ),
+    ],
+  );
+
   final tSummarySession = tActiveSessionWithDrop.copyWith(
     status: SessionStatus.completed,
     completedAt: kFixedGoldenNow,
@@ -584,6 +635,43 @@ void main() {
             await expectLater(
               find.byType(MaterialApp),
               matchesGoldenFile('pngs/workout_session_dark_${width.toInt()}.png'),
+            );
+
+            await tester.pumpWidget(const SizedBox.shrink());
+          });
+
+          testWidgets(
+              'WorkoutSessionScreen 4 sets (1 active, 3 completed) at ${width.toInt()}dp',
+              (tester) async {
+            await pumpGoldenWidget(
+              tester,
+              themeMode: themeMode,
+              prefs: prefs,
+              settle: false,
+              width: width,
+              height: height,
+              child: const WorkoutSessionScreen(sessionId: 'sess-4sets'),
+              overrides: [
+                liveSessionDetailProvider('sess-4sets')
+                    .overrideWith((_) async => tActiveSessionFourSets),
+                progressionRepositoryProvider
+                    .overrideWithValue(_GoldenProgressionRepository()),
+                sessionRepositoryProvider
+                    .overrideWithValue(_GoldenSessionRepository()),
+                exerciseListStateProvider.overrideWith(
+                  (ref) => _GoldenExerciseListNotifier(ref, [tSquat, tBench]),
+                ),
+                historyListProvider
+                    .overrideWith((_) async => [tCompletedSession]),
+                isOnlineStreamProvider.overrideWith((_) => Stream.value(true)),
+              ],
+            );
+
+            await expectLater(
+              find.byType(MaterialApp),
+              matchesGoldenFile(
+                'pngs/workout_session_4sets_dark_${width.toInt()}.png',
+              ),
             );
 
             await tester.pumpWidget(const SizedBox.shrink());
