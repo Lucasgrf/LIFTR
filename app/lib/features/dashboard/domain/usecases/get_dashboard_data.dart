@@ -3,12 +3,7 @@ import 'package:personal_fitness_os/core/errors/result.dart';
 import 'package:personal_fitness_os/features/dashboard/domain/entities/dashboard_data.dart';
 import 'package:personal_fitness_os/features/dashboard/domain/entities/day_adherence.dart';
 import 'package:personal_fitness_os/features/dashboard/domain/entities/weekly_stats.dart';
-import 'package:personal_fitness_os/features/goals/domain/entities/goal.dart';
-import 'package:personal_fitness_os/features/goals/domain/entities/goal_status.dart';
-import 'package:personal_fitness_os/features/goals/domain/repositories/goal_repository.dart';
 import 'package:personal_fitness_os/features/history/domain/repositories/history_repository.dart';
-import 'package:personal_fitness_os/features/nutrition/domain/entities/daily_nutrition.dart';
-import 'package:personal_fitness_os/features/nutrition/domain/repositories/nutrition_repository.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
 import 'package:personal_fitness_os/features/training/domain/repositories/training_repository.dart';
@@ -21,21 +16,15 @@ class GetDashboardDataUseCase {
     required TrainingRepository trainingRepository,
     required SessionRepository sessionRepository,
     required HistoryRepository historyRepository,
-    NutritionRepository? nutritionRepository,
-    GoalRepository? goalRepository,
     SessionLocalDataSource? localSessionDataSource,
   })  : _trainingRepository = trainingRepository,
         _sessionRepository = sessionRepository,
         _historyRepository = historyRepository,
-        _nutritionRepository = nutritionRepository,
-        _goalRepository = goalRepository,
         _localSessionDataSource = localSessionDataSource;
 
   final TrainingRepository _trainingRepository;
   final SessionRepository _sessionRepository;
   final HistoryRepository _historyRepository;
-  final NutritionRepository? _nutritionRepository;
-  final GoalRepository? _goalRepository;
   final SessionLocalDataSource? _localSessionDataSource;
 
   Future<Result<DashboardData, Failure>> execute({DateTime? referenceDate}) async {
@@ -162,28 +151,6 @@ class GetDashboardDataUseCase {
       days: days,
     );
 
-    // 6. Fetch Today's Nutrition (if repository configured, best-effort offline-safe)
-    DailyNutrition? todayNutrition;
-    if (_nutritionRepository != null) {
-      try {
-        final nutResult = await _nutritionRepository.getDailyNutrition(now);
-        if (nutResult is Success<DailyNutrition, Failure>) {
-          todayNutrition = nutResult.value;
-        }
-      } catch (_) {}
-    }
-
-    // 7. Fetch Active Goals (if repository configured, best-effort offline-safe)
-    List<Goal> activeGoals = const [];
-    if (_goalRepository != null) {
-      try {
-        final goalResult = await _goalRepository.getGoals(status: GoalStatus.active);
-        if (goalResult is Success<List<Goal>, Failure>) {
-          activeGoals = goalResult.value;
-        }
-      } catch (_) {}
-    }
-
     return Success(
       DashboardData(
         activePlan: activePlan,
@@ -191,8 +158,6 @@ class GetDashboardDataUseCase {
         todayWorkout: todayWorkout,
         lastCompletedSession: lastCompletedSession,
         weeklyStats: weeklyStats,
-        todayNutrition: todayNutrition,
-        activeGoals: activeGoals,
       ),
     );
   }
