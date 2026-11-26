@@ -1,11 +1,15 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/constants/supabase_config.dart';
+import 'package:personal_fitness_os/core/errors/failures.dart';
 import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
+import 'package:personal_fitness_os/core/network/network_info.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
@@ -21,7 +25,10 @@ typedef PasswordResetSender = Future<void> Function(String email);
 final passwordResetSenderProvider = Provider<PasswordResetSender>((ref) {
   return (email) async {
     if (!SupabaseConfig.isConfigured) return;
-    await Supabase.instance.client.auth.resetPasswordForEmail(email);
+    await Supabase.instance.client.auth.resetPasswordForEmail(
+      email,
+      redirectTo: SupabaseConfig.passwordResetRedirectUrl,
+    );
   };
 });
 
@@ -73,6 +80,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         signedInUserId = response.user?.id;
       }
       if (!mounted) return;
+      TextInput.finishAutofillContext();
       syncActiveAuthSession(
         ref,
         isLoggedIn: true,
@@ -80,9 +88,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       );
       unawaited(ref.read(profileControllerProvider.notifier).loadProfile());
       context.go('/');
-    } catch (e) {
+    } catch (e, st) {
       if (!mounted) return;
-      context.showSnackBar(userFacingMessage(e), isError: true);
+      context.showSnackBar(
+        userFacingMessage(e, stackTrace: st, context: 'LoginScreen._submit'),
+        isError: true,
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -279,6 +290,20 @@ class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
     super.dispose();
   }
 
+  bool _isTransientDeliveryError(Object error) {
+    if (error is NetworkFailure ||
+        error is SocketException ||
+        error is TimeoutException ||
+        isNetworkError(error)) {
+      return true;
+    }
+    if (error is AuthException) {
+      final msg = error.message.toLowerCase();
+      return error.statusCode == '429' || msg.contains('rate limit');
+    }
+    return false;
+  }
+
   Future<void> _submit() async {
     if (_isSubmitting) return;
     if (!_formKey.currentState!.validate()) return;
@@ -293,12 +318,29 @@ class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
         _isSubmitting = false;
         _sent = true;
       });
-    } catch (e) {
+    } catch (e, st) {
+      appErrorLogger(
+        e,
+        stackTrace: st,
+        context: 'ForgotPasswordDialog._submit',
+      );
       if (!mounted) return;
-      setState(() {
-        _isSubmitting = false;
-        _errorMessage = userFacingMessage(e);
-      });
+      if (_isTransientDeliveryError(e)) {
+        setState(() {
+          _isSubmitting = false;
+          _errorMessage = userFacingMessage(
+            e,
+            stackTrace: st,
+            context: 'ForgotPasswordDialog._submit',
+            logError: false,
+          );
+        });
+      } else {
+        setState(() {
+          _isSubmitting = false;
+          _sent = true;
+        });
+      }
     }
   }
 
@@ -309,8 +351,7 @@ class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
       title: const Text('Redefinir senha'),
       content: _sent
           ? Text(
-              'Se existir uma conta para ${_emailController.text.trim()}, '
-              'enviamos as instruções para redefinir sua senha.',
+              'Se houver uma conta com esse e-mail, enviaremos um link para redefinir sua senha.',
               style: context.textTheme.bodyMedium?.copyWith(
                 color: colors.textSecondary,
               ),
@@ -332,6 +373,7 @@ class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
                     label: 'E-mail',
                     hint: 'voce@exemplo.com',
                     controller: _emailController,
+                    enabled: !_isSubmitting,
                     autofocus: widget.initialEmail.isEmpty,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.done,

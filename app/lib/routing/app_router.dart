@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/constants/supabase_config.dart';
 import 'package:personal_fitness_os/features/auth/presentation/screens/login_screen.dart';
 import 'package:personal_fitness_os/features/auth/presentation/screens/register_screen.dart';
+import 'package:personal_fitness_os/features/auth/presentation/screens/reset_password_screen.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/screens/create_custom_exercise_screen.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/screens/exercise_detail_screen.dart';
@@ -34,6 +35,8 @@ final authStateProvider = StateProvider<bool>((ref) {
   }
 });
 
+final passwordRecoveryPendingProvider = StateProvider<bool>((ref) => false);
+
 /// Tracks the currently authenticated Supabase user ID so all user-specific
 /// caches (`SharedPreferences`) and in-memory Riverpod providers automatically
 /// isolate and reset whenever the user logs out or switches accounts.
@@ -45,6 +48,11 @@ final activeUserIdProvider = StateProvider<String?>((ref) {
       final newUserId = data.session?.user.id;
       ref.controller.state = newUserId;
       ref.read(authStateProvider.notifier).state = data.session != null;
+      if (data.event == AuthChangeEvent.passwordRecovery) {
+        ref.read(passwordRecoveryPendingProvider.notifier).state = true;
+      } else if (data.event == AuthChangeEvent.signedOut) {
+        ref.read(passwordRecoveryPendingProvider.notifier).state = false;
+      }
     });
     ref.onDispose(sub.cancel);
     return auth.currentUser?.id;
@@ -75,20 +83,27 @@ void syncActiveAuthSession(
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   final isLoggedIn = ref.watch(authStateProvider);
+  final isPasswordRecovery = ref.watch(passwordRecoveryPendingProvider);
 
   return GoRouter(
     initialLocation: '/',
     onException: (_, state, router) => router.go('/'),
     redirect: (context, state) {
       final location = state.matchedLocation;
+      if (isPasswordRecovery && location != '/reset-password') {
+        return '/reset-password';
+      }
       final isAuthRoute =
           location == '/login' ||
           location == '/register' ||
-          location == '/onboarding';
+          location == '/onboarding' ||
+          location == '/reset-password';
       if (!isLoggedIn && !isAuthRoute) {
         return '/login';
       }
-      if (isLoggedIn && (location == '/login' || location == '/register')) {
+      if (isLoggedIn &&
+          !isPasswordRecovery &&
+          (location == '/login' || location == '/register')) {
         return '/';
       }
       return null;
@@ -101,6 +116,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/reset-password',
+        builder: (context, state) => const ResetPasswordScreen(),
       ),
       GoRoute(
         path: '/onboarding',

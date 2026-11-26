@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +16,7 @@ import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/features/auth/presentation/screens/login_screen.dart';
 import 'package:personal_fitness_os/features/auth/presentation/screens/register_screen.dart';
+import 'package:personal_fitness_os/features/auth/presentation/screens/reset_password_screen.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/repositories/exercise_repository.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
@@ -33,7 +35,9 @@ import 'package:personal_fitness_os/features/training/presentation/screens/add_e
 import 'package:personal_fitness_os/features/training/presentation/screens/ai_workout_generator_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/screens/configure_sets_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/widgets/import_plan_sheet.dart';
+import 'package:personal_fitness_os/routing/app_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class _ToggleErrorExerciseRepo implements ExerciseRepository {
   bool shouldFail = true;
@@ -525,23 +529,262 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(sentEmails, ['atleta@liftr.app']);
-      expect(find.textContaining('enviamos as instruções'), findsOneWidget);
+      expect(
+        find.text(
+          'Se houver uma conta com esse e-mail, enviaremos um link para redefinir sua senha.',
+        ),
+        findsOneWidget,
+      );
 
       await tester.tap(find.text('Fechar'));
       await tester.pumpAndSettle();
     });
 
     testWidgets(
-        'RegisterScreen uses AutofillGroup and 3 AppInput fields with focus traversal',
+        'Esqueci minha senha disables submit while pending and shows neutral copy without leaking user existence',
         (tester) async {
       await tester.binding.setSurfaceSize(const Size(375, 812));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
+      final prevLogger = appErrorLogger;
+      final logged = <Object>[];
+      appErrorLogger = (err, {stackTrace, context}) => logged.add(err);
+      addTearDown(() => appErrorLogger = prevLogger);
+
+      final completer = Completer<void>();
+
       await tester.pumpWidget(
         ProviderScope(
+          overrides: [
+            passwordResetSenderProvider.overrideWithValue(
+              (_) => completer.future,
+            ),
+          ],
           child: MaterialApp(
             theme: AppTheme.dark(),
-            home: const RegisterScreen(),
+            home: const LoginScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Esqueci minha senha'));
+      await tester.pumpAndSettle();
+
+      final dialogEmail = find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(EditableText),
+      );
+      await tester.enterText(dialogEmail, 'naoexiste@liftr.app');
+      await tester.tap(find.text('Enviar link'));
+      await tester.pump();
+
+      final sendingBtn = tester.widget<TextButton>(
+        find.widgetWithText(TextButton, 'Enviando...'),
+      );
+      expect(sendingBtn.onPressed, isNull);
+
+      completer.completeError(const AuthException('User not found'));
+      await tester.pumpAndSettle();
+
+      expect(logged.single, isA<AuthException>());
+      expect(
+        find.text(
+          'Se houver uma conta com esse e-mail, enviaremos um link para redefinir sua senha.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('naoexiste@liftr.app'), findsNothing);
+    });
+
+    testWidgets(
+        'ResetPasswordScreen validates mismatch, updates password, clears recovery flag, and finishes autofill',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(375, 812));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final updatedPasswords = <String>[];
+      final textInputCalls = <String>[];
+      final router = GoRouter(
+        initialLocation: '/reset-password',
+        routes: [
+          GoRoute(
+            path: '/login',
+            builder: (_, _) => const Scaffold(body: Text('LoginScreenMock')),
+          ),
+          GoRoute(
+            path: '/reset-password',
+            builder: (_, _) => const ResetPasswordScreen(),
+          ),
+        ],
+      );
+
+      late ProviderContainer container;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            passwordRecoveryPendingProvider.overrideWith((_) => true),
+            passwordUpdaterProvider.overrideWithValue(
+              (pwd) async => updatedPasswords.add(pwd),
+            ),
+          ],
+          child: Consumer(
+            builder: (context, ref, _) {
+              container = ProviderScope.containerOf(context);
+              return MaterialApp.router(
+                theme: AppTheme.dark(),
+                routerConfig: router,
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final fields = find.byType(AppInput);
+      expect(fields, findsNWidgets(2));
+      expect(
+        tester.widget<AppInput>(fields.at(0)).autofillHints,
+        contains(AutofillHints.newPassword),
+      );
+      expect(
+        tester.widget<AppInput>(fields.at(1)).autofillHints,
+        contains(AutofillHints.newPassword),
+      );
+
+      await tester.enterText(
+        find.descendant(of: fields.at(0), matching: find.byType(EditableText)),
+        'nova123',
+      );
+      await tester.enterText(
+        find.descendant(of: fields.at(1), matching: find.byType(EditableText)),
+        'diferente',
+      );
+      await tester.tap(find.text('Salvar nova senha'));
+      await tester.pumpAndSettle();
+      expect(find.text('As senhas não coincidem'), findsOneWidget);
+
+      await tester.enterText(
+        find.descendant(of: fields.at(1), matching: find.byType(EditableText)),
+        'nova123',
+      );
+
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.textInput,
+        (call) async {
+          textInputCalls.add(call.method);
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.textInput,
+          null,
+        ),
+      );
+
+      await tester.tap(find.text('Salvar nova senha'));
+      await tester.pumpAndSettle();
+
+      expect(updatedPasswords, ['nova123']);
+      expect(container.read(passwordRecoveryPendingProvider), isFalse);
+      expect(textInputCalls, contains('TextInput.finishAutofillContext'));
+      expect(find.text('LoginScreenMock'), findsOneWidget);
+    });
+
+    testWidgets(
+        'LoginScreen invokes finishAutofillContext upon successful sign-in',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(375, 812));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final textInputCalls = <String>[];
+      final router = GoRouter(
+        initialLocation: '/login',
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (_, _) => const Scaffold(body: Text('DashboardMock')),
+          ),
+          GoRoute(
+            path: '/login',
+            builder: (_, _) => const LoginScreen(),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp.router(
+            theme: AppTheme.dark(),
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final fields = find.byType(AppInput);
+      await tester.enterText(
+        find.descendant(of: fields.at(0), matching: find.byType(EditableText)),
+        'atleta@liftr.app',
+      );
+      await tester.enterText(
+        find.descendant(of: fields.at(1), matching: find.byType(EditableText)),
+        'senha123',
+      );
+
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.textInput,
+        (call) async {
+          textInputCalls.add(call.method);
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.textInput,
+          null,
+        ),
+      );
+
+      await tester.tap(find.text('Entrar'));
+      await tester.pumpAndSettle();
+
+      expect(textInputCalls, contains('TextInput.finishAutofillContext'));
+      expect(find.text('DashboardMock'), findsOneWidget);
+    });
+
+    testWidgets(
+        'RegisterScreen uses AutofillGroup, newPassword hint, focus traversal, and finishes autofill on submit',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(375, 812));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final textInputCalls = <String>[];
+      final router = GoRouter(
+        initialLocation: '/register',
+        routes: [
+          GoRoute(
+            path: '/register',
+            builder: (_, _) => const RegisterScreen(),
+          ),
+          GoRoute(
+            path: '/onboarding',
+            builder: (_, _) => const Scaffold(body: Text('OnboardingMock')),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.dark(),
+            routerConfig: router,
           ),
         ),
       );
@@ -549,6 +792,10 @@ void main() {
 
       expect(find.byType(AutofillGroup), findsOneWidget);
       expect(find.byType(AppInput), findsNWidgets(3));
+      expect(
+        tester.widget<AppInput>(find.byType(AppInput).at(2)).autofillHints,
+        contains(AutofillHints.newPassword),
+      );
 
       final nameField = find.descendant(
         of: find.byType(AppInput).at(0),
@@ -558,11 +805,39 @@ void main() {
         of: find.byType(AppInput).at(1),
         matching: find.byType(EditableText),
       );
+      final passwordField = find.descendant(
+        of: find.byType(AppInput).at(2),
+        matching: find.byType(EditableText),
+      );
+
       await tester.tap(nameField);
+      await tester.enterText(nameField, 'Lucas');
       await tester.testTextInput.receiveAction(TextInputAction.next);
       await tester.pumpAndSettle();
-
       expect(tester.widget<EditableText>(emailField).focusNode.hasFocus, isTrue);
+
+      await tester.enterText(emailField, 'lucas@liftr.app');
+      await tester.enterText(passwordField, 'senha123');
+
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.textInput,
+        (call) async {
+          textInputCalls.add(call.method);
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.textInput,
+          null,
+        ),
+      );
+
+      await tester.tap(find.text('Criar conta'));
+      await tester.pumpAndSettle();
+
+      expect(textInputCalls, contains('TextInput.finishAutofillContext'));
+      expect(find.text('OnboardingMock'), findsOneWidget);
     });
 
     testWidgets(

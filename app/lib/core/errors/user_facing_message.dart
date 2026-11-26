@@ -1,16 +1,52 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:personal_fitness_os/core/errors/failures.dart';
 import 'package:personal_fitness_os/core/network/network_info.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+typedef AppErrorLogger = void Function(
+  Object error, {
+  StackTrace? stackTrace,
+  String? context,
+});
+
+AppErrorLogger appErrorLogger = _defaultAppErrorLogger;
+
+void _defaultAppErrorLogger(
+  Object error, {
+  StackTrace? stackTrace,
+  String? context,
+}) {
+  developer.log(
+    context != null ? '[$context] $error' : '$error',
+    name: 'LIFTR.Error',
+    level: 1000,
+    error: error,
+    stackTrace: stackTrace ?? (error is Failure ? error.stackTrace : null),
+  );
+}
+
 const String kOfflineDataSafetyNote =
     'Seus treinos continuam salvos neste aparelho.';
 
 /// Translates technical exceptions and [Failure] objects into clear,
-/// non-technical PT-BR messages with cause and next step.
-String userFacingMessage(Object error) {
+/// non-technical PT-BR messages with cause and next step while logging the
+/// original error and stack trace.
+String userFacingMessage(
+  Object error, {
+  StackTrace? stackTrace,
+  String? context,
+  bool logError = true,
+}) {
+  if (logError) {
+    appErrorLogger(
+      error,
+      stackTrace: stackTrace ?? (error is Failure ? error.stackTrace : null),
+      context: context,
+    );
+  }
   if (error is ValidationFailure && error.message.trim().isNotEmpty) {
     return error.message.trim();
   }

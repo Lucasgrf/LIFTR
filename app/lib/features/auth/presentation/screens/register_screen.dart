@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/constants/supabase_config.dart';
@@ -70,10 +71,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       ref.read(userSettingsProvider.notifier).resetForAccount(
             displayName: _nameController.text.trim(),
           );
+      TextInput.finishAutofillContext();
       context.go('/onboarding');
-    } catch (e) {
+    } catch (e, st) {
       if (!mounted) return;
-      context.showSnackBar(userFacingMessage(e), isError: true);
+      context.showSnackBar(
+        userFacingMessage(e, stackTrace: st, context: 'RegisterScreen._submit'),
+        isError: true,
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

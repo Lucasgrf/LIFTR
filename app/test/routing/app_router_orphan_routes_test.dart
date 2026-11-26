@@ -55,6 +55,7 @@ void main() {
         '/',
         '/login',
         '/register',
+        '/reset-password',
         '/onboarding',
         '/training',
         '/history',
@@ -158,6 +159,46 @@ void main() {
         router.go('/calendar');
         await tester.pumpAndSettle();
         expect(router.routeInformationProvider.value.uri.path, '/login');
+      },
+    );
+
+    testWidgets(
+      'redirects to /reset-password when passwordRecoveryPendingProvider is true',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              authStateProvider.overrideWith((_) => true),
+              passwordRecoveryPendingProvider.overrideWith((_) => true),
+            ],
+            child: Consumer(
+              builder: (context, ref, _) {
+                final router = ref.watch(goRouterProvider);
+                return MaterialApp.router(
+                  theme: AppTheme.dark(),
+                  routerConfig: router,
+                );
+              },
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(MaterialApp)),
+        );
+        final router = container.read(goRouterProvider);
+        expect(
+          router.routeInformationProvider.value.uri.path,
+          '/reset-password',
+        );
+
+        router.go('/training');
+        await tester.pumpAndSettle();
+        expect(
+          router.routeInformationProvider.value.uri.path,
+          '/reset-password',
+        );
       },
     );
   });
