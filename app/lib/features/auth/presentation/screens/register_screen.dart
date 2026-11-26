@@ -159,7 +159,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               ),
                               AppSpacing.verticalGap8,
                               Text(
-                                'Enviamos um link de confirmação para $_pendingConfirmationEmail. Abra o link no seu aparelho para ativar sua conta e entrar.',
+                                'Enviamos um link de confirmação para $_pendingConfirmationEmail. Abra o link neste celular para ativar sua conta e entrar.',
                                 style: context.textTheme.bodyMedium?.copyWith(
                                   color: colors.textSecondary,
                                 ),

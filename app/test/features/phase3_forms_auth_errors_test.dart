@@ -1206,6 +1206,7 @@ void main() {
       expect(capturedRedirect, 'liftr://auth-callback');
       expect(find.text('Confirme seu e-mail'), findsOneWidget);
       expect(find.textContaining('novo@liftr.app'), findsOneWidget);
+      expect(find.textContaining('Abra o link neste celular'), findsOneWidget);
 
       await tester.tap(find.text('Ir para o login'));
       await tester.pumpAndSettle();
