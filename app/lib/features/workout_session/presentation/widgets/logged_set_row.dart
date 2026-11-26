@@ -33,6 +33,7 @@ class LoggedSetRow extends StatefulWidget {
     this.onApplyToRemaining,
     this.onDraftChanged,
     this.onRequestExpand,
+    this.onRegisterBeforeCollapse,
     this.focusNode,
   });
 
@@ -62,6 +63,8 @@ class LoggedSetRow extends StatefulWidget {
   final void Function(double weightKg, int repsCompleted)? onApplyToRemaining;
   final void Function(double weightKg, int repsCompleted)? onDraftChanged;
   final VoidCallback? onRequestExpand;
+  final void Function(bool Function({bool deferSetState})? handler)?
+      onRegisterBeforeCollapse;
   final FocusNode? focusNode;
 
   @override
@@ -77,6 +80,11 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
   List<DropSetEntry> _dropSets = <DropSetEntry>[];
   bool _userEditedWeight = false;
   bool _userEditedReps = false;
+  bool _weightCleared = false;
+  bool _repsCleared = false;
+  String? _weightError;
+  String? _repsError;
+  bool _collapseHandledByGuard = false;
   bool _isSaving = false;
 
   bool get _isCompleted => widget.loggedSet != null;
@@ -87,7 +95,9 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     if (widget.isCardio) {
       return _durationMinutes != _resolveDurationMinutes();
     }
-    return _weight != logged.weightKg ||
+    return _weightCleared ||
+        _repsCleared ||
+        _weight != logged.weightKg ||
         _reps != logged.repsCompleted ||
         _setType != logged.setType ||
         !listEquals(_dropSets, logged.dropSets);
@@ -120,11 +130,84 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     } else {
       _dropSets = <DropSetEntry>[];
     }
+    widget.onRegisterBeforeCollapse?.call(_handleBeforeCollapse);
+  }
+
+  @override
+  void dispose() {
+    widget.onRegisterBeforeCollapse?.call(null);
+    super.dispose();
+  }
+
+  ({String? weightError, String? repsError}) _validateStrengthInputs() {
+    final weightError = _weightCleared ? 'Informe a carga.' : null;
+    final String? repsError;
+    if (_repsCleared || _reps <= 0) {
+      repsError = 'Informe as repetições (mín. 1).';
+    } else if (_setType == SetType.dropSet &&
+        _dropSets.where((d) => d.repsCompleted > 0).isEmpty) {
+      repsError = 'Informe as repetições do drop-set.';
+    } else {
+      repsError = null;
+    }
+    return (weightError: weightError, repsError: repsError);
+  }
+
+  bool _handleBeforeCollapse({bool deferSetState = false}) {
+    if (widget.isCardio || !_hasUnsavedEdits || _isSaving) return true;
+    final validation = _validateStrengthInputs();
+    if (validation.weightError != null || validation.repsError != null) {
+      void applyErrors() {
+        if (!mounted) return;
+        setState(() {
+          _weightError = validation.weightError;
+          _repsError = validation.repsError;
+        });
+      }
+
+      if (deferSetState) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => applyErrors());
+      } else {
+        applyErrors();
+      }
+      return false;
+    }
+
+    if (_weightError != null || _repsError != null) {
+      void clearErrors() {
+        if (!mounted) return;
+        setState(() {
+          _weightError = null;
+          _repsError = null;
+        });
+      }
+
+      if (deferSetState) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => clearErrors());
+      } else {
+        clearErrors();
+      }
+    }
+
+    _collapseHandledByGuard = true;
+    Future.microtask(() {
+      if (mounted && _hasUnsavedEdits && !_isSaving) {
+        _handleSave();
+      }
+    });
+    return true;
   }
 
   @override
   void didUpdateWidget(covariant LoggedSetRow oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.onRegisterBeforeCollapse != widget.onRegisterBeforeCollapse) {
+      oldWidget.onRegisterBeforeCollapse?.call(null);
+      widget.onRegisterBeforeCollapse?.call(_handleBeforeCollapse);
+    }
+    if (widget.isExpanded && !oldWidget.isExpanded) {
+      _collapseHandledByGuard = false;
+    }
     if (oldWidget.loggedSet != widget.loggedSet && widget.loggedSet != null) {
       _weight = widget.loggedSet!.weightKg;
       _reps = widget.loggedSet!.repsCompleted;
@@ -134,11 +217,20 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
       _dropSets = List<DropSetEntry>.from(widget.loggedSet!.dropSets);
       _userEditedWeight = false;
       _userEditedReps = false;
+      _weightCleared = false;
+      _repsCleared = false;
+      _weightError = null;
+      _repsError = null;
+      _collapseHandledByGuard = false;
     } else if (widget.loggedSet == null) {
       final forceSync = oldWidget.syncToken != widget.syncToken;
       if (forceSync) {
         _userEditedWeight = false;
         _userEditedReps = false;
+        _weightCleared = false;
+        _repsCleared = false;
+        _weightError = null;
+        _repsError = null;
       }
       if (oldWidget.initialType != widget.initialType) {
         _setType = widget.initialType;
@@ -162,16 +254,28 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
       }
     }
 
-    if (!widget.isCardio &&
-        oldWidget.isExpanded &&
-        !widget.isExpanded &&
-        _hasUnsavedEdits &&
-        !_isSaving) {
-      Future.microtask(() {
-        if (mounted && !widget.isExpanded && _hasUnsavedEdits && !_isSaving) {
-          _handleSave();
+    if (oldWidget.isExpanded && !widget.isExpanded) {
+      final alreadyHandled = _collapseHandledByGuard;
+      _collapseHandledByGuard = false;
+      if (!alreadyHandled &&
+          !widget.isCardio &&
+          _hasUnsavedEdits &&
+          !_isSaving) {
+        final validation = _validateStrengthInputs();
+        if (validation.weightError != null || validation.repsError != null) {
+          _weightError = validation.weightError;
+          _repsError = validation.repsError;
+        } else {
+          Future.microtask(() {
+            if (mounted &&
+                !widget.isExpanded &&
+                _hasUnsavedEdits &&
+                !_isSaving) {
+              _handleSave();
+            }
+          });
         }
-      });
+      }
     }
   }
 
@@ -201,6 +305,8 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     HapticFeedback.selectionClick();
     setState(() {
       _userEditedWeight = true;
+      _weightCleared = false;
+      _weightError = null;
       _weight = (_weight + delta).clamp(0.0, 999.0);
     });
     widget.onDraftChanged?.call(_weight, _reps);
@@ -210,7 +316,11 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     HapticFeedback.selectionClick();
     setState(() {
       _userEditedReps = true;
+      _repsCleared = false;
       _reps = (_reps + delta).clamp(0, 999);
+      if (_reps > 0) {
+        _repsError = null;
+      }
     });
     widget.onDraftChanged?.call(_weight, _reps);
   }
@@ -359,106 +469,17 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     List<int>? quickRepsOptions,
     List<double>? quickWeightDeltas,
   }) async {
-    final controller = TextEditingController(text: initialValue);
-    controller.selection = TextSelection(
-      baseOffset: 0,
-      extentOffset: initialValue.length,
-    );
     final result = await showDialog<String>(
       context: context,
-      builder: (ctx) {
-        final colors = ctx.appColors;
-        final radius = ctx.appRadius;
-        return AlertDialog(
-          title: Text(title),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextField(
-                controller: controller,
-                autofocus: true,
-                keyboardType: TextInputType.numberWithOptions(decimal: decimal),
-                decoration: const InputDecoration(),
-                onSubmitted: (v) => Navigator.pop(ctx, v),
-              ),
-              if (quickRepsOptions != null && quickRepsOptions.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: quickRepsOptions.map((val) {
-                    return ActionChip(
-                      label: Text(
-                        '$val',
-                        style: ctx.textTheme.labelMedium?.copyWith(
-                          fontFeatures: AppTypography.tabularFeatures,
-                        ),
-                      ),
-                      backgroundColor: colors.surfaceElevated,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(radius.small),
-                        side: BorderSide(color: colors.border),
-                      ),
-                      onPressed: () => Navigator.pop(ctx, '$val'),
-                    );
-                  }).toList(),
-                ),
-              ],
-              if (quickWeightDeltas != null && quickWeightDeltas.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: quickWeightDeltas.map((delta) {
-                    final sign = delta > 0 ? '+' : '';
-                    final label = delta == delta.toInt()
-                        ? '$sign${delta.toInt()} kg'
-                        : '$sign${delta.toStringAsFixed(1).replaceAll('.', ',')} kg';
-                    return ActionChip(
-                      label: Text(
-                        label,
-                        style: ctx.textTheme.labelSmall?.copyWith(
-                          fontFeatures: AppTypography.tabularFeatures,
-                        ),
-                      ),
-                      backgroundColor: colors.surfaceElevated,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(radius.small),
-                        side: BorderSide(color: colors.border),
-                      ),
-                      onPressed: () {
-                        final currentVal = double.tryParse(
-                              controller.text.trim().replaceAll(',', '.'),
-                            ) ??
-                            0.0;
-                        final nextVal = (currentVal + delta).clamp(0.0, 999.0);
-                        controller.text = _formatWeight(nextVal);
-                        controller.selection = TextSelection(
-                          baseOffset: 0,
-                          extentOffset: controller.text.length,
-                        );
-                      },
-                    );
-                  }).toList(),
-                ),
-              ],
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, controller.text),
-              child: const Text('Aplicar'),
-            ),
-          ],
-        );
-      },
+      builder: (_) => _NumericEditDialog(
+        title: title,
+        initialValue: initialValue,
+        decimal: decimal,
+        quickRepsOptions: quickRepsOptions,
+        quickWeightDeltas: quickWeightDeltas,
+        formatWeight: _formatWeight,
+      ),
     );
-    controller.dispose();
     if (result != null) {
       onConfirm(result);
     }
@@ -501,8 +522,12 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
       return;
     }
 
-    if (_reps <= 0) {
-      context.showSnackBar('Informe o número de repetições.', isError: true);
+    final validation = _validateStrengthInputs();
+    if (validation.weightError != null || validation.repsError != null) {
+      setState(() {
+        _weightError = validation.weightError;
+        _repsError = validation.repsError;
+      });
       return;
     }
 
@@ -510,16 +535,12 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
         ? _dropSets.where((d) => d.repsCompleted > 0).toList()
         : const <DropSetEntry>[];
 
-    if (_setType == SetType.dropSet && validDrops.isEmpty) {
-      context.showSnackBar(
-        'Informe as repetições do drop-set.',
-        isError: true,
-      );
-      return;
-    }
-
     HapticFeedback.mediumImpact();
-    setState(() => _isSaving = true);
+    setState(() {
+      _weightError = null;
+      _repsError = null;
+      _isSaving = true;
+    });
     try {
       await widget.onSave(
         weightKg: _weight,
@@ -1038,23 +1059,37 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     final isDropSet = _setType == SetType.dropSet;
 
     final weightStepper = _TactileStepper(
-      valueText: _formatWeight(_weight),
-      unitLabel: 'kg',
-      valueLabel: 'Editar carga: ${_formatWeight(_weight)} kg',
+      valueText: _weightCleared ? '—' : _formatWeight(_weight),
+      unitLabel: _weightCleared ? null : 'kg',
+      hasError: _weightError != null,
+      valueLabel: _weightCleared
+          ? 'Editar carga: vazia'
+          : 'Editar carga: ${_formatWeight(_weight)} kg',
       decrementLabel: 'Diminuir carga',
       incrementLabel: 'Aumentar carga',
       onDecrement: () => _stepWeight(-widget.weightIncrement),
       onIncrement: () => _stepWeight(widget.weightIncrement),
       onTapValue: () => _editNumericDialog(
         title: 'Carga (kg)',
-        initialValue: _formatWeight(_weight),
+        initialValue: _weightCleared ? '' : _formatWeight(_weight),
         decimal: true,
         quickWeightDeltas: const [-5.0, -2.5, 2.5, 5.0],
         onConfirm: (val) {
-          final parsed = double.tryParse(val.trim().replaceAll(',', '.'));
+          final trimmed = val.trim();
+          if (trimmed.isEmpty) {
+            setState(() {
+              _userEditedWeight = true;
+              _weightCleared = true;
+              _weightError = null;
+            });
+            return;
+          }
+          final parsed = double.tryParse(trimmed.replaceAll(',', '.'));
           if (parsed != null && parsed >= 0) {
             setState(() {
               _userEditedWeight = true;
+              _weightCleared = false;
+              _weightError = null;
               _weight = parsed.clamp(0.0, 999.0);
             });
             widget.onDraftChanged?.call(_weight, _reps);
@@ -1064,24 +1099,40 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     );
 
     final repsStepper = _TactileStepper(
-      valueText: '$_reps',
-      unitLabel: 'reps',
-      valueLabel: 'Editar repetições: $_reps reps',
+      valueText: _repsCleared ? '—' : '$_reps',
+      unitLabel: _repsCleared ? null : 'reps',
+      hasError: _repsError != null,
+      valueLabel: _repsCleared
+          ? 'Editar repetições: vazia'
+          : 'Editar repetições: $_reps reps',
       decrementLabel: 'Diminuir repetições',
       incrementLabel: 'Aumentar repetições',
       onDecrement: () => _stepReps(-1),
       onIncrement: () => _stepReps(1),
       onTapValue: () => _editNumericDialog(
         title: 'Repetições',
-        initialValue: '$_reps',
+        initialValue: _repsCleared ? '' : '$_reps',
         decimal: false,
         quickRepsOptions: const [6, 8, 10, 12, 15],
         onConfirm: (val) {
-          final parsed = int.tryParse(val.trim());
+          final trimmed = val.trim();
+          if (trimmed.isEmpty) {
+            setState(() {
+              _userEditedReps = true;
+              _repsCleared = true;
+              _repsError = null;
+            });
+            return;
+          }
+          final parsed = int.tryParse(trimmed);
           if (parsed != null && parsed >= 0) {
             setState(() {
               _userEditedReps = true;
+              _repsCleared = false;
               _reps = parsed.clamp(0, 999);
+              if (_reps > 0) {
+                _repsError = null;
+              }
             });
             widget.onDraftChanged?.call(_weight, _reps);
           }
@@ -1242,8 +1293,8 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     );
 
     Widget buildCompactRow() {
-      final weightText = _formatWeight(_weight);
-      final repsText = '$_reps';
+      final weightText = _weightCleared ? '—' : _formatWeight(_weight);
+      final repsText = _repsCleared ? '—' : '$_reps';
       final stateWord = isDone ? 'concluída' : 'pendente';
       final compactSemanticLabel = isDropSet && _dropSets.isNotEmpty
           ? 'Série ${widget.setNumber}, drop-set, $weightText kg, $repsText repetições, drop ${_dropSets.map((d) => '${_formatWeight(d.weightKg)} kg por ${d.repsCompleted} repetições').join(', ')}, $stateWord. Toque duas vezes para editar'
@@ -1416,6 +1467,39 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                 ],
               ],
             ),
+
+        if (_weightError != null || _repsError != null)
+          Padding(
+            padding: EdgeInsets.only(
+              top: context.appSpacing.space8,
+              left: context.appSpacing.space4,
+            ),
+            child: Semantics(
+              liveRegion: true,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.error_outline_rounded,
+                    size: 14,
+                    color: colors.danger,
+                  ),
+                  AppSpacing.horizontalGap4,
+                  Expanded(
+                    child: Text(
+                      [
+                        ?_weightError,
+                        ?_repsError,
+                      ].join(' '),
+                      style: context.textTheme.labelSmall?.copyWith(
+                        color: colors.danger,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
 
         // Drop-set sub-widget anchored directly below this set row
         if (isDropSet)
@@ -1757,6 +1841,10 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     );
 
     final rowContainer = GestureDetector(
+      behavior: widget.isExpanded
+          ? HitTestBehavior.opaque
+          : HitTestBehavior.deferToChild,
+      onTap: widget.isExpanded ? () {} : null,
       onLongPress: widget.isExpanded ? _showSetTypePicker : null,
       excludeFromSemantics: true,
       child: Container(
@@ -1832,6 +1920,7 @@ class _TactileStepper extends StatelessWidget {
     required this.valueText,
     this.unitLabel,
     this.valueLabel,
+    this.hasError = false,
     required this.decrementLabel,
     required this.incrementLabel,
     required this.onDecrement,
@@ -1842,6 +1931,7 @@ class _TactileStepper extends StatelessWidget {
   final String valueText;
   final String? unitLabel;
   final String? valueLabel;
+  final bool hasError;
   final String decrementLabel;
   final String incrementLabel;
   final VoidCallback onDecrement;
@@ -1858,6 +1948,7 @@ class _TactileStepper extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surfaceElevated,
         borderRadius: BorderRadius.circular(radius.small),
+        border: hasError ? Border.all(color: colors.danger, width: 1.5) : null,
       ),
       child: Row(
         children: [
@@ -1968,6 +2059,145 @@ class _TactileStepper extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _NumericEditDialog extends StatefulWidget {
+  const _NumericEditDialog({
+    required this.title,
+    required this.initialValue,
+    required this.decimal,
+    required this.formatWeight,
+    this.quickRepsOptions,
+    this.quickWeightDeltas,
+  });
+
+  final String title;
+  final String initialValue;
+  final bool decimal;
+  final String Function(double) formatWeight;
+  final List<int>? quickRepsOptions;
+  final List<double>? quickWeightDeltas;
+
+  @override
+  State<_NumericEditDialog> createState() => _NumericEditDialogState();
+}
+
+class _NumericEditDialogState extends State<_NumericEditDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialValue);
+    _controller.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: widget.initialValue.length,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final radius = context.appRadius;
+    final quickReps = widget.quickRepsOptions;
+    final quickDeltas = widget.quickWeightDeltas;
+
+    return AlertDialog(
+      title: Text(widget.title),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            keyboardType: TextInputType.numberWithOptions(
+              decimal: widget.decimal,
+            ),
+            decoration: const InputDecoration(),
+            onSubmitted: (v) => Navigator.pop(context, v),
+          ),
+          if (quickReps != null && quickReps.isNotEmpty) ...[
+            AppSpacing.verticalGap12,
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: quickReps.map((val) {
+                return ActionChip(
+                  label: Text(
+                    '$val',
+                    style: context.textTheme.labelMedium?.copyWith(
+                      fontFeatures: AppTypography.tabularFeatures,
+                    ),
+                  ),
+                  backgroundColor: colors.surfaceElevated,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(radius.small),
+                    side: BorderSide(color: colors.border),
+                  ),
+                  onPressed: () => Navigator.pop(context, '$val'),
+                );
+              }).toList(),
+            ),
+          ],
+          if (quickDeltas != null && quickDeltas.isNotEmpty) ...[
+            AppSpacing.verticalGap12,
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: quickDeltas.map((delta) {
+                final sign = delta > 0 ? '+' : '';
+                final label = delta == delta.toInt()
+                    ? '$sign${delta.toInt()} kg'
+                    : '$sign${delta.toStringAsFixed(1).replaceAll('.', ',')} kg';
+                return ActionChip(
+                  label: Text(
+                    label,
+                    style: context.textTheme.labelSmall?.copyWith(
+                      fontFeatures: AppTypography.tabularFeatures,
+                    ),
+                  ),
+                  backgroundColor: colors.surfaceElevated,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(radius.small),
+                    side: BorderSide(color: colors.border),
+                  ),
+                  onPressed: () {
+                    final currentVal = double.tryParse(
+                          _controller.text.trim().replaceAll(',', '.'),
+                        ) ??
+                        0.0;
+                    final nextVal = (currentVal + delta).clamp(0.0, 999.0);
+                    _controller.text = widget.formatWeight(nextVal);
+                    _controller.selection = TextSelection(
+                      baseOffset: 0,
+                      extentOffset: _controller.text.length,
+                    );
+                  },
+                );
+              }).toList(),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, _controller.text),
+          child: const Text('Aplicar'),
+        ),
+      ],
     );
   }
 }

@@ -87,27 +87,36 @@ class RestTimerWidget extends ConsumerWidget {
         curve: motion.curveStandard,
         alignment: Alignment.bottomCenter,
         child: isMinimized
-            ? _MinimizedFooterTimer(
-                timerState: timerState,
-                isCompleted: isCompleted,
-                isPaused: isPaused,
-                remainingRatio: remainingRatio,
-                statusColor: statusColor,
-                progressColor: progressColor,
-                onTogglePause: () {
-                  HapticFeedback.selectionClick();
-                  notifier.togglePauseResume();
-                },
-                onDismissCompleted: () {
-                  HapticFeedback.lightImpact();
-                  notifier.dismissCompleted();
-                },
-                onExpand: () {
-                  HapticFeedback.selectionClick();
-                  notifier.expand();
-                },
+            ? GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                excludeFromSemantics: true,
+                onTap: () {},
+                child: _MinimizedFooterTimer(
+                  timerState: timerState,
+                  isCompleted: isCompleted,
+                  isPaused: isPaused,
+                  remainingRatio: remainingRatio,
+                  statusColor: statusColor,
+                  progressColor: progressColor,
+                  onTogglePause: () {
+                    HapticFeedback.selectionClick();
+                    notifier.togglePauseResume();
+                  },
+                  onDismissCompleted: () {
+                    HapticFeedback.lightImpact();
+                    notifier.dismissCompleted();
+                  },
+                  onExpand: () {
+                    HapticFeedback.selectionClick();
+                    notifier.expand();
+                  },
+                ),
               )
-            : Semantics(
+            : GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                excludeFromSemantics: true,
+                onTap: () {},
+                child: Semantics(
                 container: true,
                 explicitChildNodes: true,
                 child: Container(
@@ -311,6 +320,7 @@ class RestTimerWidget extends ConsumerWidget {
                   ),
                 ),
               ),
+            ),
       ),
     );
   }

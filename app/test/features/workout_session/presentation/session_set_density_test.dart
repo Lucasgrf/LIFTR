@@ -568,5 +568,240 @@ void main() {
 
       await tester.pumpWidget(const SizedBox.shrink());
     });
+
+    testWidgets(
+        'scroll drag on ListView and taps on RestTimerWidget do not trigger collapseSignal or auto-save',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(375, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      const tBench = Exercise(
+        id: 'ex-bench',
+        name: 'Supino Reto',
+        primaryMuscleGroup: 'chest',
+        equipment: 'barbell',
+      );
+      final initialSession = WorkoutSession(
+        id: 'sess-scroll-guard',
+        userId: 'u-1',
+        workoutId: 'w-1',
+        workoutName: 'Treino A',
+        startedAt: DateTime(2026, 11, 20, 18, 0),
+        exercises: const [
+          SessionExercise(
+            id: 'se-1',
+            sessionId: 'sess-scroll-guard',
+            exerciseId: 'ex-squat',
+            exercise: tSquat,
+            targetSetsCount: 3,
+            sets: [
+              LoggedSet(
+                id: 'ls-1',
+                sessionExerciseId: 'se-1',
+                setNumber: 1,
+                weightKg: 80.0,
+                repsCompleted: 10,
+              ),
+            ],
+          ),
+          SessionExercise(
+            id: 'se-2',
+            sessionId: 'sess-scroll-guard',
+            exerciseId: 'ex-bench',
+            exercise: tBench,
+            targetSetsCount: 3,
+            sets: [],
+          ),
+        ],
+      );
+      final fakeRepo = _FakeSessionRepo(initialSession);
+      late ProviderContainer container;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            appClockProvider.overrideWithValue(
+              () => DateTime(2026, 11, 20, 18, 30),
+            ),
+            isOnlineStreamProvider.overrideWith((_) => Stream.value(true)),
+            liveSessionDetailProvider('sess-scroll-guard')
+                .overrideWith((_) => fakeRepo.session),
+            progressionRepositoryProvider
+                .overrideWithValue(_EmptyProgressionRepo()),
+            sessionRepositoryProvider.overrideWithValue(fakeRepo),
+            exerciseListStateProvider
+                .overrideWith((ref) => _FakeExercisesNotifier(ref)),
+            historyListProvider.overrideWith((_) async => const []),
+          ],
+          child: Consumer(
+            builder: (context, ref, _) {
+              container = ProviderScope.containerOf(context);
+              return MaterialApp(
+                theme: AppTheme.dark(),
+                home: const WorkoutSessionScreen(sessionId: 'sess-scroll-guard'),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // Expand Set 1 and make an unsaved edit
+      await tester.tap(find.bySemanticsLabel(RegExp(r'^Série 1,')));
+      await tester.pumpAndSettle();
+      expect(find.text('+ Drop-set'), findsOneWidget);
+
+      await tester.tap(find.bySemanticsLabel('Aumentar carga'));
+      await tester.pump();
+      expect(find.text('Salvar alteração'), findsOneWidget);
+
+      // Drag vertically across ListView -> must NOT collapse Set 1 or auto-save
+      await tester.drag(find.byType(ListView), const Offset(0, -140));
+      await tester.pumpAndSettle();
+
+      expect(fakeRepo.loggedCalls, isEmpty);
+      expect(find.text('+ Drop-set'), findsOneWidget);
+      expect(find.text('Salvar alteração'), findsOneWidget);
+
+      // Activate RestTimerWidget and tap both its non-button text and +15s button
+      container
+          .read(restTimerNotifierProvider.notifier)
+          .start(90, exerciseName: 'Agachamento Livre', setNumber: 1);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      await tester.tap(find.text('DESCANSO'));
+      await tester.pumpAndSettle();
+      expect(fakeRepo.loggedCalls, isEmpty);
+      expect(find.text('+ Drop-set'), findsOneWidget);
+
+      await tester.tap(find.text('+15s'));
+      await tester.pumpAndSettle();
+      expect(fakeRepo.loggedCalls, isEmpty);
+      expect(find.text('+ Drop-set'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets(
+        'invalid auto-save on collapse (reps=0, empty reps, empty weight) keeps row expanded, skips onSave and renders inline field error',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(375, 812));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final logCalls = <({int setNumber, double weightKg, int reps})>[];
+      const se = SessionExercise(
+        id: 'se-invalid',
+        sessionId: 'sess-1',
+        exerciseId: 'ex-squat',
+        exercise: tSquat,
+        targetSetsCount: 3,
+        sets: [
+          LoggedSet(
+            id: 'ls-1',
+            sessionExerciseId: 'se-invalid',
+            setNumber: 1,
+            weightKg: 80.0,
+            repsCompleted: 1,
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        wrapCard(
+          se: se,
+          onLogSet: ({
+            required sessionExerciseId,
+            required setNumber,
+            required setType,
+            required weightKg,
+            required repsCompleted,
+            durationSeconds,
+            rirActual,
+            restSeconds = 180,
+            dropSets = const [],
+            existingSetId,
+          }) async {
+            logCalls.add((
+              setNumber: setNumber,
+              weightKg: weightKg,
+              reps: repsCompleted,
+            ));
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Expand completed Set 1
+      await tester.tap(find.bySemanticsLabel(RegExp(r'^Série 1,')));
+      await tester.pumpAndSettle();
+      expect(find.text('+ Drop-set'), findsOneWidget);
+
+      // 1) Step reps down from 1 to 0 -> tap Set 2 & tap outside: must stay expanded with inline error
+      await tester.tap(find.bySemanticsLabel('Diminuir repetições'));
+      await tester.pump();
+      await tester.tap(find.bySemanticsLabel(RegExp(r'^Série 3,')));
+      await tester.pumpAndSettle();
+
+      expect(logCalls, isEmpty);
+      expect(find.text('+ Drop-set'), findsOneWidget);
+      expect(find.text('Informe as repetições (mín. 1).'), findsOneWidget);
+
+      await tester.tap(find.text('Agachamento Livre'));
+      await tester.pumpAndSettle();
+      expect(logCalls, isEmpty);
+      expect(find.text('+ Drop-set'), findsOneWidget);
+
+      // 2) Clear reps via dialog -> try collapsing to Set 3 -> blocked with inline error
+      await tester.tap(find.bySemanticsLabel('Editar repetições: 0 reps'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '');
+      await tester.tap(find.text('Aplicar'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.bySemanticsLabel(RegExp(r'^Série 3,')));
+      await tester.pumpAndSettle();
+      expect(logCalls, isEmpty);
+      expect(find.text('+ Drop-set'), findsOneWidget);
+      expect(find.text('Informe as repetições (mín. 1).'), findsOneWidget);
+
+      // Fix reps back to 8 (clears reps error)
+      await tester.tap(find.bySemanticsLabel('Editar repetições: vazia'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '8');
+      await tester.tap(find.text('Aplicar'));
+      await tester.pumpAndSettle();
+      expect(find.text('Informe as repetições (mín. 1).'), findsNothing);
+
+      // 3) Clear weight via dialog -> try collapsing outside -> blocked with weight error
+      await tester.tap(find.bySemanticsLabel('Editar carga: 80 kg'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '');
+      await tester.tap(find.text('Aplicar'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Agachamento Livre'));
+      await tester.pumpAndSettle();
+      expect(logCalls, isEmpty);
+      expect(find.text('+ Drop-set'), findsOneWidget);
+      expect(find.text('Informe a carga.'), findsOneWidget);
+
+      // Fix weight -> tap outside -> auto-saves cleanly and collapses Set 1
+      await tester.tap(find.bySemanticsLabel('Editar carga: vazia'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '82.5');
+      await tester.tap(find.text('Aplicar'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Agachamento Livre'));
+      await tester.pumpAndSettle();
+      expect(logCalls, hasLength(1));
+      expect(logCalls.single.setNumber, 1);
+      expect(logCalls.single.weightKg, 82.5);
+      expect(logCalls.single.reps, 8);
+      expect(find.text('+ Drop-set'), findsNothing);
+    });
   });
 }

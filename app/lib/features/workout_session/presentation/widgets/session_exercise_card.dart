@@ -80,6 +80,8 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
   int? _pendingCompletedSetForAutoFocus;
   final Map<int, FocusNode> _rowFocusNodes = {};
   final Map<int, GlobalKey> _rowKeys = {};
+  final Map<int, bool Function({bool deferSetState})> _beforeCollapseHandlers =
+      {};
 
   FocusNode _focusNodeForSet(int setNumber) => _rowFocusNodes.putIfAbsent(
         setNumber,
@@ -91,6 +93,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
 
   @override
   void dispose() {
+    _beforeCollapseHandlers.clear();
     for (final node in _rowFocusNodes.values) {
       node.dispose();
     }
@@ -105,6 +108,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
       _prefilledBySetNumber.clear();
       _draftBySetNumber.clear();
       _extraRowTypes.clear();
+      _beforeCollapseHandlers.clear();
       _minRowCount = 0;
       _syncToken++;
       _isBulkCompleting = false;
@@ -115,7 +119,9 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
 
     if (oldWidget.collapseSignal != widget.collapseSignal &&
         _manuallyExpandedSetNumber != null) {
-      _manuallyExpandedSetNumber = null;
+      if (_canLeaveExpandedSet(deferSetState: true)) {
+        _manuallyExpandedSetNumber = null;
+      }
     }
 
     if (!widget.sessionExercise.isCardio &&
@@ -146,7 +152,29 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
     return null;
   }
 
+  bool _canLeaveExpandedSet({bool deferSetState = false}) {
+    if (widget.sessionExercise.isCardio) return true;
+    final currentExpanded =
+        _manuallyExpandedSetNumber ?? _firstPendingSetNumber();
+    if (currentExpanded == null) return true;
+    final handler = _beforeCollapseHandlers[currentExpanded];
+    if (handler != null && !handler(deferSetState: deferSetState)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _ensureRowVisible(currentExpanded);
+      });
+      return false;
+    }
+    return true;
+  }
+
   void _expandSet(int setNumber) {
+    final currentExpanded =
+        _manuallyExpandedSetNumber ?? _firstPendingSetNumber();
+    if (currentExpanded != null &&
+        currentExpanded != setNumber &&
+        !_canLeaveExpandedSet()) {
+      return;
+    }
     setState(() {
       _manuallyExpandedSetNumber = setNumber;
     });
@@ -157,6 +185,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
 
   void _clearManualExpandedSet() {
     if (_manuallyExpandedSetNumber == null) return;
+    if (!_canLeaveExpandedSet()) return;
     setState(() {
       _manuallyExpandedSetNumber = null;
     });
@@ -1054,6 +1083,15 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                 syncToken: _syncToken,
                 focusNode: isCardio ? null : _focusNodeForSet(setNumber),
                 onRequestExpand: isCardio ? null : () => _expandSet(setNumber),
+                onRegisterBeforeCollapse: isCardio
+                    ? null
+                    : (handler) {
+                        if (handler == null) {
+                          _beforeCollapseHandlers.remove(setNumber);
+                        } else {
+                          _beforeCollapseHandlers[setNumber] = handler;
+                        }
+                      },
                 onApplyToRemaining: (!isCardio && hasRemainingUnlogged)
                     ? (w, r) => _applyToRemainingSets(setNumber, w, r)
                     : null,
