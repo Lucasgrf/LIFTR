@@ -9,6 +9,7 @@ import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_number_utils.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/logged_set.dart';
 
@@ -1137,7 +1138,7 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
             });
             return;
           }
-          final parsed = double.tryParse(trimmed.replaceAll(',', '.'));
+          final parsed = parsePtBrDouble(trimmed);
           if (parsed != null && parsed >= 0) {
             setState(() {
               _userEditedWeight = true;
@@ -1743,9 +1744,7 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                             decimal: true,
                             quickWeightDeltas: const [-5.0, -2.5, 2.5, 5.0],
                             onConfirm: (val) {
-                              final parsed = double.tryParse(
-                                val.trim().replaceAll(',', '.'),
-                              );
+                              final parsed = parsePtBrDouble(val);
                               if (parsed != null && parsed >= 0) {
                                 setState(() {
                                   _dropSets[i] = _dropSets[i].copyWith(
@@ -2224,6 +2223,12 @@ class _NumericEditDialogState extends State<_NumericEditDialog> {
             keyboardType: TextInputType.numberWithOptions(
               decimal: widget.decimal,
             ),
+            inputFormatters: [
+              if (widget.decimal)
+                PtBrDecimalInputFormatter(maxDecimalDigits: 2)
+              else
+                FilteringTextInputFormatter.digitsOnly,
+            ],
             decoration: const InputDecoration(),
             onSubmitted: (v) => Navigator.pop(context, v),
           ),
@@ -2273,10 +2278,8 @@ class _NumericEditDialogState extends State<_NumericEditDialog> {
                     side: BorderSide(color: colors.border),
                   ),
                   onPressed: () {
-                    final currentVal = double.tryParse(
-                          _controller.text.trim().replaceAll(',', '.'),
-                        ) ??
-                        0.0;
+                    final currentVal =
+                        parsePtBrDouble(_controller.text) ?? 0.0;
                     final nextVal = (currentVal + delta).clamp(0.0, 999.0);
                     _controller.text = widget.formatWeight(nextVal);
                     _controller.selection = TextSelection(

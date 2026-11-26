@@ -2,14 +2,18 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_number_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
+import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
@@ -249,12 +253,11 @@ class ProfileScreen extends ConsumerWidget {
                             _ProfileRow(
                               label: 'Dados corporais',
                               value:
-                                  '${settings.weightKg.toStringAsFixed(1).replaceAll('.', ',')} kg · ${settings.heightCm} cm · ${settings.age} anos',
+                                  '${formatPtBrDecimal(settings.weightKg, trimTrailingZero: false)} kg · ${settings.heightCm} cm · ${settings.age} anos',
                               subtitle: settings.bodyFatPercent != null
-                                  ? 'Sexo ${settings.biologicalSex} · ${settings.bodyFatPercent!.toStringAsFixed(1).replaceAll('.', ',')}% gordura'
+                                  ? 'Sexo ${settings.biologicalSex} · ${formatPtBrDecimal(settings.bodyFatPercent!, trimTrailingZero: false)}% gordura'
                                   : 'Sexo ${settings.biologicalSex}',
-                              onTap: () =>
-                                  _showBodyDataSheet(context, ref, settings),
+                              onTap: () => _showBodyDataSheet(context, settings),
                             ),
                             _ProfileRow(
                               label: 'Objetivo atual',
@@ -387,32 +390,12 @@ class ProfileScreen extends ConsumerWidget {
     WidgetRef ref,
     String currentName,
   ) async {
-    final ctrl = TextEditingController(
-      text: currentName == 'Atleta LIFTR' ? '' : currentName,
-    );
     final updated = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Seu nome'),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(hintText: 'Como quer ser chamado'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, ctrl.text),
-            child: const Text('Salvar'),
-          ),
-        ],
+      builder: (_) => _EditNameDialog(
+        initialName: currentName == 'Atleta LIFTR' ? '' : currentName,
       ),
     );
-    ctrl.dispose();
     if (updated != null && updated.trim().isNotEmpty) {
       await ref
           .read(profileControllerProvider.notifier)
@@ -422,114 +405,12 @@ class ProfileScreen extends ConsumerWidget {
 
   void _showBodyDataSheet(
     BuildContext context,
-    WidgetRef ref,
     UserSettingsState settings,
   ) {
-    final weightCtrl = TextEditingController(
-      text: settings.weightKg.toStringAsFixed(1),
-    );
-    final heightCtrl = TextEditingController(text: '${settings.heightCm}');
-    final ageCtrl = TextEditingController(text: '${settings.age}');
-    final bodyFatCtrl = TextEditingController(
-      text: settings.bodyFatPercent?.toStringAsFixed(1) ?? '',
-    );
-    var sex = settings.biologicalSex;
-
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setModalState) => Padding(
-            padding: EdgeInsets.fromLTRB(
-              20,
-              20,
-              20,
-              MediaQuery.viewInsetsOf(ctx).bottom + 24,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text('Dados corporais', style: ctx.textTheme.titleLarge),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    ChoiceChip(
-                      label: const Text('Masculino'),
-                      selected: sex == 'M',
-                      onSelected: (_) => setModalState(() => sex = 'M'),
-                    ),
-                    const SizedBox(width: 8),
-                    ChoiceChip(
-                      label: const Text('Feminino'),
-                      selected: sex == 'F',
-                      onSelected: (_) => setModalState(() => sex = 'F'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: weightCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: const InputDecoration(labelText: 'Peso (kg)'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: heightCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Altura (cm)'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: ageCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Idade (anos)'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: bodyFatCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: const InputDecoration(
-                    labelText: '% de gordura (opcional)',
-                  ),
-                ),
-                const SizedBox(height: 20),
-                AppButton.primary(
-                  label: 'Salvar',
-                  onPressed: () {
-                    final w = double.tryParse(
-                      weightCtrl.text.trim().replaceAll(',', '.'),
-                    );
-                    final h = int.tryParse(heightCtrl.text.trim());
-                    final a = int.tryParse(ageCtrl.text.trim());
-                    final bfRaw =
-                        bodyFatCtrl.text.trim().replaceAll(',', '.');
-                    final bf = bfRaw.isEmpty ? null : double.tryParse(bfRaw);
-
-                    ref.read(userSettingsProvider.notifier).updateBodyData(
-                          biologicalSex: sex,
-                          weightKg: w,
-                          heightCm: h,
-                          age: a,
-                          bodyFatPercent: bf,
-                          clearBodyFat: bfRaw.isEmpty,
-                        );
-                    ref
-                        .read(profileControllerProvider.notifier)
-                        .syncSettingsToRemote();
-                    Navigator.pop(ctx);
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      builder: (_) => _BodyDataSheet(initialSettings: settings),
     );
   }
 
@@ -880,6 +761,241 @@ class _ProfileRow extends StatelessWidget {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EditNameDialog extends StatefulWidget {
+  const _EditNameDialog({required this.initialName});
+
+  final String initialName;
+
+  @override
+  State<_EditNameDialog> createState() => _EditNameDialogState();
+}
+
+class _EditNameDialogState extends State<_EditNameDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialName);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Seu nome'),
+      content: AppInput(
+        controller: _controller,
+        autofocus: true,
+        textCapitalization: TextCapitalization.words,
+        hint: 'Como quer ser chamado',
+        textInputAction: TextInputAction.done,
+        onFieldSubmitted: (v) => Navigator.pop(context, v),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, _controller.text),
+          child: const Text('Salvar'),
+        ),
+      ],
+    );
+  }
+}
+
+class _BodyDataSheet extends ConsumerStatefulWidget {
+  const _BodyDataSheet({required this.initialSettings});
+
+  final UserSettingsState initialSettings;
+
+  @override
+  ConsumerState<_BodyDataSheet> createState() => _BodyDataSheetState();
+}
+
+class _BodyDataSheetState extends ConsumerState<_BodyDataSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _weightCtrl;
+  late final TextEditingController _heightCtrl;
+  late final TextEditingController _ageCtrl;
+  late final TextEditingController _bodyFatCtrl;
+  late String _sex;
+
+  @override
+  void initState() {
+    super.initState();
+    final s = widget.initialSettings;
+    _weightCtrl = TextEditingController(
+      text: formatPtBrDecimal(s.weightKg, trimTrailingZero: false),
+    );
+    _heightCtrl = TextEditingController(text: '${s.heightCm}');
+    _ageCtrl = TextEditingController(text: '${s.age}');
+    _bodyFatCtrl = TextEditingController(
+      text: s.bodyFatPercent != null
+          ? formatPtBrDecimal(s.bodyFatPercent!, trimTrailingZero: false)
+          : '',
+    );
+    _sex = s.biologicalSex;
+  }
+
+  @override
+  void dispose() {
+    _weightCtrl.dispose();
+    _heightCtrl.dispose();
+    _ageCtrl.dispose();
+    _bodyFatCtrl.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    final w = parsePtBrDouble(_weightCtrl.text);
+    final h = int.tryParse(_heightCtrl.text.trim());
+    final a = int.tryParse(_ageCtrl.text.trim());
+    final bfRaw = _bodyFatCtrl.text.trim();
+    final bf = bfRaw.isEmpty ? null : parsePtBrDouble(bfRaw);
+
+    ref.read(userSettingsProvider.notifier).updateBodyData(
+          biologicalSex: _sex,
+          weightKg: w,
+          heightCm: h,
+          age: a,
+          bodyFatPercent: bf,
+          clearBodyFat: bfRaw.isEmpty,
+        );
+    ref.read(profileControllerProvider.notifier).syncSettingsToRemote();
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final spacing = context.appSpacing;
+
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          spacing.space20,
+          spacing.space20,
+          spacing.space20,
+          bottomInset + spacing.space24,
+        ),
+        child: Form(
+          key: _formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Dados corporais', style: context.textTheme.titleLarge),
+              AppSpacing.verticalGap12,
+              Row(
+                children: [
+                  ChoiceChip(
+                    label: const Text('Masculino'),
+                    selected: _sex == 'M',
+                    onSelected: (_) => setState(() => _sex = 'M'),
+                  ),
+                  AppSpacing.horizontalGap8,
+                  ChoiceChip(
+                    label: const Text('Feminino'),
+                    selected: _sex == 'F',
+                    onSelected: (_) => setState(() => _sex = 'F'),
+                  ),
+                ],
+              ),
+              AppSpacing.verticalGap12,
+              AppInput(
+                label: 'Peso (kg)',
+                hint: 'Ex: 78,5',
+                controller: _weightCtrl,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                inputFormatters: [PtBrDecimalInputFormatter(maxDecimalDigits: 1)],
+                textInputAction: TextInputAction.next,
+                validator: (v) {
+                  final parsed = parsePtBrDouble(v);
+                  if (parsed == null || parsed < 30 || parsed > 300) {
+                    return 'Informe um peso entre 30 e 300 kg';
+                  }
+                  return null;
+                },
+              ),
+              AppSpacing.verticalGap12,
+              AppInput(
+                label: 'Altura (cm)',
+                hint: 'Ex: 178',
+                controller: _heightCtrl,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                textInputAction: TextInputAction.next,
+                validator: (v) {
+                  final parsed = int.tryParse(v?.trim() ?? '');
+                  if (parsed == null || parsed < 100 || parsed > 250) {
+                    return 'Informe uma altura entre 100 e 250 cm';
+                  }
+                  return null;
+                },
+              ),
+              AppSpacing.verticalGap12,
+              AppInput(
+                label: 'Idade (anos)',
+                hint: 'Ex: 27',
+                controller: _ageCtrl,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                textInputAction: TextInputAction.next,
+                validator: (v) {
+                  final parsed = int.tryParse(v?.trim() ?? '');
+                  if (parsed == null || parsed < 12 || parsed > 100) {
+                    return 'Informe uma idade entre 12 e 100 anos';
+                  }
+                  return null;
+                },
+              ),
+              AppSpacing.verticalGap12,
+              AppInput(
+                label: '% de gordura (opcional)',
+                hint: 'Ex: 15,0',
+                controller: _bodyFatCtrl,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                inputFormatters: [PtBrDecimalInputFormatter(maxDecimalDigits: 1)],
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _submit(),
+                validator: (v) {
+                  final trimmed = v?.trim() ?? '';
+                  if (trimmed.isEmpty) return null;
+                  final parsed = parsePtBrDouble(trimmed);
+                  if (parsed == null || parsed < 3 || parsed > 60) {
+                    return 'Informe entre 3% e 60%';
+                  }
+                  return null;
+                },
+              ),
+              AppSpacing.verticalGap20,
+              AppButton.primary(
+                label: 'Salvar',
+                onPressed: _submit,
+              ),
+            ],
+          ),
         ),
       ),
     );

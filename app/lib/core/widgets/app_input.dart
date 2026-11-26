@@ -4,6 +4,7 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_number_utils.dart';
 
 class AppInput extends StatefulWidget {
   const AppInput({
@@ -21,11 +22,18 @@ class AppInput extends StatefulWidget {
     this.textCapitalization = TextCapitalization.none,
     this.autovalidateMode,
     this.enabled = true,
+    this.autofocus = false,
     this.suffix,
     this.prefix,
+    this.suffixText,
+    this.errorText,
+    this.helperText,
+    this.style,
+    this.fillColor,
     this.validator,
     this.onChanged,
     this.maxLines = 1,
+    this.minLines,
   });
 
   final String? label;
@@ -41,11 +49,18 @@ class AppInput extends StatefulWidget {
   final TextCapitalization textCapitalization;
   final AutovalidateMode? autovalidateMode;
   final bool enabled;
+  final bool autofocus;
   final Widget? suffix;
   final Widget? prefix;
+  final String? suffixText;
+  final String? errorText;
+  final String? helperText;
+  final TextStyle? style;
+  final Color? fillColor;
   final String? Function(String?)? validator;
   final ValueChanged<String>? onChanged;
   final int? maxLines;
+  final int? minLines;
 
   @override
   State<AppInput> createState() => _AppInputState();
@@ -107,13 +122,21 @@ class _AppInputState extends State<AppInput> {
           textCapitalization: widget.textCapitalization,
           autovalidateMode: widget.autovalidateMode,
           enabled: widget.enabled,
+          autofocus: widget.autofocus,
           validator: widget.validator,
           onChanged: widget.onChanged,
           maxLines: widget.obscureText ? 1 : widget.maxLines,
+          minLines: widget.obscureText ? null : widget.minLines,
+          style: widget.style,
           decoration: InputDecoration(
             hintText: widget.hint,
             prefixIcon: widget.prefix,
             suffixIcon: effectiveSuffix,
+            suffixText: widget.suffixText,
+            errorText: widget.errorText,
+            helperText: widget.helperText,
+            filled: widget.fillColor != null ? true : null,
+            fillColor: widget.fillColor,
           ),
         ),
       ],
@@ -159,8 +182,9 @@ class AppNumericInput extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final radius = context.appRadius;
-    final formattedValue =
-        value == value.toInt() ? value.toInt().toString() : value.toStringAsFixed(1);
+    final formattedValue = value == value.toInt()
+        ? value.toInt().toString()
+        : formatPtBrDecimal(value, decimalDigits: 1, trimTrailingZero: false);
     final displayText = '$formattedValue${unit != null ? ' $unit' : ''}';
 
     return Column(

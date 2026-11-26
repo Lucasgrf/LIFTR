@@ -9,6 +9,7 @@ import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
+import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/set_template.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
@@ -22,6 +23,23 @@ class ConfigureSetsScreen extends ConsumerStatefulWidget {
     required this.workoutExerciseId,
     super.key,
   });
+
+  static const List<int> restOptions = [0, 60, 90, 120, 150, 180, 240];
+
+  /// Snaps any arbitrary rest duration (in seconds) to the closest option
+  /// offered by [ConfigureSetsScreen].
+  static int normalizeRestSeconds(int seconds) {
+    var best = restOptions.first;
+    var bestDiff = (best - seconds).abs();
+    for (final opt in restOptions.skip(1)) {
+      final diff = (opt - seconds).abs();
+      if (diff < bestDiff) {
+        best = opt;
+        bestDiff = diff;
+      }
+    }
+    return best;
+  }
 
   final String planId;
   final String workoutId;
@@ -38,7 +56,13 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
 
   void _initSets(List<SetTemplate> initial) {
     if (!_initialized) {
-      _sets.addAll(initial);
+      _sets.addAll(
+        initial.map(
+          (s) => s.copyWith(
+            restSeconds: ConfigureSetsScreen.normalizeRestSeconds(s.restSeconds),
+          ),
+        ),
+      );
       if (_sets.isEmpty) {
         _sets.add(
           const SetTemplate(
@@ -92,7 +116,7 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                   (type == SetType.working || type == SetType.dropSet)
               ? 2
               : null,
-          restSeconds: rest,
+          restSeconds: ConfigureSetsScreen.normalizeRestSeconds(rest),
         ),
       );
     });
@@ -246,7 +270,8 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                             onChanged: (newType) {
                               if (newType != null) {
                                 setState(() {
-                                  _sets[idx] = template.copyWith(setType: newType);
+                                  final cur = _sets[idx];
+                                  _sets[idx] = cur.copyWith(setType: newType);
                                 });
                               }
                             },
@@ -254,28 +279,178 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                           IconButton(
                             icon: const Icon(Icons.delete_outline_rounded, size: 20),
                             color: context.appColors.danger,
+                            tooltip: 'Remover série',
+                            constraints: const BoxConstraints(
+                              minWidth: 48,
+                              minHeight: 48,
+                            ),
                             onPressed: () => _removeSet(idx),
                           ),
                         ],
                       ),
-                      SizedBox(height: context.appSpacing.space8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              isCardio
-                                  ? 'Tempo: ${template.repRangeText} min'
-                                  : 'Reps: ${template.repRangeText} · RIR: ${template.rirRangeText}',
-                              style: context.textTheme.bodyMedium?.copyWith(
-                                color: context.appColors.textSecondary,
+                      AppSpacing.verticalGap12,
+                      if (isCardio)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: AppNumericInput(
+                                label: 'Min. mín.',
+                                value: (template.targetRepsMin ?? 15).toDouble(),
+                                min: 1,
+                                max: 180,
+                                unit: 'min',
+                                onChanged: (v) {
+                                  final nextMin = v.round();
+                                  setState(() {
+                                    final cur = _sets[idx];
+                                    final curMax = cur.targetRepsMax ?? nextMin;
+                                    final nextMax =
+                                        nextMin > curMax ? nextMin : curMax;
+                                    _sets[idx] = cur.copyWith(
+                                      targetRepsMin: nextMin,
+                                      targetRepsMax: nextMax,
+                                    );
+                                  });
+                                },
                               ),
+                            ),
+                            AppSpacing.horizontalGap8,
+                            Expanded(
+                              child: AppNumericInput(
+                                label: 'Min. máx.',
+                                value: (template.targetRepsMax ?? 20).toDouble(),
+                                min: 1,
+                                max: 180,
+                                unit: 'min',
+                                onChanged: (v) {
+                                  final nextMax = v.round();
+                                  setState(() {
+                                    final cur = _sets[idx];
+                                    final curMin = cur.targetRepsMin ?? nextMax;
+                                    final nextMin =
+                                        nextMax < curMin ? nextMax : curMin;
+                                    _sets[idx] = cur.copyWith(
+                                      targetRepsMin: nextMin,
+                                      targetRepsMax: nextMax,
+                                    );
+                                  });
+                                },
+                              ),
+                            ),
+                          ],
+                        )
+                      else ...[
+                        Row(
+                          children: [
+                            Expanded(
+                              child: AppNumericInput(
+                                label: 'Reps mín.',
+                                value: (template.targetRepsMin ?? 8).toDouble(),
+                                min: 1,
+                                max: 50,
+                                onChanged: (v) {
+                                  final nextMin = v.round();
+                                  setState(() {
+                                    final cur = _sets[idx];
+                                    final curMax = cur.targetRepsMax ?? nextMin;
+                                    final nextMax =
+                                        nextMin > curMax ? nextMin : curMax;
+                                    _sets[idx] = cur.copyWith(
+                                      targetRepsMin: nextMin,
+                                      targetRepsMax: nextMax,
+                                    );
+                                  });
+                                },
+                              ),
+                            ),
+                            AppSpacing.horizontalGap8,
+                            Expanded(
+                              child: AppNumericInput(
+                                label: 'Reps máx.',
+                                value:
+                                    (template.targetRepsMax ?? 12).toDouble(),
+                                min: 1,
+                                max: 50,
+                                onChanged: (v) {
+                                  final nextMax = v.round();
+                                  setState(() {
+                                    final cur = _sets[idx];
+                                    final curMin = cur.targetRepsMin ?? nextMax;
+                                    final nextMin =
+                                        nextMax < curMin ? nextMax : curMin;
+                                    _sets[idx] = cur.copyWith(
+                                      targetRepsMin: nextMin,
+                                      targetRepsMax: nextMax,
+                                    );
+                                  });
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        AppSpacing.verticalGap8,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: AppNumericInput(
+                                label: 'RIR mín.',
+                                value: (template.targetRirMin ?? 1).toDouble(),
+                                min: 0,
+                                max: 5,
+                                onChanged: (v) {
+                                  final nextMin = v.round();
+                                  setState(() {
+                                    final cur = _sets[idx];
+                                    final curMax = cur.targetRirMax ?? nextMin;
+                                    final nextMax =
+                                        nextMin > curMax ? nextMin : curMax;
+                                    _sets[idx] = cur.copyWith(
+                                      targetRirMin: nextMin,
+                                      targetRirMax: nextMax,
+                                    );
+                                  });
+                                },
+                              ),
+                            ),
+                            AppSpacing.horizontalGap8,
+                            Expanded(
+                              child: AppNumericInput(
+                                label: 'RIR máx.',
+                                value: (template.targetRirMax ?? 2).toDouble(),
+                                min: 0,
+                                max: 5,
+                                onChanged: (v) {
+                                  final nextMax = v.round();
+                                  setState(() {
+                                    final cur = _sets[idx];
+                                    final curMin = cur.targetRirMin ?? nextMax;
+                                    final nextMin =
+                                        nextMax < curMin ? nextMax : curMin;
+                                    _sets[idx] = cur.copyWith(
+                                      targetRirMin: nextMin,
+                                      targetRirMax: nextMax,
+                                    );
+                                  });
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      AppSpacing.verticalGap8,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Descanso',
+                            style: context.textTheme.bodyMedium?.copyWith(
+                              color: context.appColors.textSecondary,
                             ),
                           ),
                           DropdownButton<int>(
-                            value: [0, 60, 90, 120, 150, 180, 240]
-                                    .contains(template.restSeconds)
-                                ? template.restSeconds
-                                : (isCardio ? 0 : AppConstants.defaultRestSeconds),
+                            value: ConfigureSetsScreen.normalizeRestSeconds(
+                              template.restSeconds,
+                            ),
                             dropdownColor: context.appColors.surfaceElevated,
                             isDense: true,
                             underline: const SizedBox(),
@@ -291,7 +466,8 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                             onChanged: (v) {
                               if (v != null) {
                                 setState(() {
-                                  _sets[idx] = template.copyWith(restSeconds: v);
+                                  final cur = _sets[idx];
+                                  _sets[idx] = cur.copyWith(restSeconds: v);
                                 });
                               }
                             },

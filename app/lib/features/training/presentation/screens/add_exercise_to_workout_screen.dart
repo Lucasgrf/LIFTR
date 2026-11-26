@@ -6,6 +6,7 @@ import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
@@ -26,6 +27,23 @@ class AddExerciseToWorkoutScreen extends ConsumerStatefulWidget {
     required this.workoutId,
     super.key,
   });
+
+  static const List<int> restOptions = [60, 90, 120, 150, 180, 240];
+
+  /// Snaps any arbitrary rest duration (in seconds) to the closest option
+  /// offered by the prescription dropdown.
+  static int normalizeRestSeconds(int seconds) {
+    var best = restOptions.first;
+    var bestDiff = (best - seconds).abs();
+    for (final opt in restOptions.skip(1)) {
+      final diff = (opt - seconds).abs();
+      if (diff < bestDiff) {
+        best = opt;
+        bestDiff = diff;
+      }
+    }
+    return best;
+  }
 
   final String planId;
   final String workoutId;
@@ -200,7 +218,10 @@ class _AddExerciseToWorkoutScreenState
                               );
                         setState(() {
                           _selectedExercise = exercise;
-                          _restSeconds = recommendedRest;
+                          _restSeconds =
+                              AddExerciseToWorkoutScreen.normalizeRestSeconds(
+                            recommendedRest,
+                          );
                         });
                       },
                     );
@@ -328,7 +349,9 @@ class _AddExerciseToWorkoutScreenState
                       ),
                     ),
                     DropdownButton<int>(
-                      value: _restSeconds,
+                      value: AddExerciseToWorkoutScreen.normalizeRestSeconds(
+                        _restSeconds,
+                      ),
                       dropdownColor: context.appColors.surfaceElevated,
                       items: const [
                         DropdownMenuItem(value: 60, child: Text('60s (1:00)')),
@@ -339,7 +362,14 @@ class _AddExerciseToWorkoutScreenState
                         DropdownMenuItem(value: 240, child: Text('240s (4:00)')),
                       ],
                       onChanged: (v) {
-                        if (v != null) setState(() => _restSeconds = v);
+                        if (v != null) {
+                          setState(
+                            () => _restSeconds =
+                                AddExerciseToWorkoutScreen.normalizeRestSeconds(
+                              v,
+                            ),
+                          );
+                        }
                       },
                     ),
                   ],
@@ -395,18 +425,27 @@ class _AddExerciseToWorkoutScreenState
           children: [
             IconButton(
               icon: const Icon(Icons.remove_circle_outline_rounded),
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+              tooltip: 'Diminuir $title',
               onPressed: onDecrement,
               color: context.appColors.primary,
             ),
-            Text(
-              '$value',
-              style: context.textTheme.titleMedium?.copyWith(
-                color: context.appColors.textPrimary,
-                fontWeight: FontWeight.bold,
+            SizedBox(
+              width: 28,
+              child: Text(
+                '$value',
+                textAlign: TextAlign.center,
+                style: context.textTheme.titleMedium?.copyWith(
+                  color: context.appColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontFeatures: AppTypography.tabularFeatures,
+                ),
               ),
             ),
             IconButton(
               icon: const Icon(Icons.add_circle_outline_rounded),
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+              tooltip: 'Aumentar $title',
               onPressed: onIncrement,
               color: context.appColors.primary,
             ),
