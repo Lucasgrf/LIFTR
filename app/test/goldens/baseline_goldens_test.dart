@@ -7,6 +7,7 @@ import 'package:personal_fitness_os/core/errors/result.dart';
 import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_brand_mark.dart';
 import 'package:personal_fitness_os/features/auth/presentation/screens/login_screen.dart';
+import 'package:personal_fitness_os/features/auth/presentation/screens/register_screen.dart';
 import 'package:personal_fitness_os/features/body/domain/entities/weight_entry.dart';
 import 'package:personal_fitness_os/features/body/domain/entities/weight_stats.dart';
 import 'package:personal_fitness_os/features/body/presentation/providers/weight_providers.dart';
@@ -19,6 +20,7 @@ import 'package:personal_fitness_os/features/history/presentation/providers/hist
 import 'package:personal_fitness_os/features/history/presentation/screens/history_screen.dart';
 import 'package:personal_fitness_os/features/insights/domain/entities/fitness_insight.dart';
 import 'package:personal_fitness_os/features/insights/presentation/providers/insight_providers.dart';
+import 'package:personal_fitness_os/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:personal_fitness_os/features/profile/presentation/screens/profile_screen.dart';
 import 'package:personal_fitness_os/features/progression/domain/entities/exercise_performance_history.dart';
 import 'package:personal_fitness_os/features/progression/domain/repositories/progression_repository.dart';
@@ -29,6 +31,8 @@ import 'package:personal_fitness_os/features/training/domain/entities/training_p
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout_exercise.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
+import 'package:personal_fitness_os/features/training/presentation/screens/ai_workout_generator_screen.dart';
+import 'package:personal_fitness_os/features/training/presentation/screens/configure_sets_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/screens/training_list_screen.dart';
 import 'package:personal_fitness_os/features/weekly_comparison/domain/entities/weekly_comparison_data.dart';
 import 'package:personal_fitness_os/features/weekly_comparison/domain/entities/weekly_snapshot.dart';
@@ -805,6 +809,155 @@ void main() {
         await expectLater(
           find.byType(MaterialApp),
           matchesGoldenFile('pngs/login_$themeLabel.png'),
+        );
+      });
+
+      testWidgets('RegisterScreen', (tester) async {
+        await pumpGoldenWidget(
+          tester,
+          themeMode: themeMode,
+          prefs: prefs,
+          child: const RegisterScreen(),
+        );
+
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile('pngs/register_$themeLabel.png'),
+        );
+      });
+
+      testWidgets('OnboardingScreen (step 0)', (tester) async {
+        await pumpGoldenWidget(
+          tester,
+          themeMode: themeMode,
+          prefs: prefs,
+          child: const OnboardingScreen(),
+        );
+
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile('pngs/onboarding_step0_$themeLabel.png'),
+        );
+      });
+
+      testWidgets('OnboardingScreen (step 5)', (tester) async {
+        await pumpGoldenWidget(
+          tester,
+          themeMode: themeMode,
+          prefs: prefs,
+          child: const OnboardingScreen(),
+        );
+
+        for (var i = 0; i < 4; i++) {
+          await tester.tap(find.text('Continuar'));
+          await tester.pumpAndSettle();
+        }
+        await tester.tap(find.text('Confirmar plano'));
+        await tester.pumpAndSettle();
+
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile('pngs/onboarding_step5_$themeLabel.png'),
+        );
+      });
+
+      testWidgets('ProfileScreen (body data sheet)', (tester) async {
+        await pumpGoldenWidget(
+          tester,
+          themeMode: themeMode,
+          prefs: prefs,
+          child: const ProfileScreen(),
+        );
+
+        await tester.tap(find.text('Dados corporais'));
+        await tester.pumpAndSettle();
+
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile('pngs/profile_body_data_sheet_$themeLabel.png'),
+        );
+      });
+
+      testWidgets('ConfigureSetsScreen', (tester) async {
+        const configureWorkout = Workout(
+          id: 'w-1',
+          trainingPlanId: 'plan-1',
+          name: 'Treino A · Peito & Tríceps',
+          dayOfWeek: 1,
+          exercises: [
+            WorkoutExercise(
+              id: 'we-1',
+              workoutId: 'w-1',
+              exerciseId: 'ex-1',
+              exercise: Exercise(
+                id: 'ex-1',
+                name: 'Supino Inclinado',
+                primaryMuscleGroup: 'chest',
+                equipment: 'barbell',
+              ),
+              setTemplates: [
+                SetTemplate(
+                  id: 'st-1',
+                  workoutExerciseId: 'we-1',
+                  setNumber: 1,
+                  setType: SetType.working,
+                  targetRepsMin: 8,
+                  targetRepsMax: 10,
+                  targetRirMin: 1,
+                  targetRirMax: 2,
+                  restSeconds: 100,
+                ),
+                SetTemplate(
+                  id: 'st-2',
+                  workoutExerciseId: 'we-1',
+                  setNumber: 2,
+                  setType: SetType.working,
+                  targetRepsMin: 8,
+                  targetRepsMax: 12,
+                  targetRirMin: 1,
+                  targetRirMax: 2,
+                  restSeconds: 120,
+                ),
+              ],
+            ),
+          ],
+        );
+
+        await pumpGoldenWidget(
+          tester,
+          themeMode: themeMode,
+          prefs: prefs,
+          child: const ConfigureSetsScreen(
+            planId: 'plan-1',
+            workoutId: 'w-1',
+            workoutExerciseId: 'we-1',
+          ),
+          overrides: [
+            workoutDetailProvider((planId: 'plan-1', workoutId: 'w-1'))
+                .overrideWith((_) async => configureWorkout),
+          ],
+        );
+
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile('pngs/configure_sets_$themeLabel.png'),
+        );
+      });
+
+      testWidgets('AiWorkoutGeneratorScreen (offline)', (tester) async {
+        await pumpGoldenWidget(
+          tester,
+          themeMode: themeMode,
+          prefs: prefs,
+          child: const AiWorkoutGeneratorScreen(),
+          overrides: [
+            isOfflineModeProvider.overrideWithValue(true),
+          ],
+        );
+
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile('pngs/ai_generator_offline_$themeLabel.png'),
         );
       });
 
