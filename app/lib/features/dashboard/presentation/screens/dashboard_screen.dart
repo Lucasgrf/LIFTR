@@ -200,18 +200,41 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final capitalizedDate =
         formattedDate[0].toUpperCase() + formattedDate.substring(1);
 
+    Future<void> refreshDashboard() => Future.wait<void>([
+          ref
+              .refresh(currentWeekSummaryProvider.future)
+              .then<void>((_) {}, onError: (Object _, StackTrace _) {}),
+          ref
+              .refresh(dashboardDataProvider.future)
+              .then<void>((_) {}, onError: (Object _, StackTrace _) {}),
+        ]);
+
     return Scaffold(
       backgroundColor: colors.background,
       body: dashboardAsync.when(
         loading: () => const SafeArea(child: LiftrScreenSkeleton()),
-        error: (err, st) => ErrorStateWidget(
-          message: userFacingMessage(
-            err,
-            stackTrace: st,
-            context: 'DashboardScreen.build',
+        error: (err, st) => RefreshIndicator(
+          color: colors.primary,
+          onRefresh: refreshDashboard,
+          child: LayoutBuilder(
+            builder: (context, constraints) => ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: ErrorStateWidget(
+                    message: userFacingMessage(
+                      err,
+                      stackTrace: st,
+                      context: 'DashboardScreen.build',
+                    ),
+                    safetyNote: offlineSafetyNoteFor(err),
+                    onRetry: () => ref.invalidate(dashboardDataProvider),
+                  ),
+                ),
+              ],
+            ),
           ),
-          safetyNote: offlineSafetyNoteFor(err),
-          onRetry: () => ref.invalidate(dashboardDataProvider),
         ),
         data: (data) {
           final activePlan = data.activePlan;
@@ -234,12 +257,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
           return RefreshIndicator(
             color: colors.primary,
-            onRefresh: () async {
-              ref.invalidate(currentWeekSummaryProvider);
-              ref.invalidate(dashboardDataProvider);
-              await ref.read(dashboardDataProvider.future);
-            },
+            onRefresh: refreshDashboard,
             child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(0, 12, 0, 32),
               children: [
                 ResponsiveContainer(

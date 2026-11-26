@@ -35,15 +35,30 @@ class HistoryScreen extends ConsumerWidget {
       body: RefreshIndicator(
         color: colors.primary,
         onRefresh: () async {
-          ref.invalidate(currentWeekSummaryProvider);
+          final summaryFuture = ref
+              .refresh(currentWeekSummaryProvider.future)
+              .then<void>((_) {}, onError: (Object _, StackTrace _) {});
           if (viewMode == 1) {
-            ref.invalidate(weightHistoryProvider);
-            ref.invalidate(weightStatsProvider);
+            await Future.wait<void>([
+              summaryFuture,
+              ref
+                  .refresh(weightHistoryProvider.future)
+                  .then<void>((_) {}, onError: (Object _, StackTrace _) {}),
+              ref
+                  .refresh(weightStatsProvider.future)
+                  .then<void>((_) {}, onError: (Object _, StackTrace _) {}),
+            ]);
           } else {
-            ref.invalidate(historyListProvider);
+            await Future.wait<void>([
+              summaryFuture,
+              ref
+                  .refresh(historyListProvider.future)
+                  .then<void>((_) {}, onError: (Object _, StackTrace _) {}),
+            ]);
           }
         },
         child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(0, 12, 0, 36),
           children: [
             ResponsiveContainer(

@@ -39,6 +39,10 @@ class WeeklyComparisonScreen extends ConsumerWidget {
     final offset = ref.watch(weeklyComparisonOffsetProvider);
     final comparisonAsync = ref.watch(weeklyComparisonProvider);
 
+    Future<void> refreshComparison() => ref
+        .refresh(weeklyComparisonProvider.future)
+        .then<void>((_) {}, onError: (Object _, StackTrace _) {});
+
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppBar(
@@ -64,14 +68,28 @@ class WeeklyComparisonScreen extends ConsumerWidget {
       ),
       body: comparisonAsync.when(
         loading: () => const SafeArea(child: LiftrScreenSkeleton()),
-        error: (err, st) => ErrorStateWidget(
-          message: userFacingMessage(
-            err,
-            stackTrace: st,
-            context: 'WeeklyComparisonScreen.build',
+        error: (err, st) => RefreshIndicator(
+          color: colors.primary,
+          onRefresh: refreshComparison,
+          child: LayoutBuilder(
+            builder: (context, constraints) => ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: ErrorStateWidget(
+                    message: userFacingMessage(
+                      err,
+                      stackTrace: st,
+                      context: 'WeeklyComparisonScreen.build',
+                    ),
+                    safetyNote: offlineSafetyNoteFor(err),
+                    onRetry: () => ref.invalidate(weeklyComparisonProvider),
+                  ),
+                ),
+              ],
+            ),
           ),
-          safetyNote: offlineSafetyNoteFor(err),
-          onRetry: () => ref.invalidate(weeklyComparisonProvider),
         ),
         data: (data) {
           final current = data.currentWeek;
@@ -80,8 +98,9 @@ class WeeklyComparisonScreen extends ConsumerWidget {
 
           return RefreshIndicator(
             color: colors.primary,
-            onRefresh: () => ref.refresh(weeklyComparisonProvider.future),
+            onRefresh: refreshComparison,
             child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(0, 10, 0, 36),
               children: [
                 ResponsiveContainer(

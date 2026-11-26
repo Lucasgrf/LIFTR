@@ -76,66 +76,101 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
     final plansAsync = ref.watch(trainingPlansStateProvider);
     ref.watch(workoutQueueProvider);
 
+    Future<void> refreshPlans() =>
+        ref.read(trainingPlansStateProvider.notifier).refresh();
+
     return Scaffold(
       backgroundColor: colors.background,
       body: plansAsync.when(
         loading: () => const SafeArea(child: LiftrScreenSkeleton()),
-        error: (error, st) => ErrorStateWidget(
-          message: userFacingMessage(
-            error,
-            stackTrace: st,
-            context: 'TrainingListScreen.build',
+        error: (error, st) => RefreshIndicator(
+          color: colors.primary,
+          onRefresh: refreshPlans,
+          child: LayoutBuilder(
+            builder: (context, constraints) => ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: ErrorStateWidget(
+                    message: userFacingMessage(
+                      error,
+                      stackTrace: st,
+                      context: 'TrainingListScreen.build',
+                    ),
+                    safetyNote: offlineSafetyNoteFor(error),
+                    onRetry: refreshPlans,
+                  ),
+                ),
+              ],
+            ),
           ),
-          safetyNote: offlineSafetyNoteFor(error),
-          onRetry: () => ref.read(trainingPlansStateProvider.notifier).refresh(),
         ),
         data: (plans) {
           if (plans.isEmpty) {
             return SafeArea(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+              child: RefreshIndicator(
+                color: colors.primary,
+                onRefresh: refreshPlans,
+                child: LayoutBuilder(
+                  builder: (context, constraints) => ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(24),
                     children: [
-                      EmptyStateWidget(
-                        icon: Icons.fitness_center_rounded,
-                        title: 'Nenhum programa cadastrado',
-                        subtitle:
-                            'Crie seu programa com IA, importe o treino de alguém ou monte manualmente.',
-                        actionLabel: 'Criar Programa',
-                        onAction: () => context.push('/training/new'),
-                      ),
                       ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 280),
-                        child: Column(
-                          children: [
-                            TextButton.icon(
-                              onPressed: () =>
-                                  context.push('/training/ai-generator'),
-                              style: TextButton.styleFrom(
-                                minimumSize: const Size(48, 48),
-                                foregroundColor: colors.primaryLight,
+                        constraints: BoxConstraints(
+                          minHeight: (constraints.maxHeight - 48)
+                              .clamp(0.0, double.infinity),
+                        ),
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              EmptyStateWidget(
+                                icon: Icons.fitness_center_rounded,
+                                title: 'Nenhum programa cadastrado',
+                                subtitle:
+                                    'Crie seu programa com IA, importe o treino de alguém ou monte manualmente.',
+                                actionLabel: 'Criar Programa',
+                                onAction: () => context.push('/training/new'),
                               ),
-                              icon: const Icon(
-                                Icons.auto_awesome_rounded,
-                                size: 18,
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 280),
+                                child: Column(
+                                  children: [
+                                    TextButton.icon(
+                                      onPressed: () =>
+                                          context.push('/training/ai-generator'),
+                                      style: TextButton.styleFrom(
+                                        minimumSize: const Size(48, 48),
+                                        foregroundColor: colors.primaryLight,
+                                      ),
+                                      icon: const Icon(
+                                        Icons.auto_awesome_rounded,
+                                        size: 18,
+                                      ),
+                                      label: const Text('Montar treino com IA'),
+                                    ),
+                                    TextButton.icon(
+                                      onPressed: () =>
+                                          ImportPlanSheet.show(context),
+                                      style: TextButton.styleFrom(
+                                        minimumSize: const Size(48, 48),
+                                        foregroundColor: colors.textSecondary,
+                                      ),
+                                      icon: const Icon(
+                                        Icons.qr_code_scanner_rounded,
+                                        size: 18,
+                                      ),
+                                      label: const Text(
+                                        'Importar treino por código',
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              label: const Text('Montar treino com IA'),
-                            ),
-                            TextButton.icon(
-                              onPressed: () => ImportPlanSheet.show(context),
-                              style: TextButton.styleFrom(
-                                minimumSize: const Size(48, 48),
-                                foregroundColor: colors.textSecondary,
-                              ),
-                              icon: const Icon(
-                                Icons.qr_code_scanner_rounded,
-                                size: 18,
-                              ),
-                              label: const Text('Importar treino por código'),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -153,9 +188,9 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
 
           return RefreshIndicator(
             color: colors.primary,
-            onRefresh: () =>
-                ref.read(trainingPlansStateProvider.notifier).refresh(),
+            onRefresh: refreshPlans,
             child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(0, 12, 0, 36),
               children: [
                 ResponsiveContainer(

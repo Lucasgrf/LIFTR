@@ -96,27 +96,65 @@ class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
             Expanded(
               child: filteredExercisesAsync.when(
                 loading: () => const LoadingWidget(),
-                error: (error, st) => ErrorStateWidget(
-                  message: userFacingMessage(
-                    error,
-                    stackTrace: st,
-                    context: 'ExerciseListScreen.build',
+                error: (error, st) => RefreshIndicator(
+                  onRefresh: () =>
+                      ref.read(exerciseListStateProvider.notifier).refresh(),
+                  color: context.appColors.primary,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) => ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        ConstrainedBox(
+                          constraints:
+                              BoxConstraints(minHeight: constraints.maxHeight),
+                          child: ErrorStateWidget(
+                            message: userFacingMessage(
+                              error,
+                              stackTrace: st,
+                              context: 'ExerciseListScreen.build',
+                            ),
+                            safetyNote: offlineSafetyNoteFor(error),
+                            onRetry: () => ref
+                                .read(exerciseListStateProvider.notifier)
+                                .refresh(),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  safetyNote: offlineSafetyNoteFor(error),
-                  onRetry: () => ref.read(exerciseListStateProvider.notifier).refresh(),
                 ),
                 data: (exercises) {
                   if (exercises.isEmpty) {
-                    return EmptyStateWidget(
-                      icon: Icons.fitness_center_rounded,
-                      title: 'Nenhum exercício encontrado',
-                      subtitle: hasActiveFilter
-                          ? 'Tente buscar por outro nome ou limpar os filtros aplicados.'
-                          : 'Nenhum exercício cadastrado no momento.',
-                      actionLabel: hasActiveFilter ? 'Limpar Filtros' : 'Criar Exercício',
-                      onAction: hasActiveFilter
-                          ? _clearFilters
-                          : () => context.push('/exercises/new'),
+                    return RefreshIndicator(
+                      onRefresh: () => ref
+                          .read(exerciseListStateProvider.notifier)
+                          .refresh(),
+                      color: context.appColors.primary,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) => ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: [
+                            ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minHeight: constraints.maxHeight,
+                              ),
+                              child: EmptyStateWidget(
+                                icon: Icons.fitness_center_rounded,
+                                title: 'Nenhum exercício encontrado',
+                                subtitle: hasActiveFilter
+                                    ? 'Tente buscar por outro nome ou limpar os filtros aplicados.'
+                                    : 'Nenhum exercício cadastrado no momento.',
+                                actionLabel: hasActiveFilter
+                                    ? 'Limpar Filtros'
+                                    : 'Criar Exercício',
+                                onAction: hasActiveFilter
+                                    ? _clearFilters
+                                    : () => context.push('/exercises/new'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     );
                   }
 
@@ -124,6 +162,7 @@ class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
                     onRefresh: () => ref.read(exerciseListStateProvider.notifier).refresh(),
                     color: context.appColors.primary,
                     child: ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.only(top: 4, bottom: 88),
                       itemCount: exercises.length,
                       itemBuilder: (context, index) {
