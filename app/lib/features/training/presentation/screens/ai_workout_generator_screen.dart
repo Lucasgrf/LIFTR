@@ -144,7 +144,7 @@ class _AiWorkoutGeneratorScreenState
 
   void _startProgressTicker() {
     _progressTimer?.cancel();
-    _progressTimer = Timer.periodic(const Duration(milliseconds: 220), (timer) {
+    _progressTimer = Timer.periodic(context.appMotion.standard, (timer) {
       if (!mounted || !_isGenerating) {
         timer.cancel();
         return;
@@ -176,12 +176,15 @@ class _AiWorkoutGeneratorScreenState
       final plan = await remote.generatePlan(_buildRequest());
       _progressTimer?.cancel();
       if (!mounted) return;
-      final disableAnimations = MediaQuery.disableAnimationsOf(context);
+      final completionDelay = context.appMotion.resolve(
+        context,
+        context.appMotion.fast,
+      );
       setState(() {
         _generationPercent = 100;
       });
-      if (!disableAnimations) {
-        await Future<void>.delayed(const Duration(milliseconds: 180));
+      if (completionDelay > Duration.zero) {
+        await Future<void>.delayed(completionDelay);
         if (!mounted) return;
       }
       setState(() {
@@ -822,7 +825,6 @@ class _AiWorkoutGeneratorScreenState
     final colors = context.appColors;
     final fitnessColors = context.fitnessColors;
     final radius = context.appRadius;
-    final motion = context.appMotion;
     final percent = _generationPercent.clamp(0, 100);
     final stageLabel = _generatingStageLabel(percent);
 
@@ -868,16 +870,12 @@ class _AiWorkoutGeneratorScreenState
               ],
             ),
             const SizedBox(height: 12),
-            AnimatedContainer(
-              duration: motion.resolve(context, motion.fast),
-              curve: motion.curveStandard,
-              child: LiftrProgressBar(
-                progress: percent / 100.0,
-                height: 6,
-                color: percent >= 100
-                    ? fitnessColors.progressUp
-                    : colors.primary,
-              ),
+            LiftrProgressBar(
+              progress: percent / 100.0,
+              height: 6,
+              color: percent >= 100
+                  ? fitnessColors.progressUp
+                  : colors.primary,
             ),
             const SizedBox(height: 16),
             Text(

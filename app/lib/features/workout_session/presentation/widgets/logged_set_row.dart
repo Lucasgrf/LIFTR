@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
-import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
@@ -537,7 +536,6 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     final colors = context.appColors;
     final fitnessColors = context.fitnessColors;
     final radius = context.appRadius;
-    final motion = context.appMotion;
 
     final String label;
     final Color bg;
@@ -589,29 +587,24 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
         onTap: _cycleSetType,
         onLongPress: _showSetTypePicker,
         borderRadius: BorderRadius.circular(radius.small),
-        child: AnimatedScale(
-          scale: 1.0,
-          duration: motion.resolve(context, motion.fast),
-          curve: motion.curveStandard,
-          child: Container(
-            width: 34,
-            height: 34,
-            padding: const EdgeInsets.symmetric(horizontal: 3),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(radius.small),
-            ),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                label,
-                maxLines: 1,
-                style: context.textTheme.labelMedium?.copyWith(
-                  color: fg,
-                  fontWeight: FontWeight.w700,
-                  fontFeatures: AppTypography.tabularFeatures,
-                ),
+        child: Container(
+          width: 34,
+          height: 34,
+          padding: EdgeInsets.symmetric(horizontal: context.appSpacing.space4),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(radius.small),
+          ),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              maxLines: 1,
+              style: context.textTheme.labelMedium?.copyWith(
+                color: fg,
+                fontWeight: FontWeight.w700,
+                fontFeatures: AppTypography.tabularFeatures,
               ),
             ),
           ),
@@ -835,7 +828,6 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     final colors = context.appColors;
     final fitnessColors = context.fitnessColors;
     final radius = context.appRadius;
-    final motion = context.appMotion;
     final isDone = _isCompleted;
     final hasPendingEdit = isDone && _hasUnsavedEdits;
 
@@ -1167,46 +1159,41 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                       width: 48,
                       height: 48,
                       child: Center(
-                        child: AnimatedScale(
-                          scale: 1.0,
-                          duration: motion.resolve(context, motion.fast),
-                          curve: motion.curveStandard,
-                          child: Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
+                        child: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: hasPendingEdit
+                                ? colors.primaryMuted
+                                : isDone
+                                    ? fitnessColors.progressUp
+                                    : colors.surfaceElevated,
+                            borderRadius: BorderRadius.circular(radius.medium),
+                            border: Border.all(
                               color: hasPendingEdit
-                                  ? colors.primaryMuted
+                                  ? colors.primary
                                   : isDone
                                       ? fitnessColors.progressUp
-                                      : colors.surfaceElevated,
-                              borderRadius: BorderRadius.circular(radius.medium),
-                              border: Border.all(
-                                color: hasPendingEdit
-                                    ? colors.primary
-                                    : isDone
-                                        ? fitnessColors.progressUp
-                                        : colors.border,
-                              ),
+                                      : colors.border,
                             ),
-                            child: _isSaving
-                                ? Padding(
-                                    padding: const EdgeInsets.all(10),
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: colors.onPrimary,
-                                    ),
-                                  )
-                                : Icon(
-                                    Icons.check_rounded,
-                                    size: 21,
-                                    color: hasPendingEdit
-                                        ? colors.primaryLight
-                                        : isDone
-                                            ? fitnessColors.onSuccess
-                                            : colors.textTertiary,
-                                  ),
                           ),
+                          child: _isSaving
+                              ? Padding(
+                                  padding: EdgeInsets.all(context.appSpacing.space8),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: colors.onPrimary,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.check_rounded,
+                                  size: 21,
+                                  color: hasPendingEdit
+                                      ? colors.primaryLight
+                                      : isDone
+                                          ? fitnessColors.onSuccess
+                                          : colors.textTertiary,
+                                ),
                         ),
                       ),
                     ),

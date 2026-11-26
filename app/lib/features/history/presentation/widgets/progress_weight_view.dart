@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/extensions/date_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
+import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
@@ -300,6 +301,7 @@ class _WeightEmaChart extends StatelessWidget {
     maxY = maxY + pad;
 
     return LineChart(
+      duration: context.appMotion.resolve(context, context.appMotion.fast),
       LineChartData(
         minY: minY,
         maxY: maxY,

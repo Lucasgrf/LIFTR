@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/extensions/date_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
+import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
@@ -79,6 +80,7 @@ class ExerciseLoadProgressionChart extends StatelessWidget {
             SizedBox(
               height: 180,
               child: LineChart(
+                duration: context.appMotion.resolve(context, context.appMotion.fast),
                 LineChartData(
                   minY: minY,
                   maxY: maxY,

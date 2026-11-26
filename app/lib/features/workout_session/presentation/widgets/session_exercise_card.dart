@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
-import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
@@ -247,7 +246,6 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
     final colors = context.appColors;
     final fitnessColors = context.fitnessColors;
     final radius = context.appRadius;
-    final motion = context.appMotion;
     final se = widget.sessionExercise;
     final isCardio = se.isCardio;
     final exerciseName = se.exercise?.name ?? 'Exercício';
@@ -311,7 +309,7 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                       overflow: TextOverflow.ellipsis,
                       style: context.textTheme.titleSmall,
                     ),
-                    const SizedBox(height: 3),
+                    SizedBox(height: context.appSpacing.space4),
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -341,14 +339,9 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                   ],
                 ),
               ),
-              AnimatedRotation(
-                turns: 0,
-                duration: motion.resolve(context, motion.standard),
-                curve: motion.curveStandard,
-                child: Icon(
-                  Icons.chevron_right_rounded,
-                  color: colors.textTertiary,
-                ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: colors.textTertiary,
               ),
             ],
           ),
