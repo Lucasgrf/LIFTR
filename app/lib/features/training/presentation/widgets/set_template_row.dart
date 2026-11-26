@@ -75,130 +75,148 @@ class SetTemplateRow extends StatelessWidget {
           width: 0.8,
         ),
       ),
-      child: Row(
-        children: [
-          // Set Type Badge
-          ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 38, minHeight: 24),
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: spacing.space4),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: badgeColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(context.appRadius.small),
-                border: Border.all(
-                  color: badgeColor.withValues(alpha: 0.4),
-                  width: 0.8,
-                ),
-              ),
-              child: Text(
-                badgeText,
-                style: context.textTheme.labelSmall?.copyWith(
-                  color: badgeColor,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-          SizedBox(width: spacing.space12),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < 290;
+          final hasMeta = (!isCardio && template.restSeconds > 0) ||
+              (template.targetWeight != null && template.targetWeight! > 0);
 
-          // Target Reps / Minutes
-          Expanded(
-            flex: 3,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isCardio
-                      ? '${template.repRangeText} min'
-                      : '${template.repRangeText} reps',
-                  style: context.textTheme.bodyMedium?.copyWith(
-                    color: context.appColors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                if (!isCardio && template.targetRirMin != null)
-                  Text(
-                    'RIR ${template.rirRangeText}',
-                    style: context.textTheme.labelSmall?.copyWith(
-                      color: context.appColors.textSecondary,
+          final metaWrap = Wrap(
+            spacing: spacing.space12,
+            runSpacing: spacing.space4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            alignment: isCompact ? WrapAlignment.start : WrapAlignment.end,
+            children: [
+              if (!isCardio && template.restSeconds > 0)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.timer_rounded,
+                      size: 14,
+                      color: context.appColors.textTertiary,
                     ),
-                  ),
-              ],
-            ),
-          ),
-
-          if ((!isCardio && template.restSeconds > 0) ||
-              (template.targetWeight != null && template.targetWeight! > 0)) ...[
-            SizedBox(width: spacing.space8),
-            Flexible(
-              flex: 2,
-              child: Wrap(
-                spacing: spacing.space12,
-                runSpacing: spacing.space4,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                alignment: WrapAlignment.end,
-                children: [
-                  if (!isCardio && template.restSeconds > 0)
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.timer_rounded,
-                          size: 14,
-                          color: context.appColors.textTertiary,
-                        ),
-                        SizedBox(width: spacing.space4),
-                        Text(
-                          '${template.restSeconds}s',
-                          style: context.textTheme.bodySmall?.copyWith(
-                            color: context.appColors.textSecondary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  if (template.targetWeight != null &&
-                      template.targetWeight! > 0)
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: spacing.space8,
-                        vertical: spacing.space4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: context.appColors.surfaceElevated,
-                        borderRadius:
-                            BorderRadius.circular(context.appRadius.small),
-                      ),
+                    SizedBox(width: spacing.space4),
+                    Flexible(
                       child: Text(
-                        '${template.targetWeight!.toStringAsFixed(1)} kg',
+                        '${template.restSeconds}s',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: context.textTheme.labelSmall?.copyWith(
-                          color: context.appColors.primary,
-                          fontWeight: FontWeight.w600,
+                        style: context.textTheme.bodySmall?.copyWith(
+                          color: context.appColors.textSecondary,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
-                ],
-              ),
-            ),
-          ],
+                  ],
+                ),
+              if (template.targetWeight != null && template.targetWeight! > 0)
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: spacing.space8,
+                    vertical: spacing.space4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: context.appColors.surfaceElevated,
+                    borderRadius:
+                        BorderRadius.circular(context.appRadius.small),
+                  ),
+                  child: Text(
+                    '${template.targetWeight!.toStringAsFixed(1)} kg',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.labelSmall?.copyWith(
+                      color: context.appColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+            ],
+          );
 
-          if (onDelete != null) ...[
-            SizedBox(width: spacing.space4),
-            IconButton(
-              icon: Icon(
-                Icons.close_rounded,
-                size: 16,
-                color: context.appColors.textTertiary,
+          return Row(
+            children: [
+              // Set Type Badge
+              ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 38, minHeight: 24),
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: spacing.space4),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: badgeColor.withValues(alpha: 0.15),
+                    borderRadius:
+                        BorderRadius.circular(context.appRadius.small),
+                    border: Border.all(
+                      color: badgeColor.withValues(alpha: 0.4),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Text(
+                    badgeText,
+                    style: context.textTheme.labelSmall?.copyWith(
+                      color: badgeColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
               ),
-              tooltip: 'Remover série',
-              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-              onPressed: onDelete,
-            ),
-          ],
-        ],
+              SizedBox(width: spacing.space12),
+
+              // Target Reps / Minutes
+              Expanded(
+                flex: isCompact ? 1 : 3,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isCardio
+                          ? '${template.repRangeText} min'
+                          : '${template.repRangeText} reps',
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        color: context.appColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (!isCardio && template.targetRirMin != null)
+                      Text(
+                        'RIR ${template.rirRangeText}',
+                        style: context.textTheme.labelSmall?.copyWith(
+                          color: context.appColors.textSecondary,
+                        ),
+                      ),
+                    if (isCompact && hasMeta) ...[
+                      SizedBox(height: spacing.space4),
+                      metaWrap,
+                    ],
+                  ],
+                ),
+              ),
+
+              if (!isCompact && hasMeta) ...[
+                SizedBox(width: spacing.space8),
+                Flexible(
+                  flex: 2,
+                  child: metaWrap,
+                ),
+              ],
+
+              if (onDelete != null) ...[
+                SizedBox(width: spacing.space4),
+                IconButton(
+                  icon: Icon(
+                    Icons.close_rounded,
+                    size: 16,
+                    color: context.appColors.textTertiary,
+                  ),
+                  tooltip: 'Remover série',
+                  constraints:
+                      const BoxConstraints(minWidth: 48, minHeight: 48),
+                  onPressed: onDelete,
+                ),
+              ],
+            ],
+          );
+        },
       ),
     );
   }
