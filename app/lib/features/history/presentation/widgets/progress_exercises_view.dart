@@ -139,7 +139,7 @@ class _ProgressExercisesViewState extends ConsumerState<ProgressExercisesView> {
           stackTrace: st,
           context: 'ProgressExercisesView.build',
         ),
-        safetyNote: kOfflineDataSafetyNote,
+        safetyNote: offlineSafetyNoteFor(err),
         onRetry: () => ref.invalidate(historyListProvider),
       ),
       data: (sessions) {

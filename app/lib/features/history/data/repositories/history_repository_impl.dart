@@ -129,7 +129,13 @@ class HistoryRepositoryImpl implements HistoryRepository {
     T Function()? onOfflineFallback,
   }) async {
     if (onOfflineFallback != null && await _shouldUseOffline()) {
-      return Success(onOfflineFallback());
+      try {
+        return Success(onOfflineFallback());
+      } catch (e, stack) {
+        return Err(
+          CacheFailure('Erro ao ler histórico no cache local: $e', stack),
+        );
+      }
     }
     try {
       final data = await call();
@@ -139,13 +145,31 @@ class HistoryRepositoryImpl implements HistoryRepository {
     } on PostgrestException catch (e, stack) {
       if (onOfflineFallback != null && isNetworkError(e)) {
         _onConnectivityFallback?.call(true);
-        return Success(onOfflineFallback());
+        try {
+          return Success(onOfflineFallback());
+        } catch (cacheErr, cacheStack) {
+          return Err(
+            CacheFailure(
+              'Erro ao ler histórico no cache local: $cacheErr',
+              cacheStack,
+            ),
+          );
+        }
       }
       return Err(ServerFailure(e.message, stack));
     } catch (e, stack) {
       if (onOfflineFallback != null && isNetworkError(e)) {
         _onConnectivityFallback?.call(true);
-        return Success(onOfflineFallback());
+        try {
+          return Success(onOfflineFallback());
+        } catch (cacheErr, cacheStack) {
+          return Err(
+            CacheFailure(
+              'Erro ao ler histórico no cache local: $cacheErr',
+              cacheStack,
+            ),
+          );
+        }
       }
       if (e is SocketException) {
         return Err(NetworkFailure('Sem conexão com a internet.', stack));

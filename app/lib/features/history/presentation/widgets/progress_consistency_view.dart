@@ -43,7 +43,7 @@ class _ProgressConsistencyViewState
           stackTrace: st,
           context: 'ProgressConsistencyView.build',
         ),
-        safetyNote: kOfflineDataSafetyNote,
+        safetyNote: offlineSafetyNoteFor(err),
         onRetry: () => ref.invalidate(historyListProvider),
       ),
       data: (sessions) {

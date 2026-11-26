@@ -84,5 +84,18 @@ void main() {
       expect(capturedStack, same(trace));
       expect(capturedContext, 'UnitTest.scope');
     });
+
+    test('returns local-storage message and hides offline safety note on CacheFailure',
+        () {
+      const cacheErr = CacheFailure('Corrupted SharedPreferences JSON');
+      final msg = userFacingMessage(cacheErr);
+      expect(msg, contains('dados locais neste aparelho'));
+      expect(msg, isNot(contains('SharedPreferences')));
+      expect(offlineSafetyNoteFor(cacheErr), isNull);
+      expect(
+        offlineSafetyNoteFor(const NetworkFailure('No route')),
+        kOfflineDataSafetyNote,
+      );
+    });
   });
 }

@@ -31,6 +31,23 @@ void _defaultAppErrorLogger(
 const String kOfflineDataSafetyNote =
     'Seus treinos continuam salvos neste aparelho.';
 
+/// Returns `true` when [error] originates from local device cache/storage
+/// rather than a remote API or network layer.
+bool isLocalStorageError(Object error) {
+  if (error is CacheFailure) return true;
+  final msg = error.toString().toLowerCase();
+  return msg.contains('cachefailure') ||
+      msg.contains('localdatasource') ||
+      msg.contains('sharedpreferences') ||
+      msg.contains('sqlite') ||
+      msg.contains('drift');
+}
+
+/// Returns [kOfflineDataSafetyNote] only when [error] does NOT stem from a
+/// local cache/storage read/write failure.
+String? offlineSafetyNoteFor(Object error) =>
+    isLocalStorageError(error) ? null : kOfflineDataSafetyNote;
+
 /// Translates technical exceptions and [Failure] objects into clear,
 /// non-technical PT-BR messages with cause and next step while logging the
 /// original error and stack trace.
@@ -46,6 +63,9 @@ String userFacingMessage(
       stackTrace: stackTrace ?? (error is Failure ? error.stackTrace : null),
       context: context,
     );
+  }
+  if (error is CacheFailure) {
+    return 'Não foi possível ler ou salvar os dados locais neste aparelho. Tente novamente.';
   }
   if (error is ValidationFailure && error.message.trim().isNotEmpty) {
     return error.message.trim();

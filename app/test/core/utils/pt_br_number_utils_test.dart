@@ -7,7 +7,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('pt_br_number_utils', () {
-    test('parsePtBrDouble parses PT-BR commas, dot decimals, trailing comma and thousands', () {
+    test('parsePtBrDouble treats dot as decimal separator only (never thousands)', () {
+      expect(parsePtBrDouble('2.500'), 2.5);
+      expect(parsePtBrDouble('2.500'), isA<double>());
+      expect(parsePtBrDouble('1.000'), 1.0);
+      expect(parsePtBrDouble('1.000'), isA<double>());
+      expect(parsePtBrDouble('72.500'), 72.5);
+      expect(parsePtBrDouble('72.500'), isA<double>());
       expect(parsePtBrDouble('80,'), 80.0);
       expect(parsePtBrDouble('80,'), isA<double>());
       expect(parsePtBrDouble('80,5'), 80.5);
@@ -15,20 +21,18 @@ void main() {
       expect(parsePtBrDouble('80.5'), 80.5);
       expect(parsePtBrDouble('82,5'), 82.5);
       expect(parsePtBrDouble('82.5'), 82.5);
-      expect(parsePtBrDouble('1.000'), 1000.0);
-      expect(parsePtBrDouble('1.000'), isA<double>());
-      expect(parsePtBrDouble(' 1.200,75 '), 1200.75);
-      expect(parsePtBrDouble('1,200.75'), 1200.75);
       expect(parsePtBrDouble('100'), 100.0);
       expect(parsePtBrDouble('0,25'), 0.25);
       expect(parsePtBrDouble('0.125'), 0.125);
     });
 
-    test('parsePtBrDouble rejects empty or malformed inputs', () {
+    test('parsePtBrDouble rejects empty, mixed or malformed inputs', () {
       expect(parsePtBrDouble(null), isNull);
       expect(parsePtBrDouble(''), isNull);
       expect(parsePtBrDouble('   '), isNull);
       expect(parsePtBrDouble('abc'), isNull);
+      expect(parsePtBrDouble('1.200,75'), isNull);
+      expect(parsePtBrDouble('1,200.75'), isNull);
       expect(parsePtBrDouble('12,34,56'), isNull);
       expect(parsePtBrDouble('12.34.56'), isNull);
     });
@@ -61,7 +65,7 @@ void main() {
         formatter.formatEditUpdate(old, const TextEditingValue(text: '')).text,
         '',
       );
-      // "1.000" has 3 digits after dot, exceeding maxDecimalDigits (1 or 2)
+      // 3 decimal digits after separator exceed maxDecimalDigits (1 or 2)
       expect(
         formatter.formatEditUpdate(const TextEditingValue(text: '1.0'), const TextEditingValue(text: '1.000')).text,
         '1.0',
@@ -71,6 +75,12 @@ void main() {
             .formatEditUpdate(const TextEditingValue(text: '1.00'), const TextEditingValue(text: '1.000'))
             .text,
         '1.00',
+      );
+      expect(
+        PtBrDecimalInputFormatter(maxDecimalDigits: 3)
+            .formatEditUpdate(const TextEditingValue(), const TextEditingValue(text: '72.500'))
+            .text,
+        '72.500',
       );
       expect(
         formatter.formatEditUpdate(old, const TextEditingValue(text: '82,55')).text,

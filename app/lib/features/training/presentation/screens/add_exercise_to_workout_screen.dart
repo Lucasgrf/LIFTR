@@ -196,7 +196,7 @@ class _AddExerciseToWorkoutScreenState
                   stackTrace: st,
                   context: 'AddExerciseToWorkoutScreen.build',
                 ),
-                safetyNote: kOfflineDataSafetyNote,
+                safetyNote: offlineSafetyNoteFor(err),
                 onRetry: () =>
                     ref.read(exerciseListStateProvider.notifier).refresh(),
               ),

@@ -18,9 +18,13 @@ import 'package:personal_fitness_os/features/auth/presentation/screens/login_scr
 import 'package:personal_fitness_os/features/auth/presentation/screens/register_screen.dart';
 import 'package:personal_fitness_os/features/auth/presentation/screens/reset_password_screen.dart';
 import 'package:personal_fitness_os/features/body/presentation/providers/weight_providers.dart';
+import 'package:personal_fitness_os/features/exercise_library/data/datasources/exercise_local_datasource.dart';
+import 'package:personal_fitness_os/features/exercise_library/data/datasources/exercise_remote_datasource.dart';
+import 'package:personal_fitness_os/features/exercise_library/data/models/exercise_model.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/repositories/exercise_repository.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
+import 'package:personal_fitness_os/features/exercise_library/presentation/screens/exercise_list_screen.dart';
 import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
 import 'package:personal_fitness_os/features/history/presentation/widgets/exercise_history_modal.dart';
 import 'package:personal_fitness_os/features/history/presentation/widgets/progress_weight_view.dart';
@@ -37,9 +41,42 @@ import 'package:personal_fitness_os/features/training/presentation/screens/add_e
 import 'package:personal_fitness_os/features/training/presentation/screens/ai_workout_generator_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/screens/configure_sets_screen.dart';
 import 'package:personal_fitness_os/features/training/presentation/widgets/import_plan_sheet.dart';
+import 'package:personal_fitness_os/features/workout_session/presentation/widgets/logged_set_row.dart';
 import 'package:personal_fitness_os/routing/app_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+class _ThrowingExerciseLocalDataSource extends ExerciseLocalDataSource {
+  _ThrowingExerciseLocalDataSource(super.prefs);
+
+  @override
+  List<ExerciseModel> getExercises() {
+    throw StateError('Corrupted local exercise cache');
+  }
+}
+
+class _NoopExerciseRemoteDataSource implements ExerciseRemoteDataSource {
+  @override
+  Future<List<ExerciseModel>> fetchExercises() async => const [];
+
+  @override
+  Future<ExerciseModel> fetchExerciseById(String id) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<ExerciseModel> insertCustomExercise(Map<String, dynamic> data) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<ExerciseModel> updateExerciseNotes(
+    String exerciseId,
+    String notes,
+  ) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> softDeleteExercise(String id) async {}
+}
 
 class _ToggleErrorExerciseRepo implements ExerciseRepository {
   bool shouldFail = true;
@@ -285,6 +322,35 @@ void main() {
       expect(find.textContaining('Sem conexão com a internet'), findsOneWidget);
       expect(find.text(kOfflineDataSafetyNote), findsNothing);
     });
+
+    testWidgets(
+        'ExerciseListScreen suppresses kOfflineDataSafetyNote when local datasource throws',
+        (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            isOfflineModeProvider.overrideWithValue(true),
+            exerciseRemoteDataSourceProvider
+                .overrideWithValue(_NoopExerciseRemoteDataSource()),
+            exerciseLocalDataSourceProvider
+                .overrideWithValue(_ThrowingExerciseLocalDataSource(prefs)),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.dark(),
+            home: const ExerciseListScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ErrorStateWidget), findsOneWidget);
+      expect(find.textContaining('dados locais neste aparelho'), findsOneWidget);
+      expect(find.text(kOfflineDataSafetyNote), findsNothing);
+    });
   });
 
   group('UX-02 Forms, preserved rest durations & PT-BR decimals', () {
@@ -499,10 +565,17 @@ void main() {
       await tester.tap(find.text('Salvar'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Informe um peso entre 30 e 300 kg'), findsOneWidget);
+      expect(find.text('Informe um peso entre 20 e 400 kg'), findsOneWidget);
       expect(find.text('Informe uma altura entre 100 e 250 cm'), findsOneWidget);
       expect(find.text('Informe uma idade entre 12 e 100 anos'), findsOneWidget);
       expect(find.text('Informe entre 3% e 60%'), findsOneWidget);
+
+      await tester.enterText(fields.at(0), '450');
+      await tester.pump();
+      await tester.ensureVisible(find.text('Salvar'));
+      await tester.tap(find.text('Salvar'));
+      await tester.pumpAndSettle();
+      expect(find.text('Informe um peso entre 20 e 400 kg'), findsOneWidget);
 
       // Valid PT-BR comma decimals save cleanly and dispose controllers safely
       await tester.enterText(fields.at(0), '82,5');
@@ -521,6 +594,66 @@ void main() {
       expect(settings.age, 29);
       expect(settings.bodyFatPercent, 15.4);
       expect(find.text('82,5 kg · 180 cm · 29 anos'), findsOneWidget);
+    });
+
+    testWidgets(
+        'LoggedSetRow weight dialog rejects values outside 0-1000 kg with inline error and accepts PT-BR 72,5',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(375, 812));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.dark(),
+          home: Scaffold(
+            body: LoggedSetRow(
+              setNumber: 1,
+              defaultWeight: 60,
+              defaultReps: 10,
+              isExpanded: true,
+              onSave: ({
+                required double weightKg,
+                required int repsCompleted,
+                int? durationSeconds,
+                int? rirActual,
+                required setType,
+                dropSets = const [],
+                String? existingSetId,
+              }) async {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.bySemanticsLabel('Editar carga: 60 kg'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextField),
+        ),
+        '1200',
+      );
+      await tester.tap(find.text('Aplicar'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Carga (kg)'), findsOneWidget);
+      expect(find.text('Informe uma carga entre 0 e 1000 kg'), findsOneWidget);
+
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextField),
+        ),
+        '72,5',
+      );
+      await tester.tap(find.text('Aplicar'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Carga (kg)'), findsNothing);
+      expect(find.bySemanticsLabel('Editar carga: 72.5 kg'), findsOneWidget);
     });
   });
 

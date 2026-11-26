@@ -453,7 +453,7 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                     stackTrace: st,
                     context: 'WorkoutSessionScreen.build',
                   ),
-                  safetyNote: kOfflineDataSafetyNote,
+                  safetyNote: offlineSafetyNoteFor(err),
                   onRetry: () =>
                       ref.invalidate(liveSessionDetailProvider(widget.sessionId)),
                 ),

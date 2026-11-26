@@ -82,7 +82,7 @@ class ExerciseHistoryModal extends ConsumerWidget {
                   stackTrace: st,
                   context: 'ExerciseHistoryModal.build',
                 ),
-                safetyNote: kOfflineDataSafetyNote,
+                safetyNote: offlineSafetyNoteFor(err),
                 onRetry: () => ref.invalidate(exerciseHistoryProvider(exerciseId)),
               ),
               data: (records) {

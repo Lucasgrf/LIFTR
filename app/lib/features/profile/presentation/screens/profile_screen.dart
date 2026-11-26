@@ -930,8 +930,8 @@ class _BodyDataSheetState extends ConsumerState<_BodyDataSheet> {
                 textInputAction: TextInputAction.next,
                 validator: (v) {
                   final parsed = parsePtBrDouble(v);
-                  if (parsed == null || parsed < 30 || parsed > 300) {
-                    return 'Informe um peso entre 30 e 300 kg';
+                  if (parsed == null || parsed < 20 || parsed > 400) {
+                    return 'Informe um peso entre 20 e 400 kg';
                   }
                   return null;
                 },

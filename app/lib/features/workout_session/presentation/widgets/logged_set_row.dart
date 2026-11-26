@@ -194,7 +194,14 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
   }
 
   ({String? weightError, String? repsError}) _validateStrengthInputs() {
-    final weightError = _weightCleared ? 'Informe a carga.' : null;
+    final String? weightError;
+    if (_weightCleared) {
+      weightError = 'Informe a carga.';
+    } else if (_weight < 0 || _weight > 1000) {
+      weightError = 'Informe uma carga entre 0 e 1000 kg.';
+    } else {
+      weightError = null;
+    }
     final String? repsError;
     if (_repsCleared || _reps <= 0) {
       repsError = 'Informe as repetições (mín. 1).';
@@ -532,6 +539,10 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
         quickRepsOptions: quickRepsOptions,
         quickWeightDeltas: quickWeightDeltas,
         formatWeight: _formatWeight,
+        minValue: decimal ? 0.0 : null,
+        maxValue: decimal ? 1000.0 : null,
+        rangeErrorMessage:
+            decimal ? 'Informe uma carga entre 0 e 1000 kg' : null,
       ),
     );
     if (result != null) {
@@ -1139,12 +1150,12 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
             return;
           }
           final parsed = parsePtBrDouble(trimmed);
-          if (parsed != null && parsed >= 0) {
+          if (parsed != null && parsed >= 0 && parsed <= 1000) {
             setState(() {
               _userEditedWeight = true;
               _weightCleared = false;
               _weightError = null;
-              _weight = parsed.clamp(0.0, 999.0);
+              _weight = parsed;
             });
             widget.onDraftChanged?.call(_weight, _reps);
           }
@@ -1745,10 +1756,12 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
                             quickWeightDeltas: const [-5.0, -2.5, 2.5, 5.0],
                             onConfirm: (val) {
                               final parsed = parsePtBrDouble(val);
-                              if (parsed != null && parsed >= 0) {
+                              if (parsed != null &&
+                                  parsed >= 0 &&
+                                  parsed <= 1000) {
                                 setState(() {
                                   _dropSets[i] = _dropSets[i].copyWith(
-                                    weightKg: parsed.clamp(0.0, 999.0),
+                                    weightKg: parsed,
                                   );
                                 });
                               }
@@ -2172,6 +2185,9 @@ class _NumericEditDialog extends StatefulWidget {
     required this.formatWeight,
     this.quickRepsOptions,
     this.quickWeightDeltas,
+    this.minValue,
+    this.maxValue,
+    this.rangeErrorMessage,
   });
 
   final String title;
@@ -2180,6 +2196,9 @@ class _NumericEditDialog extends StatefulWidget {
   final String Function(double) formatWeight;
   final List<int>? quickRepsOptions;
   final List<double>? quickWeightDeltas;
+  final double? minValue;
+  final double? maxValue;
+  final String? rangeErrorMessage;
 
   @override
   State<_NumericEditDialog> createState() => _NumericEditDialogState();
@@ -2187,6 +2206,7 @@ class _NumericEditDialog extends StatefulWidget {
 
 class _NumericEditDialogState extends State<_NumericEditDialog> {
   late final TextEditingController _controller;
+  String? _errorText;
 
   @override
   void initState() {
@@ -2202,6 +2222,24 @@ class _NumericEditDialogState extends State<_NumericEditDialog> {
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  void _confirm() {
+    final text = _controller.text;
+    final trimmed = text.trim();
+    final min = widget.minValue;
+    final max = widget.maxValue;
+    if (trimmed.isNotEmpty && min != null && max != null) {
+      final parsed = parsePtBrDouble(trimmed);
+      if (parsed == null || parsed < min || parsed > max) {
+        setState(() {
+          _errorText =
+              widget.rangeErrorMessage ?? 'Informe um valor entre $min e $max';
+        });
+        return;
+      }
+    }
+    Navigator.pop(context, text);
   }
 
   @override
@@ -2229,8 +2267,13 @@ class _NumericEditDialogState extends State<_NumericEditDialog> {
               else
                 FilteringTextInputFormatter.digitsOnly,
             ],
-            decoration: const InputDecoration(),
-            onSubmitted: (v) => Navigator.pop(context, v),
+            decoration: InputDecoration(errorText: _errorText),
+            onChanged: (_) {
+              if (_errorText != null) {
+                setState(() => _errorText = null);
+              }
+            },
+            onSubmitted: (_) => _confirm(),
           ),
           if (quickReps != null && quickReps.isNotEmpty) ...[
             AppSpacing.verticalGap12,
@@ -2280,7 +2323,8 @@ class _NumericEditDialogState extends State<_NumericEditDialog> {
                   onPressed: () {
                     final currentVal =
                         parsePtBrDouble(_controller.text) ?? 0.0;
-                    final nextVal = (currentVal + delta).clamp(0.0, 999.0);
+                    final nextVal = (currentVal + delta).clamp(0.0, 1000.0);
+                    setState(() => _errorText = null);
                     _controller.text = widget.formatWeight(nextVal);
                     _controller.selection = TextSelection(
                       baseOffset: 0,
@@ -2299,7 +2343,7 @@ class _NumericEditDialogState extends State<_NumericEditDialog> {
           child: const Text('Cancelar'),
         ),
         TextButton(
-          onPressed: () => Navigator.pop(context, _controller.text),
+          onPressed: _confirm,
           child: const Text('Aplicar'),
         ),
       ],

@@ -107,7 +107,7 @@ class _ExerciseDetailScreenState extends ConsumerState<ExerciseDetailScreen> {
             stackTrace: st,
             context: 'ExerciseDetailScreen.build',
           ),
-          safetyNote: kOfflineDataSafetyNote,
+          safetyNote: offlineSafetyNoteFor(error),
           onRetry: () => ref.refresh(exerciseDetailProvider(widget.exerciseId)),
         ),
         data: (exercise) {

@@ -181,7 +181,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
             stackTrace: st,
             context: 'WorkoutDetailScreen.build',
           ),
-          safetyNote: kOfflineDataSafetyNote,
+          safetyNote: offlineSafetyNoteFor(error),
           onRetry: () => ref.refresh(
             workoutDetailProvider((planId: widget.planId!, workoutId: widget.workoutId)),
           ),

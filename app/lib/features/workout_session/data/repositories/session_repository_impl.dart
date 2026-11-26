@@ -469,7 +469,13 @@ class SessionRepositoryImpl implements SessionRepository {
   Future<Result<WorkoutSession?, Failure>> getActiveSession() async {
     final local = _localDataSource;
     if (local != null && await _shouldUseOffline()) {
-      return Success(local.getActiveSession()?.toDomain());
+      try {
+        return Success(local.getActiveSession()?.toDomain());
+      } catch (e, stack) {
+        return Err(
+          CacheFailure('Erro ao ler sessão ativa no cache local: $e', stack),
+        );
+      }
     }
 
     try {
@@ -484,14 +490,31 @@ class SessionRepositoryImpl implements SessionRepository {
         model,
         cached: local?.getSessionById(model.id),
       );
-      await local?.saveSession(merged);
+      if (local != null) {
+        try {
+          await local.saveSession(merged);
+        } catch (e, stack) {
+          return Err(
+            CacheFailure('Erro ao salvar sessão no cache local: $e', stack),
+          );
+        }
+      }
       return Success(merged.toDomain());
     } on PostgrestException catch (e, stack) {
       return Err(ServerFailure(e.message, stack));
     } catch (e, stack) {
       if (local != null && isNetworkError(e)) {
         _onConnectivityFallback?.call(true);
-        return Success(local.getActiveSession()?.toDomain());
+        try {
+          return Success(local.getActiveSession()?.toDomain());
+        } catch (cacheErr, cacheStack) {
+          return Err(
+            CacheFailure(
+              'Erro ao ler sessão ativa no cache local: $cacheErr',
+              cacheStack,
+            ),
+          );
+        }
       }
       if (e is SocketException) {
         return Err(NetworkFailure('Sem conexão com a internet.', stack));
@@ -503,7 +526,14 @@ class SessionRepositoryImpl implements SessionRepository {
   @override
   Future<Result<WorkoutSession, Failure>> getSessionById(String id) async {
     final local = _localDataSource;
-    final cached = local?.getSessionById(id);
+    final WorkoutSessionModel? cached;
+    try {
+      cached = local?.getSessionById(id);
+    } catch (e, stack) {
+      return Err(
+        CacheFailure('Erro ao ler sessão no cache local: $e', stack),
+      );
+    }
 
     if (local != null && await _shouldUseOffline() && cached != null) {
       return Success(cached.toDomain());
@@ -518,7 +548,15 @@ class SessionRepositoryImpl implements SessionRepository {
       }
       final model = await _remoteDataSource.fetchSessionById(id);
       final merged = _mergePrescribedTargets(model, cached: cached);
-      await local?.saveSession(merged);
+      if (local != null) {
+        try {
+          await local.saveSession(merged);
+        } catch (e, stack) {
+          return Err(
+            CacheFailure('Erro ao salvar sessão no cache local: $e', stack),
+          );
+        }
+      }
       return Success(merged.toDomain());
     } on PostgrestException catch (e, stack) {
       if (cached != null && isNetworkError(e)) {

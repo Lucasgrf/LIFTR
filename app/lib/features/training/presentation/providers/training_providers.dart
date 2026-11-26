@@ -114,7 +114,10 @@ class TrainingPlansNotifier extends StateNotifier<AsyncValue<List<TrainingPlan>>
 
     result.fold(
       (plans) => state = AsyncValue.data(plans),
-      (failure) => state = AsyncValue.error(failure.message, failure.stackTrace ?? StackTrace.current),
+      (failure) => state = AsyncValue.error(
+        failure,
+        failure.stackTrace ?? StackTrace.current,
+      ),
     );
   }
 

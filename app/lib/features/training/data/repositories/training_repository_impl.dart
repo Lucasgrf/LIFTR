@@ -50,23 +50,55 @@ class TrainingRepositoryImpl implements TrainingRepository {
   Future<Result<List<TrainingPlan>, Failure>> getTrainingPlans() async {
     final local = _localDataSource;
     if (local != null && await _shouldUseOffline()) {
-      return Success(local.getAllPlans().map((m) => m.toDomain()).toList());
+      try {
+        return Success(local.getAllPlans().map((m) => m.toDomain()).toList());
+      } catch (e, stack) {
+        return Err(
+          CacheFailure('Erro ao ler programas no cache local: $e', stack),
+        );
+      }
     }
 
     try {
       final models = await _remoteDataSource.fetchTrainingPlans();
-      await local?.savePlans(models);
+      if (local != null) {
+        try {
+          await local.savePlans(models);
+        } catch (e, stack) {
+          return Err(
+            CacheFailure('Erro ao salvar programas no cache local: $e', stack),
+          );
+        }
+      }
       return Success(models.map((m) => m.toDomain()).toList());
     } on PostgrestException catch (e, stack) {
       if (local != null && isNetworkError(e)) {
         _onConnectivityFallback?.call(true);
-        return Success(local.getAllPlans().map((m) => m.toDomain()).toList());
+        try {
+          return Success(local.getAllPlans().map((m) => m.toDomain()).toList());
+        } catch (cacheErr, cacheStack) {
+          return Err(
+            CacheFailure(
+              'Erro ao ler programas no cache local: $cacheErr',
+              cacheStack,
+            ),
+          );
+        }
       }
       return Err(ServerFailure(e.message, stack));
     } catch (e, stack) {
       if (local != null && isNetworkError(e)) {
         _onConnectivityFallback?.call(true);
-        return Success(local.getAllPlans().map((m) => m.toDomain()).toList());
+        try {
+          return Success(local.getAllPlans().map((m) => m.toDomain()).toList());
+        } catch (cacheErr, cacheStack) {
+          return Err(
+            CacheFailure(
+              'Erro ao ler programas no cache local: $cacheErr',
+              cacheStack,
+            ),
+          );
+        }
       }
       if (e is SocketException) {
         return Err(NetworkFailure('Sem conexão com a internet.', stack));
@@ -79,25 +111,58 @@ class TrainingRepositoryImpl implements TrainingRepository {
   Future<Result<TrainingPlan?, Failure>> getActiveTrainingPlan() async {
     final local = _localDataSource;
     if (local != null && await _shouldUseOffline()) {
-      return Success(local.getActivePlan()?.toDomain());
+      try {
+        return Success(local.getActivePlan()?.toDomain());
+      } catch (e, stack) {
+        return Err(
+          CacheFailure('Erro ao ler programa ativo no cache local: $e', stack),
+        );
+      }
     }
 
     try {
       final model = await _remoteDataSource.fetchActiveTrainingPlan();
-      if (model != null) {
-        await local?.savePlan(model);
+      if (local != null && model != null) {
+        try {
+          await local.savePlan(model);
+        } catch (e, stack) {
+          return Err(
+            CacheFailure(
+              'Erro ao salvar programa ativo no cache local: $e',
+              stack,
+            ),
+          );
+        }
       }
       return Success(model?.toDomain());
     } on PostgrestException catch (e, stack) {
       if (local != null && isNetworkError(e)) {
         _onConnectivityFallback?.call(true);
-        return Success(local.getActivePlan()?.toDomain());
+        try {
+          return Success(local.getActivePlan()?.toDomain());
+        } catch (cacheErr, cacheStack) {
+          return Err(
+            CacheFailure(
+              'Erro ao ler programa ativo no cache local: $cacheErr',
+              cacheStack,
+            ),
+          );
+        }
       }
       return Err(ServerFailure(e.message, stack));
     } catch (e, stack) {
       if (local != null && isNetworkError(e)) {
         _onConnectivityFallback?.call(true);
-        return Success(local.getActivePlan()?.toDomain());
+        try {
+          return Success(local.getActivePlan()?.toDomain());
+        } catch (cacheErr, cacheStack) {
+          return Err(
+            CacheFailure(
+              'Erro ao ler programa ativo no cache local: $cacheErr',
+              cacheStack,
+            ),
+          );
+        }
       }
       if (e is SocketException) {
         return Err(NetworkFailure('Sem conexão com a internet.', stack));
@@ -110,29 +175,63 @@ class TrainingRepositoryImpl implements TrainingRepository {
   Future<Result<TrainingPlan, Failure>> getTrainingPlanById(String id) async {
     final local = _localDataSource;
     if (local != null && await _shouldUseOffline()) {
-      final cached = local.getPlanById(id);
-      if (cached != null) {
-        return Success(cached.toDomain());
+      try {
+        final cached = local.getPlanById(id);
+        if (cached != null) {
+          return Success(cached.toDomain());
+        }
+      } catch (e, stack) {
+        return Err(
+          CacheFailure('Erro ao ler programa no cache local: $e', stack),
+        );
       }
     }
 
     try {
       final model = await _remoteDataSource.fetchTrainingPlanById(id);
-      await local?.savePlan(model);
+      if (local != null) {
+        try {
+          await local.savePlan(model);
+        } catch (e, stack) {
+          return Err(
+            CacheFailure('Erro ao salvar programa no cache local: $e', stack),
+          );
+        }
+      }
       return Success(model.toDomain());
     } on PostgrestException catch (e, stack) {
-      final cached = local?.getPlanById(id);
-      if (cached != null && isNetworkError(e)) {
+      if (local != null && isNetworkError(e)) {
         _onConnectivityFallback?.call(true);
-        return Success(cached.toDomain());
+        try {
+          final cached = local.getPlanById(id);
+          if (cached != null) {
+            return Success(cached.toDomain());
+          }
+        } catch (cacheErr, cacheStack) {
+          return Err(
+            CacheFailure(
+              'Erro ao ler programa no cache local: $cacheErr',
+              cacheStack,
+            ),
+          );
+        }
       }
       return Err(ServerFailure(e.message, stack));
     } catch (e, stack) {
       if (local != null && isNetworkError(e)) {
         _onConnectivityFallback?.call(true);
-        final cached = local.getPlanById(id);
-        if (cached != null) {
-          return Success(cached.toDomain());
+        try {
+          final cached = local.getPlanById(id);
+          if (cached != null) {
+            return Success(cached.toDomain());
+          }
+        } catch (cacheErr, cacheStack) {
+          return Err(
+            CacheFailure(
+              'Erro ao ler programa no cache local: $cacheErr',
+              cacheStack,
+            ),
+          );
         }
       }
       if (e is SocketException) {

@@ -69,7 +69,7 @@ class WeeklyComparisonScreen extends ConsumerWidget {
             stackTrace: st,
             context: 'WeeklyComparisonScreen.build',
           ),
-          safetyNote: kOfflineDataSafetyNote,
+          safetyNote: offlineSafetyNoteFor(err),
           onRetry: () => ref.invalidate(weeklyComparisonProvider),
         ),
         data: (data) {

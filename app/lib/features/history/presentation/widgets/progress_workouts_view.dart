@@ -27,7 +27,7 @@ class ProgressWorkoutsView extends ConsumerWidget {
           stackTrace: st,
           context: 'ProgressWorkoutsView.build',
         ),
-        safetyNote: kOfflineDataSafetyNote,
+        safetyNote: offlineSafetyNoteFor(err),
         onRetry: () => ref.invalidate(historyListProvider),
       ),
       data: (sessions) {

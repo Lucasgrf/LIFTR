@@ -98,7 +98,7 @@ class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
                   stackTrace: st,
                   context: 'ExerciseListScreen.build',
                 ),
-                safetyNote: kOfflineDataSafetyNote,
+                safetyNote: offlineSafetyNoteFor(error),
                 onRetry: () => ref.read(exerciseListStateProvider.notifier).refresh(),
               ),
               data: (exercises) {

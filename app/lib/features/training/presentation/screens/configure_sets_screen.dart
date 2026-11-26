@@ -175,7 +175,7 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
             stackTrace: st,
             context: 'ConfigureSetsScreen.build',
           ),
-          safetyNote: kOfflineDataSafetyNote,
+          safetyNote: offlineSafetyNoteFor(err),
           onRetry: () => ref.invalidate(
             workoutDetailProvider(
               (planId: widget.planId, workoutId: widget.workoutId),

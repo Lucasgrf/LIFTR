@@ -91,7 +91,10 @@ class ExerciseListNotifier extends StateNotifier<AsyncValue<List<Exercise>>> {
 
     result.fold(
       (exercises) => state = AsyncValue.data(exercises),
-      (failure) => state = AsyncValue.error(failure.message, failure.stackTrace ?? StackTrace.current),
+      (failure) => state = AsyncValue.error(
+        failure,
+        failure.stackTrace ?? StackTrace.current,
+      ),
     );
   }
 

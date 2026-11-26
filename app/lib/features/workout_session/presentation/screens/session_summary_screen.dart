@@ -221,7 +221,7 @@ class SessionSummaryScreen extends ConsumerWidget {
             stackTrace: st,
             context: 'SessionSummaryScreen.build',
           ),
-          safetyNote: kOfflineDataSafetyNote,
+          safetyNote: offlineSafetyNoteFor(err),
           onRetry: () => ref.invalidate(liveSessionDetailProvider(sessionId)),
         ),
         data: (session) {

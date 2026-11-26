@@ -85,7 +85,7 @@ class _TrainingPlanDetailScreenState
             stackTrace: st,
             context: 'TrainingPlanDetailScreen.build',
           ),
-          safetyNote: kOfflineDataSafetyNote,
+          safetyNote: offlineSafetyNoteFor(error),
           onRetry: () => ref.invalidate(trainingPlanDetailProvider(widget.planId)),
         ),
         data: (plan) {

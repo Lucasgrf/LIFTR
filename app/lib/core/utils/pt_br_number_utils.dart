@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
 
-/// Parses a numeric string accepting both PT-BR comma decimals (`82,5`,
-/// `1.200,5`) and dot decimals (`82.5`).
+/// Parses a numeric string accepting both `,` and `.` as decimal separator.
+/// Both `"82,5"` and `"2.500"` are treated as decimals (`82.5` and `2.5`).
 double? parsePtBrDouble(String? raw) {
   if (raw == null) return null;
   var normalized = raw.trim().replaceAll(RegExp(r'\s+'), '');
@@ -10,40 +10,14 @@ double? parsePtBrDouble(String? raw) {
   final hasComma = normalized.contains(',');
   final hasDot = normalized.contains('.');
 
-  if (hasComma && hasDot) {
-    final lastComma = normalized.lastIndexOf(',');
-    final lastDot = normalized.lastIndexOf('.');
-    if (lastComma > lastDot) {
-      // Ex.: 1.200,50 -> 1200.50
-      normalized = normalized.replaceAll('.', '').replaceAll(',', '.');
-    } else {
-      // Ex.: 1,200.50 -> 1200.50
-      normalized = normalized.replaceAll(',', '');
-    }
-  } else if (hasComma) {
-    final commaCount = ','.allMatches(normalized).length;
-    if (commaCount > 1) return null;
+  // Mixed separators (e.g. "1.200,50") are ambiguous when dot is always decimal.
+  if (hasComma && hasDot) return null;
+
+  if (hasComma) {
+    if (','.allMatches(normalized).length > 1) return null;
     normalized = normalized.replaceAll(',', '.');
   } else if (hasDot) {
-    final dotCount = '.'.allMatches(normalized).length;
-    if (dotCount > 1) {
-      // Only accept multiple dots if they look like thousands grouping (e.g. 1.200.000).
-      final parts = normalized.split('.');
-      final validGrouping = parts.first.isNotEmpty &&
-          parts.skip(1).every((p) => p.length == 3 && RegExp(r'^\d+$').hasMatch(p));
-      if (!validGrouping) return null;
-      normalized = normalized.replaceAll('.', '');
-    } else if (dotCount == 1) {
-      // Treat PT-BR 3-digit grouping such as "1.000" as 1000, while keeping
-      // genuine small decimals like "0.125" or "80.5".
-      final parts = normalized.split('.');
-      final isPtBrThousands =
-          RegExp(r'^[1-9]\d{0,2}$').hasMatch(parts[0]) &&
-          RegExp(r'^\d{3}$').hasMatch(parts[1]);
-      if (isPtBrThousands) {
-        normalized = '${parts[0]}${parts[1]}';
-      }
-    }
+    if ('.'.allMatches(normalized).length > 1) return null;
   }
 
   return double.tryParse(normalized);

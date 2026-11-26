@@ -216,7 +216,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             stackTrace: st,
             context: 'DashboardScreen.build',
           ),
-          safetyNote: kOfflineDataSafetyNote,
+          safetyNote: offlineSafetyNoteFor(err),
           onRetry: () => ref.invalidate(dashboardDataProvider),
         ),
         data: (data) {

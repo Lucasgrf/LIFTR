@@ -119,10 +119,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   String? get _weightError {
     final text = _weightController.text.trim();
-    if (text.isEmpty) return 'Entre 30 e 300';
+    if (text.isEmpty) return 'Entre 20 e 400';
     final weight = parsePtBrDouble(text);
-    if (weight == null || weight < 30 || weight > 300) {
-      return 'Entre 30 e 300 kg';
+    if (weight == null || weight < 20 || weight > 400) {
+      return 'Entre 20 e 400 kg';
     }
     return null;
   }
