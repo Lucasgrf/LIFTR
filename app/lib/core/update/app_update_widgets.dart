@@ -205,7 +205,6 @@ class _AppUpdateSheetState extends ConsumerState<AppUpdateSheet>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         LiftrSheetHeader(
-          eyebrow: 'Atualização do app',
           title: 'Nova versão do LIFTR',
           subtitle: '$remoteLabel · ${update.formattedSize}',
           trailing: Container(

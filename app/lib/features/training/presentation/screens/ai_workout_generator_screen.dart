@@ -295,8 +295,10 @@ class _AiWorkoutGeneratorScreenState
                             height: 4,
                           )
                         : Text(
-                            'TREINO PERSONALIZADO COM IA',
-                            style: AppTypography.eyebrow(context),
+                            'Treino personalizado com IA',
+                            style: context.textTheme.labelMedium?.copyWith(
+                              color: colors.textSecondary,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -470,7 +472,6 @@ class _AiWorkoutGeneratorScreenState
 
   Widget _buildStepHeader(
     BuildContext context, {
-    required String eyebrow,
     required String title,
     required String subtitle,
   }) {
@@ -478,8 +479,6 @@ class _AiWorkoutGeneratorScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(eyebrow, style: AppTypography.eyebrow(context)),
-        const SizedBox(height: 6),
         Text(title, style: context.textTheme.headlineMedium),
         const SizedBox(height: 6),
         Text(
@@ -499,10 +498,9 @@ class _AiWorkoutGeneratorScreenState
       children: [
         _buildStepHeader(
           context,
-          eyebrow: 'ESTUDO RÁPIDO · OBJETIVO',
           title: 'Qual é o foco principal deste treino?',
           subtitle:
-              'O Gemini calibra volume de séries, faixas de repetições e intervalos para o seu objetivo.',
+              'Calibramos volume de séries, faixas de repetições e intervalos para o seu objetivo.',
         ),
         ...AiWorkoutGoal.values.map(
           (g) => Padding(
@@ -523,17 +521,22 @@ class _AiWorkoutGeneratorScreenState
   }
 
   Widget _buildExperienceAndEquipmentStep(BuildContext context) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildStepHeader(
           context,
-          eyebrow: 'ESTUDO RÁPIDO · PERFIL TÉCNICO',
           title: 'Experiência e equipamentos',
           subtitle:
               'Adequamos a complexidade dos exercícios e o volume semanal ao que você tem disponível.',
         ),
-        Text('NÍVEL DE EXPERIÊNCIA', style: AppTypography.eyebrow(context)),
+        Text(
+          'Nível de experiência',
+          style: context.textTheme.labelMedium?.copyWith(
+            color: colors.textSecondary,
+          ),
+        ),
         const SizedBox(height: 8),
         ...AiWorkoutExperience.values.map(
           (exp) => Padding(
@@ -550,7 +553,12 @@ class _AiWorkoutGeneratorScreenState
           ),
         ),
         const SizedBox(height: 14),
-        Text('ESTRUTURA DISPONÍVEL', style: AppTypography.eyebrow(context)),
+        Text(
+          'Estrutura disponível',
+          style: context.textTheme.labelMedium?.copyWith(
+            color: colors.textSecondary,
+          ),
+        ),
         const SizedBox(height: 8),
         ...AiEquipmentAccess.values.map(
           (eq) => Padding(
@@ -580,12 +588,16 @@ class _AiWorkoutGeneratorScreenState
       children: [
         _buildStepHeader(
           context,
-          eyebrow: 'ESTUDO RÁPIDO · ROTINA SEMANAL',
           title: 'Frequência, duração e divisão',
           subtitle:
               'Escolha quantos dias você treina e se prefere alguma divisão específica (ABC, ABCD, Upper/Lower, etc.).',
         ),
-        Text('DIAS POR SEMANA', style: AppTypography.eyebrow(context)),
+        Text(
+          'Dias por semana',
+          style: context.textTheme.labelMedium?.copyWith(
+            color: colors.textSecondary,
+          ),
+        ),
         const SizedBox(height: 10),
         Row(
           children: [2, 3, 4, 5, 6].asMap().entries.map((entry) {
@@ -639,7 +651,12 @@ class _AiWorkoutGeneratorScreenState
           }).toList(),
         ),
         const SizedBox(height: 20),
-        Text('TEMPO POR SESSÃO', style: AppTypography.eyebrow(context)),
+        Text(
+          'Tempo por sessão',
+          style: context.textTheme.labelMedium?.copyWith(
+            color: colors.textSecondary,
+          ),
+        ),
         const SizedBox(height: 10),
         Wrap(
           spacing: 8,
@@ -657,12 +674,17 @@ class _AiWorkoutGeneratorScreenState
           }).toList(),
         ),
         const SizedBox(height: 20),
-        Text('DIVISÃO DE TREINO', style: AppTypography.eyebrow(context)),
+        Text(
+          'Divisão de treino',
+          style: context.textTheme.labelMedium?.copyWith(
+            color: colors.textSecondary,
+          ),
+        ),
         const SizedBox(height: 10),
         _StudyOptionCard(
           title: 'Sugestão inteligente da IA',
           subtitle:
-              'Deixar o Gemini escolher a melhor divisão para $_daysPerWeek dias/semana',
+              'Escolher automaticamente a melhor divisão para $_daysPerWeek dias/semana',
           selected: _preferredSplit == null,
           onTap: () {
             HapticFeedback.selectionClick();
@@ -698,14 +720,15 @@ class _AiWorkoutGeneratorScreenState
       children: [
         _buildStepHeader(
           context,
-          eyebrow: 'ESTUDO RÁPIDO · ÊNFASE & CARDIO',
           title: 'Grupos prioritários e cardio',
           subtitle:
               'Marque até 3 grupos musculares caso queira dar foco extra (opcional) e configure seu cardio.',
         ),
         Text(
-          'ÊNFASE MUSCULAR (OPCIONAL)',
-          style: AppTypography.eyebrow(context),
+          'Ênfase muscular (opcional)',
+          style: context.textTheme.labelMedium?.copyWith(
+            color: colors.textSecondary,
+          ),
         ),
         const SizedBox(height: 10),
         Wrap(
@@ -730,7 +753,12 @@ class _AiWorkoutGeneratorScreenState
           }).toList(),
         ),
         const SizedBox(height: 24),
-        Text('CARDIO EM TEMPO', style: AppTypography.eyebrow(context)),
+        Text(
+          'Cardio em tempo',
+          style: context.textTheme.labelMedium?.copyWith(
+            color: colors.textSecondary,
+          ),
+        ),
         const SizedBox(height: 10),
         AppCard(
           padding: const EdgeInsets.all(16),
@@ -785,8 +813,10 @@ class _AiWorkoutGeneratorScreenState
               if (_includeCardio) ...[
                 const SizedBox(height: 14),
                 Text(
-                  'DURAÇÃO ALVO POR SESSÃO',
-                  style: AppTypography.eyebrow(context),
+                  'Duração alvo por sessão',
+                  style: context.textTheme.labelMedium?.copyWith(
+                    color: colors.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Wrap(
@@ -820,7 +850,6 @@ class _AiWorkoutGeneratorScreenState
       children: [
         _buildStepHeader(
           context,
-          eyebrow: 'ESTUDO RÁPIDO · REVISÃO FINAL',
           title: 'Alguma restrição ou preferência?',
           subtitle:
               'Informe dores articulares, exercícios que prefere evitar ou qualquer detalhe adicional.',
@@ -848,8 +877,10 @@ class _AiWorkoutGeneratorScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'RESUMO DO SEU PERFIL',
-                style: AppTypography.eyebrow(context),
+                'Resumo do seu perfil',
+                style: context.textTheme.labelMedium?.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
               const SizedBox(height: 10),
               _SummaryRow(label: 'Objetivo', value: _goal.label),
@@ -921,8 +952,10 @@ class _AiWorkoutGeneratorScreenState
               children: [
                 Expanded(
                   child: Text(
-                    'MONTANDO TREINO COM IA',
-                    style: AppTypography.eyebrow(context),
+                    'Montando programa com IA',
+                    style: context.textTheme.labelMedium?.copyWith(
+                      color: colors.textSecondary,
+                    ),
                   ),
                 ),
                 Text(
@@ -1060,8 +1093,10 @@ class _AiWorkoutGeneratorScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'PLANO RECOMENDADO PELO GEMINI',
-          style: AppTypography.eyebrow(context),
+          'Programa recomendado',
+          style: context.textTheme.labelMedium?.copyWith(
+            color: colors.textSecondary,
+          ),
         ),
         const SizedBox(height: 6),
         Text(plan.planName, style: context.textTheme.headlineMedium),

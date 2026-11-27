@@ -135,7 +135,6 @@ class _LogCardioModalState extends ConsumerState<LogCardioModal> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const LiftrSheetHeader(
-          eyebrow: 'CARDIO AVULSO',
           title: 'Registrar cardio',
         ),
         const SizedBox(height: 16),

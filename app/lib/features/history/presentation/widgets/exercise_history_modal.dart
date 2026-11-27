@@ -60,7 +60,6 @@ class ExerciseHistoryModal extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         LiftrSheetHeader(
-          eyebrow: 'EVOLUÇÃO DE FORÇA',
           title: exerciseName,
         ),
         const SizedBox(height: 16),
@@ -105,8 +104,10 @@ class ExerciseHistoryModal extends ConsumerWidget {
                   ),
                   const SizedBox(height: 18),
                   Text(
-                    'ÚLTIMAS SESSÕES',
-                    style: AppTypography.eyebrow(context),
+                    'Últimas sessões',
+                    style: context.textTheme.labelMedium?.copyWith(
+                      color: colors.textSecondary,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   ...records.map(

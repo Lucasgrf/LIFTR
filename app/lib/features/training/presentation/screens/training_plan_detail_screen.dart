@@ -196,11 +196,9 @@ class _TrainingPlanDetailScreenState
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'TREINOS DA SEMANA',
+                    'Treinos da semana',
                     style: context.textTheme.labelMedium?.copyWith(
                       color: context.appColors.textSecondary,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1,
                     ),
                   ),
                   TextButton.icon(

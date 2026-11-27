@@ -138,7 +138,12 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('TENDÊNCIA EMA ATUAL', style: AppTypography.eyebrow(context)),
+              Text(
+                'Tendência EMA atual',
+                style: context.textTheme.labelMedium?.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
               const SizedBox(height: 6),
               Text.rich(
                 TextSpan(

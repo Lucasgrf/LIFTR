@@ -51,8 +51,10 @@ class ProgressWorkoutsView extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'TREINOS FINALIZADOS',
-                    style: AppTypography.eyebrow(context),
+                    'Treinos finalizados',
+                    style: context.textTheme.labelMedium?.copyWith(
+                      color: colors.textSecondary,
+                    ),
                   ),
                 ),
                 Text(

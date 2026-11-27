@@ -795,7 +795,7 @@ void main() {
 
       await tester.tap(find.text('Peso'));
       await tester.pumpAndSettle();
-      expect(find.text('TENDÊNCIA EMA ATUAL'), findsOneWidget);
+      expect(find.text('Tendência EMA atual'), findsOneWidget);
       expect(find.text('30D'), findsOneWidget);
       expect(find.text('90D'), findsOneWidget);
 
@@ -838,10 +838,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Configurações'), findsOneWidget);
-      expect(find.text('TREINO & EQUIPAMENTOS'), findsOneWidget);
-      expect(find.text('WHATSAPP'), findsOneWidget);
-      expect(find.text('SINCRONIZAÇÃO OFFLINE & DADOS'), findsOneWidget);
-      expect(find.text('CONTA'), findsOneWidget);
+      expect(find.text('Treino e equipamentos'), findsOneWidget);
+      expect(find.text('WhatsApp'), findsOneWidget);
+      expect(find.text('Sincronização offline e dados'), findsOneWidget);
+      expect(find.text('Conta'), findsOneWidget);
       expect(find.text('Online · Tudo sincronizado'), findsOneWidget);
 
       await tester.scrollUntilVisible(
@@ -861,7 +861,7 @@ void main() {
       await tester.pumpWidget(wrapApp(const ProfileScreen()));
       await tester.pumpAndSettle();
       expect(find.text('Perfil'), findsOneWidget);
-      expect(find.text('DADOS CORPORAIS & OBJETIVO'), findsOneWidget);
+      expect(find.text('Dados corporais e objetivo'), findsOneWidget);
     });
 
     testWidgets('respects MediaQuery disableAnimations without errors',

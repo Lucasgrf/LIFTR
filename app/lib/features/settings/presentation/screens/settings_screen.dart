@@ -183,7 +183,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         LiftrListGroup(
-                          header: 'TREINO & EQUIPAMENTOS',
+                          header: 'Treino e equipamentos',
                           children: [
                             LiftrListRow(
                               label: 'Descanso padrão',
@@ -240,7 +240,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         const SizedBox(height: 22),
 
                         LiftrListGroup(
-                          header: 'WHATSAPP',
+                          header: 'WhatsApp',
                           children: [
                             LiftrListRow(
                               label: 'Vínculo',
@@ -282,7 +282,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         const SizedBox(height: 22),
 
                         LiftrListGroup(
-                          header: 'SINCRONIZAÇÃO OFFLINE & DADOS',
+                          header: 'Sincronização offline e dados',
                           children: [
                             LiftrListRow.toggle(
                               label: 'Simular modo offline',
@@ -342,7 +342,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         const SizedBox(height: 22),
 
                         LiftrListGroup(
-                          header: 'CONTA',
+                          header: 'Conta',
                           children: [
                             LiftrListRow(
                               label: 'Meu Perfil',
@@ -409,7 +409,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     const options = [60, 90, 120, 150, 180, 240];
     showLiftrSheet<void>(
       context: context,
-      eyebrow: 'SESSÃO DE TREINO',
       title: 'Descanso padrão entre séries',
       builder: (ctx) {
         final colors = ctx.appColors;
@@ -444,7 +443,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     const options = [0.5, 1.0, 1.25, 2.0, 2.5, 5.0];
     showLiftrSheet<void>(
       context: context,
-      eyebrow: 'PROGRESSÃO DE CARGA',
       title: title,
       builder: (ctx) {
         final colors = ctx.appColors;
@@ -483,7 +481,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     ];
     showLiftrSheet<void>(
       context: context,
-      eyebrow: 'WHATSAPP COACH',
       title: 'Relatório semanal',
       builder: (ctx) {
         final colors = ctx.appColors;
@@ -520,7 +517,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   ) {
     showLiftrSheet<void>(
       context: context,
-      eyebrow: 'PREFERÊNCIAS',
       title: 'Aparência do app',
       builder: (ctx) {
         final colors = ctx.appColors;
@@ -575,7 +571,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     showLiftrSheet<void>(
       context: context,
-      eyebrow: 'BACKUP PORTÁTIL',
       title: 'Exportar dados',
       builder: (ctx) {
         final colors = ctx.appColors;

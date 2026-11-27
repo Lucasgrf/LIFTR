@@ -437,7 +437,6 @@ class _LoggedSetRowState extends State<LoggedSetRow> {
     final colors = context.appColors;
     final chosen = await showLiftrSheet<SetType>(
       context: context,
-      eyebrow: 'SÉRIE ${widget.setNumber}',
       title: 'Tipo da série ${widget.setNumber}',
       builder: (ctx) => Column(
         mainAxisSize: MainAxisSize.min,

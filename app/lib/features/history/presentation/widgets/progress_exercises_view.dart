@@ -203,7 +203,12 @@ class _ProgressExercisesViewState extends ConsumerState<ProgressExercisesView> {
                 },
               )
             else ...[
-            Text('DUPLA PROGRESSÃO', style: AppTypography.eyebrow(context)),
+            Text(
+              'Dupla progressão',
+              style: context.textTheme.labelMedium?.copyWith(
+                color: colors.textSecondary,
+              ),
+            ),
             const SizedBox(height: 10),
             ...filtered.map((item) {
               final (badgeText, badgeTone, badgeIcon) = switch (item.status) {

@@ -89,19 +89,9 @@ class HistoryScreen extends ConsumerWidget {
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'EVOLUÇÃO OBJETIVA',
-                          style: AppTypography.eyebrow(context),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          'Progresso',
-                          style: context.textTheme.displayMedium,
-                        ),
-                      ],
+                    child: Text(
+                      'Progresso',
+                      style: context.textTheme.displayMedium,
                     ),
                   ),
                   const SizedBox(height: 8),

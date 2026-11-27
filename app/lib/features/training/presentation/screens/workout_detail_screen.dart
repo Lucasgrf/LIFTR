@@ -270,11 +270,9 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'EXERCÍCIOS',
+                          'Exercícios',
                           style: context.textTheme.labelMedium?.copyWith(
                             color: context.appColors.textSecondary,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1,
                           ),
                         ),
                         TextButton.icon(

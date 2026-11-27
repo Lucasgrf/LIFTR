@@ -74,10 +74,12 @@ class LastCompletedWorkoutCard extends StatelessWidget {
                 Expanded(
                   flex: 3,
                   child: Text(
-                    'ÚLTIMO TREINO REALIZADO',
+                    'Último treino realizado',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTypography.eyebrow(context),
+                    style: context.textTheme.labelMedium?.copyWith(
+                      color: colors.textSecondary,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),

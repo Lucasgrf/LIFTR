@@ -84,11 +84,13 @@ class WeeklyMuscleVolumeCard extends StatelessWidget {
               Flexible(
                 flex: 2,
                 child: Text(
-                  'SÉRIES VÁLIDAS',
+                  'Séries válidas',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.end,
-                  style: AppTypography.eyebrow(context),
+                  style: context.textTheme.labelSmall?.copyWith(
+                    color: colors.textTertiary,
+                  ),
                 ),
               ),
             ],

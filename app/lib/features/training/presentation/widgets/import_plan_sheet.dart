@@ -140,7 +140,6 @@ class _ImportPlanSheetState extends ConsumerState<ImportPlanSheet> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         LiftrSheetHeader(
-          eyebrow: 'IMPORTAR PROGRAMA',
           title: 'Importar treino por código',
           trailing: Semantics(
             label: 'Fechar importação de treino',
@@ -228,8 +227,10 @@ class _ImportPlanSheetState extends ConsumerState<ImportPlanSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'PRÉVIA DO PROGRAMA',
-                  style: AppTypography.eyebrow(context),
+                  'Prévia do programa',
+                  style: context.textTheme.labelMedium?.copyWith(
+                    color: colors.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(

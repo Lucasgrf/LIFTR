@@ -775,8 +775,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'DIVISÕES DISPONÍVEIS PARA $_daysPerWeek DIAS',
-                style: AppTypography.eyebrow(context),
+                'Divisões disponíveis para $_daysPerWeek dias',
+                style: context.textTheme.labelMedium?.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
               const SizedBox(height: 8),
               Wrap(

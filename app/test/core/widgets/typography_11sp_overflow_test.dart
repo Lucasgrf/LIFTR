@@ -346,13 +346,13 @@ void main() {
           await tester.pumpAndSettle();
 
           await tester.scrollUntilVisible(
-            find.text('CARDIO NA SEMANA'),
+            find.text('Cardio na semana'),
             200,
             scrollable: find.byType(Scrollable).first,
           );
           await tester.pumpAndSettle();
 
-          expect(find.text('CARDIO NA SEMANA'), findsOneWidget);
+          expect(find.text('Cardio na semana'), findsOneWidget);
           expect(tester.takeException(), isNull);
         },
       );

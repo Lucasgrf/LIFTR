@@ -61,7 +61,6 @@ void main() {
         ),
       );
 
-      expect(find.text('TREINO DE HOJE'), findsOneWidget);
       expect(find.text('Treino A - Peito e Tríceps'), findsOneWidget);
       expect(find.text('Iniciar Treino'), findsOneWidget);
     });

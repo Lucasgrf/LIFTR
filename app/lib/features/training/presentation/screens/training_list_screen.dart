@@ -221,11 +221,6 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'PROGRAMA ATIVO',
-                                  style: AppTypography.eyebrow(context),
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
                                   'Treino',
                                   style: context.textTheme.displayMedium,
                                 ),
@@ -288,8 +283,10 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
                               style: context.textTheme.titleMedium,
                             ),
                             Text(
-                              'ARRASTE PARA ORDENAR',
-                              style: AppTypography.eyebrow(context),
+                              'Arraste para ordenar',
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: colors.textTertiary,
+                              ),
                             ),
                           ],
                         ),

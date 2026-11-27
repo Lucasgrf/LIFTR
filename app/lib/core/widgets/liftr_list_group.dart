@@ -52,7 +52,12 @@ class LiftrListGroup extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
-          child: Text(header!, style: AppTypography.eyebrow(context)),
+          child: Text(
+            header!,
+            style: context.textTheme.labelMedium?.copyWith(
+              color: colors.textSecondary,
+            ),
+          ),
         ),
         group,
       ],

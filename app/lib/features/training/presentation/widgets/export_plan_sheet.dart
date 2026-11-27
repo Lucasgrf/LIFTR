@@ -119,8 +119,10 @@ class ExportPlanSheet extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'CÓDIGO DO TREINO',
-                style: AppTypography.eyebrow(context),
+                'Código do treino',
+                style: context.textTheme.labelMedium?.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
               const SizedBox(height: 6),
               ConstrainedBox(

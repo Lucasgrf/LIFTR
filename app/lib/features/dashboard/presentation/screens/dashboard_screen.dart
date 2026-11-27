@@ -294,21 +294,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Row(
-                                    children: [
-                                      const LiftrBrandMark(size: 16),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          'LIFTR · HOJE',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: AppTypography.eyebrow(context),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 3),
+                                  const LiftrBrandMark(size: 16),
+                                  const SizedBox(height: 6),
                                   Text(
                                     'Hoje',
                                     style: context.textTheme.displayMedium,
@@ -437,11 +424,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             Flexible(
                               flex: 2,
                               child: Text(
-                                '${todayWorkout.exercises.length} PRESCRITOS',
+                                '${todayWorkout.exercises.length} prescritos',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.end,
-                                style: AppTypography.eyebrow(context),
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: colors.textTertiary,
+                                  fontFeatures: AppTypography.tabularFeatures,
+                                ),
                               ),
                             ),
                           ],

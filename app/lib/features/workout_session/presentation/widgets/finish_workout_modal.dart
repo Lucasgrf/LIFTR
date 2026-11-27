@@ -217,7 +217,6 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const LiftrSheetHeader(
-          eyebrow: 'ENCERRAMENTO',
           title: 'Finalizar treino',
         ),
         const SizedBox(height: 16),
@@ -276,10 +275,12 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
                   runSpacing: 6,
                   children: [
                     Text(
-                      'AVALIAÇÃO AUTOMÁTICA',
+                      'Avaliação automática',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTypography.eyebrow(context),
+                      style: context.textTheme.labelMedium?.copyWith(
+                        color: colors.textSecondary,
+                      ),
                     ),
                     LiftrBadge(
                       label: perf.scoreLabel,

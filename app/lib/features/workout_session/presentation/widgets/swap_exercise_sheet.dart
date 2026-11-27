@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
-import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
@@ -133,7 +132,7 @@ class _SwapExerciseSheetState extends ConsumerState<SwapExerciseSheet> {
               ? (widget.eyebrow ??
                   (currentMuscle.isNotEmpty
                       ? currentMuscle.toUpperCase()
-                      : 'SUBSTITUIÇÃO'))
+                      : null))
               : null,
           title: widget.title ?? 'Trocar exercício',
           subtitle: widget.subtitle,
@@ -198,7 +197,7 @@ class _SwapExerciseSheetState extends ConsumerState<SwapExerciseSheet> {
                 const SizedBox(height: 12),
               ],
               if (suggestedList.isNotEmpty) ...[
-                const _SheetSectionLabel('SUGERIDOS PARA O MESMO GRUPO'),
+                const _SheetSectionLabel('Sugeridos para o mesmo grupo'),
                 ...suggestedList.map(
                   (ex) => _SwapOptionRow(
                     exercise: ex,
@@ -213,7 +212,7 @@ class _SwapExerciseSheetState extends ConsumerState<SwapExerciseSheet> {
                 const SizedBox(height: 12),
               ],
               if (catalogList.isNotEmpty) ...[
-                const _SheetSectionLabel('CATÁLOGO COMPLETO'),
+                const _SheetSectionLabel('Catálogo completo'),
                 ...catalogList.map(
                   (ex) => _SwapOptionRow(
                     exercise: ex,
@@ -294,9 +293,15 @@ class _SheetSectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Padding(
       padding: const EdgeInsets.only(top: 8, bottom: 6),
-      child: Text(label, style: AppTypography.eyebrow(context)),
+      child: Text(
+        label,
+        style: context.textTheme.labelMedium?.copyWith(
+          color: colors.textSecondary,
+        ),
+      ),
     );
   }
 }

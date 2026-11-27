@@ -253,7 +253,7 @@ class ProfileScreen extends ConsumerWidget {
                         const SizedBox(height: 22),
 
                         LiftrListGroup(
-                          header: 'DADOS CORPORAIS & OBJETIVO',
+                          header: 'Dados corporais e objetivo',
                           children: [
                             LiftrListRow(
                               label: 'Dados corporais',
@@ -341,7 +341,6 @@ class ProfileScreen extends ConsumerWidget {
     final colors = context.appColors;
     showLiftrSheet<void>(
       context: context,
-      eyebrow: 'ATLETA',
       title: 'Foto de perfil',
       builder: (ctx) => Column(
         mainAxisSize: MainAxisSize.min,
@@ -437,7 +436,6 @@ class ProfileScreen extends ConsumerWidget {
   ) {
     showLiftrSheet<void>(
       context: context,
-      eyebrow: 'METAS & NUTRIÇÃO',
       title: 'Objetivo atual',
       builder: (ctx) {
         final colors = ctx.appColors;
@@ -479,7 +477,6 @@ class ProfileScreen extends ConsumerWidget {
   ) {
     showLiftrSheet<void>(
       context: context,
-      eyebrow: 'HISTÓRICO DE TREINO',
       title: 'Experiência',
       builder: (ctx) {
         final colors = ctx.appColors;
@@ -521,7 +518,6 @@ class ProfileScreen extends ConsumerWidget {
   ) {
     showLiftrSheet<void>(
       context: context,
-      eyebrow: 'GASTO ENERGÉTICO',
       title: 'Atividade diária',
       builder: (ctx) {
         final colors = ctx.appColors;

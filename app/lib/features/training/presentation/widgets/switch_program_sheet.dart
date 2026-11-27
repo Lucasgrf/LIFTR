@@ -244,8 +244,10 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
 
                   // Quick AI + Import actions
                   Text(
-                    'CRIAR COM IA OU IMPORTAR',
-                    style: AppTypography.eyebrow(context),
+                    'Criar com IA ou importar',
+                    style: context.textTheme.labelMedium?.copyWith(
+                      color: colors.textSecondary,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   AppCard(
@@ -336,8 +338,10 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
 
                   if (widget.plans.isNotEmpty) ...[
                     Text(
-                      'SEUS PROGRAMAS',
-                      style: AppTypography.eyebrow(context),
+                      'Seus programas',
+                      style: context.textTheme.labelMedium?.copyWith(
+                        color: colors.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     ...widget.plans.map((plan) {
@@ -435,8 +439,10 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
                   ],
 
                   Text(
-                    'MODELOS PRONTOS (2 A 6 DIAS)',
-                    style: AppTypography.eyebrow(context),
+                    'Modelos prontos (2 a 6 dias)',
+                    style: context.textTheme.labelMedium?.copyWith(
+                      color: colors.textSecondary,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   ...templates.map((tpl) {

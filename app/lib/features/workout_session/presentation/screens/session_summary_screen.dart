@@ -282,10 +282,12 @@ class SessionSummaryScreen extends ConsumerWidget {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            'REGISTRO DO TREINO',
+                            'Registro do treino',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: AppTypography.eyebrow(context),
+                            style: context.textTheme.labelMedium?.copyWith(
+                              color: colors.textSecondary,
+                            ),
                           ),
                         ),
                       ],
@@ -319,12 +321,7 @@ class SessionSummaryScreen extends ConsumerWidget {
                                   color: fitnessColors.progressUp,
                                 ),
                               ),
-                              const SizedBox(height: 18),
-                              Text(
-                                'SESSÃO FINALIZADA',
-                                style: AppTypography.eyebrow(context),
-                              ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 14),
                             ],
                             Text(
                               canPop ? session.workoutName : 'Treino concluído',
@@ -461,8 +458,11 @@ class SessionSummaryScreen extends ConsumerWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'NOTAS DA SESSÃO',
-                                      style: AppTypography.eyebrow(context),
+                                      'Notas da sessão',
+                                      style: context.textTheme.labelMedium
+                                          ?.copyWith(
+                                        color: colors.textSecondary,
+                                      ),
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
@@ -759,8 +759,11 @@ class SessionSummaryScreen extends ConsumerWidget {
                               Align(
                                 alignment: Alignment.centerLeft,
                                 child: Text(
-                                  'EXERCÍCIOS REALIZADOS',
-                                  style: AppTypography.eyebrow(context),
+                                  'Exercícios realizados',
+                                  style: context.textTheme.labelMedium
+                                      ?.copyWith(
+                                    color: colors.textSecondary,
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 10),

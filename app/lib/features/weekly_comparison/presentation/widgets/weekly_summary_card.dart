@@ -103,10 +103,12 @@ class WeeklySummaryCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            'RESUMO SEMANAL',
+                            'Resumo semanal',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: AppTypography.eyebrow(context),
+                            style: context.textTheme.labelMedium?.copyWith(
+                              color: colors.textSecondary,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),

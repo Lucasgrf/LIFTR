@@ -873,7 +873,7 @@ void main() {
 
       await tester.tap(find.text('Treinos'));
       await tester.pumpAndSettle();
-      expect(find.text('TREINOS FINALIZADOS'), findsOneWidget);
+      expect(find.text('Treinos finalizados'), findsOneWidget);
       expect(find.text('Upper A'), findsOneWidget);
 
       // Now verify SessionSummaryScreen details
@@ -890,7 +890,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('EXERCÍCIOS REALIZADOS'), findsOneWidget);
+      expect(find.text('Exercícios realizados'), findsOneWidget);
       expect(find.text('Supino Reto'), findsOneWidget);
       expect(find.text('60 kg × 8 reps'), findsOneWidget);
       expect(find.text('Drop 1: 45 kg × 5 reps'), findsOneWidget);

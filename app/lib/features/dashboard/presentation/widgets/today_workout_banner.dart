@@ -66,11 +66,6 @@ class TodayWorkoutBanner extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'SESSÃO ATIVA',
-              style: AppTypography.eyebrow(context),
-            ),
-            const SizedBox(height: 4),
-            Text(
               activeSession!.workoutName,
               style: context.textTheme.displayMedium,
             ),
@@ -138,11 +133,6 @@ class TodayWorkoutBanner extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            Text(
-              'TREINO DE HOJE',
-              style: AppTypography.eyebrow(context),
-            ),
-            const SizedBox(height: 4),
             Text(
               todayWorkout!.name,
               style: context.textTheme.displayMedium,

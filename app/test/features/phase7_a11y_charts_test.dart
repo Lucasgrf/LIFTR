@@ -473,7 +473,7 @@ void main() {
 
         expect(find.byType(EmptyStateWidget), findsOneWidget);
         expect(find.text('Nenhuma pesagem registrada'), findsOneWidget);
-        expect(find.text('TENDÊNCIA EMA ATUAL'), findsNothing);
+        expect(find.text('Tendência EMA atual'), findsNothing);
       },
     );
 
@@ -796,7 +796,7 @@ void main() {
 
         expect(fakeRepo.entries, hasLength(1));
         expect(fakeRepo.entries.single.weightKg, 81.5);
-        expect(find.text('TENDÊNCIA EMA ATUAL'), findsOneWidget);
+        expect(find.text('Tendência EMA atual'), findsOneWidget);
         expect(find.text('81,5 kg'), findsOneWidget);
 
         // Editing weight again on the same day updates the single entry instead of duplicating.

@@ -421,7 +421,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(Slider), findsNothing);
-      expect(find.text('AVALIAÇÃO AUTOMÁTICA'), findsOneWidget);
+      expect(find.text('Avaliação automática'), findsOneWidget);
       expect(find.text('100%'), findsOneWidget);
       expect(find.text('9,0'), findsOneWidget);
       expect(find.text('Execução excelente'), findsOneWidget);
@@ -589,7 +589,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Primeira semana'), findsOneWidget);
-      expect(find.text('BASELINE INICIAL'), findsOneWidget);
+      expect(find.text('Baseline inicial'), findsOneWidget);
       expect(find.text('30 min'), findsWidgets);
     });
 
@@ -660,7 +660,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('RESUMO SEMANAL'), findsOneWidget);
+      expect(find.text('Resumo semanal'), findsOneWidget);
       expect(find.text('1h 15m'), findsOneWidget);
       expect(find.text('+20 min'), findsOneWidget);
       expect(tester.takeException(), isNull);

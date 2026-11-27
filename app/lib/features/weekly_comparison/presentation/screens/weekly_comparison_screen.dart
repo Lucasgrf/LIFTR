@@ -257,12 +257,15 @@ class WeeklyComparisonScreen extends ConsumerWidget {
                                   flex: 2,
                                   child: Text(
                                     previous != null
-                                        ? 'ATUAL VS ANTERIOR'
-                                        : 'BASELINE INICIAL',
+                                        ? 'Atual vs anterior'
+                                        : 'Baseline inicial',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     textAlign: TextAlign.end,
-                                    style: AppTypography.eyebrow(context),
+                                    style: context.textTheme.labelSmall
+                                        ?.copyWith(
+                                      color: colors.textTertiary,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -559,10 +562,12 @@ class _HeroCardioCard extends StatelessWidget {
             runSpacing: 6,
             children: [
               Text(
-                'CARDIO NA SEMANA',
+                'Cardio na semana',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppTypography.eyebrow(context),
+                style: context.textTheme.labelMedium?.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
               deltaBadge,
             ],
@@ -670,8 +675,10 @@ class _HeroCardioCard extends StatelessWidget {
             Divider(height: 1, color: colors.borderSubtle),
             const SizedBox(height: 12),
             Text(
-              'CARDIOS AVULSOS',
-              style: AppTypography.eyebrow(context),
+              'Cardios avulsos',
+              style: context.textTheme.labelMedium?.copyWith(
+                color: colors.textSecondary,
+              ),
             ),
             const SizedBox(height: 8),
             ...data.currentWeekStandaloneCardio.map((log) {
@@ -849,8 +856,10 @@ class _WeeklyHistorySection extends StatelessWidget {
                 ),
               ),
               Text(
-                'HISTÓRICO',
-                style: AppTypography.eyebrow(context),
+                'Histórico',
+                style: context.textTheme.labelMedium?.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
             ],
           ),
