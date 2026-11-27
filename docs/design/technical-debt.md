@@ -132,7 +132,7 @@ Registro de dívidas técnicas identificadas durante a execução da auditoria d
   ```
 - **Decisão pendente ao unificar WhatsApp + App:** definir na cláusula `ON CONFLICT (user_id, measured_date) DO UPDATE` se uma edição manual em `Perfil → Dados corporais` pode atualizar pesagem já vinda do WhatsApp no mesmo dia ou se `source = 'whatsapp'` tem precedência quando mais recente.
 
-## 12. [Prioridade Máxima — Release Android] Fallback silencioso para chave de debug em builds release
+## 12. [Prioridade Máxima — Release Android] Proteção da assinatura release e backup offline da keystore
 
 - **Chave atual verificada no GitHub Releases (`v0.1.0-build.112`, `liftr-arm64-release.apk`, 2026-11-24):**
   - Verificada com `apksigner verify --verbose --print-certs`:
@@ -143,41 +143,77 @@ Registro de dívidas técnicas identificadas durante a execução da auditoria d
     - `MD5`: `0c524842e3fd3f1a089a0d90627b6e62`
     - Chave: `RSA 2048 bits`
   - Ou seja, as releases geradas pelo CI (`.github/workflows/release-apk.yml`, que define `REQUIRE_RELEASE_SIGNING=true` e decodifica `ANDROID_KEYSTORE_BASE64`) **já são assinadas com keystore dedicada de produção** (não debug).
-- **Bug / Risco crítico em `app/android/app/build.gradle.kts` (linhas 52–77):**
-  - Quando `REQUIRE_RELEASE_SIGNING` não é `"true"` e `app/android/key.properties` / variáveis `ANDROID_KEYSTORE_*` estão ausentes (ex.: build local `flutter build apk --release`), `buildTypes.release` faz **fallback silencioso para `signingConfigs.getByName("debug")`**.
-  - **Impacto:** Trocar a chave de assinatura (seja por fallback acidental para debug, seja ao gerar nova keystore ao publicar na Play Store) **quebra a atualização de todos os usuários atuais** (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`), exigindo desinstalação manual (com risco de perda de sessões/outbox locais ainda não sincronizadas). A keystore atual (`SHA-256: db7f763c...`) precisa ser preservada e reutilizada/importada no Google Play App Signing.
-- **Mudança proposta em `app/android/app/build.gradle.kts` (NÃO aplicada nesta branch):**
-  ```kotlin
-  val isReleaseTaskRequested = gradle.startParameter.taskNames.any {
-      it.contains("Release", ignoreCase = true)
-  }
-  if (isReleaseTaskRequested && !hasReleaseSigning) {
-      throw GradleException(
-          "Release signing credentials are missing. Configure app/android/key.properties " +
-              "or ANDROID_KEYSTORE_PATH/PASSWORD/ALIAS/KEY_PASSWORD env vars.",
-      )
-  }
+- **Correção aplicada nesta branch (`app/android/app/build.gradle.kts`, commit `a308088`):**
+  - Antes, quando `REQUIRE_RELEASE_SIGNING` não era `"true"` e `app/android/key.properties` / variáveis `ANDROID_KEYSTORE_*` estavam ausentes (ex.: build local), `buildTypes.release` fazia **fallback silencioso para `signingConfigs.getByName("debug")`**.
+  - Agora qualquer task Gradle com `"Release"` no nome (além de `REQUIRE_RELEASE_SIGNING=true`) falha imediatamente com `GradleException` explícita quando `!hasReleaseSigning`, removendo o fallback para `debug`. A compatibilidade com `.github/workflows/release-apk.yml` permanece preservada (o CI define `REQUIRE_RELEASE_SIGNING=true` e as 4 variáveis `ANDROID_KEYSTORE_*`).
+- **Impacto de troca de chave & backup offline obrigatório fora do GitHub:**
+  - Trocar a chave de assinatura (por exemplo, ao gerar uma nova keystore na migração para o Google Play) **quebra a atualização de todos os usuários atuais** (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`), exigindo desinstalação manual (com risco de perda de sessões/outbox locais ainda não sincronizadas). A keystore atual (`SHA-256: db7f763c...`) deve ser preservada e reutilizada/importada no Google Play App Signing.
+  - **Backup offline obrigatório:** o arquivo da keystore (`liftr-release.jks`), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` e `ANDROID_KEY_PASSWORD` **devem ter backup offline seguro fora do GitHub** (ex.: cofre de senhas + mídia segura), pois **Secrets do GitHub Actions não podem ser lidos de volta**. Perder a keystore ou suas senhas impede assinar atualizações compatíveis para a base já instalada.
 
-  buildTypes {
-      release {
-          if (hasReleaseSigning) {
-              signingConfig = signingConfigs.getByName("release")
-          }
-      }
-  }
-  ```
-
-## 13. [Prioridade Alta — Bug de Perda de Dados] Coluna `height_cm` ausente em `user_profiles` quebra o upsert remoto de perfil
+## 13. [Prioridade Alta — Bug de Perda de Dados] Coluna `height_cm` ausente em `user_profiles` pode invalidar todo o upsert remoto de perfil
 
 - **Persistência verificada no código (independente da unificação da Seção 10):**
   - **Local (`SharedPreferences`):** `heightCm` é persistido localmente em `UserSettings` (`app/lib/features/settings/presentation/providers/settings_providers.dart`).
   - **`auth.userMetadata`:** Nunca grava `heightCm` (`ProfileRemoteDataSource.saveProfile` envia apenas `name` no auth; `fetchProfile` apenas lê `meta['heightCm']` como fallback se existir).
   - **Servidor (`public.user_profiles`):** `ProfileController.syncSettingsToRemote()` envia `heightCm: settings.heightCm` para `ProfileRemoteDataSource.saveProfile()`, que executa um único `upsert` com `'height_cm': ?heightCm` junto com `display_name`, `biological_sex`, `age`, `weight_kg`, `body_fat_percent`, `goal`, `experience` e `activity_level`. Porém, `20261121000004_post_first_use_fixes.sql` (e demais migrações em `supabase/migrations/`) **não declara a coluna `height_cm` em `public.user_profiles`**.
-- **Impacto (perda silenciosa de dados):** Em bancos provisionados pelas migrações versionadas, o PostgREST rejeita **todo o `upsert`** (`PGRST204` — coluna desconhecida `height_cm`), e o `catch (_)` em `app/lib/features/profile/data/datasources/profile_remote_datasource.dart` engole a exceção sem logar. Como consequência, a altura **e todos os demais dados corporais/perfil** desse upsert não chegam ao servidor e são perdidos ao trocar de aparelho ou reinstalar o app.
-- **Migração SQL proposta (NÃO aplicada nesta branch):**
+- **Verificação obrigatória no banco real antes de migrar (possível schema drift):**
+  - Como colunas podem ter sido criadas manualmente fora das migrações versionadas, confirmar antes no SQL Editor do Supabase com a consulta exata:
+    ```sql
+    select column_name from information_schema.columns where table_schema='public' and table_name='user_profiles';
+    ```
+- **Impacto se a ausência for confirmada:** Em um banco sem `height_cm`, o PostgREST rejeita **todo o `upsert`** (`PGRST204` — coluna desconhecida). Isso significa que **nenhum dado de perfil** (`display_name`, `biological_sex`, `age`, `height_cm`, `weight_kg`, `body_fat_percent`, `goal`, `experience`, `activity_level`) **foi sincronizado com `public.user_profiles` no servidor — e não apenas a altura** — resultando em perda silenciosa ao trocar de aparelho ou reinstalar o app.
+- **Log de diagnóstico aplicado (`6bcb83a`):** `ProfileRemoteDataSource.saveProfile` passou a delegar para `saveProfileOrdered` e registrar falhas de `upsert` via `appErrorLogger` (`ProfileRemoteDataSource.saveProfile.upsert`) com `stackTrace`, mantendo o comportamento UX inalterado para o usuário.
+- **Migração SQL proposta (NÃO aplicada nesta branch — aplicar somente após confirmar na consulta acima):**
   ```sql
   alter table public.user_profiles
     add column if not exists height_cm integer
     check (height_cm between 100 and 250);
   ```
-- **Correção complementar futura no app:** substituir o `catch (_)` silencioso em `ProfileRemoteDataSource.saveProfile` por registro via `appErrorLogger` para expor erros de schema drift em `upsert`.
+
+## 14. [Auditoria] Inventário de `catch (_)` e blocos `catch` vazios em `app/lib/**/data/**` e `app/lib/**/providers/**`
+
+Levantamento completo nos 53 arquivos Dart de `app/lib/**/data/**` e `app/lib/**/providers/**` (após migração de `saveProfile` para `appErrorLogger` no commit `6bcb83a`): **41 ocorrências** (**14 suspeitas** e **27 aceitáveis**). Nenhuma ocorrência suspeita listada abaixo foi alterada nesta branch para manter o escopo travado; devem ser endereçadas em sprint dedicada de confiabilidade/outbox.
+
+| Arquivo:Linha | O que é engolido | Classificação | Justificativa |
+| --- | --- | --- | --- |
+| `app/lib/features/body/presentation/providers/weight_providers.dart:36` | Erro ao montar `weightRepositoryProvider` | **Aceitável** | DI nullable intencional para testes sem Supabase configurado. |
+| `app/lib/features/exercise_library/data/datasources/exercise_local_datasource.dart:60` | Erro de parse JSON de item individual do catálogo local | **Aceitável** | Cache reconstruível do catálogo de exercícios; ignora item corrompido sem derrubar toda a lista. |
+| `app/lib/features/exercise_library/data/datasources/exercise_local_datasource.dart:64` | Erro ao ler/decodificar lista cacheada de exercícios | **Aceitável** | Cache reconstruível a partir do servidor; retorna `[]`. |
+| `app/lib/features/exercise_library/data/repositories/exercise_repository_impl.dart:42` | Erro ao checar `_networkInfo.isConnected` | **Aceitável** | Verificação best-effort de conectividade com fallback seguro para fluxo padrão. |
+| `app/lib/features/history/data/repositories/history_repository_impl.dart:46` | Erro ao checar `_networkInfo.isConnected` | **Aceitável** | Verificação best-effort de conectividade. |
+| `app/lib/features/nutrition/data/repositories/nutrition_repository_impl.dart:30` | `SocketException` capturada por tipo e convertida em `NetworkFailure` | **Aceitável** | Tradução tipada preservando `stackTrace` no `Err(NetworkFailure(...))`. |
+| `app/lib/features/nutrition/data/repositories/nutrition_repository_impl.dart:32` | Exceção genérica em `_guard` convertida em `UnexpectedFailure` fixa | **Suspeito** | Descarta a exceção original sem `appErrorLogger`, dificultando diagnóstico em produção. |
+| `app/lib/features/profile/data/datasources/profile_remote_datasource.dart:85` | Falha ao gerar URL assinada do avatar no Storage | **Aceitável** | Fallback documentado para URL pública/armazenada em cache. |
+| `app/lib/features/profile/data/datasources/profile_remote_datasource.dart:122` | Erro ao consultar `user_profiles` em `fetchProfile()` | **Suspeito** | Transforma falha de rede/RLS/schema em `row = null` silenciosamente, ocultando divergência entre servidor e prefs locais. |
+| `app/lib/features/profile/data/datasources/profile_remote_datasource.dart:193` | Erro ao apagar arquivo antigo do avatar no Storage durante upload | **Aceitável** | Limpeza best-effort de arquivo obsoleto após upload do novo avatar já concluído. |
+| `app/lib/features/profile/data/datasources/profile_remote_datasource.dart:219` | Erro ao espelhar avatar em `user_profiles` após `auth.updateUser` | **Aceitável** | `auth.userMetadata` é a fonte de verdade exclusiva lida pela UI; espelho best-effort. |
+| `app/lib/features/profile/presentation/providers/profile_providers.dart:14` | Erro ao acessar `Supabase.instance.client` no provider | **Aceitável** | DI nullable quando Supabase não está inicializado. |
+| `app/lib/features/profile/presentation/providers/profile_providers.dart:91` | Erro em `ProfileController.loadProfile()` | **Suspeito** | Apenas limpa `isLoading` sem registrar erro ou sinalizar falha de carga do perfil remoto. |
+| `app/lib/features/profile/presentation/providers/profile_providers.dart:191` | Erro em `ProfileController.syncSettingsToRemote()` | **Suspeito** | Engole inclusive falhas de `auth.updateUser` (displayName) sem logar nem enfileirar re-sincronização. |
+| `app/lib/features/progression/data/repositories/progression_repository_impl.dart:40` | Erro ao checar `_networkInfo.isConnected` | **Aceitável** | Verificação best-effort de conectividade. |
+| `app/lib/features/settings/presentation/providers/settings_providers.dart:397` | Erro ao decodificar JSON de `UserSettingsState` nas `SharedPreferences` | **Suspeito** | Retorna `const UserSettingsState()` silenciosamente em erro de parse, podendo sobrescrever configurações salvas do usuário. |
+| `app/lib/features/training/data/datasources/ai_workout_remote_datasource.dart:53` | Erro ao acessar `Supabase.instance.client` | **Aceitável** | Traduz imediatamente em `AiWorkoutException` em PT-BR com código `network`. |
+| `app/lib/features/training/data/datasources/ai_workout_remote_datasource.dart:147` | Erro ao decodificar JSON opcional em `FunctionException.details` | **Aceitável** | Parser opcional para enriquecer mensagem de erro HTTP. |
+| `app/lib/features/training/data/datasources/training_local_datasource.dart:47` | Erro ao decodificar mapa inteiro de planos cacheados (`SharedPreferences`) | **Suspeito** | Descarta todos os planos locais retornando `{}` sem log. |
+| `app/lib/features/training/data/datasources/training_local_datasource.dart:99` | Erro ao desserializar `TrainingPlanModel.fromJson` em `getPlans()` | **Suspeito** | Ignora silenciosamente planos locais que falhem no parse sem diagnóstico. |
+| `app/lib/features/training/data/datasources/training_local_datasource.dart:125` | Erro ao desserializar plano específico em `getPlanById()` | **Suspeito** | Retorna `null` silenciosamente sem registrar corrupção/schema drift. |
+| `app/lib/features/training/data/repositories/training_repository_impl.dart:44` | Erro ao checar `_networkInfo.isConnected` | **Aceitável** | Verificação best-effort de conectividade. |
+| `app/lib/features/training/presentation/providers/workout_queue_provider.dart:55` | Erro ao ler ordem customizada da fila rotativa nas prefs | **Aceitável** | Preferência de ordenação de UI; fallback seguro para ordem padrão do plano (`{}`). |
+| `app/lib/features/weekly_comparison/data/datasources/weekly_comparison_local_datasource.dart:53` | Erro ao decodificar lista local de `CardioLogModel` | **Suspeito** | Falha em um único item descarta toda a lista local de cardios sem log. |
+| `app/lib/features/weekly_comparison/data/datasources/weekly_comparison_local_datasource.dart:123` | Erro ao decodificar snapshots semanais em cache | **Aceitável** | Snapshots são métricas derivadas recalculáveis a partir de sessões/cardios. |
+| `app/lib/features/weekly_comparison/data/repositories/weekly_comparison_repository_impl.dart:56` | Erro ao ler sessões remotas na janela semanal | **Aceitável** | Leitura remota best-effort complementada imediatamente pelo cache local. |
+| `app/lib/features/weekly_comparison/data/repositories/weekly_comparison_repository_impl.dart:96` | Erro ao buscar/cachear logs de cardio remotos | **Aceitável** | Leitura remota best-effort com fallback para logs em cache local. |
+| `app/lib/features/weekly_comparison/data/repositories/weekly_comparison_repository_impl.dart:119` | Erro ao fazer `upsertWeeklySnapshot` no servidor | **Suspeito** | Falha silenciosa sem outbox de retry pode deixar snapshots semanais defasados no servidor. |
+| `app/lib/features/weekly_comparison/data/repositories/weekly_comparison_repository_impl.dart:172` | Erro ao buscar histórico de snapshots remotos | **Aceitável** | Leitura best-effort combinada com snapshots locais. |
+| `app/lib/features/weekly_comparison/data/repositories/weekly_comparison_repository_impl.dart:288` | Erro ao chamar `deleteCardioLog` no servidor em `deleteStandaloneCardio` | **Suspeito** | Apaga apenas localmente e retorna `Success(null)` sem outbox; o cardio pode reaparecer no próximo sync remoto. |
+| `app/lib/features/weekly_comparison/presentation/providers/weekly_comparison_providers.dart:67` | Erro ao instanciar `SupabaseWeeklyComparisonRemoteDataSource` | **Aceitável** | DI segura devolvendo `_NoopWeeklyComparisonRemoteDataSource`. |
+| `app/lib/features/weekly_comparison/presentation/providers/weekly_comparison_providers.dart:129` | Erro não tratado em `weeklyComparisonDataProvider` | **Suspeito** | Devolve resumo semanal zerado em vez de propagar erro ou registrar via `appErrorLogger`. |
+| `app/lib/features/workout_session/data/datasources/session_local_datasource.dart:128` | Erro ao decodificar mapa inteiro de sessões locais | **Suspeito** | Retorna `{}` silenciosamente sem log, descartando histórico local em cache. |
+| `app/lib/features/workout_session/data/datasources/session_local_datasource.dart:161` | Erro ao desserializar sessão individual em `getSession()` | **Suspeito** | Retorna `null` sem log; pode impedir retomada de sessão ativa em andamento. |
+| `app/lib/features/workout_session/data/datasources/session_local_datasource.dart:175` | Erro ao desserializar sessão individual em `getAllCachedSessions()` | **Suspeito** | Pula silenciosamente sessão que falhe no parse, inclusive sessão ativa/offline não sincronizada. |
+| `app/lib/features/workout_session/data/datasources/session_local_datasource.dart:210` | Erro ao decodificar fila de operações pendentes (`getPendingOps()`) | **Suspeito (Crítico)** | Falha de parse em qualquer `PendingSessionOp` retorna `[]`, silenciando e podendo descartar operações offline da outbox de treino. |
+| `app/lib/features/workout_session/data/models/logged_set_model.dart:80` | Erro ao extrair marcador legado de drop-set em `notes` | **Aceitável** | Parser retrocompatível best-effort devolvendo `rawNotes` íntegro se não houver JSON válido. |
+| `app/lib/features/workout_session/data/repositories/session_repository_impl.dart:52` | Erro ao checar `_networkInfo.isConnected` | **Aceitável** | Verificação best-effort de conectividade. |
+| `app/lib/features/workout_session/data/repositories/session_repository_impl.dart:283` | Erro ao checar `_networkInfo.isConnected` antes do flush da outbox | **Aceitável** | Adia o flush preservando todas as operações intactas na outbox local. |
+| `app/lib/features/workout_session/presentation/providers/session_providers.dart:369` | Erro ao buscar sessões remotas para `previousPerformance` | **Aceitável** | Enriquecimento best-effort de referência histórica, complementado pelo cache local. |
+| `app/lib/features/workout_session/presentation/providers/session_providers.dart:385` | Erro ao ler cache local para `previousPerformance` | **Aceitável** | Enriquecimento best-effort de dica visual de carga anterior; não afeta registro/persistência do treino. |
