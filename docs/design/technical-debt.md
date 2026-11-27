@@ -67,8 +67,47 @@ Registro de dívidas técnicas identificadas durante a execução da auditoria d
 - **Decisão nesta branch:** A seção **WhatsApp** foi ocultada em `Configurações` (`SettingsScreen`) para evitar exibir um estado enganoso (`"Não conectado"` ou horários locais não sincronizados) para usuários que já utilizam o bot no WhatsApp.
 - **Ação futura:** Conectar o app à tabela/endpoint autoritativo do vínculo WhatsApp (lendo `whatsapp_numero` mascarado e preferências de `perfil`/RPC dedicada) e implementar fluxo real de vinculação/verificação antes de reexibir a seção em `SettingsScreen`.
 
-## 10. [Backlog — Banco de Dados] Unicidade atômica de `weight_entries` e política com pesagem do WhatsApp
+## 10. [Prioridade Alta — Banco de Dados] Esquemas paralelos entre App Flutter e Bot WhatsApp (`user_profiles` / `weight_entries` vs `perfil` / `pesagem`)
 
+- **Contexto e consequência:** O aplicativo Flutter lê e grava em `public.user_profiles` (`20261121000004_post_first_use_fixes.sql`) e `public.weight_entries` (`20261121000001_flutter_app_schema.sql`), enquanto o backend/bot do WhatsApp (Deno, `supabase/functions/_shared/repo/supabase_repo.ts`) utiliza `public.perfil` e `public.pesagem` (`20261103000001_schema_inicial.sql`), tabela que já possui `origem text not null default 'whatsapp' check (origem in ('app', 'whatsapp', 'foto'))`. Como consequência direta, **a aba Peso no app não exibe pesagens registradas via WhatsApp**, e os dados cadastrais/fisiológicos dos dois canais divergem silenciosamente.
+- **Sobreposição de colunas (verificada via migrações SQL e datasources):**
+  - **`public.user_profiles` vs `public.perfil`:**
+    - `id` ↔ `usuario_id` (ambos `uuid PK` referenciando `auth.users(id)`)
+    - `biological_sex` (`text`, sem `CHECK`; app envia em inglês) ↔ `sexo` (`text check (in ('masculino', 'feminino'))`)
+    - `age` (`integer`) ↔ `nascimento` (`date` — divergência de modelo)
+    - `height_cm` (**nota de esquema:** `ProfileRemoteDataSource` tenta ler/gravar `height_cm` em `user_profiles` dentro de `try/catch` best-effort, porém `20261121000004_post_first_use_fixes.sql` não declara essa coluna) ↔ `altura_cm` (`numeric(5,1) check (between 100 and 250)`)
+    - `body_fat_percent` (`numeric(4,1)`) ↔ `percentual_gordura` (`numeric(4,1) check (between 3 and 70)`)
+    - `goal` (`bulking | cutting | maintenance`) ↔ `objetivo` (`bulking | cutting | manutencao`)
+    - `experience` (`beginner | intermediate | advanced`) ↔ `experiencia` (`iniciante | intermediario` — sem `avancado` no `CHECK`)
+    - `activity_level` (`sedentary | lightlyActive | moderatelyActive | veryActive`) ↔ `atividade` (`sedentario | leve | moderado | alto`)
+    - `created_at` ↔ `criado_em`
+    - *Exclusivas de `user_profiles`:* `display_name`, `avatar_url`, `avatar_storage_path`, `weight_kg`, `updated_at`.
+    - *Exclusivas de `perfil`:* `fuso`, `whatsapp_numero` (`unique`), `horario_relatorio`, `silencio_inicio`, `silencio_fim`, `sinal_transtorno_alimentar`.
+  - **`public.weight_entries` vs `public.pesagem`:**
+    - `id` ↔ `id` (`uuid PK`)
+    - `user_id` ↔ `usuario_id` (`uuid not null default auth.uid()`)
+    - `weight` (`numeric(5,2)`, sem `CHECK` no SQL; app valida `20–400 kg`) ↔ `peso_kg` (`numeric(5,2) check (between 30 and 300)`)
+    - `measured_at` (`timestamptz`) ↔ `data` (`date` — divergência de granularidade temporal)
+    - `created_at` ↔ `criado_em` (`timestamptz`)
+    - *Exclusiva de `weight_entries`:* `notes` (`text`).
+    - *Exclusiva de `pesagem`:* `origem` (`'app' | 'whatsapp' | 'foto'`).
+    - Nenhuma das duas tabelas possui `UNIQUE` por usuário/dia hoje (ambas têm apenas índices não-únicos: `idx_weight_entries_user_date` e `pesagem_usuario_data_idx`).
+- **Situação de dados (consulta apenas de esquema/código, sem acesso ao banco de produção):**
+  - `supabase/seed/seed.sql` popula apenas catálogos globais (`equipamento`, `exercicio`, `alimento`, `medida_caseira`), sem inserir linhas em nenhuma das 4 tabelas.
+  - Pelo código ativo, o app Flutter escreve em `user_profiles` e `weight_entries`, enquanto `supabase_repo.ts` consulta/atualiza `perfil` e consulta `pesagem` (embora o contrato da tabela e `skills/registrar-peso/SKILL.md` já existam, ainda não há `insert` em `pesagem` nas Edge Functions atuais). Antes de escolher/executar a migração, executar consulta de contagem de linhas e interseção de usuários (`perfil`/`user_profiles` e `pesagem`/`weight_entries`) no ambiente alvo.
+- **Opções de unificação:**
+  - **Opção 1 — Adotar `perfil` e `pesagem` como fonte única (migrando o app Flutter):**
+    - Estender `perfil` com as colunas de UI (`display_name`, `avatar_url`, `avatar_storage_path`, `updated_at`) e alinhar `experiencia`/`age` vs `nascimento`; estender `pesagem` com `notes`, opcionalmente `measured_at`, revisar o `CHECK` de faixa (`30..300` vs `20..400`) e aplicar `UNIQUE (usuario_id, data)`. Fazer backfill de `user_profiles`/`weight_entries` (`origem = 'app'`), apontar os datasources do Flutter para `perfil`/`pesagem` com tradução de enums e aposentar as tabelas paralelas após janela de transição.
+    - *Prós:* fonte única de verdade sem sincronização dupla; aproveita `origem ('app' | 'whatsapp' | 'foto')` e `fuso`; aba Peso passa a exibir pesagens do WhatsApp/foto nativamente; simplifica a futura seção WhatsApp Coach e a Edge Function de exclusão de conta.
+    - *Contras:* exige alteração nos datasources/DTOs do Flutter, mapeamento de enums PT-BR ↔ EN, decisão de modelo entre `age` e `nascimento` e período de transição para não quebrar builds antigas já instaladas.
+  - **Opção 2 — View unificada ou sincronização (triggers / Edge Function) mantendo os dois pares:**
+    - Manter `user_profiles`/`weight_entries` para o app e `perfil`/`pesagem` para o bot, usando uma `VIEW` (`UNION ALL`/`JOIN`) para leitura na aba Peso ou triggers bidirecionais sincronizando escritas entre as tabelas.
+    - *Prós:* preserva compatibilidade imediata com builds antigas do app sem alterar o bot nesta etapa; permite adoção incremental apenas de leitura via `VIEW`.
+    - *Contras:* uma `VIEW` sozinha não resolve deduplicação diária nem edição pelo app de uma pesagem vinda do WhatsApp; triggers bidirecionais entre esquemas com enums, granularidades (`timestamptz` vs `date`, `age` vs `nascimento`) e `CHECK`s distintos são frágeis, sujeitos a loops/conflitos e mantêm o custo permanente de dois esquemas.
+
+## 11. [Backlog — Banco de Dados — NÃO APLICAR ANTES DA DECISÃO DE UNIFICAÇÃO] Unicidade atômica de `weight_entries` e política com pesagem do WhatsApp
+
+- **Aviso obrigatório:** **NÃO aplicar esta migração antes da decisão de unificação da Seção 10.** Caso a Opção 1 (`pesagem` como fonte única) seja escolhida, a restrição `UNIQUE (usuario_id, data)` deve ser aplicada diretamente em `public.pesagem` e não em `public.weight_entries`.
 - **Contexto:** Hoje o aplicativo Flutter grava e lê pesagens em `public.weight_entries` (apenas índice não-único `idx_weight_entries_user_date`), usando read-then-write (`fetchWeightEntriesInRange` no dia civil local + `update`/`insert`), enquanto o backend WhatsApp (Deno) grava em `public.pesagem` (`usuario_id, data, peso_kg, origem`). Por isso, hoje uma edição de peso no perfil não sobrescreve registros de `pesagem`, mas ainda não há garantia atômica contra duplicatas concorrentes em `weight_entries` (ex.: dois dispositivos).
 - **Migração SQL proposta (NÃO aplicada nesta branch — revisar antes de executar em produção):**
   ```sql

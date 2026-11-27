@@ -46,8 +46,8 @@ Este documento consolida todas as entregas, decisões arquiteturais e de UI, ite
 - **Suporte a iPad / Tablet Landscape:** Marcado como N/A nesta versão (`TARGETED_DEVICE_FAMILY = "1"`, sem orientações paisagem em celular).
 - **Novos SDKs de Crash Reporting (Sentry / Crashlytics):** Não adicionados nesta branch; `appErrorLogger` centraliza o log e aguarda integração futura.
 - **UI de Exclusão de Planos de Treino:** `deleteTrainingPlanUseCaseProvider` foi mantido no domínio (e utilizado pelo rollback atômico do `SwitchProgramSheet`), mas sem UI de gerenciamento manual nesta branch.
-- **Sincronização do Vínculo WhatsApp Coach & Unificação de `pesagem` vs `weight_entries`:** Adiado para sprint de backend/Edge Functions por exigir migração SQL e fluxo de verificação por código (OTP).
-- **Migração SQL de `weight_entries`:** Proposta e documentada em [technical-debt.md](technical-debt.md#L70), não aplicada contra o banco nesta branch.
+- **Sincronização do Vínculo WhatsApp Coach & Unificação de `perfil`/`pesagem` vs `user_profiles`/`weight_entries`:** Adiado para decisão dedicada de banco/backend ([Seção 10 de technical-debt.md](technical-debt.md#L70)) por envolver sobreposição de colunas, enums distintos e fluxo OTP.
+- **Migração SQL de unicidade em `weight_entries`:** Proposta e documentada em [technical-debt.md](technical-debt.md#L108), **NÃO aplicada e bloqueada** até a decisão de unificação da Seção 10.
 
 ---
 
@@ -60,9 +60,9 @@ Todos os bloqueadores e pendências técnicas estão detalhados com contexto, im
 2. **Atualizador Próprio de APK / Sideload (`REQUEST_INSTALL_PACKAGES` — Google Play):** O `AppUpdateService` faz download/instalação direta de APK via GitHub Releases, proibido nas builds distribuídas pela Play Store. Necessário desativar via flavor/`--dart-define` na build de loja e migrar para Play In-App Updates API. Ver [Seção 7 de technical-debt.md](technical-debt.md#L46).
 
 ### Dívidas Técnicas e Itens de Backlog
-- **Alta Prioridade:** `appErrorLogger` sem envio remoto em release ([Seção 3](technical-debt.md#L16)).
+- **Alta Prioridade:** `appErrorLogger` sem envio remoto em release ([Seção 3](technical-debt.md#L16)); **esquemas paralelos App Flutter vs Bot WhatsApp** (`user_profiles`/`weight_entries` vs `perfil`/`pesagem`, deixando pesagens do WhatsApp invisíveis na aba Peso e perfis divergentes — [Seção 10](technical-debt.md#L70)).
 - **Arquitetura & Roteamento:** Estado de recuperação PKCE não persistido após reinício do app ([Seção 4](technical-debt.md#L22)); `flutter_deeplinking_enabled = false` exigindo roteamento explícito no listener para novos links ([Seção 5](technical-debt.md#L27)).
-- **Banco de Dados & Backend:** Seção WhatsApp Coach oculta por ausência de endpoint/tabela compartilhada no app ([Seção 9](technical-debt.md#L64)); falta de `UNIQUE (user_id, measured_date)` em `weight_entries` e definição de precedência com `public.pesagem` do WhatsApp ([Seção 10](technical-debt.md#L70)).
+- **Banco de Dados & Backend:** Seção WhatsApp Coach oculta por ausência de endpoint/tabela compartilhada no app ([Seção 9](technical-debt.md#L64)); falta de `UNIQUE` diário atômico em `weight_entries` — **não aplicar antes da decisão de unificação da Seção 10** ([Seção 11](technical-debt.md#L108)).
 - **Manutenibilidade & UI:** Substituir `GestureDetector` vazio por `TapRegion` ([Seção 1](technical-debt.md#L5)); modularizar `logged_set_row.dart` ([Seção 2](technical-debt.md#L11)); UI dedicada para excluir planos de treino e eventual plano órfão ([Seção 8](technical-debt.md#L58)).
 
 ---
@@ -121,5 +121,6 @@ Todos os bloqueadores e pendências técnicas estão detalhados com contexto, im
    - **Android:** Gerar o keystore de produção e criar `app/android/key.properties` no ambiente seguro de build/CI (`app/android/app/build.gradle.kts` atualmente faz fallback para `debug` quando ausente). Criar flavor/flag de loja desativando o atualizador de APK e removendo `REQUEST_INSTALL_PACKAGES` ([Seção 7](technical-debt.md#L46)).
    - **iOS:** Configurar Team ID, certificados de distribuição e provisioning profiles no Xcode / App Store Connect para o bundle configurado (`TARGETED_DEVICE_FAMILY = "1"`).
 4. **Banco de Dados & Backend WhatsApp (Pós-branch):**
-   - Revisar e aplicar em janela controlada a migração SQL proposta para unicidade diária e coluna `source` em `public.weight_entries` ([Seção 10](technical-debt.md#L70)), além da política de unificação/precedência com `public.pesagem`.
+   - Decidir a estratégia de unificação dos esquemas paralelos (`perfil`/`pesagem` como fonte única vs view/sync) e auditar contagens reais de linhas antes de migrar ([Seção 10](technical-debt.md#L70)).
+   - Somente após a decisão da Seção 10, revisar e aplicar a migração SQL de unicidade diária e coluna `source` na tabela definitiva ([Seção 11](technical-debt.md#L108)).
    - Implementar fluxo de vínculo OTP e sincronização entre `public.perfil` (WhatsApp) e o app Flutter antes de reexibir a seção nas Configurações ([Seção 9](technical-debt.md#L64)).
