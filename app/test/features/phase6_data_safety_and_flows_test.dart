@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:personal_fitness_os/core/errors/failures.dart';
 import 'package:personal_fitness_os/core/errors/result.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/providers/clock_provider.dart';
 import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
@@ -491,6 +492,61 @@ void main() {
         expect(remote.removeCalls, 2);
         expect(container.read(userSettingsProvider).avatarUrl, isNull);
         expect(find.text('Foto removida.'), findsOneWidget);
+      },
+    );
+
+    test(
+      'removeAvatarOrdered clears auth before deleting storage and aborts storage delete on auth error',
+      () async {
+        final callOrder = <String>[];
+        await SupabaseProfileRemoteDataSource.removeAvatarOrdered(
+          storagePath: 'u-1/avatar.png',
+          clearAuthMetadata: () async => callOrder.add('auth'),
+          clearProfileTable: () async => callOrder.add('profile'),
+          removeFromStorage: (path) async => callOrder.add('storage:$path'),
+        );
+        expect(callOrder, ['auth', 'profile', 'storage:u-1/avatar.png']);
+
+        var storageCalled = false;
+        await expectLater(
+          SupabaseProfileRemoteDataSource.removeAvatarOrdered(
+            storagePath: 'u-1/avatar.png',
+            clearAuthMetadata: () async => throw Exception('auth failure'),
+            clearProfileTable: () async {},
+            removeFromStorage: (_) async => storageCalled = true,
+          ),
+          throwsException,
+        );
+        expect(storageCalled, isFalse);
+      },
+    );
+
+    test(
+      'removeAvatarOrdered logs storage removal errors without throwing or rolling back auth',
+      () async {
+        final previousLogger = appErrorLogger;
+        addTearDown(() => appErrorLogger = previousLogger);
+
+        final logged = <({Object error, String? context})>[];
+        appErrorLogger = (error, {stackTrace, context}) {
+          logged.add((error: error, context: context));
+        };
+
+        var authCleared = false;
+        await SupabaseProfileRemoteDataSource.removeAvatarOrdered(
+          storagePath: 'u-1/avatar.png',
+          clearAuthMetadata: () async => authCleared = true,
+          clearProfileTable: () async {},
+          removeFromStorage: (_) async => throw Exception('storage error'),
+        );
+
+        expect(authCleared, isTrue);
+        expect(logged, hasLength(1));
+        expect(
+          logged.single.context,
+          'ProfileRemoteDataSource.removeAvatar.storage',
+        );
+        expect(logged.single.error.toString(), contains('storage error'));
       },
     );
 

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:personal_fitness_os/core/constants/supabase_config.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UserProfileData {
@@ -206,33 +207,61 @@ class SupabaseProfileRemoteDataSource implements ProfileRemoteDataSource {
     return (avatarUrl: resolvedUrl, storagePath: storagePath);
   }
 
+  /// Clears auth metadata first, then clears `user_profiles` best-effort,
+  /// and finally removes the file from Storage (logging failures without rollback).
+  static Future<void> removeAvatarOrdered({
+    required Future<void> Function() clearAuthMetadata,
+    required Future<void> Function() clearProfileTable,
+    required Future<void> Function(String storagePath) removeFromStorage,
+    String? storagePath,
+  }) async {
+    await clearAuthMetadata();
+
+    try {
+      await clearProfileTable();
+    } catch (error, stackTrace) {
+      appErrorLogger(
+        error,
+        stackTrace: stackTrace,
+        context: 'ProfileRemoteDataSource.removeAvatar.profileTable',
+      );
+    }
+
+    if (storagePath != null && storagePath.isNotEmpty) {
+      try {
+        await removeFromStorage(storagePath);
+      } catch (error, stackTrace) {
+        appErrorLogger(
+          error,
+          stackTrace: stackTrace,
+          context: 'ProfileRemoteDataSource.removeAvatar.storage',
+        );
+      }
+    }
+  }
+
   @override
   Future<void> removeAvatar(String? storagePath) async {
     final user = _client.auth.currentUser;
     if (user == null) return;
 
-    if (storagePath != null && storagePath.isNotEmpty) {
-      try {
-        await _client.storage.from(_bucket).remove([storagePath]);
-      } catch (_) {}
-    }
-
-    await _client.auth.updateUser(
-      UserAttributes(
-        data: {
-          'avatar_url': null,
-          'avatar_storage_path': null,
-        },
+    await removeAvatarOrdered(
+      storagePath: storagePath,
+      clearAuthMetadata: () => _client.auth.updateUser(
+        UserAttributes(
+          data: {
+            'avatar_url': null,
+            'avatar_storage_path': null,
+          },
+        ),
       ),
-    );
-
-    try {
-      await _client.from('user_profiles').update({
+      clearProfileTable: () => _client.from('user_profiles').update({
         'avatar_url': null,
         'avatar_storage_path': null,
         'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', user.id);
-    } catch (_) {}
+      }).eq('id', user.id),
+      removeFromStorage: (path) => _client.storage.from(_bucket).remove([path]),
+    );
   }
 
   @override
