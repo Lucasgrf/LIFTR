@@ -143,6 +143,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     label: 'Voltar',
                     button: true,
                     child: IconButton(
+                      tooltip: 'Voltar',
                       onPressed: () {
                         if (context.canPop()) {
                           context.pop();

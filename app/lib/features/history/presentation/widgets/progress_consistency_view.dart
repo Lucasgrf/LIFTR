@@ -170,6 +170,7 @@ class _ProgressConsistencyViewState
                                     label:
                                         '${DateFormat('d MMM', 'pt_BR').format(cellDate)}, ${daySessions.length} treinos',
                                     button: true,
+                                    selected: isSelected,
                                     child: GestureDetector(
                                       onTap: () {
                                         HapticFeedback.selectionClick();

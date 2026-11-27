@@ -141,6 +141,7 @@ class _SwapExerciseSheetState extends ConsumerState<SwapExerciseSheet> {
             label: widget.closeSemanticLabel ?? 'Fechar troca de exercício',
             button: true,
             child: IconButton(
+              tooltip: widget.closeSemanticLabel ?? 'Fechar troca de exercício',
               onPressed: () => Navigator.pop(context),
               constraints: const BoxConstraints(
                 minWidth: 48,

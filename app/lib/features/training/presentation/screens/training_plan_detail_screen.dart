@@ -68,6 +68,7 @@ class _TrainingPlanDetailScreenState
               label: 'Compartilhar programa',
               button: true,
               child: IconButton(
+                tooltip: 'Compartilhar programa',
                 onPressed: () => ExportPlanSheet.show(
                   context,
                   plan: planAsync.asData!.value,

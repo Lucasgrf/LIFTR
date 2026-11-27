@@ -66,6 +66,7 @@ class ExportPlanSheet extends StatelessWidget {
             label: 'Fechar compartilhamento',
             button: true,
             child: IconButton(
+              tooltip: 'Fechar compartilhamento',
               onPressed: () => Navigator.of(context).pop(),
               constraints: const BoxConstraints(
                 minWidth: 48,

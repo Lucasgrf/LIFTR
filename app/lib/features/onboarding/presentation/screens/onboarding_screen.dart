@@ -297,6 +297,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           label: 'Voltar',
                           button: true,
                           child: IconButton(
+                            tooltip: 'Voltar',
                             onPressed: _goBack,
                             constraints: const BoxConstraints(
                               minWidth: 48,

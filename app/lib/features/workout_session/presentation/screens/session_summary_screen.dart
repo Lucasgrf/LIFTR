@@ -267,6 +267,7 @@ class SessionSummaryScreen extends ConsumerWidget {
                           label: 'Voltar',
                           button: true,
                           child: IconButton(
+                            tooltip: 'Voltar',
                             onPressed: () => context.pop(),
                             constraints: const BoxConstraints(
                               minWidth: 48,

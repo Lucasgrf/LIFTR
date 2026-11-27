@@ -57,6 +57,7 @@ class ProfileScreen extends ConsumerWidget {
                     label: 'Voltar',
                     button: true,
                     child: IconButton(
+                      tooltip: 'Voltar',
                       onPressed: () {
                         if (context.canPop()) {
                           context.pop();
@@ -85,6 +86,7 @@ class ProfileScreen extends ConsumerWidget {
                     label: 'Abrir configurações',
                     button: true,
                     child: IconButton(
+                      tooltip: 'Abrir configurações',
                       onPressed: () => context.push('/settings'),
                       constraints: const BoxConstraints(
                         minWidth: 48,

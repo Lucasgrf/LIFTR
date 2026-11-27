@@ -211,6 +211,7 @@ class AppNumericInput extends StatelessWidget {
                 label: 'Diminuir $label',
                 button: true,
                 child: IconButton(
+                  tooltip: 'Diminuir $label',
                   onPressed: value - step >= min ? _decrement : null,
                   constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                   icon: const Icon(Icons.remove_rounded, size: 20),
@@ -238,6 +239,7 @@ class AppNumericInput extends StatelessWidget {
                 label: 'Aumentar $label',
                 button: true,
                 child: IconButton(
+                  tooltip: 'Aumentar $label',
                   onPressed: value + step <= max ? _increment : null,
                   constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                   icon: const Icon(Icons.add_rounded, size: 20),

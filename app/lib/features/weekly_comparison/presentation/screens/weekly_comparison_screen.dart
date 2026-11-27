@@ -114,6 +114,7 @@ class WeeklyComparisonScreen extends ConsumerWidget {
                               label: 'Semana anterior',
                               button: true,
                               child: IconButton(
+                                tooltip: 'Semana anterior',
                                 onPressed: () {
                                   HapticFeedback.selectionClick();
                                   ref
@@ -158,6 +159,7 @@ class WeeklyComparisonScreen extends ConsumerWidget {
                               label: 'Próxima semana',
                               button: true,
                               child: IconButton(
+                                tooltip: 'Próxima semana',
                                 onPressed: offset < 0
                                     ? () {
                                         HapticFeedback.selectionClick();
@@ -715,6 +717,7 @@ class _HeroCardioCard extends StatelessWidget {
                       label: 'Remover cardio ${log.modality}',
                       button: true,
                       child: IconButton(
+                        tooltip: 'Remover cardio ${log.modality}',
                         onPressed: () => onDeleteStandalone(log),
                         constraints: const BoxConstraints(
                           minWidth: 48,

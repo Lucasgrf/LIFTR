@@ -275,6 +275,7 @@ class _AiWorkoutGeneratorScreenState
                     label: 'Voltar',
                     button: true,
                     child: IconButton(
+                      tooltip: 'Voltar',
                       onPressed: _handleBack,
                       constraints: const BoxConstraints(
                         minWidth: 48,

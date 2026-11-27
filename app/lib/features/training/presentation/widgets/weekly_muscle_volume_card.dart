@@ -63,6 +63,7 @@ class WeeklyMuscleVolumeCard extends StatelessWidget {
       (prev, e) => e.sets > prev ? e.sets : prev,
     );
 
+    final colors = context.appColors;
     return AppCard(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -115,6 +116,26 @@ class WeeklyMuscleVolumeCard extends StatelessWidget {
             ),
             if (row < 2) const SizedBox(height: 14),
           ],
+          const SizedBox(height: 14),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              Icon(
+                Icons.check_circle_rounded,
+                size: 14,
+                color: colors.primaryLight,
+              ),
+              Text(
+                'Meta: $_targetWeeklySets+ séries/semana',
+                style: context.textTheme.labelSmall?.copyWith(
+                  color: colors.textSecondary,
+                  fontFeatures: AppTypography.tabularFeatures,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -164,8 +185,9 @@ class _MuscleBarItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final reachedTarget = entry.sets >= targetSets;
     final ratio = maxSets > 0 ? (entry.sets / maxSets).clamp(0.0, 1.0) : 0.0;
-    final barColor = entry.sets >= targetSets
+    final barColor = reachedTarget
         ? colors.primary
         : entry.sets > 0
             ? colors.textSecondary
@@ -173,7 +195,8 @@ class _MuscleBarItem extends StatelessWidget {
 
     return Semantics(
       container: true,
-      label: '${entry.label}: ${entry.sets} séries válidas na semana',
+      label:
+          '${entry.label}: ${entry.sets} séries válidas na semana${reachedTarget ? ' (meta atingida)' : ''}',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -193,15 +216,30 @@ class _MuscleBarItem extends StatelessWidget {
                     color: colors.textSecondary,
                   ),
                 ),
-                Text(
-                  '${entry.sets} séries',
-                  style: context.textTheme.labelSmall?.copyWith(
-                    color: entry.sets >= targetSets
-                        ? colors.primaryLight
-                        : colors.textTertiary,
-                    fontWeight: FontWeight.w600,
-                    fontFeatures: AppTypography.tabularFeatures,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (reachedTarget) ...[
+                      Icon(
+                        Icons.check_circle_rounded,
+                        size: 12,
+                        color: colors.primaryLight,
+                      ),
+                      const SizedBox(width: 4),
+                    ],
+                    Flexible(
+                      child: Text(
+                        '${entry.sets} séries',
+                        style: context.textTheme.labelSmall?.copyWith(
+                          color: reachedTarget
+                              ? colors.primaryLight
+                              : colors.textTertiary,
+                          fontWeight: FontWeight.w600,
+                          fontFeatures: AppTypography.tabularFeatures,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

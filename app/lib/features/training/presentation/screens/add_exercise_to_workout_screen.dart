@@ -294,6 +294,7 @@ class _AddExerciseToWorkoutScreenState
         appBar: AppBar(
           title: const Text('Prescrever Séries'),
           leading: IconButton(
+            tooltip: 'Voltar',
             icon: const Icon(Icons.arrow_back_rounded),
             onPressed: () => setState(() => _selectedExercise = null),
           ),

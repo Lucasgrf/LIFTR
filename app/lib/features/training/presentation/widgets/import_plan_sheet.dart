@@ -146,6 +146,7 @@ class _ImportPlanSheetState extends ConsumerState<ImportPlanSheet> {
             label: 'Fechar importação de treino',
             button: true,
             child: IconButton(
+              tooltip: 'Fechar importação de treino',
               onPressed: () => Navigator.of(context).pop(),
               constraints: const BoxConstraints(
                 minWidth: 48,

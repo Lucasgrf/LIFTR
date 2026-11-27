@@ -180,6 +180,7 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
             label: 'Fechar seleção de programa',
             button: true,
             child: IconButton(
+              tooltip: 'Fechar seleção de programa',
               onPressed: () => Navigator.pop(context),
               constraints: const BoxConstraints(
                 minWidth: 48,
@@ -393,6 +394,7 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
                                 label: 'Compartilhar ${plan.name}',
                                 button: true,
                                 child: IconButton(
+                                  tooltip: 'Compartilhar ${plan.name}',
                                   onPressed: () {
                                     HapticFeedback.selectionClick();
                                     ExportPlanSheet.show(

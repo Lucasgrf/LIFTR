@@ -435,6 +435,9 @@ class _MinimizedFooterTimer extends StatelessWidget {
                                 : 'Pausar descanso',
                             button: true,
                             child: IconButton(
+                              tooltip: isPaused
+                                  ? 'Retomar descanso'
+                                  : 'Pausar descanso',
                               onPressed: onTogglePause,
                               constraints: const BoxConstraints(
                                 minWidth: 48,

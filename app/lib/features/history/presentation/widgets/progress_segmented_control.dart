@@ -44,6 +44,7 @@ class ProgressSegmentedControl extends StatelessWidget {
               child: Semantics(
                 selected: isSelected,
                 button: true,
+                label: segments[index],
                 child: AnimatedContainer(
                   duration: motion.resolve(context, motion.fast),
                   curve: motion.curveStandard,
