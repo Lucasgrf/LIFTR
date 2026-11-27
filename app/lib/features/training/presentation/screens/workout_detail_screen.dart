@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_confirm_dialog.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
+import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
@@ -72,29 +77,16 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
   }
 
   Future<void> _deleteExercise(WorkoutExercise exercise) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: context.appColors.surfaceElevated,
-        title: const Text('Remover Exercício'),
-        content: Text(
+    final confirmed = await showLiftrConfirmDialog(
+      context,
+      title: 'Remover Exercício',
+      message:
           'Deseja remover "${exercise.exercise?.name ?? 'este exercício'}" deste treino?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: context.appColors.danger),
-            child: const Text('Remover'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Remover',
+      icon: Icons.delete_outline_rounded,
     );
 
-    if (confirmed == true) {
+    if (confirmed) {
       final repo = ref.read(trainingRepositoryProvider);
       final result = await repo.deleteWorkoutExercise(exercise.id);
 
@@ -148,7 +140,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
     if (widget.planId == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Detalhes do Treino')),
-        body: const Center(child: Text('Plano não especificado')),
+        body: const Center(child: Text('Programa não especificado')),
       );
     }
 
@@ -173,8 +165,13 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
       ),
       body: workoutAsync.when(
         loading: () => const LoadingWidget(),
-        error: (error, _) => ErrorStateWidget(
-          message: error.toString(),
+        error: (error, st) => ErrorStateWidget(
+          message: userFacingMessage(
+            error,
+            stackTrace: st,
+            context: 'WorkoutDetailScreen.build',
+          ),
+          safetyNote: offlineSafetyNoteFor(error),
           onRetry: () => ref.refresh(
             workoutDetailProvider((planId: widget.planId!, workoutId: widget.workoutId)),
           ),
@@ -184,11 +181,15 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
             children: [
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                  padding: const EdgeInsets.fromLTRB(0, 12, 0, 20),
                   children: [
+                    ResponsiveContainer(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
                     // Header card
                     AppCard(
-                      padding: const EdgeInsets.all(18),
+                      padding: EdgeInsets.all(context.appSpacing.space16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -204,9 +205,9 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                               ),
                               const Spacer(),
                               if (workout.estimatedDurationMinutes != null) ...[
-                                Icon(Icons.timer_outlined,
+                                Icon(Icons.timer_rounded,
                                     size: 14, color: context.appColors.textTertiary),
-                                const SizedBox(width: 4),
+                                AppSpacing.horizontalGap4,
                                 Text(
                                   '~${workout.estimatedDurationMinutes} min',
                                   style: context.textTheme.bodySmall?.copyWith(
@@ -216,7 +217,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                               ],
                             ],
                           ),
-                          const SizedBox(height: 10),
+                          AppSpacing.verticalGap12,
                           Text(
                             workout.name,
                             style: context.textTheme.titleLarge?.copyWith(
@@ -225,7 +226,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                             ),
                           ),
                           if (workout.notes != null && workout.notes!.isNotEmpty) ...[
-                            const SizedBox(height: 6),
+                            AppSpacing.verticalGap8,
                             Text(
                               workout.notes!,
                               style: context.textTheme.bodySmall?.copyWith(
@@ -233,21 +234,30 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                               ),
                             ),
                           ],
-                          const SizedBox(height: 12),
+                          AppSpacing.verticalGap12,
                           Row(
                             children: [
                               Text(
-                                '${workout.totalExercisesCount} exercícios',
+                                pluralize(
+                                  workout.totalExercisesCount,
+                                  'exercício',
+                                  'exercícios',
+                                ),
                                 style: context.textTheme.bodySmall?.copyWith(
                                   color: context.appColors.textSecondary,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Text('·', style: TextStyle(color: context.appColors.textTertiary)),
-                              const SizedBox(width: 8),
+                              AppSpacing.horizontalGap8,
                               Text(
-                                '${workout.totalWorkingSetsCount} séries válidas',
+                                '·',
+                                style: context.textTheme.bodySmall?.copyWith(
+                                  color: context.appColors.textTertiary,
+                                ),
+                              ),
+                              AppSpacing.horizontalGap8,
+                              Text(
+                                '${pluralize(workout.totalWorkingSetsCount, 'série', 'séries')} ${workout.totalWorkingSetsCount == 1 ? 'válida' : 'válidas'}',
                                 style: context.textTheme.bodySmall?.copyWith(
                                   color: context.appColors.primary,
                                   fontWeight: FontWeight.w600,
@@ -265,11 +275,9 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'EXERCÍCIOS',
+                          'Exercícios',
                           style: context.textTheme.labelMedium?.copyWith(
                             color: context.appColors.textSecondary,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1,
                           ),
                         ),
                         TextButton.icon(
@@ -313,15 +321,26 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                             child: ListTile(
                               leading: Text(
                                 '${index + 1}',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: context.textTheme.titleSmall?.copyWith(
+                                  color: context.appColors.textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               title: Text(
                                 exercise.exercise?.name ?? 'Exercício',
-                                style: TextStyle(color: context.appColors.textPrimary),
+                                style: context.textTheme.bodyMedium?.copyWith(
+                                  color: context.appColors.textPrimary,
+                                ),
                               ),
                               subtitle: Text(
-                                '${exercise.totalSetsCount} séries',
-                                style: TextStyle(color: context.appColors.textSecondary),
+                                pluralize(
+                                  exercise.totalSetsCount,
+                                  'série',
+                                  'séries',
+                                ),
+                                style: context.textTheme.bodySmall?.copyWith(
+                                  color: context.appColors.textSecondary,
+                                ),
                               ),
                               trailing: const Icon(Icons.drag_handle_rounded),
                             ),
@@ -341,13 +360,16 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                           ),
                         );
                       }),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
 
               // Bottom Bar with "Iniciar Treino"
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
                   color: context.appColors.surfaceElevated,
                   border: Border(
@@ -356,11 +378,13 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                 ),
                 child: SafeArea(
                   top: false,
-                  child: AppButton.primary(
-                    label: 'Iniciar treino',
-                    icon: Icons.play_arrow_rounded,
-                    isLoading: _isStartingWorkout,
-                    onPressed: () => _startWorkout(workout),
+                  child: ResponsiveContainer(
+                    child: AppButton.primary(
+                      label: 'Iniciar treino',
+                      icon: Icons.play_arrow_rounded,
+                      isLoading: _isStartingWorkout,
+                      onPressed: () => _startWorkout(workout),
+                    ),
                   ),
                 ),
               ),

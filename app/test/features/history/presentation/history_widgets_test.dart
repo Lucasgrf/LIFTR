@@ -3,18 +3,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
+import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
 import 'package:personal_fitness_os/core/theme/app_theme.dart';
-import 'package:personal_fitness_os/features/history/domain/entities/history_event_type.dart';
-import 'package:personal_fitness_os/features/history/domain/entities/timeline_event.dart';
+import 'package:personal_fitness_os/features/body/domain/entities/weight_entry.dart';
+import 'package:personal_fitness_os/features/body/domain/entities/weight_stats.dart';
+import 'package:personal_fitness_os/features/body/presentation/providers/weight_providers.dart';
 import 'package:personal_fitness_os/features/history/presentation/widgets/history_workout_card.dart';
-import 'package:personal_fitness_os/features/history/presentation/widgets/timeline_event_card.dart';
-import 'package:personal_fitness_os/features/history/presentation/widgets/timeline_filter_bar.dart';
+import 'package:personal_fitness_os/features/history/presentation/widgets/progress_weight_view.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/workout_mood_icon.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  late SharedPreferences prefs;
+
   setUpAll(() async {
     await initializeDateFormatting('pt_BR', null);
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
   });
 
   final tSession = WorkoutSession(
@@ -29,15 +35,6 @@ void main() {
     mood: Mood.excellent,
   );
 
-  final tEvent = TimelineEvent(
-    id: 'e-1',
-    type: HistoryEventType.workout,
-    timestamp: DateTime(2026, 8, 23, 10, 30),
-    title: 'Treino A - Peito',
-    subtitle: '4 exercícios • 45 min',
-    referenceId: 's-1',
-  );
-
   Widget createWidgetUnderTest(Widget child) {
     return ProviderScope(
       child: MaterialApp(
@@ -48,7 +45,8 @@ void main() {
   }
 
   group('HistoryWorkoutCard Widget Test', () {
-    testWidgets('should render workout name, duration, RPE and mood', (tester) async {
+    testWidgets('should render workout name, duration, RPE and mood',
+        (tester) async {
       await tester.pumpWidget(
         createWidgetUnderTest(
           HistoryWorkoutCard(session: tSession),
@@ -63,47 +61,95 @@ void main() {
     });
   });
 
-  group('TimelineEventCard Widget Test', () {
-    testWidgets('should render event type, title, subtitle and fire onTap', (tester) async {
-      bool tapped = false;
+  group('A11Y-01 ProgressWeightView period pills', () {
+    for (final textScale in [1.0, 1.3, 2.0]) {
+      testWidgets(
+          'renders 48x48dp Material+Ink period pills without overflow at 320dp (${textScale}x)',
+          (tester) async {
+        await tester.binding.setSurfaceSize(const Size(320, 900));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(
-        createWidgetUnderTest(
-          TimelineEventCard(
-            event: tEvent,
-            onTap: () {
-              tapped = true;
-            },
+        final now = DateTime.now();
+        final entries = [
+          WeightEntry(
+            id: 'w-1',
+            weightKg: 81.2,
+            measuredAt: now.subtract(const Duration(days: 10)),
           ),
-        ),
-      );
+          WeightEntry(
+            id: 'w-2',
+            weightKg: 80.6,
+            measuredAt: now.subtract(const Duration(days: 2)),
+          ),
+        ];
 
-      expect(find.text('TREINOS'), findsOneWidget);
-      expect(find.text('Treino A - Peito'), findsOneWidget);
-      expect(find.text('4 exercícios • 45 min'), findsOneWidget);
+        final handle = tester.ensureSemantics();
+        try {
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                sharedPreferencesProvider.overrideWithValue(prefs),
+                weightHistoryProvider.overrideWith((_) async => entries),
+                weightStatsProvider.overrideWith(
+                  (_) async => const WeightStats(deltaVsPreviousWeekKg: -0.35),
+                ),
+              ],
+              child: MediaQuery(
+                data: MediaQueryData(
+                  size: const Size(320, 900),
+                  textScaler: TextScaler.linear(textScale),
+                  disableAnimations: true,
+                ),
+                child: MaterialApp(
+                  theme: AppTheme.dark(),
+                  home: const Scaffold(
+                    body: SingleChildScrollView(
+                      padding: EdgeInsets.all(16),
+                      child: ProgressWeightView(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(TimelineEventCard));
-      await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
 
-      expect(tapped, isTrue);
-    });
-  });
+          for (final label in const ['30D', '90D', '6M', 'Tudo']) {
+            final pillFinder = find.ancestor(
+              of: find.text(label),
+              matching: find.byType(InkWell),
+            );
+            expect(pillFinder, findsOneWidget);
+            expect(
+              tester.getSize(pillFinder).width,
+              greaterThanOrEqualTo(48.0),
+            );
+            expect(
+              tester.getSize(pillFinder).height,
+              greaterThanOrEqualTo(48.0),
+            );
+            expect(
+              find.descendant(of: pillFinder, matching: find.byType(Ink)),
+              findsOneWidget,
+            );
+          }
 
-  group('TimelineFilterBar Widget Test', () {
-    testWidgets('should render filter chips for type and period', (tester) async {
-      await tester.pumpWidget(
-        createWidgetUnderTest(
-          const TimelineFilterBar(),
-        ),
-      );
-
-      expect(find.text('Todos'), findsOneWidget);
-      expect(find.text('Treinos'), findsOneWidget);
-      expect(find.text('Peso'), findsOneWidget);
-      expect(find.text('Nutrição'), findsOneWidget);
-      expect(find.text('Metas'), findsOneWidget);
-      expect(find.text('Tudo'), findsOneWidget);
-      expect(find.text('7 dias'), findsOneWidget);
-    });
+          if (textScale == 1.0) {
+            await expectLater(
+              tester,
+              meetsGuideline(androidTapTargetGuideline),
+            );
+            await expectLater(
+              tester,
+              meetsGuideline(labeledTapTargetGuideline),
+            );
+          }
+        } finally {
+          handle.dispose();
+        }
+      });
+    }
   });
 }

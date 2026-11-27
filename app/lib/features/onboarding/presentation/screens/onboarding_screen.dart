@@ -5,20 +5,32 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/constants/supabase_config.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
+import 'package:personal_fitness_os/core/providers/clock_provider.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_number_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
+import 'package:personal_fitness_os/core/widgets/app_input.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
+import 'package:personal_fitness_os/features/body/presentation/providers/weight_providers.dart';
 import 'package:personal_fitness_os/features/profile/presentation/providers/profile_providers.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 import 'package:personal_fitness_os/features/training/domain/constants/split_presets.dart';
 import 'package:personal_fitness_os/routing/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+typedef OnboardingCompleteHook = Future<void> Function(WidgetRef ref);
+
+final onboardingCompleteHookProvider =
+    Provider<OnboardingCompleteHook?>((ref) => null);
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -32,6 +44,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   int _step = 0;
   int _direction = 1;
+  bool _isSubmitting = false;
 
   // Step 1
   String _sex = 'M';
@@ -62,10 +75,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _heightController =
         TextEditingController(text: initial.heightCm.toString());
     _weightController = TextEditingController(
-      text: initial.weightKg.toStringAsFixed(1),
+      text: formatPtBrDecimal(initial.weightKg, decimalDigits: 1),
     );
     _bodyFatController = TextEditingController(
-      text: initial.bodyFatPercent?.toStringAsFixed(1) ?? '',
+      text: initial.bodyFatPercent != null
+          ? formatPtBrDecimal(initial.bodyFatPercent!, decimalDigits: 1)
+          : '',
     );
     _goal = initial.goal;
     _experience = initial.experience;
@@ -88,27 +103,56 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   SplitPreset get _selectedSplit =>
       _currentSplitOptions[_splitOptionIndex % _currentSplitOptions.length];
 
+  String? get _ageError {
+    final text = _ageController.text.trim();
+    if (text.isEmpty) return 'Entre 12 e 100';
+    final age = int.tryParse(text);
+    if (age == null || age < 12 || age > 100) return 'Entre 12 e 100 anos';
+    return null;
+  }
+
+  String? get _heightError {
+    final text = _heightController.text.trim();
+    if (text.isEmpty) return 'Entre 100 e 250';
+    final height = int.tryParse(text);
+    if (height == null || height < 100 || height > 250) {
+      return 'Entre 100 e 250 cm';
+    }
+    return null;
+  }
+
+  String? get _weightError {
+    final text = _weightController.text.trim();
+    if (text.isEmpty) return 'Entre 20 e 400';
+    final weight = parsePtBrDouble(text);
+    if (weight == null || weight < 20 || weight > 400) {
+      return 'Entre 20 e 400 kg';
+    }
+    return null;
+  }
+
+  String? get _bodyFatError {
+    final text = _bodyFatController.text.trim();
+    if (text.isEmpty) return null;
+    final bodyFat = parsePtBrDouble(text);
+    if (bodyFat == null || bodyFat < 3 || bodyFat > 60) {
+      return 'Entre 3% e 60%';
+    }
+    return null;
+  }
+
   bool get _isCurrentStepValid {
     if (_step == 0) {
-      final age = int.tryParse(_ageController.text.trim());
-      final height = int.tryParse(_heightController.text.trim());
-      final weight = double.tryParse(
-        _weightController.text.trim().replaceAll(',', '.'),
-      );
-      return age != null &&
-          age >= 12 &&
-          age <= 100 &&
-          height != null &&
-          height >= 100 &&
-          height <= 250 &&
-          weight != null &&
-          weight >= 30 &&
-          weight <= 300;
+      return _ageError == null &&
+          _heightError == null &&
+          _weightError == null &&
+          _bodyFatError == null;
     }
     return true;
   }
 
   void _goBack() {
+    if (_isSubmitting) return;
     if (_step > 0) {
       HapticFeedback.lightImpact();
       setState(() {
@@ -137,75 +181,121 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     required bool whatsappConnected,
     bool openAiGenerator = false,
   }) async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
     HapticFeedback.mediumImpact();
-    final notifier = ref.read(userSettingsProvider.notifier);
-    final age = int.tryParse(_ageController.text.trim()) ?? 27;
-    final height = int.tryParse(_heightController.text.trim()) ?? 178;
-    final weight = double.tryParse(
-          _weightController.text.trim().replaceAll(',', '.'),
-        ) ??
-        78.4;
-    final bodyFat = double.tryParse(
-      _bodyFatController.text.trim().replaceAll(',', '.'),
-    );
-
-    notifier.updateBodyData(
-      biologicalSex: _sex,
-      age: age,
-      heightCm: height,
-      weightKg: weight,
-      bodyFatPercent: bodyFat,
-      clearBodyFat: bodyFat == null,
-    );
-    notifier.setGoal(_goal);
-    notifier.setExperience(_experience);
-    notifier.setActivityLevel(_activityLevel);
-    notifier.setSchedule(
-      daysPerWeek: _daysPerWeek,
-      splitName: _selectedSplit.name,
-    );
-    notifier.completeOnboarding(whatsappConnected: whatsappConnected);
-
-    final targetRoute = openAiGenerator ? '/training/ai-generator' : '/';
-
-    if (!SupabaseConfig.isConfigured) {
-      syncActiveAuthSession(ref, isLoggedIn: true);
-      context.go(targetRoute);
-      return;
-    }
-
-    User? user;
     try {
-      user = Supabase.instance.client.auth.currentUser;
-    } catch (_) {
-      user = null;
-    }
+      final notifier = ref.read(userSettingsProvider.notifier);
+      final age = int.tryParse(_ageController.text.trim()) ?? 27;
+      final height = int.tryParse(_heightController.text.trim()) ?? 178;
+      final weight = parsePtBrDouble(_weightController.text) ?? 78.4;
+      final bodyFat = parsePtBrDouble(_bodyFatController.text);
 
-    if (user != null) {
-      final settings = ref.read(userSettingsProvider);
-      try {
-        await Supabase.instance.client.auth.updateUser(
-          UserAttributes(data: settings.toJson()),
-        );
-      } catch (_) {
-        // Best-effort metadata sync; local settings remain persisted.
+      notifier.updateBodyData(
+        biologicalSex: _sex,
+        age: age,
+        heightCm: height,
+        weightKg: weight,
+        bodyFatPercent: bodyFat,
+        clearBodyFat: bodyFat == null,
+      );
+      notifier.setGoal(_goal);
+      notifier.setExperience(_experience);
+      notifier.setActivityLevel(_activityLevel);
+      notifier.setSchedule(
+        daysPerWeek: _daysPerWeek,
+        splitName: _selectedSplit.name,
+      );
+      notifier.completeOnboarding(whatsappConnected: whatsappConnected);
+
+      final upsertWeight = ref.read(upsertDailyWeightUseCaseProvider);
+      if (upsertWeight != null) {
+        try {
+          final weightResult = await upsertWeight.execute(
+            weightKg: weight,
+            measuredAt: ref.read(appClockProvider)(),
+          );
+          weightResult.fold(
+            (_) {},
+            (failure) => appErrorLogger(
+              failure,
+              stackTrace: failure.stackTrace,
+              context: 'OnboardingScreen._finish.upsertDailyWeight',
+            ),
+          );
+        } catch (e, st) {
+          appErrorLogger(
+            e,
+            stackTrace: st,
+            context: 'OnboardingScreen._finish.upsertDailyWeight',
+          );
+        }
+        ref.invalidate(weightHistoryProvider);
+        ref.invalidate(weightStatsProvider);
       }
-      unawaited(
-        ref.read(profileControllerProvider.notifier).syncSettingsToRemote(),
-      );
-      if (!mounted) return;
-      syncActiveAuthSession(
-        ref,
-        isLoggedIn: true,
-        overrideUserId: user.id,
-      );
-      context.go(targetRoute);
-      return;
-    }
 
-    if (!mounted) return;
-    context.showSnackBar('Perfil salvo! Entre na sua conta para sincronizar.');
-    context.go('/login');
+      final targetRoute = openAiGenerator ? '/training/ai-generator' : '/';
+
+      final completeHook = ref.read(onboardingCompleteHookProvider);
+      if (completeHook != null) {
+        await completeHook(ref);
+      }
+
+      if (!SupabaseConfig.isConfigured) {
+        if (!mounted) return;
+        syncActiveAuthSession(ref, isLoggedIn: true);
+        context.go(targetRoute);
+        return;
+      }
+
+      User? user;
+      try {
+        user = Supabase.instance.client.auth.currentUser;
+      } catch (_) {
+        user = null;
+      }
+
+      if (user != null) {
+        final settings = ref.read(userSettingsProvider);
+        try {
+          await Supabase.instance.client.auth.updateUser(
+            UserAttributes(data: settings.toJson()),
+          );
+        } catch (_) {
+          // Best-effort metadata sync; local settings remain persisted.
+        }
+        unawaited(
+          ref.read(profileControllerProvider.notifier).syncSettingsToRemote(),
+        );
+        if (!mounted) return;
+        syncActiveAuthSession(
+          ref,
+          isLoggedIn: true,
+          overrideUserId: user.id,
+        );
+        context.go(targetRoute);
+        return;
+      }
+
+      if (!mounted) return;
+      context.showSnackBar('Perfil salvo! Entre na sua conta para sincronizar.');
+      context.go('/login');
+    } catch (e, st) {
+      if (mounted) {
+        context.showSnackBar(
+          userFacingMessage(
+            e,
+            stackTrace: st,
+            context: 'OnboardingScreen._finish',
+          ),
+          isError: true,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   @override
@@ -213,7 +303,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final colors = context.appColors;
     final disableAnimations = MediaQuery.disableAnimationsOf(context);
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _goBack();
+      },
+      child: Scaffold(
       backgroundColor: colors.background,
       body: SafeArea(
         child: Column(
@@ -223,39 +318,48 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               padding: const EdgeInsets.fromLTRB(8, 8, 18, 8),
               child: Column(
                 children: [
-                  Row(
-                    children: [
-                      Semantics(
-                        label: 'Voltar',
-                        button: true,
-                        child: IconButton(
-                          onPressed: _goBack,
-                          constraints: const BoxConstraints(
-                            minWidth: 48,
-                            minHeight: 48,
+                  LayoutBuilder(
+                    builder: (context, constraints) => Row(
+                      children: [
+                        Semantics(
+                          label: 'Voltar',
+                          button: true,
+                          child: IconButton(
+                            tooltip: 'Voltar',
+                            onPressed: _goBack,
+                            constraints: const BoxConstraints(
+                              minWidth: 48,
+                              minHeight: 48,
+                            ),
+                            icon: Icon(
+                              Icons.arrow_back_rounded,
+                              color: colors.textPrimary,
+                            ),
                           ),
-                          icon: Icon(
-                            Icons.arrow_back_rounded,
-                            color: colors.textPrimary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: LiftrProgressBar(
+                            progress: (_step + 1) / _totalSteps,
+                            height: 4,
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: LiftrProgressBar(
-                          progress: (_step + 1) / _totalSteps,
-                          height: 4,
+                        const SizedBox(width: 12),
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: constraints.maxWidth * 0.42,
+                          ),
+                          child: Text(
+                            'Passo ${_step + 1} de $_totalSteps',
+                            maxLines: 2,
+                            style: context.textTheme.labelMedium?.copyWith(
+                              color: colors.textSecondary,
+                              fontFeatures: AppTypography.tabularFeatures,
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Passo ${_step + 1} de $_totalSteps',
-                        style: context.textTheme.labelMedium?.copyWith(
-                          color: colors.textSecondary,
-                          fontFeatures: AppTypography.tabularFeatures,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -303,13 +407,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 child: ResponsiveContainer(
                   padding: EdgeInsets.zero,
                   child: AppButton.primary(
-                    label: _step == 4 ? 'Confirmar plano' : 'Continuar',
+                    label: _step == 4 ? 'Confirmar programa' : 'Continuar',
                     onPressed: _isCurrentStepValid ? _nextStep : null,
                   ),
                 ),
               ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -353,20 +458,51 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _buildBodyDataStep(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildPair(
+    BuildContext context, {
+    required bool isNarrow,
+    required Widget first,
+    required Widget second,
+    CrossAxisAlignment rowCrossAxisAlignment = CrossAxisAlignment.start,
+  }) {
+    if (isNarrow) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          first,
+          const SizedBox(height: 12),
+          second,
+        ],
+      );
+    }
+    return Row(
+      crossAxisAlignment: rowCrossAxisAlignment,
       children: [
-        _buildStepHeader(
-          context,
-          title: 'Seus dados corporais',
-          subtitle:
-              'Usamos isso apenas para calcular suas metas iniciais de carga e gasto calórico.',
-        ),
-        Row(
+        Expanded(child: first),
+        const SizedBox(width: 12),
+        Expanded(child: second),
+      ],
+    );
+  }
+
+  Widget _buildBodyDataStep(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 320;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: _SelectableOptionCard(
+            _buildStepHeader(
+              context,
+              title: 'Seus dados corporais',
+              subtitle:
+                  'Usamos isso apenas para calcular suas metas iniciais de carga e gasto calórico.',
+            ),
+            _buildPair(
+              context,
+              isNarrow: isNarrow,
+              rowCrossAxisAlignment: CrossAxisAlignment.center,
+              first: _SelectableOptionCard(
                 title: 'Masculino',
                 selected: _sex == 'M',
                 onTap: () {
@@ -374,10 +510,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   setState(() => _sex = 'M');
                 },
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _SelectableOptionCard(
+              second: _SelectableOptionCard(
                 title: 'Feminino',
                 selected: _sex == 'F',
                 onTap: () {
@@ -386,57 +519,51 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 },
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 18),
-        Row(
-          children: [
-            Expanded(
-              child: _NumericStepInput(
+            const SizedBox(height: 18),
+            _buildPair(
+              context,
+              isNarrow: isNarrow,
+              first: _NumericStepInput(
                 label: 'Idade',
                 controller: _ageController,
                 suffix: 'anos',
                 decimal: false,
+                errorText: _ageError,
                 onChanged: (_) => setState(() {}),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _NumericStepInput(
+              second: _NumericStepInput(
                 label: 'Altura',
                 controller: _heightController,
                 suffix: 'cm',
                 decimal: false,
+                errorText: _heightError,
                 onChanged: (_) => setState(() {}),
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _NumericStepInput(
+            const SizedBox(height: 12),
+            _buildPair(
+              context,
+              isNarrow: isNarrow,
+              first: _NumericStepInput(
                 label: 'Peso atual',
                 controller: _weightController,
                 suffix: 'kg',
                 decimal: true,
+                errorText: _weightError,
                 onChanged: (_) => setState(() {}),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _NumericStepInput(
+              second: _NumericStepInput(
                 label: '% Gordura (opc.)',
                 controller: _bodyFatController,
                 suffix: '%',
                 decimal: true,
+                errorText: _bodyFatError,
                 onChanged: (_) => setState(() {}),
               ),
             ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -548,35 +675,36 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               label: '$days dias por semana',
               selected: isSelected,
               button: true,
-              child: InkWell(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  setState(() {
-                    _daysPerWeek = days;
-                    _splitOptionIndex = 0;
-                  });
-                },
-                borderRadius: BorderRadius.circular(radius.medium),
-                child: Container(
-                  width: 52,
-                  height: 52,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? colors.primary
-                        : colors.surfaceElevated,
-                    borderRadius: BorderRadius.circular(radius.medium),
-                    border: Border.all(
-                      color: isSelected ? colors.primary : colors.border,
-                      width: 1.5,
-                    ),
+              child: Material(
+                color: isSelected ? colors.primary : colors.surfaceElevated,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(radius.medium),
+                  side: BorderSide(
+                    color: isSelected ? colors.primary : colors.border,
+                    width: 1.5,
                   ),
-                  child: Text(
-                    '$days',
-                    style: context.textTheme.titleLarge?.copyWith(
-                      color:
-                          isSelected ? colors.onPrimary : colors.textPrimary,
-                      fontFeatures: AppTypography.tabularFeatures,
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    setState(() {
+                      _daysPerWeek = days;
+                      _splitOptionIndex = 0;
+                    });
+                  },
+                  child: SizedBox(
+                    width: 52,
+                    height: 52,
+                    child: Center(
+                      child: Text(
+                        '$days',
+                        style: context.textTheme.titleLarge?.copyWith(
+                          color:
+                              isSelected ? colors.onPrimary : colors.textPrimary,
+                          fontFeatures: AppTypography.tabularFeatures,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -585,45 +713,37 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           }).toList(),
         ),
         const SizedBox(height: 24),
-        Container(
+        AppCard(
+          borderRadius: radius.xl,
+          borderColor: colors.primary.withValues(alpha: 0.45),
           padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: colors.surface,
-            borderRadius: BorderRadius.circular(radius.xl),
-            border: Border.all(
-              color: colors.primary.withValues(alpha: 0.45),
-            ),
-          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
+              SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    const LiftrBadge(
+                      label: 'Sugestão automática',
+                      tone: LiftrBadgeTone.brand,
                     ),
-                    decoration: BoxDecoration(
-                      color: colors.primaryMuted,
-                      borderRadius: BorderRadius.circular(radius.full),
-                    ),
-                    child: Text(
-                      'Sugestão automática',
-                      style: context.textTheme.labelMedium?.copyWith(
-                        color: colors.primaryLight,
+                    TextButton(
+                      onPressed: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _splitOptionIndex++);
+                      },
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size(48, 48),
                       ),
+                      child: const Text('Alternar'),
                     ),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () {
-                      HapticFeedback.selectionClick();
-                      setState(() => _splitOptionIndex++);
-                    },
-                    child: const Text('Alternar'),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 10),
               Text(
@@ -663,8 +783,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'DIVISÕES DISPONÍVEIS PARA $_daysPerWeek DIAS',
-                style: AppTypography.eyebrow(context),
+                'Divisões disponíveis para $_daysPerWeek dias',
+                style: context.textTheme.labelMedium?.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
               const SizedBox(height: 8),
               Wrap(
@@ -678,33 +800,36 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     label: 'Divisão ${option.name}',
                     selected: isSelected,
                     button: true,
-                    child: InkWell(
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        setState(() => _splitOptionIndex = idx);
-                      },
-                      borderRadius: BorderRadius.circular(radius.medium),
-                      child: Container(
-                        constraints: const BoxConstraints(minHeight: 44),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+                    child: Material(
+                      color: isSelected
+                          ? colors.primary
+                          : colors.surfaceElevated,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(radius.medium),
+                        side: BorderSide(
+                          color: isSelected ? colors.primary : colors.border,
                         ),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? colors.primary
-                              : colors.surfaceElevated,
-                          borderRadius: BorderRadius.circular(radius.medium),
-                          border: Border.all(
-                            color: isSelected ? colors.primary : colors.border,
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _splitOptionIndex = idx);
+                        },
+                        child: Container(
+                          constraints: const BoxConstraints(minHeight: 48),
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
                           ),
-                        ),
-                        child: Text(
-                          option.shortLabel,
-                          style: context.textTheme.labelMedium?.copyWith(
-                            color: isSelected
-                                ? colors.onPrimary
-                                : colors.textPrimary,
+                          child: Text(
+                            option.shortLabel,
+                            style: context.textTheme.labelMedium?.copyWith(
+                              color: isSelected
+                                  ? colors.onPrimary
+                                  : colors.textPrimary,
+                            ),
                           ),
                         ),
                       ),
@@ -761,27 +886,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: colors.surface,
-            borderRadius: BorderRadius.circular(radius.large),
-            border: Border.all(color: colors.border),
-          ),
-          child: const Column(
+        const AppCard(
+          padding: EdgeInsets.all(16),
+          child: Column(
             children: [
               _BulletRow(
-                icon: Icons.restaurant_outlined,
+                icon: Icons.restaurant_rounded,
                 text: 'Registre refeições por áudio ou texto em segundos',
               ),
               SizedBox(height: 14),
               _BulletRow(
-                icon: Icons.monitor_weight_outlined,
+                icon: Icons.monitor_weight_rounded,
                 text: 'Envie seu peso pela manhã para atualizar a tendência EMA',
               ),
               SizedBox(height: 14),
               _BulletRow(
-                icon: Icons.summarize_outlined,
+                icon: Icons.summarize_rounded,
                 text: 'Receba resumo pós-treino e relatório semanal todo domingo',
               ),
             ],
@@ -791,21 +911,28 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         AppButton.primary(
           label: 'Conectar WhatsApp',
           icon: Icons.link_rounded,
-          onPressed: () => _finish(whatsappConnected: true),
+          isLoading: _isSubmitting,
+          onPressed: _isSubmitting
+              ? null
+              : () => _finish(whatsappConnected: true),
         ),
         const SizedBox(height: 10),
         AppButton.secondary(
           label: 'Montar meu treino com IA',
           icon: Icons.auto_awesome_rounded,
-          onPressed: () => _finish(
-            whatsappConnected: false,
-            openAiGenerator: true,
-          ),
+          onPressed: _isSubmitting
+              ? null
+              : () => _finish(
+                    whatsappConnected: false,
+                    openAiGenerator: true,
+                  ),
         ),
         const SizedBox(height: 10),
         AppButton.text(
           label: 'Pular e fazer depois',
-          onPressed: () => _finish(whatsappConnected: false),
+          onPressed: _isSubmitting
+              ? null
+              : () => _finish(whatsappConnected: false),
         ),
       ],
     );
@@ -830,28 +957,20 @@ class _SelectableOptionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final radius = context.appRadius;
 
     return Semantics(
       selected: selected,
       button: true,
-      child: InkWell(
+      child: AppCard(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(radius.large),
-        child: Container(
-          constraints: BoxConstraints(minHeight: minHeight),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: selected
-                ? colors.primary.withValues(alpha: 0.12)
-                : colors.surface,
-            borderRadius: BorderRadius.circular(radius.large),
-            border: Border.all(
-              color: selected ? colors.primary : colors.border,
-              width: selected ? 1.5 : 1,
-            ),
-          ),
-          child: Row(
+        backgroundColor: selected
+            ? colors.primary.withValues(alpha: 0.12)
+            : colors.surface,
+        borderColor: selected ? colors.primary : colors.border,
+        borderWidth: selected ? 1.5 : 1,
+        constraints: BoxConstraints(minHeight: minHeight),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
             children: [
               Expanded(
                 child: Column(
@@ -898,7 +1017,6 @@ class _SelectableOptionCard extends StatelessWidget {
               ),
             ],
           ),
-        ),
       ),
     );
   }
@@ -911,6 +1029,7 @@ class _NumericStepInput extends StatelessWidget {
     required this.suffix,
     required this.decimal,
     required this.onChanged,
+    this.errorText,
   });
 
   final String label;
@@ -918,35 +1037,26 @@ class _NumericStepInput extends StatelessWidget {
   final String suffix;
   final bool decimal;
   final ValueChanged<String> onChanged;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.appColors;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: context.textTheme.labelMedium?.copyWith(
-            color: colors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          onChanged: onChanged,
-          keyboardType: TextInputType.numberWithOptions(decimal: decimal),
-          style: context.textTheme.titleLarge?.copyWith(
-            fontFeatures: AppTypography.tabularFeatures,
-          ),
-          decoration: InputDecoration(
-            suffixText: suffix,
-            suffixStyle: context.textTheme.bodySmall?.copyWith(
-              color: colors.textTertiary,
-            ),
-          ),
-        ),
+    return AppInput(
+      label: label,
+      controller: controller,
+      onChanged: onChanged,
+      keyboardType: TextInputType.numberWithOptions(decimal: decimal),
+      inputFormatters: [
+        if (decimal)
+          PtBrDecimalInputFormatter(maxDecimalDigits: 1)
+        else
+          FilteringTextInputFormatter.digitsOnly,
       ],
+      suffixText: suffix,
+      errorText: errorText,
+      style: context.textTheme.titleLarge?.copyWith(
+        fontFeatures: AppTypography.tabularFeatures,
+      ),
     );
   }
 }

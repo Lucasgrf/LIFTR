@@ -3,7 +3,9 @@ import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/set_template.dart';
 
 class SetTemplateRow extends StatelessWidget {
@@ -58,10 +60,14 @@ class SetTemplateRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final badgeText = getSetTypeBadge(template);
     final badgeColor = getSetTypeColor(context, template.setType);
+    final spacing = context.appSpacing;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      margin: const EdgeInsets.only(bottom: 6),
+      padding: EdgeInsets.symmetric(
+        horizontal: spacing.space12,
+        vertical: spacing.space8,
+      ),
+      margin: EdgeInsets.only(bottom: spacing.space8),
       decoration: BoxDecoration(
         color: context.appColors.surfaceVariant.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(context.appRadius.small),
@@ -70,110 +76,148 @@ class SetTemplateRow extends StatelessWidget {
           width: 0.8,
         ),
       ),
-      child: Row(
-        children: [
-          // Set Type Badge
-          Container(
-            width: 38,
-            height: 24,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: badgeColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(context.appRadius.small),
-              border: Border.all(
-                color: badgeColor.withValues(alpha: 0.4),
-                width: 0.8,
-              ),
-            ),
-            child: Text(
-              badgeText,
-              style: context.textTheme.labelSmall?.copyWith(
-                color: badgeColor,
-                fontWeight: FontWeight.w700,
-                fontSize: 10,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < 290;
+          final hasMeta = (!isCardio && template.restSeconds > 0) ||
+              (template.targetWeight != null && template.targetWeight! > 0);
 
-          // Target Reps / Minutes
-          Expanded(
-            flex: 3,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isCardio
-                      ? '${template.repRangeText} min'
-                      : '${template.repRangeText} reps',
-                  style: context.textTheme.bodyMedium?.copyWith(
-                    color: context.appColors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+          final metaWrap = Wrap(
+            spacing: spacing.space12,
+            runSpacing: spacing.space4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            alignment: isCompact ? WrapAlignment.start : WrapAlignment.end,
+            children: [
+              if (!isCardio && template.restSeconds > 0)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.timer_rounded,
+                      size: 14,
+                      color: context.appColors.textTertiary,
+                    ),
+                    SizedBox(width: spacing.space4),
+                    Flexible(
+                      child: Text(
+                        '${template.restSeconds}s',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textTheme.bodySmall?.copyWith(
+                          color: context.appColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                if (!isCardio && template.targetRirMin != null)
-                  Text(
-                    'RIR ${template.rirRangeText}',
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: context.appColors.textSecondary,
-                      fontSize: 11,
+              if (template.targetWeight != null && template.targetWeight! > 0)
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: spacing.space8,
+                    vertical: spacing.space4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: context.appColors.surfaceElevated,
+                    borderRadius:
+                        BorderRadius.circular(context.appRadius.small),
+                  ),
+                  child: Text(
+                    formatWeightKgPtBr(template.targetWeight!),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.labelSmall?.copyWith(
+                      color: context.appColors.primary,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-              ],
-            ),
-          ),
-
-          // Rest time
-          if (!isCardio && template.restSeconds > 0)
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.timer_outlined,
-                  size: 14,
-                  color: context.appColors.textTertiary,
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  '${template.restSeconds}s',
-                  style: context.textTheme.bodySmall?.copyWith(
-                    color: context.appColors.textSecondary,
-                    fontWeight: FontWeight.w500,
+            ],
+          );
+
+          return Row(
+            children: [
+              // Set Type Badge
+              ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 38, minHeight: 24),
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: spacing.space4),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: badgeColor.withValues(alpha: 0.15),
+                    borderRadius:
+                        BorderRadius.circular(context.appRadius.small),
+                    border: Border.all(
+                      color: badgeColor.withValues(alpha: 0.4),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Text(
+                    badgeText,
+                    style: context.textTheme.labelSmall?.copyWith(
+                      color: badgeColor,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-              ],
-            ),
-
-          // Target Weight if present
-          if (template.targetWeight != null && template.targetWeight! > 0) ...[
-            const SizedBox(width: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: context.appColors.surfaceElevated,
-                borderRadius: BorderRadius.circular(context.appRadius.small),
               ),
-              child: Text(
-                '${template.targetWeight!.toStringAsFixed(1)} kg',
-                style: context.textTheme.bodySmall?.copyWith(
-                  color: context.appColors.primary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 11,
+              SizedBox(width: spacing.space12),
+
+              // Target Reps / Minutes
+              Expanded(
+                flex: isCompact ? 1 : 3,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isCardio
+                          ? '${template.repRangeText} min'
+                          : '${template.repRangeText} reps',
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        color: context.appColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (!isCardio && template.targetRirMin != null)
+                      Text(
+                        'RIR ${template.rirRangeText}',
+                        style: context.textTheme.labelSmall?.copyWith(
+                          color: context.appColors.textSecondary,
+                        ),
+                      ),
+                    if (isCompact && hasMeta) ...[
+                      SizedBox(height: spacing.space4),
+                      metaWrap,
+                    ],
+                  ],
                 ),
               ),
-            ),
-          ],
 
-          if (onDelete != null) ...[
-            const SizedBox(width: 8),
-            IconButton(
-              icon: Icon(Icons.close_rounded, size: 16, color: context.appColors.textTertiary),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              onPressed: onDelete,
-            ),
-          ],
-        ],
+              if (!isCompact && hasMeta) ...[
+                SizedBox(width: spacing.space8),
+                Flexible(
+                  flex: 2,
+                  child: metaWrap,
+                ),
+              ],
+
+              if (onDelete != null) ...[
+                SizedBox(width: spacing.space4),
+                IconButton(
+                  icon: Icon(
+                    Icons.close_rounded,
+                    size: 16,
+                    color: context.appColors.textTertiary,
+                  ),
+                  tooltip: 'Remover série',
+                  constraints:
+                      const BoxConstraints(minWidth: 48, minHeight: 48),
+                  onPressed: onDelete,
+                ),
+              ],
+            ],
+          );
+        },
       ),
     );
   }

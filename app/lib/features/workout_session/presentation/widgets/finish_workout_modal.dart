@@ -7,9 +7,11 @@ import 'package:personal_fitness_os/core/constants/supabase_config.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
@@ -31,11 +33,13 @@ class FinishWorkoutModal extends ConsumerStatefulWidget {
     required this.session,
     required this.elapsedSeconds,
     required this.onFinished,
+    this.embedded = false,
   });
 
   final WorkoutSession session;
   final int elapsedSeconds;
   final VoidCallback onFinished;
+  final bool embedded;
 
   @override
   ConsumerState<FinishWorkoutModal> createState() => _FinishWorkoutModalState();
@@ -160,7 +164,7 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
                             ? meta.color
                             : meta.color.withValues(alpha: 0.72),
                       ),
-                      const SizedBox(height: 5),
+                      SizedBox(height: context.appSpacing.space4),
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(
@@ -168,7 +172,6 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
                           maxLines: 1,
                           softWrap: false,
                           style: context.textTheme.labelSmall?.copyWith(
-                            fontSize: 10,
                             fontWeight:
                                 isSelected ? FontWeight.w700 : FontWeight.w500,
                             color: isSelected
@@ -210,6 +213,184 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
             ? LiftrBadgeTone.brand
             : LiftrBadgeTone.warning);
 
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const LiftrSheetHeader(
+          title: 'Finalizar treino',
+        ),
+        const SizedBox(height: 16),
+        AppCard(
+          padding: const EdgeInsets.all(16),
+          backgroundColor: colors.surfaceSubtle,
+          child: Row(
+            children: [
+              Expanded(
+                child: _FinishMetricItem(
+                  value: '$minutes min',
+                  label: 'Duração',
+                  valueColor: colors.primaryLight,
+                ),
+              ),
+              Expanded(
+                child: _FinishMetricItem(
+                  value: '${widget.session.totalWorkingSetsCount}',
+                  label: 'Séries válidas',
+                  valueColor: fitnessColors.progressNeutral,
+                ),
+              ),
+              if (cardioSeconds > 0)
+                Expanded(
+                  child: _FinishMetricItem(
+                    value: formatCardioSeconds(cardioSeconds),
+                    label: 'Cardio',
+                    valueColor: colors.primaryLight,
+                  ),
+                )
+              else
+                Expanded(
+                  child: _FinishMetricItem(
+                    value: formatWeightKgPtBr(
+                      widget.session.totalVolumeKg,
+                      decimals: 0,
+                    ),
+                    label: 'Volume',
+                    valueColor: fitnessColors.progressUp,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        // Automatic RPE & Execution Score card
+        AppCard(
+          backgroundColor: colors.surfaceElevated,
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    Text(
+                      'Avaliação automática',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.textTheme.labelMedium?.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                    LiftrBadge(
+                      label: perf.scoreLabel,
+                      tone: scoreTone,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'RPE estimado',
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: colors.textTertiary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          perf.autoRpe
+                              .toStringAsFixed(1)
+                              .replaceAll('.', ','),
+                          style: context.textTheme.headlineMedium?.copyWith(
+                            color: colors.primaryLight,
+                            fontFeatures: AppTypography.tabularFeatures,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 36,
+                    color: colors.divider,
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Execução',
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: colors.textTertiary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${perf.executionScore}%',
+                          style: context.textTheme.headlineMedium?.copyWith(
+                            color: fitnessColors.progressUp,
+                            fontFeatures: AppTypography.tabularFeatures,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                perf.rationale,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Como você se sentiu?',
+          style: context.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 10),
+        _buildMoodSelector(context),
+        const SizedBox(height: 16),
+        AppInput(
+          label: 'Notas do treino (opcional)',
+          hint: 'Ex: Bati PR no agachamento com boa técnica...',
+          controller: _notesController,
+          maxLines: 2,
+          keyboardType: TextInputType.multiline,
+        ),
+        const SizedBox(height: 22),
+        AppButton.primary(
+          label: 'Salvar e concluir treino',
+          icon: Icons.check_circle_rounded,
+          isLoading: _isLoading,
+          onPressed: () => _submit(perf),
+        ),
+      ],
+    );
+
+    if (widget.embedded) {
+      return content;
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: colors.surface,
@@ -222,182 +403,7 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
         20,
         MediaQuery.viewInsetsOf(context).bottom + 24,
       ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const LiftrSheetHeader(
-              eyebrow: 'ENCERRAMENTO',
-              title: 'Finalizar treino',
-            ),
-            const SizedBox(height: 16),
-            AppCard(
-              padding: const EdgeInsets.all(16),
-              backgroundColor: colors.surfaceSubtle,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _FinishMetricItem(
-                      value: '${minutes}m',
-                      label: 'Duração',
-                      valueColor: colors.primaryLight,
-                    ),
-                  ),
-                  Expanded(
-                    child: _FinishMetricItem(
-                      value: '${widget.session.totalWorkingSetsCount}',
-                      label: 'Séries válidas',
-                      valueColor: fitnessColors.progressNeutral,
-                    ),
-                  ),
-                  if (cardioSeconds > 0)
-                    Expanded(
-                      child: _FinishMetricItem(
-                        value: formatCardioSeconds(cardioSeconds),
-                        label: 'Cardio',
-                        valueColor: colors.primaryLight,
-                      ),
-                    )
-                  else
-                    Expanded(
-                      child: _FinishMetricItem(
-                        value: '${widget.session.totalVolumeKg.toStringAsFixed(0)} kg',
-                        label: 'Volume',
-                        valueColor: fitnessColors.progressUp,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            // Automatic RPE & Execution Score card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: colors.surfaceElevated,
-                borderRadius: BorderRadius.circular(radius.large),
-                border: Border.all(color: colors.border),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: Wrap(
-                      alignment: WrapAlignment.spaceBetween,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: [
-                        Text(
-                          'AVALIAÇÃO AUTOMÁTICA',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.eyebrow(context),
-                        ),
-                        LiftrBadge(
-                          label: perf.scoreLabel,
-                          tone: scoreTone,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'RPE estimado',
-                              style: context.textTheme.labelSmall?.copyWith(
-                                color: colors.textTertiary,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              perf.autoRpe
-                                  .toStringAsFixed(1)
-                                  .replaceAll('.', ','),
-                              style: context.textTheme.headlineMedium?.copyWith(
-                                color: colors.primaryLight,
-                                fontFeatures: AppTypography.tabularFeatures,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        width: 1,
-                        height: 36,
-                        color: colors.divider,
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Execução',
-                              style: context.textTheme.labelSmall?.copyWith(
-                                color: colors.textTertiary,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '${perf.executionScore}%',
-                              style: context.textTheme.headlineMedium?.copyWith(
-                                color: fitnessColors.progressUp,
-                                fontFeatures: AppTypography.tabularFeatures,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    perf.rationale,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Como você se sentiu?',
-              style: context.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 10),
-            _buildMoodSelector(context),
-            const SizedBox(height: 16),
-            AppInput(
-              label: 'Notas do treino (opcional)',
-              hint: 'Ex: Bati PR no agachamento com boa técnica...',
-              controller: _notesController,
-              maxLines: 2,
-              keyboardType: TextInputType.multiline,
-            ),
-            const SizedBox(height: 22),
-            AppButton.primary(
-              label: 'Salvar e concluir treino',
-              icon: Icons.check_circle_rounded,
-              isLoading: _isLoading,
-              onPressed: () => _submit(perf),
-            ),
-          ],
-        ),
-      ),
+      child: SingleChildScrollView(child: content),
     );
   }
 }

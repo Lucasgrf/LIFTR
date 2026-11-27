@@ -8,7 +8,6 @@ class AppRadius extends ThemeExtension<AppRadius> {
     required this.full,
     this.none = 0,
     this.xs = 4,
-    this.xl = 16,
   });
 
   final double none;
@@ -16,8 +15,10 @@ class AppRadius extends ThemeExtension<AppRadius> {
   final double small;
   final double medium;
   final double large;
-  final double xl;
   final double full;
+
+  /// Alias pointing to [large].
+  double get xl => large;
 
   @override
   AppRadius copyWith({
@@ -26,7 +27,6 @@ class AppRadius extends ThemeExtension<AppRadius> {
     double? small,
     double? medium,
     double? large,
-    double? xl,
     double? full,
   }) {
     return AppRadius(
@@ -35,7 +35,6 @@ class AppRadius extends ThemeExtension<AppRadius> {
       small: small ?? this.small,
       medium: medium ?? this.medium,
       large: large ?? this.large,
-      xl: xl ?? this.xl,
       full: full ?? this.full,
     );
   }
@@ -49,7 +48,6 @@ class AppRadius extends ThemeExtension<AppRadius> {
       small: small + (other.small - small) * t,
       medium: medium + (other.medium - medium) * t,
       large: large + (other.large - large) * t,
-      xl: xl + (other.xl - xl) * t,
       full: full + (other.full - full) * t,
     );
   }
@@ -60,7 +58,6 @@ class AppRadius extends ThemeExtension<AppRadius> {
     small: 8,
     medium: 12,
     large: 16,
-    xl: 16,
     full: 999,
   );
 }

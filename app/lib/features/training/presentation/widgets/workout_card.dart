@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
 
@@ -26,8 +28,8 @@ class WorkoutCard extends StatelessWidget {
           children: [
             // Day of Week indicator box
             Container(
-              width: 50,
-              height: 50,
+              constraints: const BoxConstraints(minWidth: 52, minHeight: 52),
+              padding: EdgeInsets.all(context.appSpacing.space4),
               decoration: BoxDecoration(
                 color: context.appColors.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(context.appRadius.small),
@@ -44,19 +46,18 @@ class WorkoutCard extends StatelessWidget {
                     size: 20,
                     color: context.appColors.primary,
                   ),
-                  const SizedBox(height: 2),
+                  AppSpacing.verticalGap4,
                   Text(
                     workout.dayOfWeek != null ? _shortDay(workout.dayOfWeek!) : 'Livre',
                     style: context.textTheme.labelSmall?.copyWith(
                       color: context.appColors.primary,
                       fontWeight: FontWeight.w700,
-                      fontSize: 9,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 14),
+            AppSpacing.horizontalGap12,
 
             // Workout info
             Expanded(
@@ -70,8 +71,11 @@ class WorkoutCard extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
+                  AppSpacing.verticalGap4,
+                  Wrap(
+                    spacing: context.appSpacing.space8,
+                    runSpacing: context.appSpacing.space4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
                         workout.dayOfWeekLabel,
@@ -80,11 +84,18 @@ class WorkoutCard extends StatelessWidget {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Text('·', style: TextStyle(color: context.appColors.textTertiary)),
-                      const SizedBox(width: 8),
                       Text(
-                        '${workout.totalExercisesCount} exercícios',
+                        '·',
+                        style: context.textTheme.bodySmall?.copyWith(
+                          color: context.appColors.textTertiary,
+                        ),
+                      ),
+                      Text(
+                        pluralize(
+                          workout.totalExercisesCount,
+                          'exercício',
+                          'exercícios',
+                        ),
                         style: context.textTheme.bodySmall?.copyWith(
                           color: context.appColors.textSecondary,
                         ),
@@ -92,13 +103,12 @@ class WorkoutCard extends StatelessWidget {
                     ],
                   ),
                   if (workout.totalWorkingSetsCount > 0) ...[
-                    const SizedBox(height: 4),
+                    AppSpacing.verticalGap4,
                     Text(
-                      '${workout.totalWorkingSetsCount} séries válidas',
-                      style: context.textTheme.bodySmall?.copyWith(
+                      '${pluralize(workout.totalWorkingSetsCount, 'série', 'séries')} ${workout.totalWorkingSetsCount == 1 ? 'válida' : 'válidas'}',
+                      style: context.textTheme.labelSmall?.copyWith(
                         color: context.appColors.primary,
                         fontWeight: FontWeight.w600,
-                        fontSize: 11,
                       ),
                     ),
                   ],

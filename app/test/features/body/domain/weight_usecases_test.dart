@@ -6,7 +6,6 @@ import 'package:personal_fitness_os/features/body/domain/entities/weight_entry.d
 import 'package:personal_fitness_os/features/body/domain/entities/weight_stats.dart';
 import 'package:personal_fitness_os/features/body/domain/repositories/weight_repository.dart';
 import 'package:personal_fitness_os/features/body/domain/usecases/delete_weight_entry.dart';
-import 'package:personal_fitness_os/features/body/domain/usecases/get_weight_history.dart';
 import 'package:personal_fitness_os/features/body/domain/usecases/get_weight_stats.dart';
 import 'package:personal_fitness_os/features/body/domain/usecases/log_weight_entry.dart';
 
@@ -15,7 +14,6 @@ class MockWeightRepository extends Mock implements WeightRepository {}
 void main() {
   late MockWeightRepository mockRepo;
   late LogWeightEntryUseCase logWeightUseCase;
-  late GetWeightHistoryUseCase getWeightHistoryUseCase;
   late GetWeightStatsUseCase getWeightStatsUseCase;
   late DeleteWeightEntryUseCase deleteWeightUseCase;
 
@@ -29,7 +27,6 @@ void main() {
   setUp(() {
     mockRepo = MockWeightRepository();
     logWeightUseCase = LogWeightEntryUseCase(mockRepo);
-    getWeightHistoryUseCase = GetWeightHistoryUseCase(mockRepo);
     getWeightStatsUseCase = GetWeightStatsUseCase(mockRepo);
     deleteWeightUseCase = DeleteWeightEntryUseCase(mockRepo);
   });

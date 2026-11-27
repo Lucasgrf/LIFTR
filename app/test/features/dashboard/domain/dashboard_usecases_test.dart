@@ -3,15 +3,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:personal_fitness_os/core/errors/failures.dart';
 import 'package:personal_fitness_os/core/errors/result.dart';
 import 'package:personal_fitness_os/features/dashboard/domain/usecases/get_dashboard_data.dart';
-import 'package:personal_fitness_os/features/goals/domain/entities/goal.dart';
-import 'package:personal_fitness_os/features/goals/domain/entities/goal_category.dart';
-import 'package:personal_fitness_os/features/goals/domain/entities/goal_status.dart';
-import 'package:personal_fitness_os/features/goals/domain/repositories/goal_repository.dart';
 import 'package:personal_fitness_os/features/history/domain/repositories/history_repository.dart';
 import 'package:personal_fitness_os/features/history/domain/usecases/get_workout_history.dart';
-import 'package:personal_fitness_os/features/nutrition/domain/entities/daily_nutrition.dart';
-import 'package:personal_fitness_os/features/nutrition/domain/entities/nutrition_goal.dart';
-import 'package:personal_fitness_os/features/nutrition/domain/repositories/nutrition_repository.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
 import 'package:personal_fitness_os/features/training/domain/repositories/training_repository.dart';
@@ -21,15 +14,11 @@ import 'package:personal_fitness_os/features/workout_session/domain/repositories
 class MockTrainingRepository extends Mock implements TrainingRepository {}
 class MockSessionRepository extends Mock implements SessionRepository {}
 class MockHistoryRepository extends Mock implements HistoryRepository {}
-class MockNutritionRepository extends Mock implements NutritionRepository {}
-class MockGoalRepository extends Mock implements GoalRepository {}
 
 void main() {
   late MockTrainingRepository mockTrainingRepo;
   late MockSessionRepository mockSessionRepo;
   late MockHistoryRepository mockHistoryRepo;
-  late MockNutritionRepository mockNutritionRepo;
-  late MockGoalRepository mockGoalRepo;
 
   const tWorkout = Workout(
     id: 'w-1',
@@ -53,41 +42,14 @@ void main() {
     status: SessionStatus.inProgress,
   );
 
-  final tNutrition = DailyNutrition(
-    id: 'dn-1',
-    date: DateTime(2026, 8, 22),
-    goal: const NutritionGoal(
-      id: 'ng-1',
-      calories: 2500,
-      proteinGrams: 180,
-      carbsGrams: 280,
-      fatGrams: 70,
-    ),
-    meals: const [],
-  );
-
-  final tGoal = Goal(
-    id: 'g-1',
-    title: 'Chegar a 80kg',
-    category: GoalCategory.weight,
-    initialValue: 86.0,
-    targetValue: 80.0,
-    currentValue: 83.0,
-    unit: 'kg',
-    startedAt: DateTime(2026, 8, 1),
-    status: GoalStatus.active,
-  );
-
   setUp(() {
     mockTrainingRepo = MockTrainingRepository();
     mockSessionRepo = MockSessionRepository();
     mockHistoryRepo = MockHistoryRepository();
-    mockNutritionRepo = MockNutritionRepository();
-    mockGoalRepo = MockGoalRepository();
   });
 
   group('GetDashboardDataUseCase', () {
-    test('should aggregate active plan, session, stats, nutrition and goals correctly', () async {
+    test('should aggregate active plan, session and stats correctly', () async {
       final completedSession = tSession.copyWith(
         id: 'session-prev',
         workoutName: 'Treino Anterior',
@@ -106,17 +68,11 @@ void main() {
           )).thenAnswer((_) async => const Success([]));
       when(() => mockHistoryRepo.getCompletedSessions(limit: 1))
           .thenAnswer((_) async => Success([completedSession]));
-      when(() => mockNutritionRepo.getDailyNutrition(any()))
-          .thenAnswer((_) async => Success(tNutrition));
-      when(() => mockGoalRepo.getGoals(status: GoalStatus.active))
-          .thenAnswer((_) async => Success([tGoal]));
 
       final useCase = GetDashboardDataUseCase(
         trainingRepository: mockTrainingRepo,
         sessionRepository: mockSessionRepo,
         historyRepository: mockHistoryRepo,
-        nutritionRepository: mockNutritionRepo,
-        goalRepository: mockGoalRepo,
       );
 
       final result = await useCase.execute(
@@ -130,9 +86,6 @@ void main() {
       expect(data.lastCompletedSession?.id, 'session-prev');
       expect(data.hasLastCompletedSession, isTrue);
       expect(data.hasActiveSession, isTrue);
-      expect(data.hasNutrition, isTrue);
-      expect(data.hasActiveGoals, isTrue);
-      expect(data.activeGoals.length, 1);
       expect(data.weeklyStats.days.length, 7);
       expect(data.weeklyStats.targetWorkoutsCount, 1);
     });

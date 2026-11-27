@@ -7,6 +7,7 @@ import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_eyebrow.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
 
@@ -48,10 +49,10 @@ class RestTimerWidget extends ConsumerWidget {
             : 0.0);
 
     final statusLabel = isCompleted
-        ? 'DESCANSO CONCLUÍDO'
+        ? 'Descanso concluído'
         : isPaused
-            ? 'PAUSADO'
-            : 'DESCANSO';
+            ? 'Pausado'
+            : 'Descanso';
     final statusColor = isCompleted
         ? fitnessColors.progressUp
         : isPaused
@@ -87,27 +88,36 @@ class RestTimerWidget extends ConsumerWidget {
         curve: motion.curveStandard,
         alignment: Alignment.bottomCenter,
         child: isMinimized
-            ? _MinimizedFooterTimer(
-                timerState: timerState,
-                isCompleted: isCompleted,
-                isPaused: isPaused,
-                remainingRatio: remainingRatio,
-                statusColor: statusColor,
-                progressColor: progressColor,
-                onTogglePause: () {
-                  HapticFeedback.selectionClick();
-                  notifier.togglePauseResume();
-                },
-                onDismissCompleted: () {
-                  HapticFeedback.lightImpact();
-                  notifier.dismissCompleted();
-                },
-                onExpand: () {
-                  HapticFeedback.selectionClick();
-                  notifier.expand();
-                },
+            ? GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                excludeFromSemantics: true,
+                onTap: () {},
+                child: _MinimizedFooterTimer(
+                  timerState: timerState,
+                  isCompleted: isCompleted,
+                  isPaused: isPaused,
+                  remainingRatio: remainingRatio,
+                  statusColor: statusColor,
+                  progressColor: progressColor,
+                  onTogglePause: () {
+                    HapticFeedback.selectionClick();
+                    notifier.togglePauseResume();
+                  },
+                  onDismissCompleted: () {
+                    HapticFeedback.lightImpact();
+                    notifier.dismissCompleted();
+                  },
+                  onExpand: () {
+                    HapticFeedback.selectionClick();
+                    notifier.expand();
+                  },
+                ),
               )
-            : Semantics(
+            : GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                excludeFromSemantics: true,
+                onTap: () {},
+                child: Semantics(
                 container: true,
                 explicitChildNodes: true,
                 child: Container(
@@ -145,15 +155,9 @@ class RestTimerWidget extends ConsumerWidget {
                                           CrossAxisAlignment.start,
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Text(
+                                        LiftrEyebrow(
                                           statusLabel,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style:
-                                              AppTypography.eyebrow(context)
-                                                  .copyWith(
-                                            color: statusColor,
-                                          ),
+                                          color: statusColor,
                                         ),
                                         if (timerState.exerciseName !=
                                             null) ...[
@@ -311,6 +315,7 @@ class RestTimerWidget extends ConsumerWidget {
                   ),
                 ),
               ),
+            ),
       ),
     );
   }
@@ -350,108 +355,118 @@ class _MinimizedFooterTimer extends StatelessWidget {
       label: isCompleted
           ? 'Descanso concluído'
           : 'Descanso minimizado: ${timerState.formattedRemaining}',
-      child: Container(
-        decoration: BoxDecoration(
-          color: colors.surfaceElevated,
-          border: Border(
-            top: BorderSide(color: colors.border, width: 1),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            LiftrProgressBar(
-              progress: remainingRatio,
-              height: 2.5,
-              color: progressColor,
-              trackColor: colors.surfaceVariant,
-              borderRadius: 0,
+      child: Material(
+        color: colors.surfaceElevated,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(color: colors.border, width: 1),
             ),
-            InkWell(
-              onTap: onExpand,
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 54),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.timer_outlined,
-                      size: 18,
-                      color: statusColor,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              LiftrProgressBar(
+                progress: remainingRatio,
+                height: 2.5,
+                color: progressColor,
+                trackColor: colors.surfaceVariant,
+                borderRadius: 0,
+              ),
+              InkWell(
+                onTap: onExpand,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 54),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      isCompleted ? '00:00' : timerState.formattedRemaining,
-                      style: context.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: isCompleted
-                            ? fitnessColors.progressUp
-                            : colors.textPrimary,
-                        fontFeatures: AppTypography.tabularFeatures,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        isCompleted
-                            ? 'Descanso concluído'
-                            : (timerState.exerciseName ?? 'Descanso'),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.textTheme.labelSmall?.copyWith(
-                          color: isCompleted
-                              ? fitnessColors.progressUp
-                              : colors.textSecondary,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.timer_rounded,
+                          size: 18,
+                          color: statusColor,
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    if (isCompleted)
-                      _TimerActionChip(
-                        label: 'OK',
-                        semanticLabel: 'Fechar aviso de descanso concluído',
-                        isPrimary: true,
-                        onTap: onDismissCompleted,
-                      )
-                    else
-                      Semantics(
-                        label: isPaused
-                            ? 'Retomar descanso'
-                            : 'Pausar descanso',
-                        button: true,
-                        child: IconButton(
-                          onPressed: onTogglePause,
-                          constraints: const BoxConstraints(
-                            minWidth: 48,
-                            minHeight: 48,
-                          ),
-                          icon: Icon(
-                            isPaused
-                                ? Icons.play_arrow_rounded
-                                : Icons.pause_rounded,
-                            color: colors.textPrimary,
-                            size: 20,
+                        const SizedBox(width: 8),
+                        Text(
+                          isCompleted ? '00:00' : timerState.formattedRemaining,
+                          style: context.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: isCompleted
+                                ? fitnessColors.progressUp
+                                : colors.textPrimary,
+                            fontFeatures: AppTypography.tabularFeatures,
                           ),
                         ),
-                      ),
-                    Semantics(
-                      label: 'Expandir cronômetro de descanso',
-                      button: true,
-                      child: InkWell(
-                        onTap: onExpand,
-                        borderRadius: BorderRadius.circular(radius.small),
-                        child: const SizedBox(
-                          width: 48,
-                          height: 48,
-                          child: Icon(Icons.keyboard_arrow_up_rounded),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            isCompleted
+                                ? 'Descanso concluído'
+                                : (timerState.exerciseName ?? 'Descanso'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.textTheme.labelSmall?.copyWith(
+                              color: isCompleted
+                                  ? fitnessColors.progressUp
+                                  : colors.textSecondary,
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 4),
+                        if (isCompleted)
+                          _TimerActionChip(
+                            label: 'OK',
+                            semanticLabel: 'Fechar aviso de descanso concluído',
+                            isPrimary: true,
+                            onTap: onDismissCompleted,
+                          )
+                        else
+                          Semantics(
+                            label: isPaused
+                                ? 'Retomar descanso'
+                                : 'Pausar descanso',
+                            button: true,
+                            child: IconButton(
+                              tooltip: isPaused
+                                  ? 'Retomar descanso'
+                                  : 'Pausar descanso',
+                              onPressed: onTogglePause,
+                              constraints: const BoxConstraints(
+                                minWidth: 48,
+                                minHeight: 48,
+                              ),
+                              icon: Icon(
+                                isPaused
+                                    ? Icons.play_arrow_rounded
+                                    : Icons.pause_rounded,
+                                color: colors.textPrimary,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        Semantics(
+                          label: 'Expandir cronômetro de descanso',
+                          button: true,
+                          child: InkWell(
+                            onTap: onExpand,
+                            borderRadius: BorderRadius.circular(radius.small),
+                            child: const SizedBox(
+                              width: 48,
+                              height: 48,
+                              child: Icon(Icons.keyboard_arrow_up_rounded),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -479,28 +494,36 @@ class _TimerActionChip extends StatelessWidget {
     return Semantics(
       label: semanticLabel,
       button: true,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(radius.small),
-        child: Container(
-          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: isPrimary ? colors.primaryMuted : colors.surfaceVariant,
-            borderRadius: BorderRadius.circular(radius.small),
-            border: isPrimary
-                ? Border.all(color: colors.primary.withValues(alpha: 0.35))
-                : null,
-          ),
-          child: Text(
-            label,
-            maxLines: 1,
-            softWrap: false,
-            style: context.textTheme.labelMedium?.copyWith(
-              color: isPrimary ? colors.primaryLight : colors.textSecondary,
-              fontWeight: FontWeight.w700,
-              fontFeatures: AppTypography.tabularFeatures,
+      child: Material(
+        color: isPrimary ? colors.primaryMuted : colors.surfaceVariant,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radius.small),
+          side: isPrimary
+              ? BorderSide(color: colors.primary.withValues(alpha: 0.35))
+              : BorderSide.none,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(radius.small),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Center(
+                widthFactor: 1,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: context.textTheme.labelMedium?.copyWith(
+                    color:
+                        isPrimary ? colors.primaryLight : colors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                    fontFeatures: AppTypography.tabularFeatures,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -528,17 +551,18 @@ class _TimerIconActionChip extends StatelessWidget {
     return Semantics(
       label: semanticLabel,
       button: true,
-      child: InkWell(
-        onTap: onTap,
+      child: Material(
+        color: colors.surfaceVariant,
         borderRadius: BorderRadius.circular(radius.small),
-        child: Container(
-          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: colors.surfaceVariant,
-            borderRadius: BorderRadius.circular(radius.small),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(radius.small),
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: Icon(icon, size: 20, color: colors.textPrimary),
           ),
-          child: Icon(icon, size: 20, color: colors.textPrimary),
         ),
       ),
     );

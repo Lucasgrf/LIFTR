@@ -6,12 +6,10 @@ import 'package:personal_fitness_os/core/theme/app_theme.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/logged_set.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/session_exercise.dart';
-import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/logged_set_row.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/rest_timer_widget.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/session_exercise_card.dart';
-import 'package:personal_fitness_os/features/workout_session/presentation/widgets/session_timer_header.dart';
 
 void main() {
   const tExercise = Exercise(
@@ -41,41 +39,15 @@ void main() {
     sets: [tLoggedSet],
   );
 
-  final tSession = WorkoutSession(
-    id: 's-1',
-    userId: 'u-1',
-    workoutName: 'Treino A - Peito e Tríceps',
-    startedAt: DateTime.now().subtract(const Duration(minutes: 25)),
-    durationSeconds: 1500,
-    exercises: [tSessionExercise],
-  );
-
   Widget createWidgetUnderTest(Widget child, {List<Override> overrides = const []}) {
     return ProviderScope(
       overrides: overrides,
       child: MaterialApp(
         theme: AppTheme.dark(),
-        home: Scaffold(body: child),
+        home: Scaffold(body: SingleChildScrollView(child: child)),
       ),
     );
   }
-
-  group('SessionTimerHeader Widget Test', () {
-    testWidgets('should render elapsed time, working sets count and volume in kg', (tester) async {
-      await tester.pumpWidget(
-        createWidgetUnderTest(
-          SessionTimerHeader(
-            session: tSession,
-            elapsedSeconds: 1500, // 25:00
-          ),
-        ),
-      );
-
-      expect(find.text('25:00'), findsOneWidget);
-      expect(find.text('1 séries válidas'), findsOneWidget);
-      expect(find.text('800 kg'), findsOneWidget);
-    });
-  });
 
   group('LoggedSetRow Widget Test', () {
     testWidgets('should render set number, weight and reps when logged', (tester) async {
@@ -129,6 +101,79 @@ void main() {
       expect(find.text('Supino Reto com Barra'), findsOneWidget);
       expect(find.text('CHEST'), findsOneWidget);
       expect(find.text('1/3 séries'), findsOneWidget);
+    });
+
+    testWidgets(
+        'exposes full Semantics labels on abbreviated BL. and SÉR. column headers',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(600, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final handle = tester.ensureSemantics();
+      try {
+        await tester.pumpWidget(
+          createWidgetUnderTest(
+            SessionExerciseCard(
+              sessionExercise: tSessionExercise,
+              onLogSet: ({
+                required sessionExerciseId,
+                required setNumber,
+                required setType,
+                required weightKg,
+                required repsCompleted,
+                durationSeconds,
+                rirActual,
+                restSeconds = 180,
+                dropSets = const [],
+                existingSetId,
+              }) async {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('SÉR.'), findsOneWidget);
+        expect(find.bySemanticsLabel('Série'), findsOneWidget);
+
+        const tCardioSessionExercise = SessionExercise(
+          id: 'se-cardio',
+          sessionId: 's-1',
+          exerciseId: 'ex-cardio',
+          exercise: Exercise(
+            id: 'ex-cardio',
+            name: 'Esteira',
+            primaryMuscleGroup: 'cardio',
+            equipment: 'machine',
+          ),
+          targetSetsCount: 1,
+        );
+
+        await tester.pumpWidget(
+          createWidgetUnderTest(
+            SessionExerciseCard(
+              sessionExercise: tCardioSessionExercise,
+              onLogSet: ({
+                required sessionExerciseId,
+                required setNumber,
+                required setType,
+                required weightKg,
+                required repsCompleted,
+                durationSeconds,
+                rirActual,
+                restSeconds = 0,
+                dropSets = const [],
+                existingSetId,
+              }) async {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('BL.'), findsOneWidget);
+        expect(find.bySemanticsLabel('Bloco'), findsOneWidget);
+      } finally {
+        handle.dispose();
+      }
     });
   });
 

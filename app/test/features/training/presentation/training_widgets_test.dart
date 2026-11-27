@@ -4,10 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/theme/app_theme.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/set_template.dart';
-import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
 import 'package:personal_fitness_os/features/training/presentation/widgets/set_template_row.dart';
-import 'package:personal_fitness_os/features/training/presentation/widgets/training_plan_card.dart';
 import 'package:personal_fitness_os/features/training/presentation/widgets/workout_card.dart';
 
 void main() {
@@ -28,23 +26,6 @@ void main() {
     trainingPlanId: 'p-1',
     name: 'Treino A - Peito e Tríceps',
     dayOfWeek: 1,
-  );
-
-  const tPlan = TrainingPlan(
-    id: 'p-1',
-    userId: 'u-1',
-    name: 'Hipertrofia 4x',
-    description: 'Divisão Upper/Lower com foco em progressão.',
-    isActive: true,
-    workouts: [tWorkout],
-  );
-
-  const tArchivedPlan = TrainingPlan(
-    id: 'p-2',
-    userId: 'u-1',
-    name: 'Fullbody 3x',
-    isActive: false,
-    workouts: [],
   );
 
   Widget createWidgetUnderTest(Widget child) {
@@ -69,6 +50,81 @@ void main() {
       expect(find.text('RIR 1-2'), findsOneWidget);
       expect(find.text('90s'), findsOneWidget);
     });
+
+    for (final textScale in [1.0, 1.3, 2.0]) {
+      testWidgets(
+          'A11Y-01 delete button >= 48dp and zero overflow at 320dp (${textScale}x)',
+          (tester) async {
+        await tester.binding.setSurfaceSize(const Size(320, 800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final handle = tester.ensureSemantics();
+        try {
+          var deleted = false;
+          const weightedTemplate = SetTemplate(
+            id: 'st-2',
+            workoutExerciseId: 'we-1',
+            setNumber: 1,
+            setType: SetType.working,
+            targetRepsMin: 8,
+            targetRepsMax: 12,
+            targetRirMin: 1,
+            targetRirMax: 2,
+            restSeconds: 90,
+            targetWeight: 82.5,
+          );
+
+          await tester.pumpWidget(
+            ProviderScope(
+              child: MediaQuery(
+                data: MediaQueryData(
+                  size: const Size(320, 800),
+                  textScaler: TextScaler.linear(textScale),
+                ),
+                child: MaterialApp(
+                  theme: AppTheme.dark(),
+                  home: Scaffold(
+                    body: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: SetTemplateRow(
+                        template: weightedTemplate,
+                        onDelete: () => deleted = true,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(tester.takeException(), isNull);
+          expect(
+            tester.getSize(find.byType(IconButton)).width,
+            greaterThanOrEqualTo(48.0),
+          );
+          expect(
+            tester.getSize(find.byType(IconButton)).height,
+            greaterThanOrEqualTo(48.0),
+          );
+
+          if (textScale == 1.0) {
+            await expectLater(
+              tester,
+              meetsGuideline(androidTapTargetGuideline),
+            );
+            await expectLater(
+              tester,
+              meetsGuideline(labeledTapTargetGuideline),
+            );
+            await tester.tap(find.byType(IconButton));
+            expect(deleted, isTrue);
+          }
+        } finally {
+          handle.dispose();
+        }
+      });
+    }
   });
 
   group('WorkoutCard Widget Test', () {
@@ -81,53 +137,6 @@ void main() {
 
       expect(find.text('Treino A - Peito e Tríceps'), findsOneWidget);
       expect(find.text('Segunda-feira'), findsOneWidget);
-    });
-  });
-
-  group('TrainingPlanCard Widget Test', () {
-    testWidgets('should render active plan badge and title', (tester) async {
-      await tester.pumpWidget(
-        createWidgetUnderTest(
-          const TrainingPlanCard(plan: tPlan),
-        ),
-      );
-
-      expect(find.text('PLANO ATIVO'), findsOneWidget);
-      expect(find.text('Hipertrofia 4x'), findsOneWidget);
-    });
-
-    testWidgets('should render archived badge and activate button for inactive plan', (tester) async {
-      var activated = false;
-      await tester.pumpWidget(
-        createWidgetUnderTest(
-          TrainingPlanCard(
-            plan: tArchivedPlan,
-            onActivate: () => activated = true,
-          ),
-        ),
-      );
-
-      expect(find.text('ARQUIVADO'), findsOneWidget);
-      expect(find.text('Tornar Ativo'), findsOneWidget);
-
-      await tester.tap(find.text('Tornar Ativo'));
-      await tester.pump();
-
-      expect(activated, isTrue);
-    });
-
-    testWidgets('should render loading indicator when isActivating is true', (tester) async {
-      await tester.pumpWidget(
-        createWidgetUnderTest(
-          TrainingPlanCard(
-            plan: tArchivedPlan,
-            isActivating: true,
-            onActivate: () {},
-          ),
-        ),
-      );
-
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
   });
 }

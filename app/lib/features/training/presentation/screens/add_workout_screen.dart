@@ -6,6 +6,7 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
+import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
 
 class AddWorkoutScreen extends ConsumerStatefulWidget {
@@ -92,13 +93,19 @@ class _AddWorkoutScreenState extends ConsumerState<AddWorkoutScreen> {
     return Scaffold(
       backgroundColor: context.appColors.background,
       appBar: AppBar(
-        title: const Text('Adicionar Treino ao Plano'),
+        title: const Text('Adicionar treino ao programa'),
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+      body: SafeArea(
+        top: false,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+          padding: const EdgeInsets.fromLTRB(0, 16, 0, 40),
           children: [
+            ResponsiveContainer(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
             AppInput(
               label: 'Nome do Treino *',
               hint: 'Ex: Treino A - Superior (Peito/Costas)',
@@ -132,7 +139,9 @@ class _AddWorkoutScreenState extends ConsumerState<AddWorkoutScreen> {
                       value: d['day'] as int?,
                       child: Text(
                         d['label'] as String,
-                        style: TextStyle(color: context.appColors.textPrimary),
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: context.appColors.textPrimary,
+                        ),
                       ),
                     );
                   }).toList(),
@@ -174,7 +183,11 @@ class _AddWorkoutScreenState extends ConsumerState<AddWorkoutScreen> {
               isLoading: _isLoading,
               onPressed: _submit,
             ),
+                ],
+              ),
+            ),
           ],
+        ),
         ),
       ),
     );

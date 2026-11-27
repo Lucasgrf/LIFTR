@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
@@ -75,61 +77,112 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
     final plansAsync = ref.watch(trainingPlansStateProvider);
     ref.watch(workoutQueueProvider);
 
+    Future<void> refreshPlans() async {
+      final hadData = ref.read(trainingPlansStateProvider).hasValue;
+      final failure =
+          await ref.read(trainingPlansStateProvider.notifier).refresh();
+      if (failure != null && hadData && context.mounted) {
+        final msg = userFacingMessage(
+          failure,
+          stackTrace: failure.stackTrace,
+          context: 'TrainingListScreen.refreshPlans',
+        );
+        context.showSnackBar('$msg Mostrando dados salvos.');
+      }
+    }
+
     return Scaffold(
       backgroundColor: colors.background,
       body: plansAsync.when(
         loading: () => const SafeArea(child: LiftrScreenSkeleton()),
-        error: (error, _) => ErrorStateWidget(
-          message: error.toString(),
-          onRetry: () => ref.read(trainingPlansStateProvider.notifier).refresh(),
+        error: (error, st) => RefreshIndicator(
+          color: colors.primary,
+          onRefresh: refreshPlans,
+          child: LayoutBuilder(
+            builder: (context, constraints) => ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: ErrorStateWidget(
+                    message: userFacingMessage(
+                      error,
+                      stackTrace: st,
+                      context: 'TrainingListScreen.build',
+                    ),
+                    safetyNote: offlineSafetyNoteFor(error),
+                    onRetry: refreshPlans,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
         data: (plans) {
           if (plans.isEmpty) {
             return SafeArea(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+              child: RefreshIndicator(
+                color: colors.primary,
+                onRefresh: refreshPlans,
+                child: LayoutBuilder(
+                  builder: (context, constraints) => ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(24),
                     children: [
-                      EmptyStateWidget(
-                        icon: Icons.fitness_center_rounded,
-                        title: 'Nenhum programa cadastrado',
-                        subtitle:
-                            'Crie seu programa com IA, importe o treino de alguém ou monte manualmente.',
-                        actionLabel: 'Criar Programa',
-                        onAction: () => context.push('/training/new'),
-                      ),
                       ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 280),
-                        child: Column(
-                          children: [
-                            TextButton.icon(
-                              onPressed: () =>
-                                  context.push('/training/ai-generator'),
-                              style: TextButton.styleFrom(
-                                minimumSize: const Size(48, 48),
-                                foregroundColor: colors.primaryLight,
+                        constraints: BoxConstraints(
+                          minHeight: (constraints.maxHeight - 48)
+                              .clamp(0.0, double.infinity),
+                        ),
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              EmptyStateWidget(
+                                icon: Icons.fitness_center_rounded,
+                                title: 'Nenhum programa cadastrado',
+                                subtitle:
+                                    'Crie seu programa com IA, importe o treino de alguém ou monte manualmente.',
+                                actionLabel: 'Criar Programa',
+                                onAction: () => context.push('/training/new'),
                               ),
-                              icon: const Icon(
-                                Icons.auto_awesome_rounded,
-                                size: 18,
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 280),
+                                child: Column(
+                                  children: [
+                                    TextButton.icon(
+                                      onPressed: () =>
+                                          context.push('/training/ai-generator'),
+                                      style: TextButton.styleFrom(
+                                        minimumSize: const Size(48, 48),
+                                        foregroundColor: colors.primaryLight,
+                                      ),
+                                      icon: const Icon(
+                                        Icons.auto_awesome_rounded,
+                                        size: 18,
+                                      ),
+                                      label: const Text('Montar treino com IA'),
+                                    ),
+                                    TextButton.icon(
+                                      onPressed: () =>
+                                          ImportPlanSheet.show(context),
+                                      style: TextButton.styleFrom(
+                                        minimumSize: const Size(48, 48),
+                                        foregroundColor: colors.textSecondary,
+                                      ),
+                                      icon: const Icon(
+                                        Icons.qr_code_scanner_rounded,
+                                        size: 18,
+                                      ),
+                                      label: const Text(
+                                        'Importar treino por código',
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              label: const Text('Montar treino com IA'),
-                            ),
-                            TextButton.icon(
-                              onPressed: () => ImportPlanSheet.show(context),
-                              style: TextButton.styleFrom(
-                                minimumSize: const Size(48, 48),
-                                foregroundColor: colors.textSecondary,
-                              ),
-                              icon: const Icon(
-                                Icons.qr_code_scanner_rounded,
-                                size: 18,
-                              ),
-                              label: const Text('Importar treino por código'),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -147,9 +200,9 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
 
           return RefreshIndicator(
             color: colors.primary,
-            onRefresh: () =>
-                ref.read(trainingPlansStateProvider.notifier).refresh(),
+            onRefresh: refreshPlans,
             child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(0, 12, 0, 36),
               children: [
                 ResponsiveContainer(
@@ -159,35 +212,30 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
                       // Header
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'PROGRAMA ATIVO',
-                                    style: AppTypography.eyebrow(context),
+                        child: Builder(
+                          builder: (context) {
+                            final isCompact =
+                                MediaQuery.sizeOf(context).width < 360 ||
+                                    MediaQuery.textScalerOf(context).scale(14) >
+                                        18;
+                            final titleBlock = Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Treino',
+                                  style: context.textTheme.displayMedium,
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  '${activePlan.name} · ${pluralize(orderedWorkouts.length, 'sessão', 'sessões')}',
+                                  style: context.textTheme.bodySmall?.copyWith(
+                                    color: colors.textSecondary,
+                                    fontFeatures: AppTypography.tabularFeatures,
                                   ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    'Treino',
-                                    style: context.textTheme.displayMedium,
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    '${activePlan.name} · ${orderedWorkouts.length} sessões',
-                                    style: context.textTheme.bodySmall?.copyWith(
-                                      color: colors.textSecondary,
-                                      fontFeatures:
-                                          AppTypography.tabularFeatures,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            TextButton(
+                                ),
+                              ],
+                            );
+                            final switchBtn = TextButton(
                               onPressed: () => SwitchProgramSheet.show(
                                 context,
                                 plans: plans,
@@ -197,25 +245,52 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
                                 foregroundColor: colors.primaryLight,
                               ),
                               child: const Text('Trocar programa'),
-                            ),
-                          ],
+                            );
+
+                            if (isCompact) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  titleBlock,
+                                  const SizedBox(height: 4),
+                                  switchBtn,
+                                ],
+                              );
+                            }
+
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(child: titleBlock),
+                                switchBtn,
+                              ],
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(height: 12),
 
                       // Rotating Queue Header
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Fila rotativa',
-                            style: context.textTheme.titleMedium,
-                          ),
-                          Text(
-                            'ARRASTE PARA ORDENAR',
-                            style: AppTypography.eyebrow(context),
-                          ),
-                        ],
+                      SizedBox(
+                        width: double.infinity,
+                        child: Wrap(
+                          alignment: WrapAlignment.spaceBetween,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: [
+                            Text(
+                              'Fila rotativa',
+                              style: context.textTheme.titleMedium,
+                            ),
+                            Text(
+                              'Arraste para ordenar',
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: colors.textTertiary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 10),
 
@@ -294,8 +369,8 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
                               minimumSize: const Size(48, 48),
                               foregroundColor: colors.textSecondary,
                             ),
-                            icon: const Icon(Icons.ios_share_rounded, size: 17),
-                            label: const Text('Compartilhar plano'),
+                            icon: Icon(Icons.adaptive.share, size: 17),
+                            label: const Text('Compartilhar programa'),
                           ),
                           TextButton.icon(
                             onPressed: () => context.push(
@@ -362,117 +437,166 @@ class _QueueWorkoutCard extends StatelessWidget {
         borderRadius: radius.large,
         onTap: onEdit,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: isNext ? 62 : 50),
-          child: Row(
-            children: [
-              ReorderableDragStartListener(
-                index: index,
-                child: Semantics(
-                  label: 'Reordenar ${workout.name}',
-                  child: SizedBox(
-                    width: 40,
-                    height: 48,
-                    child: Icon(
-                      Icons.drag_handle_rounded,
-                      color: colors.textTertiary,
-                      size: 20,
-                    ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxWidth < 310 ||
+                MediaQuery.textScalerOf(context).scale(14) > 18;
+
+            final dragHandle = ReorderableDragStartListener(
+              index: index,
+              child: Semantics(
+                label: 'Reordenar ${workout.name}',
+                child: SizedBox(
+                  width: 40,
+                  height: 48,
+                  child: Icon(
+                    Icons.drag_handle_rounded,
+                    color: colors.textTertiary,
+                    size: 20,
                   ),
                 ),
               ),
-              const SizedBox(width: 4),
-              if (isNext)
-                const LiftrBadge(
-                  label: 'Próximo',
-                  tone: LiftrBadgeTone.brand,
-                )
-              else
-                SizedBox(
-                  width: 36,
-                  child: Text(
-                    '${index + 1}º',
-                    textAlign: TextAlign.center,
-                    style: context.textTheme.labelMedium?.copyWith(
-                      color: colors.textTertiary,
-                      fontFeatures: AppTypography.tabularFeatures,
-                    ),
-                  ),
-                ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      workout.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.textTheme.titleSmall,
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      '${workout.totalExercisesCount} exercícios · ${workout.totalWorkingSetsCount} séries',
-                      style: context.textTheme.labelSmall?.copyWith(
-                        color: colors.textSecondary,
+            );
+
+            final orderBadge = isNext
+                ? const LiftrBadge(
+                    label: 'Próximo',
+                    tone: LiftrBadgeTone.brand,
+                  )
+                : SizedBox(
+                    width: 36,
+                    child: Text(
+                      '${index + 1}º',
+                      textAlign: TextAlign.center,
+                      style: context.textTheme.labelMedium?.copyWith(
+                        color: colors.textTertiary,
                         fontFeatures: AppTypography.tabularFeatures,
                       ),
                     ),
-                  ],
+                  );
+
+            final infoColumn = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  workout.name,
+                  maxLines: isCompact ? 2 : 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.textTheme.titleSmall,
                 ),
-              ),
-              if (isNext) ...[
-                const SizedBox(width: 6),
-                SizedBox(
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: isStarting ? null : onStart,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(64, 48),
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      backgroundColor: colors.primary,
-                      foregroundColor: colors.onPrimary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(radius.small),
-                      ),
-                    ),
-                    child: const Text('Iniciar'),
-                  ),
-                ),
-                PopupMenuButton<String>(
-                  icon: Icon(
-                    Icons.more_vert_rounded,
+                const SizedBox(height: 3),
+                Text(
+                  '${workout.totalExercisesCount} exercícios · ${workout.totalWorkingSetsCount} séries',
+                  style: context.textTheme.labelSmall?.copyWith(
                     color: colors.textSecondary,
+                    fontFeatures: AppTypography.tabularFeatures,
                   ),
-                  color: colors.surfaceElevated,
-                  onSelected: (value) {
-                    if (value == 'edit') {
-                      onEdit();
-                    } else if (value == 'skip') {
-                      onSkipToEnd?.call();
-                    }
-                  },
-                  itemBuilder: (ctx) => [
-                    const PopupMenuItem(
-                      value: 'edit',
-                      child: Text('Editar sessão'),
+                ),
+              ],
+            );
+
+            final startButton = ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: ElevatedButton(
+                onPressed: isStarting ? null : onStart,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(64, 48),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  backgroundColor: colors.primary,
+                  foregroundColor: colors.onPrimary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(radius.small),
+                  ),
+                ),
+                child: const Text('Iniciar'),
+              ),
+            );
+
+            final menuButton = PopupMenuButton<String>(
+              icon: Icon(
+                Icons.more_vert_rounded,
+                color: colors.textSecondary,
+              ),
+              color: colors.surfaceElevated,
+              onSelected: (value) {
+                if (value == 'edit') {
+                  onEdit();
+                } else if (value == 'skip') {
+                  onSkipToEnd?.call();
+                }
+              },
+              itemBuilder: (ctx) => [
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: Text('Editar sessão'),
+                ),
+                if (onSkipToEnd != null)
+                  const PopupMenuItem(
+                    value: 'skip',
+                    child: Text('Pular para o fim da fila'),
+                  ),
+              ],
+            );
+
+            final trailingChevron = Icon(
+              Icons.chevron_right_rounded,
+              color: colors.textTertiary,
+              size: 20,
+            );
+
+            if (isCompact) {
+              return ConstrainedBox(
+                constraints: BoxConstraints(minHeight: isNext ? 62 : 50),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        dragHandle,
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              orderBadge,
+                              const SizedBox(height: 4),
+                              infoColumn,
+                            ],
+                          ),
+                        ),
+                        if (isNext) menuButton else trailingChevron,
+                      ],
                     ),
-                    if (onSkipToEnd != null)
-                      const PopupMenuItem(
-                        value: 'skip',
-                        child: Text('Pular para o fim da fila'),
-                      ),
+                    if (isNext) ...[
+                      const SizedBox(height: 8),
+                      startButton,
+                    ],
                   ],
                 ),
-              ] else
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: colors.textTertiary,
-                  size: 20,
-                ),
-            ],
-          ),
+              );
+            }
+
+            return ConstrainedBox(
+              constraints: BoxConstraints(minHeight: isNext ? 62 : 50),
+              child: Row(
+                children: [
+                  dragHandle,
+                  const SizedBox(width: 4),
+                  orderBadge,
+                  const SizedBox(width: 10),
+                  Expanded(child: infoColumn),
+                  if (isNext) ...[
+                    const SizedBox(width: 6),
+                    startButton,
+                    menuButton,
+                  ] else
+                    trailingChevron,
+                ],
+              ),
+            );
+          },
         ),
       ),
     );

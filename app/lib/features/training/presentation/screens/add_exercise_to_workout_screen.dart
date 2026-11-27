@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
+import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
+import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/widgets/exercise_card.dart';
@@ -25,6 +29,26 @@ class AddExerciseToWorkoutScreen extends ConsumerStatefulWidget {
     super.key,
   });
 
+  static const List<int> restOptions = [60, 90, 120, 150, 180, 240];
+
+  /// Builds the rest duration options for the dropdown, preserving any
+  /// custom [currentSeconds] value outside [restOptions] without mutating it.
+  static List<int> restDropdownValuesFor(int currentSeconds) {
+    if (restOptions.contains(currentSeconds)) {
+      return restOptions;
+    }
+    return [...restOptions, currentSeconds]..sort();
+  }
+
+  static String formatRestOptionLabel(int seconds) {
+    if (!restOptions.contains(seconds)) {
+      return '${seconds}s (personalizado)';
+    }
+    final mins = seconds ~/ 60;
+    final secs = (seconds % 60).toString().padLeft(2, '0');
+    return '${seconds}s ($mins:$secs)';
+  }
+
   final String planId;
   final String workoutId;
 
@@ -36,6 +60,8 @@ class AddExerciseToWorkoutScreen extends ConsumerStatefulWidget {
 class _AddExerciseToWorkoutScreenState
     extends ConsumerState<AddExerciseToWorkoutScreen> {
   late final TextEditingController _searchController;
+  String _searchQuery = '';
+  String? _selectedMuscle;
   Exercise? _selectedExercise;
 
   // Set parameters
@@ -58,6 +84,14 @@ class _AddExerciseToWorkoutScreenState
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _clearFilters() {
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+      _selectedMuscle = null;
+    });
   }
 
   Future<void> _submit() async {
@@ -117,7 +151,10 @@ class _AddExerciseToWorkoutScreenState
         context.pop();
       },
       (failure) {
-        context.showSnackBar('Erro ao adicionar exercício: ${failure.message}', isError: true);
+        context.showSnackBar(
+          userFacingMessage(failure, context: 'AddExerciseToWorkoutScreen._submit'),
+          isError: true,
+        );
       },
     );
   }
@@ -128,81 +165,116 @@ class _AddExerciseToWorkoutScreenState
       return _buildPrescribeSetsView();
     }
 
-    final filteredExercisesAsync = ref.watch(filteredExercisesListProvider);
-    final searchQuery = ref.watch(exerciseSearchQueryProvider);
+    final exercisesAsync = ref.watch(exerciseListStateProvider);
+    final filteredExercisesAsync = exercisesAsync.whenData(
+      (exercises) => filterExercises(
+        exercises,
+        query: _searchQuery,
+        selectedMuscle: _selectedMuscle,
+      ),
+    );
+    final hasActiveFilter = _searchQuery.isNotEmpty || _selectedMuscle != null;
 
     return Scaffold(
       backgroundColor: context.appColors.background,
       appBar: AppBar(
         title: const Text('Selecionar Exercício'),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: AppInput(
-              hint: 'Buscar exercício por nome...',
-              controller: _searchController,
-              prefix: Icon(Icons.search_rounded, color: context.appColors.textTertiary),
-              suffix: searchQuery.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear_rounded, size: 18),
-                      onPressed: () {
-                        _searchController.clear();
-                        ref.read(exerciseSearchQueryProvider.notifier).state = '';
-                      },
-                    )
-                  : null,
-              onChanged: (value) {
-                ref.read(exerciseSearchQueryProvider.notifier).state = value;
-              },
-            ),
-          ),
-          const MuscleFilterChips(),
-          const SizedBox(height: 8),
+      body: SafeArea(
+        top: false,
+        child: ResponsiveContainer(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: AppInput(
+                  hint: 'Buscar exercício por nome...',
+                  controller: _searchController,
+                  prefix: Icon(Icons.search_rounded, color: context.appColors.textTertiary),
+                  suffix: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear_rounded, size: 18),
+                          tooltip: 'Limpar busca',
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        )
+                      : null,
+                  onChanged: (value) {
+                    setState(() => _searchQuery = value);
+                  },
+                ),
+              ),
+              MuscleFilterChips(
+                horizontalPadding: 0,
+                selectedMuscle: _selectedMuscle,
+                onSelected: (value) => setState(() => _selectedMuscle = value),
+              ),
+              const SizedBox(height: 8),
 
-          Expanded(
-            child: filteredExercisesAsync.when(
-              loading: () => const LoadingWidget(),
-              error: (err, _) => Center(child: Text('Erro: $err')),
-              data: (exercises) {
-                if (exercises.isEmpty) {
-                  return const EmptyStateWidget(
-                    icon: Icons.search_off_rounded,
-                    title: 'Nenhum exercício encontrado',
-                    subtitle: 'Tente alterar os termos de busca.',
-                  );
-                }
+              Expanded(
+                child: filteredExercisesAsync.when(
+                  loading: () => const LoadingWidget(),
+                  error: (err, st) => ErrorStateWidget(
+                    message: userFacingMessage(
+                      err,
+                      stackTrace: st,
+                      context: 'AddExerciseToWorkoutScreen.build',
+                    ),
+                    safetyNote: offlineSafetyNoteFor(err),
+                    onRetry: () =>
+                        ref.read(exerciseListStateProvider.notifier).refresh(),
+                  ),
+                  data: (exercises) {
+                    if (exercises.isEmpty) {
+                      return EmptyStateWidget(
+                        icon: Icons.search_off_rounded,
+                        title: 'Nenhum exercício encontrado',
+                        subtitle: hasActiveFilter
+                            ? 'Tente alterar os termos de busca ou limpar os filtros.'
+                            : 'Nenhum exercício disponível no catálogo.',
+                        actionLabel: hasActiveFilter
+                            ? (_searchQuery.isNotEmpty
+                                ? 'Limpar busca'
+                                : 'Limpar filtros')
+                            : null,
+                        onAction: hasActiveFilter ? _clearFilters : null,
+                      );
+                    }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 24),
-                  itemCount: exercises.length,
-                  itemBuilder: (context, index) {
-                    final exercise = exercises[index];
-                    return ExerciseCard(
-                      exercise: exercise,
-                      onTap: () {
-                        final recommendedRest = exercise.isCardio
-                            ? 60
-                            : RestDurationResolver.resolve(
-                                targetRepsMin: _repsMin,
-                                targetRepsMax: _repsMax,
-                                movementPattern: exercise.movementPattern,
-                                primaryMuscleGroup: exercise.primaryMuscleGroup,
-                                equipment: exercise.equipment,
-                              );
-                        setState(() {
-                          _selectedExercise = exercise;
-                          _restSeconds = recommendedRest;
-                        });
+                    return ListView.builder(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      itemCount: exercises.length,
+                      itemBuilder: (context, index) {
+                        final exercise = exercises[index];
+                        return ExerciseCard(
+                          exercise: exercise,
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          onTap: () {
+                            final recommendedRest = exercise.isCardio
+                                ? 60
+                                : RestDurationResolver.resolve(
+                                    targetRepsMin: _repsMin,
+                                    targetRepsMax: _repsMax,
+                                    movementPattern: exercise.movementPattern,
+                                    primaryMuscleGroup: exercise.primaryMuscleGroup,
+                                    equipment: exercise.equipment,
+                                  );
+                            setState(() {
+                              _selectedExercise = exercise;
+                              _restSeconds = recommendedRest;
+                            });
+                          },
+                        );
                       },
                     );
                   },
-                );
-              },
-            ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -222,16 +294,26 @@ class _AddExerciseToWorkoutScreenState
         appBar: AppBar(
           title: const Text('Prescrever Séries'),
           leading: IconButton(
+            tooltip: 'Voltar',
             icon: const Icon(Icons.arrow_back_rounded),
             onPressed: () => setState(() => _selectedExercise = null),
           ),
         ),
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
-          children: [
-          // Selected Exercise Card
-          ExerciseCard(exercise: exercise),
-          const SizedBox(height: 16),
+        body: SafeArea(
+          top: false,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(0, 12, 0, 40),
+            children: [
+              ResponsiveContainer(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+            // Selected Exercise Card
+            ExerciseCard(
+              exercise: exercise,
+              margin: const EdgeInsets.symmetric(vertical: 8),
+            ),
+            const SizedBox(height: 16),
 
           // Working Sets count
           AppCard(
@@ -273,69 +355,89 @@ class _AddExerciseToWorkoutScreenState
                 const Divider(height: 24),
 
                 // Rep Range
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Faixa de Repetições',
-                      style: context.textTheme.bodyMedium?.copyWith(
-                        color: context.appColors.textPrimary,
-                        fontWeight: FontWeight.w600,
+                SizedBox(
+                  width: double.infinity,
+                  child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      Text(
+                        'Faixa de Repetições',
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: context.appColors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    Row(
-                      children: [
-                        _buildSmallNumberSelector(
-                          value: _repsMin,
-                          onChanged: (v) => setState(() => _repsMin = v),
-                          min: 1,
-                          max: _repsMax,
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8),
-                          child: Text('a'),
-                        ),
-                        _buildSmallNumberSelector(
-                          value: _repsMax,
-                          onChanged: (v) => setState(() => _repsMax = v),
-                          min: _repsMin,
-                          max: 50,
-                        ),
-                        const SizedBox(width: 6),
-                        const Text('reps'),
-                      ],
-                    ),
-                  ],
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildSmallNumberSelector(
+                            value: _repsMin,
+                            onChanged: (v) => setState(() => _repsMin = v),
+                            min: 1,
+                            max: _repsMax,
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 8),
+                            child: Text('a'),
+                          ),
+                          _buildSmallNumberSelector(
+                            value: _repsMax,
+                            onChanged: (v) => setState(() => _repsMax = v),
+                            min: _repsMin,
+                            max: 50,
+                          ),
+                          const SizedBox(width: 6),
+                          const Text('reps'),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
                 const Divider(height: 24),
 
                 // Rest seconds
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Tempo de Descanso',
-                      style: context.textTheme.bodyMedium?.copyWith(
-                        color: context.appColors.textPrimary,
-                        fontWeight: FontWeight.w600,
+                SizedBox(
+                  width: double.infinity,
+                  child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      Text(
+                        'Tempo de Descanso',
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: context.appColors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    DropdownButton<int>(
-                      value: _restSeconds,
-                      dropdownColor: context.appColors.surfaceElevated,
-                      items: const [
-                        DropdownMenuItem(value: 60, child: Text('60s (1:00)')),
-                        DropdownMenuItem(value: 90, child: Text('90s (1:30)')),
-                        DropdownMenuItem(value: 120, child: Text('120s (2:00)')),
-                        DropdownMenuItem(value: 150, child: Text('150s (2:30)')),
-                        DropdownMenuItem(value: 180, child: Text('180s (3:00)')),
-                        DropdownMenuItem(value: 240, child: Text('240s (4:00)')),
-                      ],
-                      onChanged: (v) {
-                        if (v != null) setState(() => _restSeconds = v);
-                      },
-                    ),
-                  ],
+                      DropdownButton<int>(
+                        value: _restSeconds,
+                        dropdownColor: context.appColors.surfaceElevated,
+                        items: AddExerciseToWorkoutScreen.restDropdownValuesFor(
+                          _restSeconds,
+                        )
+                            .map(
+                              (v) => DropdownMenuItem<int>(
+                                value: v,
+                                child: Text(
+                                  AddExerciseToWorkoutScreen
+                                      .formatRestOptionLabel(v),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (v) {
+                          if (v != null) {
+                            setState(() => _restSeconds = v);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -348,8 +450,12 @@ class _AddExerciseToWorkoutScreenState
             isLoading: _isLoading,
             onPressed: _submit,
           ),
-        ],
-      ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        ),
       ),
     );
   }
@@ -388,18 +494,27 @@ class _AddExerciseToWorkoutScreenState
           children: [
             IconButton(
               icon: const Icon(Icons.remove_circle_outline_rounded),
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+              tooltip: 'Diminuir $title',
               onPressed: onDecrement,
               color: context.appColors.primary,
             ),
-            Text(
-              '$value',
-              style: context.textTheme.titleMedium?.copyWith(
-                color: context.appColors.textPrimary,
-                fontWeight: FontWeight.bold,
+            SizedBox(
+              width: 28,
+              child: Text(
+                '$value',
+                textAlign: TextAlign.center,
+                style: context.textTheme.titleMedium?.copyWith(
+                  color: context.appColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontFeatures: AppTypography.tabularFeatures,
+                ),
               ),
             ),
             IconButton(
               icon: const Icon(Icons.add_circle_outline_rounded),
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+              tooltip: 'Aumentar $title',
               onPressed: onIncrement,
               color: context.appColors.primary,
             ),

@@ -1,20 +1,24 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
+import 'package:personal_fitness_os/core/providers/clock_provider.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_confirm_dialog.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/core/widgets/offline_banner_widget.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
@@ -27,6 +31,7 @@ import 'package:personal_fitness_os/features/workout_session/domain/services/res
 import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/finish_workout_modal.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/rest_timer_widget.dart';
+import 'package:personal_fitness_os/features/workout_session/presentation/widgets/session_elapsed_text.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/session_exercise_card.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/swap_exercise_sheet.dart';
 
@@ -44,35 +49,73 @@ class WorkoutSessionScreen extends ConsumerStatefulWidget {
 }
 
 class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
-  Timer? _ticker;
-  int _elapsedSeconds = 0;
   int _expandedIndex = 0;
+  int _collapseManualSignal = 0;
+  bool _leavingSession = false;
+  bool _popHandled = false;
   final Map<String, Exercise> _swappedExercises = {};
+  final Map<String, SessionExerciseGuard> _exerciseGuards = {};
 
-  @override
-  void initState() {
-    super.initState();
-    _startTicker();
+  bool get _hasPendingInvalidEdit =>
+      _exerciseGuards.values.any((g) => g.hasInvalidUnsavedEdit());
+
+  void _showActiveSessionRemainingSnackBar() {
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Treino continua ativo. Você pode retomá-lo em "Hoje".',
+        ),
+      ),
+    );
   }
 
-  void _startTicker() {
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) {
-        setState(() => _elapsedSeconds++);
+  Future<bool> _resolveInvalidEditsBeforeLeave(
+    List<SessionExercise> exercises,
+  ) async {
+    if (!_hasPendingInvalidEdit) return true;
+    final shouldDiscard = await showLiftrConfirmDialog(
+      context,
+      title: 'Há uma série com valores inválidos',
+      message:
+          'Corrija os valores antes de continuar ou descarte as alterações não salvas.',
+      confirmLabel: 'Descartar',
+      cancelLabel: 'Corrigir',
+      icon: Icons.warning_amber_rounded,
+    );
+
+    if (!mounted) return false;
+    if (shouldDiscard) {
+      for (final guard in _exerciseGuards.values) {
+        if (guard.hasInvalidUnsavedEdit()) {
+          guard.discardInvalidEdits();
+        }
       }
-    });
+      return true;
+    }
+
+    for (var i = 0; i < exercises.length; i++) {
+      final guard = _exerciseGuards[exercises[i].id];
+      if (guard != null && guard.hasInvalidUnsavedEdit()) {
+        if (_expandedIndex != i) {
+          setState(() => _expandedIndex = i);
+        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) guard.focusInvalidEdit();
+        });
+        break;
+      }
+    }
+    return false;
   }
 
-  @override
-  void dispose() {
-    _ticker?.cancel();
-    super.dispose();
-  }
-
-  String _formatElapsed(int totalSeconds) {
-    final m = totalSeconds ~/ 60;
-    final s = totalSeconds % 60;
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  Future<void> _handlePopWithInvalidEdits(
+    List<SessionExercise> exercises,
+  ) async {
+    final canLeave = await _resolveInvalidEditsBeforeLeave(exercises);
+    if (!canLeave || !mounted) return;
+    _showActiveSessionRemainingSnackBar();
+    _popHandled = true;
+    Navigator.of(context).pop();
   }
 
   Future<void> _handleLogSet({
@@ -123,29 +166,89 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
     );
   }
 
+  Future<void> _handleRestoreSet(LoggedSet deletedSet) async {
+    final useCase = ref.read(restoreLoggedSetUseCaseProvider);
+    final result = await useCase.execute(deletedSet);
+    if (!mounted) return;
+
+    result.fold(
+      (_) {
+        ref.invalidate(liveSessionDetailProvider(widget.sessionId));
+      },
+      (failure) {
+        context.showSnackBar(
+          'Erro ao restaurar série: ${failure.message}',
+          isError: true,
+        );
+      },
+    );
+  }
+
   Future<void> _handleDeleteSet(
     String setId, {
     String? exerciseName,
-    int? setNumber,
+    String? sessionExerciseId,
+    LoggedSet? deletedSet,
+    bool isCardio = false,
   }) async {
     final useCase = ref.read(deleteLoggedSetUseCaseProvider);
     final result = await useCase.execute(setId);
+    if (!mounted) return;
 
     result.fold(
       (_) {
         ref.invalidate(liveSessionDetailProvider(widget.sessionId));
         final timerState = ref.read(restTimerNotifierProvider);
         if (timerState.isVisible &&
-            setNumber != null &&
-            timerState.setNumber == setNumber &&
+            deletedSet != null &&
+            timerState.setNumber == deletedSet.setNumber &&
             (exerciseName == null || timerState.exerciseName == exerciseName)) {
           ref.read(restTimerNotifierProvider.notifier).stop();
         }
-        context.showSnackBar('Série desfeita.');
+        if (deletedSet != null) {
+          final messenger = ScaffoldMessenger.maybeOf(context);
+          messenger?.hideCurrentSnackBar();
+          messenger?.showSnackBar(
+            SnackBar(
+              content: Text('Série ${deletedSet.setNumber} desmarcada'),
+              action: SnackBarAction(
+                label: 'Desfazer',
+                onPressed: () => _handleRestoreSet(deletedSet),
+              ),
+            ),
+          );
+        } else {
+          context.showSnackBar('Série desfeita.');
+        }
       },
       (failure) {
         context.showSnackBar(
           'Erro ao desfazer série: ${failure.message}',
+          isError: true,
+        );
+      },
+    );
+  }
+
+  Future<void> _handleAddExercise(
+    WorkoutSession session,
+    Exercise chosen,
+  ) async {
+    final useCase = ref.read(addExerciseToSessionUseCaseProvider);
+    final result = await useCase.execute(
+      sessionId: session.id,
+      exerciseId: chosen.id,
+      sortOrder: session.exercises.length,
+    );
+
+    if (!mounted) return;
+    result.fold(
+      (_) {
+        ref.invalidate(liveSessionDetailProvider(widget.sessionId));
+      },
+      (failure) {
+        context.showSnackBar(
+          'Erro ao adicionar exercício: ${failure.message}',
           isError: true,
         );
       },
@@ -190,82 +293,43 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
   }
 
   Future<void> _confirmAbandonSession() async {
-    final colors = context.appColors;
-    final radius = context.appRadius;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        contentPadding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: colors.danger.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(radius.medium),
-              ),
-              child: Icon(Icons.close_rounded, color: colors.danger),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              'Descartar treino?',
-              style: ctx.textTheme.titleLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'As séries registradas nesta sessão serão perdidas.',
-              style: ctx.textTheme.bodySmall?.copyWith(
-                color: colors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            AppButton.destructive(
-              label: 'Descartar treino',
-              onPressed: () => Navigator.of(ctx).pop(true),
-            ),
-            const SizedBox(height: 6),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: TextButton(
-                onPressed: () => Navigator.of(ctx).pop(false),
-                child: Text(
-                  'Continuar treinando',
-                  style: ctx.textTheme.labelMedium?.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    final confirmed = await showLiftrConfirmDialog(
+      context,
+      title: 'Descartar treino?',
+      message: 'As séries registradas nesta sessão serão perdidas.',
+      confirmLabel: 'Descartar treino',
+      cancelLabel: 'Continuar treinando',
+      icon: Icons.close_rounded,
     );
 
-    if (confirmed == true) {
+    if (confirmed) {
       final useCase = ref.read(abandonWorkoutSessionUseCaseProvider);
       await useCase.execute(widget.sessionId);
       ref.read(restTimerNotifierProvider.notifier).stop();
       if (!mounted) return;
+      _leavingSession = true;
       context.go('/');
     }
   }
 
-  void _openFinishModal(WorkoutSession session) {
-    showModalBottomSheet<void>(
+  Future<void> _openFinishModal(WorkoutSession session) async {
+    final canProceed = await _resolveInvalidEditsBeforeLeave(session.exercises);
+    if (!canProceed || !mounted) return;
+    final elapsedSeconds = SessionElapsedText.computeElapsedSeconds(
+      session.startedAt,
+      now: ref.read(appClockProvider)(),
+    );
+    showLiftrSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (ctx) => FinishWorkoutModal(
         session: session,
-        elapsedSeconds: _elapsedSeconds,
+        elapsedSeconds: elapsedSeconds,
+        embedded: true,
         onFinished: () {
           ref.read(restTimerNotifierProvider.notifier).stop();
+          if (mounted) {
+            _leavingSession = true;
+          }
           context.go('/session/${session.id}/summary');
         },
       ),
@@ -277,6 +341,7 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
     final colors = context.appColors;
     final fitnessColors = context.fitnessColors;
     final radius = context.appRadius;
+    final spacing = context.appSpacing;
     final settings = ref.watch(userSettingsProvider);
     ref.watch(sessionAutoSyncProvider);
     final isOffline = ref.watch(isOfflineModeProvider);
@@ -289,7 +354,32 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
       restTimerNotifierProvider.select((s) => s.isMinimized),
     );
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) {
+          if (_popHandled) {
+            _popHandled = false;
+            return;
+          }
+          if (!_leavingSession) {
+            _showActiveSessionRemainingSnackBar();
+          }
+          return;
+        }
+        if (!_hasPendingInvalidEdit) {
+          if (!_leavingSession) {
+            _showActiveSessionRemainingSnackBar();
+          }
+          _popHandled = true;
+          Navigator.of(context).pop();
+          return;
+        }
+        final exercises =
+            sessionAsync.asData?.value.exercises ?? const <SessionExercise>[];
+        _handlePopWithInvalidEdits(exercises);
+      },
+      child: Scaffold(
       backgroundColor: colors.background,
       body: SafeArea(
         bottom: false,
@@ -300,8 +390,13 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
             Expanded(
               child: sessionAsync.when(
                 loading: () => const LiftrScreenSkeleton(showHero: false),
-                error: (err, _) => ErrorStateWidget(
-                  message: err.toString(),
+                error: (err, st) => ErrorStateWidget(
+                  message: userFacingMessage(
+                    err,
+                    stackTrace: st,
+                    context: 'WorkoutSessionScreen.build',
+                  ),
+                  safetyNote: offlineSafetyNoteFor(err),
                   onRetry: () =>
                       ref.invalidate(liveSessionDetailProvider(widget.sessionId)),
                 ),
@@ -324,13 +419,16 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
             final allCompleted = totalProgressUnits > 0 &&
                 completedProgressUnits >= totalProgressUnits;
             final cardioSeconds = session.totalCardioDurationSeconds;
-            final subtitleText = [
-              _formatElapsed(_elapsedSeconds),
+            final metaParts = [
               if (totalTargetSets > 0 || completedSets > 0)
                 '$completedSets/$totalTargetSets séries',
               if (cardioSeconds > 0)
                 '${formatCardioSeconds(cardioSeconds)} cardio',
-            ].join(' · ');
+            ];
+            final subtitleStyle = context.textTheme.labelSmall?.copyWith(
+              color: colors.textSecondary,
+              fontFeatures: AppTypography.tabularFeatures,
+            );
 
             return Column(
               children: [
@@ -341,25 +439,27 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(6, 6, 12, 8),
+                        padding: EdgeInsets.fromLTRB(
+                          spacing.space4,
+                          spacing.space8,
+                          spacing.space12,
+                          spacing.space8,
+                        ),
                         child: Row(
                           children: [
-                            Semantics(
-                              label: 'Descartar treino',
-                              button: true,
-                              child: IconButton(
-                                onPressed: _confirmAbandonSession,
-                                constraints: const BoxConstraints(
-                                  minWidth: 48,
-                                  minHeight: 48,
-                                ),
-                                icon: Icon(
-                                  Icons.close_rounded,
-                                  color: colors.textSecondary,
-                                ),
+                            IconButton(
+                              onPressed: _confirmAbandonSession,
+                              tooltip: 'Descartar treino',
+                              constraints: const BoxConstraints(
+                                minWidth: 48,
+                                minHeight: 48,
+                              ),
+                              icon: Icon(
+                                Icons.close_rounded,
+                                color: colors.textSecondary,
                               ),
                             ),
-                            const SizedBox(width: 4),
+                            SizedBox(width: spacing.space4),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -371,56 +471,66 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                     style: context.textTheme.titleLarge,
                                   ),
                                   const SizedBox(height: 2),
-                                  Text(
-                                    subtitleText,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: context.textTheme.labelSmall
-                                        ?.copyWith(
-                                      color: colors.textSecondary,
-                                      fontFeatures:
-                                          AppTypography.tabularFeatures,
-                                    ),
+                                  Wrap(
+                                    children: [
+                                      SessionElapsedText(
+                                        startedAt: session.startedAt,
+                                        nowProvider: ref.watch(appClockProvider),
+                                        style: subtitleStyle,
+                                      ),
+                                      if (metaParts.isNotEmpty)
+                                        Text(
+                                          ' · ${metaParts.join(' · ')}',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: subtitleStyle,
+                                        ),
+                                    ],
                                   ),
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: spacing.space8),
                             Semantics(
                               label: 'Finalizar treino',
                               button: true,
-                              child: InkWell(
-                                onTap: () {
-                                  HapticFeedback.lightImpact();
-                                  _openFinishModal(session);
-                                },
+                              child: Material(
+                                color: allCompleted
+                                    ? fitnessColors.progressUp
+                                    : fitnessColors.progressUp
+                                        .withValues(alpha: 0.14),
                                 borderRadius:
                                     BorderRadius.circular(radius.small),
-                                child: Container(
-                                  constraints: const BoxConstraints(
-                                    minHeight: 48,
-                                    minWidth: 82,
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                  ),
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: allCompleted
-                                        ? fitnessColors.progressUp
-                                        : fitnessColors.progressUp
-                                            .withValues(alpha: 0.14),
-                                    borderRadius:
-                                        BorderRadius.circular(radius.small),
-                                  ),
-                                  child: Text(
-                                    'Finalizar',
-                                    style: context.textTheme.labelMedium
-                                        ?.copyWith(
-                                      color: allCompleted
-                                          ? fitnessColors.onSuccess
-                                          : fitnessColors.progressUp,
-                                      fontWeight: FontWeight.w700,
+                                clipBehavior: Clip.antiAlias,
+                                child: InkWell(
+                                  onTap: () {
+                                    HapticFeedback.lightImpact();
+                                    _openFinishModal(session);
+                                  },
+                                  borderRadius:
+                                      BorderRadius.circular(radius.small),
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      minHeight: 48,
+                                      minWidth: 72,
+                                    ),
+                                    child: Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: spacing.space12,
+                                      ),
+                                      child: Center(
+                                        widthFactor: 1,
+                                        child: Text(
+                                          'Finalizar',
+                                          style: context.textTheme.labelMedium
+                                              ?.copyWith(
+                                            color: allCompleted
+                                                ? fitnessColors.onSuccess
+                                                : fitnessColors.progressUp,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -452,12 +562,22 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                 subtitle:
                                     'Adicione exercícios para começar seu treino.',
                                 actionLabel: 'Adicionar Exercício',
-                                onAction: () => context.push('/exercises'),
+                                onAction: () => SwapExerciseSheet.show(
+                                  context,
+                                  currentExercise: null,
+                                  title: 'Adicionar exercício',
+                                  subtitle: 'Catálogo de exercícios',
+                                  closeSemanticLabel:
+                                      'Fechar seleção de exercício',
+                                  onSelect: (chosen) =>
+                                      _handleAddExercise(session, chosen),
+                                ),
                               ),
                             ),
-                            const SafeArea(
+                            SafeArea(
                               top: false,
-                              child: RestTimerWidget(stepSeconds: 15),
+                              bottom: restVisible,
+                              child: const RestTimerWidget(stepSeconds: 15),
                             ),
                           ],
                         )
@@ -479,14 +599,19 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                 }
                                 return false;
                               },
-                              child: ListView.builder(
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.translucent,
+                                excludeFromSemantics: true,
+                                onTap: () => setState(() => _collapseManualSignal++),
+                                child: ListView.builder(
                                 padding: EdgeInsets.fromLTRB(
                                   0,
-                                  12,
+                                  spacing.space12,
                                   0,
-                                  !restVisible
-                                      ? 40
-                                      : (restMinimized ? 84 : 188),
+                                  (!restVisible
+                                          ? 40.0
+                                          : (restMinimized ? 84.0 : 188.0)) +
+                                      (allCompleted ? 88.0 : 0.0),
                                 ),
                                 itemCount: session.exercises.length,
                                 itemBuilder: (context, index) {
@@ -516,6 +641,14 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                             session.exercises.length,
                                         weightIncrement: increment,
                                         showRir: false,
+                                        collapseSignal: _collapseManualSignal,
+                                        onRegisterExerciseGuard: (guard) {
+                                          if (guard == null) {
+                                            _exerciseGuards.remove(se.id);
+                                          } else {
+                                            _exerciseGuards[se.id] = guard;
+                                          }
+                                        },
                                         onToggleExpand: () => setState(() {
                                           _expandedIndex =
                                               _expandedIndex == index
@@ -587,7 +720,9 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                           return _handleDeleteSet(
                                             setId,
                                             exerciseName: se.exercise?.name,
-                                            setNumber: matched?.setNumber,
+                                            sessionExerciseId: se.id,
+                                            deletedSet: matched,
+                                            isCardio: se.isCardio,
                                           );
                                         },
                                       ),
@@ -596,13 +731,50 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                 },
                               ),
                             ),
-                            const Positioned(
+                            ),
+                            Positioned(
                               bottom: 0,
                               left: 0,
                               right: 0,
-                              child: SafeArea(
-                                top: false,
-                                child: RestTimerWidget(stepSeconds: 15),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SafeArea(
+                                    top: false,
+                                    bottom: restVisible && !allCompleted,
+                                    child: const RestTimerWidget(stepSeconds: 15),
+                                  ),
+                                  if (allCompleted)
+                                    Material(
+                                      color: colors.surface,
+                                      child: SafeArea(
+                                        top: false,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            border: Border(
+                                              top: BorderSide(
+                                                color: colors.border,
+                                              ),
+                                            ),
+                                          ),
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: spacing.space16,
+                                            vertical: spacing.space12,
+                                          ),
+                                          child: ResponsiveContainer(
+                                            child: AppButton.primary(
+                                              label: 'Finalizar treino',
+                                              icon: Icons.check_circle_rounded,
+                                              onPressed: () {
+                                                HapticFeedback.lightImpact();
+                                                _openFinishModal(session);
+                                              },
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
                           ],
@@ -615,6 +787,7 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

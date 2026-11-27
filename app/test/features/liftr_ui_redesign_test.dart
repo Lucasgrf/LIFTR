@@ -20,10 +20,6 @@ import 'package:personal_fitness_os/features/body/presentation/providers/weight_
 import 'package:personal_fitness_os/features/dashboard/domain/entities/dashboard_data.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/screens/dashboard_screen.dart';
-import 'package:personal_fitness_os/features/dashboard/presentation/widgets/dashboard_active_goals_card.dart';
-import 'package:personal_fitness_os/features/dashboard/presentation/widgets/dashboard_nutrition_card.dart';
-import 'package:personal_fitness_os/features/dashboard/presentation/widgets/dashboard_stats_grid.dart';
-import 'package:personal_fitness_os/features/dashboard/presentation/widgets/weekly_streak_widget.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
 import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
@@ -160,6 +156,10 @@ class _FakeSessionRepository implements SessionRepository {
   @override
   Future<Result<void, Failure>> deleteLoggedSet(String setId) async =>
       const Success(null);
+
+  @override
+  Future<Result<LoggedSet, Failure>> restoreLoggedSet(LoggedSet set) async =>
+      Success(set);
 
   @override
   Future<Result<WorkoutSession, Failure>> finishSession({
@@ -456,7 +456,7 @@ void main() {
       expect(darkColors.surface, const Color(0xFF1A1A1F));
       expect(darkColors.primary, const Color(0xFF72A987));
       expect(darkColors.onPrimary, const Color(0xFF0D0D0F));
-      expect(darkColors.danger, const Color(0xFFD96B6B));
+      expect(darkColors.danger, const Color(0xFFE07575));
       expect(darkFitness.progressUp, const Color(0xFF72A987));
       expect(darkFitness.warmupTag, const Color(0xFF6E9EC7));
       expect(darkRadius.xl, 16);
@@ -465,7 +465,7 @@ void main() {
       expect(dark.colorScheme.primary == Colors.blue, isFalse);
 
       final lightColors = light.extension<AppColors>()!;
-      expect(lightColors.background, const Color(0xFFF5F5F3));
+      expect(lightColors.background, const Color(0xFFF4F4F0));
       expect(lightColors.primary, const Color(0xFF315B43));
       expect(lightColors.onPrimary, const Color(0xFFF2F2F0));
     });
@@ -522,7 +522,7 @@ void main() {
       await tester.pump();
       expect(find.text('6 dias → Push / Pull / Legs 2×'), findsOneWidget);
 
-      await tester.tap(find.text('Confirmar plano'));
+      await tester.tap(find.text('Confirmar programa'));
       await tester.pumpAndSettle();
 
       expect(find.text('Passo 6 de 6'), findsOneWidget);
@@ -581,10 +581,9 @@ void main() {
       expect(find.textContaining('Agachamento pronto para subir'), findsOneWidget);
       expect(find.textContaining('Segundo insight oculto'), findsNothing);
 
-      expect(find.byType(DashboardNutritionCard), findsNothing);
-      expect(find.byType(DashboardActiveGoalsCard), findsNothing);
-      expect(find.byType(WeeklyStreakWidget), findsNothing);
-      expect(find.byType(DashboardStatsGrid), findsNothing);
+      expect(find.text('NUTRIÇÃO HOJE'), findsNothing);
+      expect(find.text('METAS EM ANDAMENTO'), findsNothing);
+      expect(find.text('Consistência Semanal'), findsNothing);
 
       // Test skipping current workout in rotating queue
       await tester.tap(find.text('Pular / Trocar'));
@@ -658,9 +657,11 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Hack Squat'), findsOneWidget);
 
-        // Toggle warmup badge
+        // Expand completed Set 1 (compact by default) and toggle warmup badge
+        await tester.tap(find.bySemanticsLabel(RegExp(r'^Série 1,')));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('1').first);
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('AQ'), findsWidgets);
 
         // Tap check button to start Rest Timer (-15s, +15s, Pular)
@@ -703,6 +704,11 @@ void main() {
       expect(find.text('Subidas de carga desbloqueadas'), findsOneWidget);
       expect(find.text('Agachamento Livre'), findsWidgets);
       expect(find.text('+2,5 kg'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Resumo enviado para o WhatsApp quando sincronizado'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(
         find.text('Resumo enviado para o WhatsApp quando sincronizado'),
         findsOneWidget,
@@ -794,7 +800,7 @@ void main() {
 
       await tester.tap(find.text('Peso'));
       await tester.pumpAndSettle();
-      expect(find.text('TENDÊNCIA EMA ATUAL'), findsOneWidget);
+      expect(find.text('Tendência EMA atual'), findsOneWidget);
       expect(find.text('30D'), findsOneWidget);
       expect(find.text('90D'), findsOneWidget);
 
@@ -806,7 +812,7 @@ void main() {
   });
 
   group('SettingsScreen & Reduced Motion', () {
-    testWidgets('renders 4 settings sections and toggles offline/theme',
+    testWidgets('renders 3 settings sections without unbacked WhatsApp section and toggles offline',
         (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
@@ -837,10 +843,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Configurações'), findsOneWidget);
-      expect(find.text('TREINO & EQUIPAMENTOS'), findsOneWidget);
-      expect(find.text('WHATSAPP'), findsOneWidget);
-      expect(find.text('SINCRONIZAÇÃO OFFLINE & DADOS'), findsOneWidget);
-      expect(find.text('CONTA'), findsOneWidget);
+      expect(find.text('Treino e equipamentos'), findsOneWidget);
+      expect(find.text('WhatsApp'), findsNothing);
+      expect(find.text('Sincronização offline e dados'), findsOneWidget);
+      expect(find.text('Conta'), findsOneWidget);
       expect(find.text('Online · Tudo sincronizado'), findsOneWidget);
 
       await tester.scrollUntilVisible(
@@ -860,7 +866,7 @@ void main() {
       await tester.pumpWidget(wrapApp(const ProfileScreen()));
       await tester.pumpAndSettle();
       expect(find.text('Perfil'), findsOneWidget);
-      expect(find.text('DADOS CORPORAIS & OBJETIVO'), findsOneWidget);
+      expect(find.text('Dados corporais e objetivo'), findsOneWidget);
     });
 
     testWidgets('respects MediaQuery disableAnimations without errors',
@@ -878,6 +884,11 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Treino concluído'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Sincronizado com o WhatsApp'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('Sincronizado com o WhatsApp'), findsOneWidget);
     });
   });

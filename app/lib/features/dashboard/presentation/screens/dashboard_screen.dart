@@ -5,16 +5,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
+import 'package:personal_fitness_os/core/extensions/date_extensions.dart';
+import 'package:personal_fitness_os/core/providers/clock_provider.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_brand_mark.dart';
-import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
@@ -92,98 +95,92 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final colors = context.appColors;
     final radius = context.appRadius;
 
-    showModalBottomSheet<void>(
+    showLiftrSheet<void>(
       context: context,
+      eyebrow: 'Fila rotativa · ${plan.name}',
+      title: 'Escolher treino de hoje',
       builder: (ctx) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              LiftrSheetHeader(
-                eyebrow: 'Fila rotativa · ${plan.name}',
-                title: 'Escolher treino de hoje',
-              ),
-              const SizedBox(height: 14),
-              if (orderedWorkouts.length > 1)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: colors.surfaceElevated,
-                      borderRadius: BorderRadius.circular(radius.small),
-                    ),
-                    child: Icon(
-                      Icons.skip_next_rounded,
-                      color: colors.primaryLight,
-                    ),
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (orderedWorkouts.length > 1)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: colors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(radius.small),
                   ),
-                  title: const Text('Pular treino atual'),
-                  subtitle: Text(
-                    'Move "${orderedWorkouts.first.name}" para o fim da fila',
-                    style: ctx.textTheme.bodySmall?.copyWith(
-                      color: colors.textSecondary,
-                    ),
+                  child: Icon(
+                    Icons.skip_next_rounded,
+                    color: colors.primaryLight,
                   ),
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    ref
-                        .read(workoutQueueProvider.notifier)
-                        .skipFirstToEnd(plan.id, orderedWorkouts);
-                    Navigator.pop(ctx);
-                  },
                 ),
-              const Divider(),
-              ...orderedWorkouts.asMap().entries.map((entry) {
-                final idx = entry.key;
-                final w = entry.value;
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: idx == 0
-                          ? colors.primaryMuted
-                          : colors.surfaceElevated,
-                      borderRadius: BorderRadius.circular(radius.small),
-                    ),
-                    child: Text(
-                      '${idx + 1}º',
-                      style: ctx.textTheme.labelMedium?.copyWith(
-                        color: idx == 0
-                            ? colors.primaryLight
-                            : colors.textSecondary,
-                        fontFeatures: AppTypography.tabularFeatures,
-                      ),
-                    ),
+                title: const Text('Pular treino atual'),
+                subtitle: Text(
+                  'Move "${orderedWorkouts.first.name}" para o fim da fila',
+                  style: ctx.textTheme.bodySmall?.copyWith(
+                    color: colors.textSecondary,
                   ),
-                  title: Text(w.name),
-                  subtitle: Text(
-                    '${w.exercises.length} exercícios · ${w.totalWorkingSetsCount} séries',
-                    style: ctx.textTheme.bodySmall?.copyWith(
-                      color: colors.textSecondary,
+                ),
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  ref
+                      .read(workoutQueueProvider.notifier)
+                      .skipFirstToEnd(plan.id, orderedWorkouts);
+                  Navigator.pop(ctx);
+                },
+              ),
+            const Divider(),
+            ...orderedWorkouts.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final w = entry.value;
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: idx == 0
+                        ? colors.primaryMuted
+                        : colors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(radius.small),
+                  ),
+                  child: Text(
+                    '${idx + 1}º',
+                    style: ctx.textTheme.labelMedium?.copyWith(
+                      color: idx == 0
+                          ? colors.primaryLight
+                          : colors.textSecondary,
                       fontFeatures: AppTypography.tabularFeatures,
                     ),
                   ),
-                  trailing: idx == 0
-                      ? Icon(Icons.check_rounded, color: colors.primary)
-                      : null,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    ref
-                        .read(workoutQueueProvider.notifier)
-                        .selectNext(plan.id, orderedWorkouts, w.id);
-                    Navigator.pop(ctx);
-                  },
-                );
-              }),
-            ],
-          ),
+                ),
+                title: Text(w.name),
+                subtitle: Text(
+                  '${pluralize(w.exercises.length, 'exercício', 'exercícios')} · ${pluralize(w.totalWorkingSetsCount, 'série', 'séries')}',
+                  style: ctx.textTheme.bodySmall?.copyWith(
+                    color: colors.textSecondary,
+                    fontFeatures: AppTypography.tabularFeatures,
+                  ),
+                ),
+                trailing: idx == 0
+                    ? Icon(Icons.check_rounded, color: colors.primary)
+                    : null,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  ref
+                      .read(workoutQueueProvider.notifier)
+                      .selectNext(plan.id, orderedWorkouts, w.id);
+                  Navigator.pop(ctx);
+                },
+              );
+            }),
+          ],
         );
       },
     );
@@ -199,18 +196,65 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final insightsAsync = ref.watch(fitnessInsightsProvider);
     ref.watch(workoutQueueProvider);
 
-    final now = DateTime.now();
-    final formattedDate = DateFormat("EEEE, d 'de' MMM", 'pt_BR').format(now);
+    final now = ref.watch(appClockProvider)();
+    final formattedDate = ptBrDateFormat("EEEE, d 'de' MMM").format(now);
     final capitalizedDate =
         formattedDate[0].toUpperCase() + formattedDate.substring(1);
+
+    Future<void> refreshDashboard() async {
+      final hadData = ref.read(dashboardDataProvider).hasValue;
+      Object? refreshError;
+      StackTrace? refreshStack;
+      await Future.wait<void>([
+        ref
+            .refresh(currentWeekSummaryProvider.future)
+            .then<void>((_) {}, onError: (Object _, StackTrace _) {}),
+        ref.refresh(dashboardDataProvider.future).then<void>(
+          (_) {},
+          onError: (Object error, StackTrace st) {
+            refreshError = error;
+            refreshStack = st;
+          },
+        ),
+      ]);
+      if (refreshError != null && hadData && context.mounted) {
+        final msg = userFacingMessage(
+          refreshError!,
+          stackTrace: refreshStack,
+          context: 'DashboardScreen.refreshDashboard',
+        );
+        context.showSnackBar('$msg Mostrando dados salvos.');
+      }
+    }
 
     return Scaffold(
       backgroundColor: colors.background,
       body: dashboardAsync.when(
+        skipLoadingOnRefresh: true,
+        skipError: true,
         loading: () => const SafeArea(child: LiftrScreenSkeleton()),
-        error: (err, _) => ErrorStateWidget(
-          message: err.toString(),
-          onRetry: () => ref.invalidate(dashboardDataProvider),
+        error: (err, st) => RefreshIndicator(
+          color: colors.primary,
+          onRefresh: refreshDashboard,
+          child: LayoutBuilder(
+            builder: (context, constraints) => ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: ErrorStateWidget(
+                    message: userFacingMessage(
+                      err,
+                      stackTrace: st,
+                      context: 'DashboardScreen.build',
+                    ),
+                    safetyNote: offlineSafetyNoteFor(err),
+                    onRetry: () => ref.invalidate(dashboardDataProvider),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
         data: (data) {
           final activePlan = data.activePlan;
@@ -233,11 +277,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
           return RefreshIndicator(
             color: colors.primary,
-            onRefresh: () async {
-              ref.invalidate(currentWeekSummaryProvider);
-              await ref.refresh(dashboardDataProvider.future);
-            },
+            onRefresh: refreshDashboard,
             child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(0, 12, 0, 32),
               children: [
                 ResponsiveContainer(
@@ -253,21 +295,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Row(
-                                    children: [
-                                      const LiftrBrandMark(size: 16),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          'LIFTR · HOJE',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: AppTypography.eyebrow(context),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 3),
+                                  const LiftrBrandMark(size: 16),
+                                  const SizedBox(height: 6),
                                   Text(
                                     'Hoje',
                                     style: context.textTheme.displayMedium,
@@ -285,20 +314,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             Semantics(
                               label: 'Abrir perfil',
                               button: true,
-                              child: InkWell(
-                                onTap: () => context.push('/profile'),
-                                borderRadius: BorderRadius.circular(999),
-                                child: Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    color: colors.surface,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: colors.border),
-                                  ),
-                                  child: _HeaderAvatarThumb(
-                                    avatarUrl: settings.avatarUrl,
-                                    storagePath: settings.avatarStoragePath,
+                              child: Material(
+                                color: colors.surface,
+                                shape: CircleBorder(
+                                  side: BorderSide(color: colors.border),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: InkWell(
+                                  onTap: () => context.push('/profile'),
+                                  child: SizedBox(
+                                    width: 48,
+                                    height: 48,
+                                    child: _HeaderAvatarThumb(
+                                      avatarUrl: settings.avatarUrl,
+                                      storagePath: settings.avatarStoragePath,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -307,23 +337,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             Semantics(
                               label: 'Abrir configurações',
                               button: true,
-                              child: InkWell(
-                                onTap: () => context.push('/settings'),
-                                borderRadius:
-                                    BorderRadius.circular(radius.medium),
-                                child: Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    color: colors.surface,
-                                    borderRadius:
-                                        BorderRadius.circular(radius.medium),
-                                    border: Border.all(color: colors.border),
-                                  ),
-                                  child: Icon(
-                                    Icons.settings_outlined,
-                                    color: colors.textSecondary,
-                                    size: 22,
+                              child: Material(
+                                color: colors.surface,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(radius.medium),
+                                  side: BorderSide(color: colors.border),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: InkWell(
+                                  onTap: () => context.push('/settings'),
+                                  child: SizedBox(
+                                    width: 48,
+                                    height: 48,
+                                    child: Icon(
+                                      Icons.settings_rounded,
+                                      color: colors.textSecondary,
+                                      size: 22,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -359,6 +390,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         const SizedBox(height: 14),
                         LastCompletedWorkoutCard(
                           session: data.lastCompletedSession!,
+                          referenceNow: now,
                         ),
                       ],
 
@@ -393,22 +425,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             Flexible(
                               flex: 2,
                               child: Text(
-                                '${todayWorkout.exercises.length} PRESCRITOS',
+                                '${todayWorkout.exercises.length} ${todayWorkout.exercises.length == 1 ? 'prescrito' : 'prescritos'}',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.end,
-                                style: AppTypography.eyebrow(context),
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: colors.textTertiary,
+                                  fontFeatures: AppTypography.tabularFeatures,
+                                ),
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 10),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: colors.surface,
-                            borderRadius: BorderRadius.circular(radius.large),
-                            border: Border.all(color: colors.border),
-                          ),
+                        AppCard(
+                          padding: EdgeInsets.zero,
                           child: Column(
                             children: [
                               for (var i = 0;
@@ -462,6 +493,15 @@ class _HeaderAvatarThumb extends StatelessWidget {
     final colors = context.appColors;
     final url = avatarUrl?.trim() ?? '';
 
+    final cachePx =
+        (48 * MediaQuery.devicePixelRatioOf(context)).round().clamp(64, 256);
+
+    Widget fallbackIcon() => Icon(
+          Icons.person_outline_rounded,
+          color: colors.textSecondary,
+          size: 22,
+        );
+
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return ClipOval(
         child: CachedNetworkImage(
@@ -469,30 +509,28 @@ class _HeaderAvatarThumb extends StatelessWidget {
           cacheKey: (storagePath != null && storagePath!.isNotEmpty)
               ? storagePath
               : url,
+          memCacheWidth: cachePx,
+          memCacheHeight: cachePx,
           fit: BoxFit.cover,
-          errorWidget: (_, __, ___) => Icon(
-            Icons.person_outline_rounded,
-            color: colors.textSecondary,
-            size: 22,
-          ),
+          errorWidget: (_, _, _) => fallbackIcon(),
         ),
       );
     }
 
     if (url.isNotEmpty) {
       final file = File(url);
-      if (file.existsSync()) {
-        return ClipOval(
-          child: Image.file(file, fit: BoxFit.cover),
-        );
-      }
+      return ClipOval(
+        child: Image.file(
+          file,
+          fit: BoxFit.cover,
+          cacheWidth: cachePx,
+          cacheHeight: cachePx,
+          errorBuilder: (_, _, _) => fallbackIcon(),
+        ),
+      );
     }
 
-    return Icon(
-      Icons.person_outline_rounded,
-      color: colors.textSecondary,
-      size: 22,
-    );
+    return fallbackIcon();
   }
 }
 

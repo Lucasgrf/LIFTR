@@ -7,6 +7,7 @@ import 'package:personal_fitness_os/core/errors/failures.dart';
 import 'package:personal_fitness_os/core/errors/result.dart';
 import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/theme/app_theme.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_brand_mark.dart';
 import 'package:personal_fitness_os/features/dashboard/domain/entities/dashboard_data.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/screens/dashboard_screen.dart';
@@ -314,7 +315,8 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          expect(find.text('LIFTR · HOJE'), findsOneWidget);
+          expect(find.byType(LiftrBrandMark), findsOneWidget);
+          expect(find.text('Hoje'), findsOneWidget);
           expect(find.text('Upper Push A'), findsWidgets);
           expect(tester.takeException(), isNull);
 

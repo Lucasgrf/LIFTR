@@ -538,7 +538,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('PRÉVIA DO PROGRAMA'), findsOneWidget);
+      expect(find.text('Prévia do programa'), findsOneWidget);
       expect(find.text('Treino ABC Irmãos'), findsOneWidget);
 
       await tester.ensureVisible(find.text('Importar e ativar treino'));

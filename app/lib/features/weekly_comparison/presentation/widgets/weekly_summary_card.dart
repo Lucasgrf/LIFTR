@@ -4,6 +4,7 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/features/weekly_comparison/domain/entities/weekly_comparison_data.dart';
 
@@ -78,12 +79,8 @@ class WeeklySummaryCard extends StatelessWidget {
     final radius = context.appRadius;
     final current = data.currentWeek;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(radius.large),
-        border: Border.all(color: colors.border),
-      ),
+    return AppCard(
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -106,10 +103,12 @@ class WeeklySummaryCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            'RESUMO SEMANAL',
+                            'Resumo semanal',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: AppTypography.eyebrow(context),
+                            style: context.textTheme.labelMedium?.copyWith(
+                              color: colors.textSecondary,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),

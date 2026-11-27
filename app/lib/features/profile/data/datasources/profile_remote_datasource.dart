@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:personal_fitness_os/core/constants/supabase_config.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UserProfileData {
@@ -87,6 +88,23 @@ class SupabaseProfileRemoteDataSource implements ProfileRemoteDataSource {
     }
   }
 
+  /// Reads avatar metadata exclusively from `auth.userMetadata` so a failed
+  /// mirror write on `user_profiles` never resurrects a removed profile photo.
+  static ({String? avatarUrl, String? storagePath}) resolveAvatarMetadata(
+    Map<String, dynamic> authMetadata,
+  ) {
+    String? nonEmpty(dynamic raw) {
+      if (raw is! String) return null;
+      final trimmed = raw.trim();
+      return trimmed.isEmpty ? null : trimmed;
+    }
+
+    return (
+      avatarUrl: nonEmpty(authMetadata['avatar_url']),
+      storagePath: nonEmpty(authMetadata['avatar_storage_path']),
+    );
+  }
+
   @override
   Future<UserProfileData?> fetchProfile() async {
     if (!SupabaseConfig.isConfigured) return null;
@@ -105,10 +123,9 @@ class SupabaseProfileRemoteDataSource implements ProfileRemoteDataSource {
       row = null;
     }
 
-    final storagePath = (row?['avatar_storage_path'] as String?) ??
-        (meta['avatar_storage_path'] as String?);
-    var avatarUrl = (row?['avatar_url'] as String?) ??
-        (meta['avatar_url'] as String?);
+    final resolvedAvatar = resolveAvatarMetadata(meta);
+    final storagePath = resolvedAvatar.storagePath;
+    var avatarUrl = resolvedAvatar.avatarUrl;
 
     if (storagePath != null && storagePath.isNotEmpty) {
       avatarUrl = await _resolveAvatarUrl(
@@ -206,35 +223,113 @@ class SupabaseProfileRemoteDataSource implements ProfileRemoteDataSource {
     return (avatarUrl: resolvedUrl, storagePath: storagePath);
   }
 
+  /// Clears auth metadata first, then clears `user_profiles` best-effort,
+  /// and finally removes the file from Storage (logging failures without rollback).
+  static Future<void> removeAvatarOrdered({
+    required Future<void> Function() clearAuthMetadata,
+    required Future<void> Function() clearProfileTable,
+    required Future<void> Function(String storagePath) removeFromStorage,
+    String? storagePath,
+  }) async {
+    await clearAuthMetadata();
+
+    try {
+      await clearProfileTable();
+    } catch (error, stackTrace) {
+      appErrorLogger(
+        error,
+        stackTrace: stackTrace,
+        context: 'ProfileRemoteDataSource.removeAvatar.profileTable',
+      );
+    }
+
+    if (storagePath != null && storagePath.isNotEmpty) {
+      try {
+        await removeFromStorage(storagePath);
+      } catch (error, stackTrace) {
+        appErrorLogger(
+          error,
+          stackTrace: stackTrace,
+          context: 'ProfileRemoteDataSource.removeAvatar.storage',
+        );
+      }
+    }
+  }
+
   @override
   Future<void> removeAvatar(String? storagePath) async {
     final user = _client.auth.currentUser;
     if (user == null) return;
 
-    if (storagePath != null && storagePath.isNotEmpty) {
-      try {
-        await _client.storage.from(_bucket).remove([storagePath]);
-      } catch (_) {}
-    }
-
-    try {
-      await _client.auth.updateUser(
+    await removeAvatarOrdered(
+      storagePath: storagePath,
+      clearAuthMetadata: () => _client.auth.updateUser(
         UserAttributes(
           data: {
             'avatar_url': null,
             'avatar_storage_path': null,
           },
         ),
-      );
-    } catch (_) {}
-
-    try {
-      await _client.from('user_profiles').update({
+      ),
+      clearProfileTable: () => _client.from('user_profiles').update({
         'avatar_url': null,
         'avatar_storage_path': null,
         'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', user.id);
-    } catch (_) {}
+      }).eq('id', user.id),
+      removeFromStorage: (path) => _client.storage.from(_bucket).remove([path]),
+    );
+  }
+
+  /// Builds the `public.user_profiles` upsert payload using the exact column
+  /// names verified in production.
+  static Map<String, dynamic> buildSaveProfilePayload({
+    required String userId,
+    String? displayName,
+    String? biologicalSex,
+    int? age,
+    int? heightCm,
+    double? weightKg,
+    double? bodyFatPercent,
+    String? goal,
+    String? experience,
+    String? activityLevel,
+    DateTime? updatedAt,
+  }) {
+    return <String, dynamic>{
+      'id': userId,
+      'display_name': ?displayName,
+      'biological_sex': ?biologicalSex,
+      'age': ?age,
+      'height_cm': ?heightCm,
+      'weight_kg': ?weightKg,
+      'body_fat_percent': ?bodyFatPercent,
+      'goal': ?goal,
+      'experience': ?experience,
+      'activity_level': ?activityLevel,
+      'updated_at': (updatedAt ?? DateTime.now()).toIso8601String(),
+    };
+  }
+
+  /// Updates auth display name (when provided) and persists the profile row
+  /// best-effort, logging upsert failures via [appErrorLogger] without
+  /// changing caller-visible UX behavior.
+  static Future<void> saveProfileOrdered({
+    Future<void> Function()? updateAuthDisplayName,
+    required Future<void> Function() upsertProfileRow,
+  }) async {
+    if (updateAuthDisplayName != null) {
+      await updateAuthDisplayName();
+    }
+
+    try {
+      await upsertProfileRow();
+    } catch (error, stackTrace) {
+      appErrorLogger(
+        error,
+        stackTrace: stackTrace,
+        context: 'ProfileRemoteDataSource.saveProfile.upsert',
+      );
+    }
   }
 
   @override
@@ -252,28 +347,26 @@ class SupabaseProfileRemoteDataSource implements ProfileRemoteDataSource {
     final user = _client.auth.currentUser;
     if (user == null) return;
 
-    if (displayName != null) {
-      await _client.auth.updateUser(
-        UserAttributes(data: {'name': displayName}),
-      );
-    }
-
-    try {
-      await _client.from('user_profiles').upsert({
-        'id': user.id,
-        'display_name': ?displayName,
-        'biological_sex': ?biologicalSex,
-        'age': ?age,
-        'height_cm': ?heightCm,
-        'weight_kg': ?weightKg,
-        'body_fat_percent': ?bodyFatPercent,
-        'goal': ?goal,
-        'experience': ?experience,
-        'activity_level': ?activityLevel,
-        'updated_at': DateTime.now().toIso8601String(),
-      });
-    } catch (_) {
-      // Best-effort sync if user_profiles migration hasn't run yet.
-    }
+    await saveProfileOrdered(
+      updateAuthDisplayName: displayName != null
+          ? () => _client.auth.updateUser(
+                UserAttributes(data: {'name': displayName}),
+              )
+          : null,
+      upsertProfileRow: () => _client.from('user_profiles').upsert(
+            buildSaveProfilePayload(
+              userId: user.id,
+              displayName: displayName,
+              biologicalSex: biologicalSex,
+              age: age,
+              heightCm: heightCm,
+              weightKg: weightKg,
+              bodyFatPercent: bodyFatPercent,
+              goal: goal,
+              experience: experience,
+              activityLevel: activityLevel,
+            ),
+          ),
+    );
   }
 }

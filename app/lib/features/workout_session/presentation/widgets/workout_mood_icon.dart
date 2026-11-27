@@ -3,6 +3,7 @@ import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 
@@ -257,13 +258,12 @@ class WorkoutMoodChip extends StatelessWidget {
             size: compact ? 16 : 18,
             color: meta.color,
           ),
-          const SizedBox(width: 5),
+          SizedBox(width: context.appSpacing.space4),
           Text(
             meta.label,
             style: context.textTheme.labelSmall?.copyWith(
               color: meta.color,
               fontWeight: FontWeight.w700,
-              fontSize: compact ? 10 : 11,
               fontFeatures: AppTypography.tabularFeatures,
             ),
           ),

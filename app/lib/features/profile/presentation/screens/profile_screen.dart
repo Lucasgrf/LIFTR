@@ -1,18 +1,29 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
+import 'package:personal_fitness_os/core/providers/clock_provider.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
-import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_number_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
+import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
-import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_confirm_dialog.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_list_group.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
+import 'package:personal_fitness_os/features/body/presentation/providers/weight_providers.dart';
 import 'package:personal_fitness_os/features/profile/presentation/providers/profile_providers.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 
@@ -37,7 +48,7 @@ class ProfileScreen extends ConsumerWidget {
           children: [
             // Sticky Top Header
             Container(
-              height: 64,
+              constraints: const BoxConstraints(minHeight: 64),
               padding: const EdgeInsets.symmetric(horizontal: 8),
               decoration: BoxDecoration(
                 color: colors.background,
@@ -51,6 +62,7 @@ class ProfileScreen extends ConsumerWidget {
                     label: 'Voltar',
                     button: true,
                     child: IconButton(
+                      tooltip: 'Voltar',
                       onPressed: () {
                         if (context.canPop()) {
                           context.pop();
@@ -79,13 +91,14 @@ class ProfileScreen extends ConsumerWidget {
                     label: 'Abrir configurações',
                     button: true,
                     child: IconButton(
+                      tooltip: 'Abrir configurações',
                       onPressed: () => context.push('/settings'),
                       constraints: const BoxConstraints(
                         minWidth: 48,
                         minHeight: 48,
                       ),
                       icon: Icon(
-                        Icons.settings_outlined,
+                        Icons.settings_rounded,
                         color: colors.textSecondary,
                       ),
                     ),
@@ -103,13 +116,9 @@ class ProfileScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // Avatar & Identity Card
-                        Container(
+                        AppCard(
+                          borderRadius: radius.xl,
                           padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: colors.surface,
-                            borderRadius: BorderRadius.circular(radius.xl),
-                            border: Border.all(color: colors.border),
-                          ),
                           child: Column(
                             children: [
                               Semantics(
@@ -183,36 +192,43 @@ class ProfileScreen extends ConsumerWidget {
                                 ),
                               ),
                               const SizedBox(height: 14),
-                              InkWell(
-                                onTap: () => _showEditNameDialog(
-                                  context,
-                                  ref,
-                                  displayName,
-                                ),
-                                borderRadius:
-                                    BorderRadius.circular(radius.small),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
+                              Semantics(
+                                label: 'Editar nome de exibição',
+                                button: true,
+                                child: InkWell(
+                                  onTap: () => _showEditNameDialog(
+                                    context,
+                                    ref,
+                                    displayName,
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Flexible(
-                                        child: Text(
-                                          displayName,
-                                          style: context.textTheme.headlineSmall,
-                                          textAlign: TextAlign.center,
+                                  borderRadius:
+                                      BorderRadius.circular(radius.small),
+                                  child: Container(
+                                    constraints:
+                                        const BoxConstraints(minHeight: 48),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 8,
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            displayName,
+                                            style:
+                                                context.textTheme.headlineSmall,
+                                            textAlign: TextAlign.center,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Icon(
-                                        Icons.edit_outlined,
-                                        size: 16,
-                                        color: colors.textTertiary,
-                                      ),
-                                    ],
+                                        const SizedBox(width: 6),
+                                        Icon(
+                                          Icons.edit_rounded,
+                                          size: 16,
+                                          color: colors.textTertiary,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -237,45 +253,40 @@ class ProfileScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 22),
 
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
-                          child: Text(
-                            'DADOS CORPORAIS & OBJETIVO',
-                            style: AppTypography.eyebrow(context),
-                          ),
-                        ),
-                        _ProfileCardGroup(
+                        LiftrListGroup(
+                          header: 'Dados corporais e objetivo',
                           children: [
-                            _ProfileRow(
+                            LiftrListRow(
                               label: 'Dados corporais',
                               value:
-                                  '${settings.weightKg.toStringAsFixed(1).replaceAll('.', ',')} kg · ${settings.heightCm} cm · ${settings.age} anos',
+                                  '${formatPtBrDecimal(settings.weightKg, trimTrailingZero: false)} kg · ${settings.heightCm} cm · ${settings.age} anos',
                               subtitle: settings.bodyFatPercent != null
-                                  ? 'Sexo ${settings.biologicalSex} · ${settings.bodyFatPercent!.toStringAsFixed(1).replaceAll('.', ',')}% gordura'
-                                  : 'Sexo ${settings.biologicalSex}',
-                              onTap: () =>
-                                  _showBodyDataSheet(context, ref, settings),
+                                  ? '${formatBiologicalSexPtBr(settings.biologicalSex)} · ${formatPtBrDecimal(settings.bodyFatPercent!, trimTrailingZero: false)}% gordura'
+                                  : formatBiologicalSexPtBr(
+                                      settings.biologicalSex,
+                                    ),
+                              onTap: () => _showBodyDataSheet(context, settings),
                             ),
-                            _ProfileRow(
+                            LiftrListRow(
                               label: 'Objetivo atual',
                               value: settings.goal.label,
                               subtitle: settings.goal.weeklyRateTargetLabel,
                               onTap: () =>
                                   _showGoalPicker(context, ref, settings),
                             ),
-                            _ProfileRow(
+                            LiftrListRow(
                               label: 'Experiência',
                               value: settings.experience.label,
                               onTap: () =>
                                   _showExperiencePicker(context, ref, settings),
                             ),
-                            _ProfileRow(
+                            LiftrListRow(
                               label: 'Atividade diária',
                               value: settings.activityLevel.label,
                               onTap: () =>
                                   _showActivityPicker(context, ref, settings),
                             ),
-                            _ProfileRow(
+                            LiftrListRow(
                               label: 'Metas calculadas',
                               value:
                                   '${settings.estimatedDailyCalories} kcal · ${settings.estimatedDailyProteinGrams} g prot',
@@ -331,53 +342,67 @@ class ProfileScreen extends ConsumerWidget {
     required bool hasAvatar,
   }) {
     final colors = context.appColors;
-    showModalBottomSheet<void>(
+    showLiftrSheet<void>(
       context: context,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const LiftrSheetHeader(
-              eyebrow: 'ATLETA',
-              title: 'Foto de perfil',
-            ),
-            const SizedBox(height: 12),
+      title: 'Foto de perfil',
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.camera_alt_rounded, color: colors.primary),
+            title: const Text('Tirar foto'),
+            onTap: () async {
+              Navigator.pop(ctx);
+              await _pickAndUploadAvatar(context, ref, ImageSource.camera);
+            },
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.photo_library_rounded, color: colors.primary),
+            title: const Text('Escolher da galeria'),
+            onTap: () async {
+              Navigator.pop(ctx);
+              await _pickAndUploadAvatar(context, ref, ImageSource.gallery);
+            },
+          ),
+          if (hasAvatar)
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.camera_alt_rounded, color: colors.primary),
-              title: const Text('Tirar foto'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickAndUploadAvatar(context, ref, ImageSource.camera);
-              },
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.photo_library_rounded, color: colors.primary),
-              title: const Text('Escolher da galeria'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickAndUploadAvatar(context, ref, ImageSource.gallery);
-              },
-            ),
-            if (hasAvatar)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(Icons.delete_outline_rounded, color: colors.danger),
-                title: Text(
-                  'Remover foto',
-                  style: TextStyle(color: colors.danger),
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  ref.read(profileControllerProvider.notifier).removeAvatar();
-                  context.showSnackBar('Foto removida.');
-                },
+              leading: Icon(Icons.delete_outline_rounded, color: colors.danger),
+              title: Text(
+                'Remover foto',
+                style: context.textTheme.bodyMedium?.copyWith(color: colors.danger),
               ),
-          ],
-        ),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final confirmed = await showLiftrConfirmDialog(
+                  context,
+                  title: 'Remover foto de perfil?',
+                  message:
+                      'Sua foto de perfil será removida e substituída pelas suas iniciais.',
+                  confirmLabel: 'Remover',
+                  icon: Icons.delete_outline_rounded,
+                  isDestructive: true,
+                );
+                if (!confirmed || !context.mounted) return;
+                final ok = await ref
+                    .read(profileControllerProvider.notifier)
+                    .removeAvatar();
+                if (!context.mounted) return;
+                if (ok) {
+                  context.showSnackBar('Foto removida.');
+                } else {
+                  final err = ref.read(profileControllerProvider).errorMessage;
+                  context.showSnackBar(
+                    err ?? 'Erro ao remover foto de perfil.',
+                    isError: true,
+                  );
+                }
+              },
+            ),
+        ],
       ),
     );
   }
@@ -387,32 +412,12 @@ class ProfileScreen extends ConsumerWidget {
     WidgetRef ref,
     String currentName,
   ) async {
-    final ctrl = TextEditingController(
-      text: currentName == 'Atleta LIFTR' ? '' : currentName,
-    );
     final updated = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Seu nome'),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(hintText: 'Como quer ser chamado'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, ctrl.text),
-            child: const Text('Salvar'),
-          ),
-        ],
+      builder: (_) => _EditNameDialog(
+        initialName: currentName == 'Atleta LIFTR' ? '' : currentName,
       ),
     );
-    ctrl.dispose();
     if (updated != null && updated.trim().isNotEmpty) {
       await ref
           .read(profileControllerProvider.notifier)
@@ -422,115 +427,9 @@ class ProfileScreen extends ConsumerWidget {
 
   void _showBodyDataSheet(
     BuildContext context,
-    WidgetRef ref,
     UserSettingsState settings,
   ) {
-    final weightCtrl = TextEditingController(
-      text: settings.weightKg.toStringAsFixed(1),
-    );
-    final heightCtrl = TextEditingController(text: '${settings.heightCm}');
-    final ageCtrl = TextEditingController(text: '${settings.age}');
-    final bodyFatCtrl = TextEditingController(
-      text: settings.bodyFatPercent?.toStringAsFixed(1) ?? '',
-    );
-    var sex = settings.biologicalSex;
-
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setModalState) => Padding(
-            padding: EdgeInsets.fromLTRB(
-              20,
-              20,
-              20,
-              MediaQuery.viewInsetsOf(ctx).bottom + 24,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text('Dados corporais', style: ctx.textTheme.titleLarge),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    ChoiceChip(
-                      label: const Text('Masculino'),
-                      selected: sex == 'M',
-                      onSelected: (_) => setModalState(() => sex = 'M'),
-                    ),
-                    const SizedBox(width: 8),
-                    ChoiceChip(
-                      label: const Text('Feminino'),
-                      selected: sex == 'F',
-                      onSelected: (_) => setModalState(() => sex = 'F'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: weightCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: const InputDecoration(labelText: 'Peso (kg)'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: heightCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Altura (cm)'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: ageCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Idade (anos)'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: bodyFatCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: const InputDecoration(
-                    labelText: '% de gordura (opcional)',
-                  ),
-                ),
-                const SizedBox(height: 20),
-                AppButton.primary(
-                  label: 'Salvar',
-                  onPressed: () {
-                    final w = double.tryParse(
-                      weightCtrl.text.trim().replaceAll(',', '.'),
-                    );
-                    final h = int.tryParse(heightCtrl.text.trim());
-                    final a = int.tryParse(ageCtrl.text.trim());
-                    final bfRaw =
-                        bodyFatCtrl.text.trim().replaceAll(',', '.');
-                    final bf = bfRaw.isEmpty ? null : double.tryParse(bfRaw);
-
-                    ref.read(userSettingsProvider.notifier).updateBodyData(
-                          biologicalSex: sex,
-                          weightKg: w,
-                          heightCm: h,
-                          age: a,
-                          bodyFatPercent: bf,
-                          clearBodyFat: bfRaw.isEmpty,
-                        );
-                    ref
-                        .read(profileControllerProvider.notifier)
-                        .syncSettingsToRemote();
-                    Navigator.pop(ctx);
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+    showProfileBodyDataSheet(context, settings);
   }
 
   void _showGoalPicker(
@@ -538,46 +437,37 @@ class ProfileScreen extends ConsumerWidget {
     WidgetRef ref,
     UserSettingsState settings,
   ) {
-    showModalBottomSheet<void>(
+    showLiftrSheet<void>(
       context: context,
+      title: 'Objetivo atual',
       builder: (ctx) {
         final colors = ctx.appColors;
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const LiftrSheetHeader(
-                eyebrow: 'METAS & NUTRIÇÃO',
-                title: 'Objetivo atual',
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: UserGoal.values.map((goal) {
+            final selected = settings.goal == goal;
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(goal.label, style: ctx.textTheme.titleMedium),
+              subtitle: Text(
+                goal.subtitle,
+                style: ctx.textTheme.bodySmall?.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
-              const SizedBox(height: 14),
-              ...UserGoal.values.map((goal) {
-                final selected = settings.goal == goal;
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(goal.label, style: ctx.textTheme.titleMedium),
-                  subtitle: Text(
-                    goal.subtitle,
-                    style: ctx.textTheme.bodySmall?.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                  trailing: selected
-                      ? Icon(Icons.check_rounded, color: colors.primary)
-                      : null,
-                  onTap: () {
-                    ref.read(userSettingsProvider.notifier).setGoal(goal);
-                    ref
-                        .read(profileControllerProvider.notifier)
-                        .syncSettingsToRemote();
-                    Navigator.pop(ctx);
-                  },
-                );
-              }),
-            ],
-          ),
+              trailing: selected
+                  ? Icon(Icons.check_rounded, color: colors.primary)
+                  : null,
+              onTap: () {
+                ref.read(userSettingsProvider.notifier).setGoal(goal);
+                ref
+                    .read(profileControllerProvider.notifier)
+                    .syncSettingsToRemote();
+                Navigator.pop(ctx);
+              },
+            );
+          }).toList(),
         );
       },
     );
@@ -588,46 +478,37 @@ class ProfileScreen extends ConsumerWidget {
     WidgetRef ref,
     UserSettingsState settings,
   ) {
-    showModalBottomSheet<void>(
+    showLiftrSheet<void>(
       context: context,
+      title: 'Experiência',
       builder: (ctx) {
         final colors = ctx.appColors;
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const LiftrSheetHeader(
-                eyebrow: 'HISTÓRICO DE TREINO',
-                title: 'Experiência',
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: UserExperience.values.map((exp) {
+            final selected = settings.experience == exp;
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(exp.label, style: ctx.textTheme.titleMedium),
+              subtitle: Text(
+                exp.subtitle,
+                style: ctx.textTheme.bodySmall?.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
-              const SizedBox(height: 14),
-              ...UserExperience.values.map((exp) {
-                final selected = settings.experience == exp;
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(exp.label, style: ctx.textTheme.titleMedium),
-                  subtitle: Text(
-                    exp.subtitle,
-                    style: ctx.textTheme.bodySmall?.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                  trailing: selected
-                      ? Icon(Icons.check_rounded, color: colors.primary)
-                      : null,
-                  onTap: () {
-                    ref.read(userSettingsProvider.notifier).setExperience(exp);
-                    ref
-                        .read(profileControllerProvider.notifier)
-                        .syncSettingsToRemote();
-                    Navigator.pop(ctx);
-                  },
-                );
-              }),
-            ],
-          ),
+              trailing: selected
+                  ? Icon(Icons.check_rounded, color: colors.primary)
+                  : null,
+              onTap: () {
+                ref.read(userSettingsProvider.notifier).setExperience(exp);
+                ref
+                    .read(profileControllerProvider.notifier)
+                    .syncSettingsToRemote();
+                Navigator.pop(ctx);
+              },
+            );
+          }).toList(),
         );
       },
     );
@@ -638,48 +519,39 @@ class ProfileScreen extends ConsumerWidget {
     WidgetRef ref,
     UserSettingsState settings,
   ) {
-    showModalBottomSheet<void>(
+    showLiftrSheet<void>(
       context: context,
+      title: 'Atividade diária',
       builder: (ctx) {
         final colors = ctx.appColors;
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const LiftrSheetHeader(
-                eyebrow: 'GASTO ENERGÉTICO',
-                title: 'Atividade diária',
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: ActivityLevel.values.map((lvl) {
+            final selected = settings.activityLevel == lvl;
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(lvl.label, style: ctx.textTheme.titleMedium),
+              subtitle: Text(
+                lvl.subtitle,
+                style: ctx.textTheme.bodySmall?.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
-              const SizedBox(height: 14),
-              ...ActivityLevel.values.map((lvl) {
-                final selected = settings.activityLevel == lvl;
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(lvl.label, style: ctx.textTheme.titleMedium),
-                  subtitle: Text(
-                    lvl.subtitle,
-                    style: ctx.textTheme.bodySmall?.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                  trailing: selected
-                      ? Icon(Icons.check_rounded, color: colors.primary)
-                      : null,
-                  onTap: () {
-                    ref
-                        .read(userSettingsProvider.notifier)
-                        .setActivityLevel(lvl);
-                    ref
-                        .read(profileControllerProvider.notifier)
-                        .syncSettingsToRemote();
-                    Navigator.pop(ctx);
-                  },
-                );
-              }),
-            ],
-          ),
+              trailing: selected
+                  ? Icon(Icons.check_rounded, color: colors.primary)
+                  : null,
+              onTap: () {
+                ref
+                    .read(userSettingsProvider.notifier)
+                    .setActivityLevel(lvl);
+                ref
+                    .read(profileControllerProvider.notifier)
+                    .syncSettingsToRemote();
+                Navigator.pop(ctx);
+              },
+            );
+          }).toList(),
         );
       },
     );
@@ -740,6 +612,9 @@ class _ProfileAvatarCircle extends StatelessWidget {
       return _fallback(context);
     }
 
+    final cachePx =
+        (size * MediaQuery.devicePixelRatioOf(context)).round().clamp(64, 512);
+
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return ClipOval(
         child: Container(
@@ -753,6 +628,8 @@ class _ProfileAvatarCircle extends StatelessWidget {
                 : url,
             width: size,
             height: size,
+            memCacheWidth: cachePx,
+            memCacheHeight: cachePx,
             fit: BoxFit.cover,
             placeholder: (_, _) => _fallback(context),
             errorWidget: (_, _, _) => _fallback(context),
@@ -762,125 +639,288 @@ class _ProfileAvatarCircle extends StatelessWidget {
     }
 
     final file = File(url);
-    if (file.existsSync()) {
-      return ClipOval(
-        child: Image.file(
-          file,
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-        ),
-      );
-    }
-
-    return _fallback(context);
-  }
-}
-
-class _ProfileCardGroup extends StatelessWidget {
-  const _ProfileCardGroup({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final radius = context.appRadius;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(radius.large),
-        border: Border.all(color: colors.border),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(radius.large),
-        child: Column(
-          children: [
-            for (int i = 0; i < children.length; i++) ...[
-              children[i],
-              if (i < children.length - 1) const Divider(height: 1),
-            ],
-          ],
-        ),
+    return ClipOval(
+      child: Image.file(
+        file,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        cacheWidth: cachePx,
+        cacheHeight: cachePx,
+        errorBuilder: (_, _, _) => _fallback(context),
       ),
     );
   }
 }
 
-class _ProfileRow extends StatelessWidget {
-  const _ProfileRow({
-    required this.label,
-    required this.value,
-    this.subtitle,
-    this.showChevron = true,
-    this.onTap,
-  });
+class _EditNameDialog extends StatefulWidget {
+  const _EditNameDialog({required this.initialName});
 
-  final String label;
-  final String value;
-  final String? subtitle;
-  final bool showChevron;
-  final VoidCallback? onTap;
+  final String initialName;
+
+  @override
+  State<_EditNameDialog> createState() => _EditNameDialogState();
+}
+
+class _EditNameDialogState extends State<_EditNameDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialName);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.appColors;
-
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 56),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    label,
-                    style: context.textTheme.bodyMedium?.copyWith(
-                      color: colors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle!,
-                      style: context.textTheme.labelSmall?.copyWith(
-                        color: colors.textTertiary,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            if (value.isNotEmpty) ...[
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  value,
-                  textAlign: TextAlign.end,
-                  style: context.textTheme.labelMedium?.copyWith(
-                    color: colors.textSecondary,
-                    fontFeatures: AppTypography.tabularFeatures,
-                  ),
-                ),
-              ),
-            ],
-            if (showChevron) ...[
-              const SizedBox(width: 6),
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 18,
-                color: colors.textTertiary,
-              ),
-            ],
-          ],
+    return AlertDialog(
+      title: const Text('Seu nome'),
+      content: AppInput(
+        controller: _controller,
+        autofocus: true,
+        textCapitalization: TextCapitalization.words,
+        hint: 'Como quer ser chamado',
+        textInputAction: TextInputAction.done,
+        onFieldSubmitted: (v) => Navigator.pop(context, v),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
         ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, _controller.text),
+          child: const Text('Salvar'),
+        ),
+      ],
+    );
+  }
+}
+
+Future<void> showProfileBodyDataSheet(
+  BuildContext context,
+  UserSettingsState settings, {
+  bool forceRecordWeight = false,
+}) {
+  return showLiftrSheet<void>(
+    context: context,
+    title: 'Dados corporais',
+    builder: (_) => _BodyDataSheet(
+      initialSettings: settings,
+      forceRecordWeight: forceRecordWeight,
+    ),
+  );
+}
+
+class _BodyDataSheet extends ConsumerStatefulWidget {
+  const _BodyDataSheet({
+    required this.initialSettings,
+    this.forceRecordWeight = false,
+  });
+
+  final UserSettingsState initialSettings;
+  final bool forceRecordWeight;
+
+  @override
+  ConsumerState<_BodyDataSheet> createState() => _BodyDataSheetState();
+}
+
+class _BodyDataSheetState extends ConsumerState<_BodyDataSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _weightCtrl;
+  late final TextEditingController _heightCtrl;
+  late final TextEditingController _ageCtrl;
+  late final TextEditingController _bodyFatCtrl;
+  late String _sex;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final s = widget.initialSettings;
+    _weightCtrl = TextEditingController(
+      text: formatPtBrDecimal(s.weightKg, trimTrailingZero: false),
+    );
+    _heightCtrl = TextEditingController(text: '${s.heightCm}');
+    _ageCtrl = TextEditingController(text: '${s.age}');
+    _bodyFatCtrl = TextEditingController(
+      text: s.bodyFatPercent != null
+          ? formatPtBrDecimal(s.bodyFatPercent!, trimTrailingZero: false)
+          : '',
+    );
+    _sex = s.biologicalSex;
+  }
+
+  @override
+  void dispose() {
+    _weightCtrl.dispose();
+    _heightCtrl.dispose();
+    _ageCtrl.dispose();
+    _bodyFatCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_isSaving || !(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _isSaving = true);
+
+    try {
+      final w = parsePtBrDouble(_weightCtrl.text);
+      final h = int.tryParse(_heightCtrl.text.trim());
+      final a = int.tryParse(_ageCtrl.text.trim());
+      final bfRaw = _bodyFatCtrl.text.trim();
+      final bf = bfRaw.isEmpty ? null : parsePtBrDouble(bfRaw);
+
+      final weightChanged = w != null && w != widget.initialSettings.weightKg;
+
+      ref.read(userSettingsProvider.notifier).updateBodyData(
+            biologicalSex: _sex,
+            weightKg: w,
+            heightCm: h,
+            age: a,
+            bodyFatPercent: bf,
+            clearBodyFat: bfRaw.isEmpty,
+          );
+      unawaited(
+        ref.read(profileControllerProvider.notifier).syncSettingsToRemote(),
+      );
+
+      if (w != null && (weightChanged || widget.forceRecordWeight)) {
+        final upsertWeight = ref.read(upsertDailyWeightUseCaseProvider);
+        if (upsertWeight != null) {
+          final result = await upsertWeight.execute(
+            weightKg: w,
+            measuredAt: ref.read(appClockProvider)(),
+          );
+          result.fold(
+            (_) {},
+            (failure) => appErrorLogger(
+              failure,
+              stackTrace: failure.stackTrace,
+              context: 'ProfileScreen.BodyDataSheet.upsertDailyWeight',
+            ),
+          );
+          ref.invalidate(weightHistoryProvider);
+          ref.invalidate(weightStatsProvider);
+        }
+      }
+
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      key: _formKey,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Wrap(
+            spacing: context.appSpacing.space8,
+            runSpacing: context.appSpacing.space8,
+            children: [
+              ChoiceChip(
+                label: const Text('Masculino'),
+                selected: _sex == 'M',
+                onSelected: (_) => setState(() => _sex = 'M'),
+              ),
+              ChoiceChip(
+                label: const Text('Feminino'),
+                selected: _sex == 'F',
+                onSelected: (_) => setState(() => _sex = 'F'),
+              ),
+            ],
+          ),
+              AppSpacing.verticalGap12,
+              AppInput(
+                label: 'Peso (kg)',
+                hint: 'Ex: 78,5',
+                controller: _weightCtrl,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                inputFormatters: [PtBrDecimalInputFormatter(maxDecimalDigits: 1)],
+                textInputAction: TextInputAction.next,
+                validator: (v) {
+                  final parsed = parsePtBrDouble(v);
+                  if (parsed == null || parsed < 20 || parsed > 400) {
+                    return 'Informe um peso entre 20 e 400 kg';
+                  }
+                  return null;
+                },
+              ),
+              AppSpacing.verticalGap12,
+              AppInput(
+                label: 'Altura (cm)',
+                hint: 'Ex: 178',
+                controller: _heightCtrl,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                textInputAction: TextInputAction.next,
+                validator: (v) {
+                  final parsed = int.tryParse(v?.trim() ?? '');
+                  if (parsed == null || parsed < 100 || parsed > 250) {
+                    return 'Informe uma altura entre 100 e 250 cm';
+                  }
+                  return null;
+                },
+              ),
+              AppSpacing.verticalGap12,
+              AppInput(
+                label: 'Idade (anos)',
+                hint: 'Ex: 27',
+                controller: _ageCtrl,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                textInputAction: TextInputAction.next,
+                validator: (v) {
+                  final parsed = int.tryParse(v?.trim() ?? '');
+                  if (parsed == null || parsed < 12 || parsed > 100) {
+                    return 'Informe uma idade entre 12 e 100 anos';
+                  }
+                  return null;
+                },
+              ),
+              AppSpacing.verticalGap12,
+              AppInput(
+                label: '% de gordura (opcional)',
+                hint: 'Ex: 15,0',
+                controller: _bodyFatCtrl,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                inputFormatters: [PtBrDecimalInputFormatter(maxDecimalDigits: 1)],
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _submit(),
+                validator: (v) {
+                  final trimmed = v?.trim() ?? '';
+                  if (trimmed.isEmpty) return null;
+                  final parsed = parsePtBrDouble(trimmed);
+                  if (parsed == null || parsed < 3 || parsed > 60) {
+                    return 'Informe entre 3% e 60%';
+                  }
+                  return null;
+                },
+              ),
+              AppSpacing.verticalGap20,
+              AppButton.primary(
+                label: 'Salvar',
+                onPressed: _submit,
+              ),
+        ],
       ),
     );
   }

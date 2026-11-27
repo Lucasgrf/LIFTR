@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
@@ -19,9 +21,16 @@ class ProgressWorkoutsView extends ConsumerWidget {
     final historyAsync = ref.watch(historyListProvider);
 
     return historyAsync.when(
+      skipLoadingOnRefresh: true,
+      skipError: true,
       loading: () => const LiftrScreenSkeleton(showHero: false, itemCount: 3),
-      error: (err, _) => ErrorStateWidget(
-        message: err.toString(),
+      error: (err, st) => ErrorStateWidget(
+        message: userFacingMessage(
+          err,
+          stackTrace: st,
+          context: 'ProgressWorkoutsView.build',
+        ),
+        safetyNote: offlineSafetyNoteFor(err),
         onRetry: () => ref.invalidate(historyListProvider),
       ),
       data: (sessions) {
@@ -43,12 +52,14 @@ class ProgressWorkoutsView extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'TREINOS FINALIZADOS',
-                    style: AppTypography.eyebrow(context),
+                    'Treinos finalizados',
+                    style: context.textTheme.labelMedium?.copyWith(
+                      color: colors.textSecondary,
+                    ),
                   ),
                 ),
                 Text(
-                  '${sessions.length} ${sessions.length == 1 ? 'sessão' : 'sessões'}',
+                  pluralize(sessions.length, 'sessão', 'sessões'),
                   style: context.textTheme.labelSmall?.copyWith(
                     color: colors.textTertiary,
                     fontFeatures: AppTypography.tabularFeatures,
@@ -57,14 +68,20 @@ class ProgressWorkoutsView extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 10),
-            ...sessions.map(
-              (session) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: HistoryWorkoutCard(
-                  session: session,
-                  onTap: () => context.push('/session/${session.id}/summary'),
-                ),
-              ),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: sessions.length,
+              itemBuilder: (context, index) {
+                final session = sessions[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: HistoryWorkoutCard(
+                    session: session,
+                    onTap: () => context.push('/session/${session.id}/summary'),
+                  ),
+                );
+              },
             ),
           ],
         );

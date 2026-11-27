@@ -65,31 +65,6 @@ class AppTheme {
         centerTitle: false,
         titleTextStyle: textTheme.titleLarge,
       ),
-      navigationBarTheme: NavigationBarThemeData(
-        height: 64,
-        backgroundColor: colors.surfaceSubtle,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        indicatorColor: colors.primaryMuted,
-        indicatorShape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(radius.small),
-        ),
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        iconTheme: WidgetStateProperty.resolveWith((states) {
-          final isSelected = states.contains(WidgetState.selected);
-          return IconThemeData(
-            size: 22,
-            color: isSelected ? colors.primaryLight : colors.textTertiary,
-          );
-        }),
-        labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          final isSelected = states.contains(WidgetState.selected);
-          return textTheme.labelSmall?.copyWith(
-            color: isSelected ? colors.primaryLight : colors.textTertiary,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-          );
-        }),
-      ),
       chipTheme: ChipThemeData(
         backgroundColor: colors.surfaceVariant,
         selectedColor: colors.primaryMuted,
@@ -116,11 +91,11 @@ class AppTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: borderRadius,
-          borderSide: BorderSide(color: colors.border),
+          borderSide: BorderSide(color: colors.borderInteractive),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: borderRadius,
-          borderSide: BorderSide(color: colors.border),
+          borderSide: BorderSide(color: colors.borderInteractive),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: borderRadius,
@@ -133,6 +108,17 @@ class AppTheme {
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: borderRadius,
           borderSide: BorderSide(color: colors.danger, width: 1.5),
+        ),
+      ),
+      checkboxTheme: CheckboxThemeData(
+        side: BorderSide(color: colors.borderInteractive, width: 1.5),
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return colors.primary;
+          return Colors.transparent;
+        }),
+        checkColor: WidgetStatePropertyAll(colors.onPrimary),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radius.xs),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -159,14 +145,14 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           minimumSize: const Size(48, 48),
           foregroundColor: colors.textPrimary,
-          side: BorderSide(color: colors.border),
+          side: BorderSide(color: colors.borderInteractive),
           shape: RoundedRectangleBorder(borderRadius: borderRadius),
           textStyle: textTheme.labelLarge,
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          minimumSize: const Size(48, 44),
+          minimumSize: const Size(48, 48),
           foregroundColor: colors.primaryLight,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radius.small),

@@ -285,96 +285,106 @@ class SessionRepositoryImpl implements SessionRepository {
       }
     }
 
-    for (final op in ops) {
-      try {
-        switch (op.type) {
-          case PendingSessionOpType.startSession:
-            final sessionPayload = Map<String, dynamic>.from(
-              op.payload['session'] as Map? ?? const {},
-            );
-            try {
-              await _remoteDataSource.insertSession(sessionPayload);
-            } on PostgrestException catch (e) {
-              if (e.code != '23505') rethrow;
-            }
-            final exList = (op.payload['exercises'] as List<dynamic>?) ?? const [];
-            for (final exRaw in exList) {
-              if (exRaw is Map) {
-                try {
-                  await _remoteDataSource.insertSessionExercise(
-                    Map<String, dynamic>.from(exRaw),
-                  );
-                } on PostgrestException catch (e) {
-                  if (e.code != '23505') rethrow;
+    while (true) {
+      final ops = local.getPendingOps();
+      if (ops.isEmpty) break;
+
+      for (final op in ops) {
+        if (!local.hasPendingOp(op.id)) continue;
+        local.markOpInFlight(op);
+        try {
+          switch (op.type) {
+            case PendingSessionOpType.startSession:
+              final sessionPayload = Map<String, dynamic>.from(
+                op.payload['session'] as Map? ?? const {},
+              );
+              try {
+                await _remoteDataSource.insertSession(sessionPayload);
+              } on PostgrestException catch (e) {
+                if (e.code != '23505') rethrow;
+              }
+              final exList =
+                  (op.payload['exercises'] as List<dynamic>?) ?? const [];
+              for (final exRaw in exList) {
+                if (exRaw is Map) {
+                  try {
+                    await _remoteDataSource.insertSessionExercise(
+                      Map<String, dynamic>.from(exRaw),
+                    );
+                  } on PostgrestException catch (e) {
+                    if (e.code != '23505') rethrow;
+                  }
                 }
               }
-            }
-            break;
+              break;
 
-          case PendingSessionOpType.logSet:
-            try {
-              await _remoteDataSource.insertLoggedSet(op.payload);
-            } on PostgrestException catch (e) {
-              if (e.code != '23505') rethrow;
-            }
-            break;
+            case PendingSessionOpType.logSet:
+              try {
+                await _remoteDataSource.insertLoggedSet(op.payload);
+              } on PostgrestException catch (e) {
+                if (e.code != '23505') rethrow;
+              }
+              break;
 
-          case PendingSessionOpType.updateSet:
-            final setId = op.payload['set_id'] as String?;
-            final data = Map<String, dynamic>.from(
-              op.payload['data'] as Map? ?? const {},
-            );
-            if (setId != null) {
-              await _remoteDataSource.updateLoggedSet(setId, data);
-            }
-            break;
+            case PendingSessionOpType.updateSet:
+              final setId = op.payload['set_id'] as String?;
+              final data = Map<String, dynamic>.from(
+                op.payload['data'] as Map? ?? const {},
+              );
+              if (setId != null) {
+                await _remoteDataSource.updateLoggedSet(setId, data);
+              }
+              break;
 
-          case PendingSessionOpType.deleteSet:
-            final setId = op.payload['set_id'] as String?;
-            if (setId != null) {
-              await _remoteDataSource.deleteLoggedSet(setId);
-            }
-            break;
+            case PendingSessionOpType.deleteSet:
+              final setId = op.payload['set_id'] as String?;
+              if (setId != null) {
+                await _remoteDataSource.deleteLoggedSet(setId);
+              }
+              break;
 
-          case PendingSessionOpType.addExercise:
-            try {
-              await _remoteDataSource.insertSessionExercise(op.payload);
-            } on PostgrestException catch (e) {
-              if (e.code != '23505') rethrow;
-            }
-            break;
+            case PendingSessionOpType.addExercise:
+              try {
+                await _remoteDataSource.insertSessionExercise(op.payload);
+              } on PostgrestException catch (e) {
+                if (e.code != '23505') rethrow;
+              }
+              break;
 
-          case PendingSessionOpType.swapExercise:
-            final seId = op.payload['session_exercise_id'] as String?;
-            final data = Map<String, dynamic>.from(
-              op.payload['data'] as Map? ?? const {},
-            );
-            if (seId != null) {
-              await _remoteDataSource.updateSessionExercise(seId, data);
-            }
-            break;
+            case PendingSessionOpType.swapExercise:
+              final seId = op.payload['session_exercise_id'] as String?;
+              final data = Map<String, dynamic>.from(
+                op.payload['data'] as Map? ?? const {},
+              );
+              if (seId != null) {
+                await _remoteDataSource.updateSessionExercise(seId, data);
+              }
+              break;
 
-          case PendingSessionOpType.finishSession:
-          case PendingSessionOpType.abandonSession:
-            final sessionId = op.payload['session_id'] as String?;
-            final data = Map<String, dynamic>.from(
-              op.payload['data'] as Map? ?? const {},
-            );
-            if (sessionId != null) {
-              await _remoteDataSource.updateSession(sessionId, data);
-            }
-            break;
-        }
-        await local.removeOp(op.id);
-      } catch (e) {
-        if (isNetworkError(e)) {
-          _onConnectivityFallback?.call(true);
+            case PendingSessionOpType.finishSession:
+            case PendingSessionOpType.abandonSession:
+              final sessionId = op.payload['session_id'] as String?;
+              final data = Map<String, dynamic>.from(
+                op.payload['data'] as Map? ?? const {},
+              );
+              if (sessionId != null) {
+                await _remoteDataSource.updateSession(sessionId, data);
+              }
+              break;
+          }
+          await local.removeOp(op.id);
+        } catch (e) {
+          if (isNetworkError(e)) {
+            _onConnectivityFallback?.call(true);
+            _notifyPendingCount();
+            return false;
+          }
+          // Keep other errors isolated; stop further dependent ops for safety.
           _notifyPendingCount();
           return false;
+        } finally {
+          local.clearOpInFlight(op);
         }
-        // Keep other errors isolated; stop further dependent ops for safety.
-        _notifyPendingCount();
-        return false;
       }
     }
 
@@ -459,7 +469,13 @@ class SessionRepositoryImpl implements SessionRepository {
   Future<Result<WorkoutSession?, Failure>> getActiveSession() async {
     final local = _localDataSource;
     if (local != null && await _shouldUseOffline()) {
-      return Success(local.getActiveSession()?.toDomain());
+      try {
+        return Success(local.getActiveSession()?.toDomain());
+      } catch (e, stack) {
+        return Err(
+          CacheFailure('Erro ao ler sessão ativa no cache local: $e', stack),
+        );
+      }
     }
 
     try {
@@ -474,14 +490,31 @@ class SessionRepositoryImpl implements SessionRepository {
         model,
         cached: local?.getSessionById(model.id),
       );
-      await local?.saveSession(merged);
+      if (local != null) {
+        try {
+          await local.saveSession(merged);
+        } catch (e, stack) {
+          return Err(
+            CacheFailure('Erro ao salvar sessão no cache local: $e', stack),
+          );
+        }
+      }
       return Success(merged.toDomain());
     } on PostgrestException catch (e, stack) {
       return Err(ServerFailure(e.message, stack));
     } catch (e, stack) {
       if (local != null && isNetworkError(e)) {
         _onConnectivityFallback?.call(true);
-        return Success(local.getActiveSession()?.toDomain());
+        try {
+          return Success(local.getActiveSession()?.toDomain());
+        } catch (cacheErr, cacheStack) {
+          return Err(
+            CacheFailure(
+              'Erro ao ler sessão ativa no cache local: $cacheErr',
+              cacheStack,
+            ),
+          );
+        }
       }
       if (e is SocketException) {
         return Err(NetworkFailure('Sem conexão com a internet.', stack));
@@ -493,7 +526,14 @@ class SessionRepositoryImpl implements SessionRepository {
   @override
   Future<Result<WorkoutSession, Failure>> getSessionById(String id) async {
     final local = _localDataSource;
-    final cached = local?.getSessionById(id);
+    final WorkoutSessionModel? cached;
+    try {
+      cached = local?.getSessionById(id);
+    } catch (e, stack) {
+      return Err(
+        CacheFailure('Erro ao ler sessão no cache local: $e', stack),
+      );
+    }
 
     if (local != null && await _shouldUseOffline() && cached != null) {
       return Success(cached.toDomain());
@@ -508,7 +548,15 @@ class SessionRepositoryImpl implements SessionRepository {
       }
       final model = await _remoteDataSource.fetchSessionById(id);
       final merged = _mergePrescribedTargets(model, cached: cached);
-      await local?.saveSession(merged);
+      if (local != null) {
+        try {
+          await local.saveSession(merged);
+        } catch (e, stack) {
+          return Err(
+            CacheFailure('Erro ao salvar sessão no cache local: $e', stack),
+          );
+        }
+      }
       return Success(merged.toDomain());
     } on PostgrestException catch (e, stack) {
       if (cached != null && isNetworkError(e)) {
@@ -687,6 +735,81 @@ class SessionRepositoryImpl implements SessionRepository {
         return Err(NetworkFailure('Sem conexão com a internet.', stack));
       }
       return Err(UnexpectedFailure('Erro ao excluir série: $e', stack));
+    }
+  }
+
+  @override
+  Future<Result<LoggedSet, Failure>> restoreLoggedSet(LoggedSet set) async {
+    final local = _localDataSource;
+    final restoredModel = LoggedSetModel.fromDomain(set);
+    final effectiveIsWarmup = set.isWarmup || set.setType == SetType.warmup;
+    final data = <String, dynamic>{
+      'id': set.id,
+      'session_exercise_id': set.sessionExerciseId,
+      'set_number': set.setNumber,
+      'set_type': LoggedSetModel.setTypeToString(set.setType),
+      'weight_kg': set.weightKg,
+      'reps_completed': set.repsCompleted,
+      if (set.durationSeconds != null) 'duration_seconds': set.durationSeconds,
+      if (set.rirActual != null) 'rir_actual': set.rirActual,
+      if (set.rpeActual != null) 'rpe_actual': set.rpeActual,
+      if (set.restSecondsActual != null)
+        'rest_seconds_actual': set.restSecondsActual,
+      if (set.executionQuality != null)
+        'execution_quality':
+            LoggedSetModel.executionQualityToString(set.executionQuality),
+      'is_warmup': effectiveIsWarmup,
+      if (set.notes != null) 'notes': set.notes,
+      if (set.dropSets.isNotEmpty)
+        'drop_sets': set.dropSets.map((d) => d.toJson()).toList(),
+      if (set.completedAt != null)
+        'completed_at': set.completedAt!.toIso8601String(),
+    };
+
+    Future<Result<LoggedSet, Failure>> restoreOffline() async {
+      await _upsertSetInCache(set.sessionExerciseId, restoredModel);
+      final canceledDelete = await local!.cancelPendingDeleteOp(set.id);
+      if (!canceledDelete) {
+        await local.enqueueOp(
+          PendingSessionOp(
+            id: _uuid.v4(),
+            type: PendingSessionOpType.logSet,
+            payload: data,
+            createdAt: set.completedAt ?? DateTime.now(),
+          ),
+        );
+      }
+      _notifyPendingCount();
+      return Success(restoredModel.toDomain());
+    }
+
+    if (local != null &&
+        (await _shouldUseOffline() || local.isDeleteInFlight(set.id))) {
+      return restoreOffline();
+    }
+
+    try {
+      LoggedSetModel model;
+      try {
+        model = await _remoteDataSource.insertLoggedSet(data);
+      } on PostgrestException catch (e) {
+        if (e.code != '23505') rethrow;
+        // Row still exists remotely (e.g., an earlier delete didn't land); update in place.
+        model = await _remoteDataSource.updateLoggedSet(set.id, data);
+      }
+      await _upsertSetInCache(set.sessionExerciseId, model);
+      return Success(model.toDomain());
+    } on PostgrestException catch (e, stack) {
+      return Err(ServerFailure(e.message, stack));
+    } catch (e, stack) {
+      if (local != null && isNetworkError(e)) {
+        _onConnectivityFallback?.call(true);
+        return restoreOffline();
+      }
+      if (e is SocketException) {
+        return Err(NetworkFailure('Sem conexão com a internet.', stack));
+      }
+      return Err(UnexpectedFailure('Erro ao restaurar série: $e', stack));
     }
   }
 

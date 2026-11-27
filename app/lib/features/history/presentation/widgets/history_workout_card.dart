@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
+import 'package:personal_fitness_os/core/extensions/date_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
-import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/workout_mood_icon.dart';
 
@@ -24,7 +26,7 @@ class HistoryWorkoutCard extends StatelessWidget {
     final fitnessColors = context.fitnessColors;
 
     final date = session.completedAt ?? session.startedAt;
-    final dateStr = DateFormat("d 'de' MMMM • HH:mm", 'pt_BR').format(date);
+    final dateStr = ptBrDateFormat("d 'de' MMMM • HH:mm").format(date);
     final minutes = session.durationSeconds ~/ 60;
 
     return AppCard(
@@ -33,39 +35,41 @@ class HistoryWorkoutCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(
-                dateStr,
-                style: context.textTheme.labelSmall?.copyWith(
-                  color: colors.textTertiary,
-                  fontWeight: FontWeight.w600,
+          SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: context.appSpacing.space8,
+              runSpacing: context.appSpacing.space4,
+              children: [
+                Text(
+                  dateStr,
+                  style: context.textTheme.labelSmall?.copyWith(
+                    color: colors.textTertiary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              const Spacer(),
-              if (session.mood != null) ...[
-                WorkoutMoodChip(mood: session.mood!, compact: true),
-                const SizedBox(width: 6),
+                if (session.mood != null || session.perceivedExertion != null)
+                  Wrap(
+                    spacing: context.appSpacing.space8,
+                    runSpacing: context.appSpacing.space4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      if (session.mood != null)
+                        WorkoutMoodChip(mood: session.mood!, compact: true),
+                      if (session.perceivedExertion != null)
+                        LiftrBadge(
+                          label:
+                              'RPE ${session.perceivedExertion!.toStringAsFixed(1)}',
+                          tone: LiftrBadgeTone.brand,
+                        ),
+                    ],
+                  ),
               ],
-              if (session.perceivedExertion != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: colors.primary.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(context.appRadius.small),
-                  ),
-                  child: Text(
-                    'RPE ${session.perceivedExertion!.toStringAsFixed(1)}',
-                    style: context.textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colors.primary,
-                      fontSize: 10,
-                    ),
-                  ),
-                ),
-            ],
+            ),
           ),
-          const SizedBox(height: 8),
+          AppSpacing.verticalGap8,
 
           Text(
             session.workoutName,
@@ -74,31 +78,45 @@ class HistoryWorkoutCard extends StatelessWidget {
               color: colors.textPrimary,
             ),
           ),
-          const SizedBox(height: 12),
+          AppSpacing.verticalGap12,
 
           Row(
             children: [
-              _buildMetricChip(
-                context,
-                icon: Icons.timer_outlined,
-                label: '$minutes min',
-                color: colors.textSecondary,
+              Expanded(
+                child: Wrap(
+                  spacing: context.appSpacing.space12,
+                  runSpacing: context.appSpacing.space4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    _buildMetricChip(
+                      context,
+                      icon: Icons.timer_rounded,
+                      label: '$minutes min',
+                      color: colors.textSecondary,
+                    ),
+                    _buildMetricChip(
+                      context,
+                      icon: Icons.checklist_rounded,
+                      label: pluralize(
+                        session.totalWorkingSetsCount,
+                        'série',
+                        'séries',
+                      ),
+                      color: fitnessColors.progressNeutral,
+                    ),
+                    _buildMetricChip(
+                      context,
+                      icon: Icons.fitness_center_rounded,
+                      label: formatWeightKgPtBr(
+                        session.totalVolumeKg,
+                        decimals: 0,
+                      ),
+                      color: fitnessColors.progressUp,
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(width: 12),
-              _buildMetricChip(
-                context,
-                icon: Icons.checklist_rounded,
-                label: '${session.totalWorkingSetsCount} séries',
-                color: fitnessColors.progressNeutral,
-              ),
-              const SizedBox(width: 12),
-              _buildMetricChip(
-                context,
-                icon: Icons.fitness_center_rounded,
-                label: '${session.totalVolumeKg.toStringAsFixed(0)} kg',
-                color: fitnessColors.progressUp,
-              ),
-              const Spacer(),
+              AppSpacing.horizontalGap8,
               Icon(
                 Icons.chevron_right_rounded,
                 size: 20,
@@ -122,12 +140,13 @@ class HistoryWorkoutCard extends StatelessWidget {
       children: [
         Icon(icon, size: 14, color: color),
         const SizedBox(width: 4),
-        Text(
-          label,
-          style: context.textTheme.bodySmall?.copyWith(
-            color: color,
-            fontWeight: FontWeight.w600,
-            fontSize: 11,
+        Flexible(
+          child: Text(
+            label,
+            style: context.textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],

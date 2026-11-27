@@ -254,6 +254,19 @@ class _MutableSessionRepo implements SessionRepository {
   }
 
   @override
+  Future<Result<LoggedSet, Failure>> restoreLoggedSet(LoggedSet set) async {
+    _session = _session.copyWith(
+      exercises: _session.exercises.map((se) {
+        if (se.id != set.sessionExerciseId) return se;
+        final updatedSets = [...se.sets.where((s) => s.id != set.id), set]
+          ..sort((a, b) => a.setNumber.compareTo(b.setNumber));
+        return se.copyWith(sets: updatedSets);
+      }).toList(),
+    );
+    return Success(set);
+  }
+
+  @override
   Future<Result<void, Failure>> abandonSession(String sessionId) async =>
       const Success(null);
 
@@ -552,7 +565,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Completed set exposes Desfazer and + Drop-set directly
+      // Completed set starts compact without inline action strip; expand to expose Desfazer and + Drop-set
+      expect(find.text('Desfazer'), findsNothing);
+      expect(find.text('+ Drop-set'), findsNothing);
+      await tester.tap(find.bySemanticsLabel(RegExp(r'^Série 1,')));
+      await tester.pumpAndSettle();
+
       expect(find.text('Desfazer'), findsOneWidget);
       expect(find.text('+ Drop-set'), findsOneWidget);
 
@@ -568,13 +586,15 @@ void main() {
       expect(savedType, SetType.dropSet);
       expect(savedDrops, isNotEmpty);
 
-      // Tapping footer Drop-set button also works with zero crash (previously threw LateInitializationError)
+      // Tapping footer Drop-set button adds and expands Set 2, collapsing Set 1
       await tester.tap(find.text('Drop-set'));
       await tester.pumpAndSettle();
       expect(find.byType(LoggedSetRow), findsNWidgets(2));
       expect(tester.takeException(), isNull);
 
-      // Tapping Desfazer removes the completed set
+      // Re-expand Set 1 to tap Desfazer and remove the completed set
+      await tester.tap(find.bySemanticsLabel(RegExp(r'^Série 1,')));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Desfazer'));
       await tester.pumpAndSettle();
       expect(deletedId, 'ls-1');
@@ -853,7 +873,7 @@ void main() {
 
       await tester.tap(find.text('Treinos'));
       await tester.pumpAndSettle();
-      expect(find.text('TREINOS FINALIZADOS'), findsOneWidget);
+      expect(find.text('Treinos finalizados'), findsOneWidget);
       expect(find.text('Upper A'), findsOneWidget);
 
       // Now verify SessionSummaryScreen details
@@ -870,7 +890,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('EXERCÍCIOS REALIZADOS'), findsOneWidget);
+      expect(find.text('Exercícios realizados'), findsOneWidget);
       expect(find.text('Supino Reto'), findsOneWidget);
       expect(find.text('60 kg × 8 reps'), findsOneWidget);
       expect(find.text('Drop 1: 45 kg × 5 reps'), findsOneWidget);
@@ -1041,7 +1061,7 @@ void main() {
       // Step weight up on set 1 -> reveals 'Aplicar às restantes'
       await tester.ensureVisible(find.bySemanticsLabel('Aumentar carga').first);
       await tester.tap(find.bySemanticsLabel('Aumentar carga').first);
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(find.text('Aplicar às restantes'), findsOneWidget);
 
       await tester.ensureVisible(find.text('Aplicar às restantes'));
@@ -1055,9 +1075,12 @@ void main() {
       await tester.pump();
       expect(find.text('60'), findsNWidgets(3));
 
-      // Edit Set 2 inline before bulk complete -> draft must be respected
-      await tester.ensureVisible(find.bySemanticsLabel('Aumentar carga').at(1));
-      await tester.tap(find.bySemanticsLabel('Aumentar carga').at(1));
+      // Expand compact Set 2 and edit inline before bulk complete -> draft must be respected
+      await tester.ensureVisible(find.bySemanticsLabel(RegExp(r'^Série 2,')));
+      await tester.tap(find.bySemanticsLabel(RegExp(r'^Série 2,')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.bySemanticsLabel('Aumentar carga'));
+      await tester.tap(find.bySemanticsLabel('Aumentar carga'));
       await tester.pump();
       expect(find.text('62.5'), findsOneWidget);
 

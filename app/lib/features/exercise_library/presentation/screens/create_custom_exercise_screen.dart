@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
+import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/widgets/exercise_card.dart';
 
@@ -41,9 +43,9 @@ class _CreateCustomExerciseScreenState
     {'key': 'hamstrings', 'label': 'Posterior de Coxa'},
     {'key': 'glutes', 'label': 'Glúteos'},
     {'key': 'calves', 'label': 'Panturrilhas'},
-    {'key': 'anterior_deltoid', 'label': 'Deltóide Anterior (Ombro)'},
-    {'key': 'lateral_deltoid', 'label': 'Deltóide Lateral (Ombro)'},
-    {'key': 'posterior_deltoid', 'label': 'Deltóide Posterior (Ombro)'},
+    {'key': 'anterior_deltoid', 'label': 'Deltoide Anterior (Ombro)'},
+    {'key': 'lateral_deltoid', 'label': 'Deltoide Lateral (Ombro)'},
+    {'key': 'posterior_deltoid', 'label': 'Deltoide Posterior (Ombro)'},
     {'key': 'biceps', 'label': 'Bíceps'},
     {'key': 'triceps', 'label': 'Tríceps'},
     {'key': 'forearms', 'label': 'Antebraço'},
@@ -142,12 +144,15 @@ class _CreateCustomExerciseScreenState
       appBar: AppBar(
         title: const Text('Novo Exercício'),
       ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      body: SafeArea(
+        top: false,
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(0, 12, 0, 40),
+            child: ResponsiveContainer(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Section: Basic Info
               Text(
@@ -189,7 +194,9 @@ class _CreateCustomExerciseScreenState
                     value: _selectedPrimaryMuscle,
                     hint: Text(
                       'Selecione o músculo principal...',
-                      style: TextStyle(color: context.appColors.textTertiary),
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        color: context.appColors.textTertiary,
+                      ),
                     ),
                     dropdownColor: context.appColors.surfaceElevated,
                     items: primaryMuscles.map((m) {
@@ -205,10 +212,12 @@ class _CreateCustomExerciseScreenState
                                 shape: BoxShape.circle,
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            AppSpacing.horizontalGap12,
                             Text(
                               m['label']!,
-                              style: TextStyle(color: context.appColors.textPrimary),
+                              style: context.textTheme.bodyMedium?.copyWith(
+                                color: context.appColors.textPrimary,
+                              ),
                             ),
                           ],
                         ),
@@ -296,7 +305,9 @@ class _CreateCustomExerciseScreenState
                     value: _selectedEquipment,
                     hint: Text(
                       'Selecione o equipamento (opcional)...',
-                      style: TextStyle(color: context.appColors.textTertiary),
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        color: context.appColors.textTertiary,
+                      ),
                     ),
                     dropdownColor: context.appColors.surfaceElevated,
                     items: equipments.map((e) {
@@ -304,7 +315,9 @@ class _CreateCustomExerciseScreenState
                         value: e['key'],
                         child: Text(
                           e['label']!,
-                          style: TextStyle(color: context.appColors.textPrimary),
+                          style: context.textTheme.bodyMedium?.copyWith(
+                            color: context.appColors.textPrimary,
+                          ),
                         ),
                       );
                     }).toList(),
@@ -333,7 +346,9 @@ class _CreateCustomExerciseScreenState
                     value: _selectedMovementPattern,
                     hint: Text(
                       'Selecione o padrão de movimento (opcional)...',
-                      style: TextStyle(color: context.appColors.textTertiary),
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        color: context.appColors.textTertiary,
+                      ),
                     ),
                     dropdownColor: context.appColors.surfaceElevated,
                     items: movementPatterns.map((p) {
@@ -341,7 +356,9 @@ class _CreateCustomExerciseScreenState
                         value: p['key'],
                         child: Text(
                           p['label']!,
-                          style: TextStyle(color: context.appColors.textPrimary),
+                          style: context.textTheme.bodyMedium?.copyWith(
+                            color: context.appColors.textPrimary,
+                          ),
                         ),
                       );
                     }).toList(),
@@ -407,7 +424,9 @@ class _CreateCustomExerciseScreenState
                 onPressed: _submit,
               ),
             ],
+            ),
           ),
+        ),
         ),
       ),
     );

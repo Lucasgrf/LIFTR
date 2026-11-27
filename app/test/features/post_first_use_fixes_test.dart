@@ -97,6 +97,10 @@ class _NoopSessionRepo implements SessionRepository {
       const Success(null);
 
   @override
+  Future<Result<LoggedSet, Failure>> restoreLoggedSet(LoggedSet set) async =>
+      Success(set);
+
+  @override
   Future<Result<WorkoutSession, Failure>> finishSession({
     required String sessionId,
     required int durationSeconds,
@@ -877,10 +881,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('TREINO DE HOJE'), findsOneWidget);
       expect(find.text('Lower A'), findsOneWidget);
       expect(find.byType(LastCompletedWorkoutCard), findsOneWidget);
-      expect(find.text('ÚLTIMO TREINO REALIZADO'), findsOneWidget);
+      expect(find.text('Último treino realizado'), findsOneWidget);
       expect(find.text('Especialização Braços'), findsOneWidget);
       expect(find.text('45 min'), findsOneWidget);
       expect(find.text('285 kg'), findsOneWidget);
@@ -904,13 +907,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('TREINO & EQUIPAMENTOS'), findsOneWidget);
+      expect(find.text('Treino e equipamentos'), findsOneWidget);
       expect(find.text('Descanso padrão'), findsOneWidget);
       expect(find.text('3:00 (180s)'), findsOneWidget);
       expect(find.text('PERFIL & OBJETIVO'), findsNothing);
 
       await tester.scrollUntilVisible(find.text('Meu Perfil'), 200);
-      expect(find.text('CONTA'), findsOneWidget);
+      expect(find.text('Conta'), findsOneWidget);
       expect(find.text('Meu Perfil'), findsOneWidget);
     });
 
@@ -920,7 +923,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Perfil'), findsOneWidget);
-      expect(find.text('DADOS CORPORAIS & OBJETIVO'), findsOneWidget);
+      expect(find.text('Dados corporais e objetivo'), findsOneWidget);
       expect(find.text('Dados corporais'), findsOneWidget);
       expect(find.text('Objetivo atual'), findsOneWidget);
       expect(find.text('Metas calculadas'), findsOneWidget);

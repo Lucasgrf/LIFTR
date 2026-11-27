@@ -4,13 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
+import 'package:personal_fitness_os/core/widgets/app_button.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_confirm_dialog.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
@@ -32,38 +38,61 @@ class WeeklyComparisonScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.appColors;
-    final radius = context.appRadius;
     final offset = ref.watch(weeklyComparisonOffsetProvider);
     final comparisonAsync = ref.watch(weeklyComparisonProvider);
+
+    Future<void> refreshComparison() async {
+      final hadData = ref.read(weeklyComparisonProvider).hasValue;
+      Object? refreshError;
+      StackTrace? refreshStack;
+      await ref.refresh(weeklyComparisonProvider.future).then<void>(
+        (_) {},
+        onError: (Object error, StackTrace st) {
+          refreshError = error;
+          refreshStack = st;
+        },
+      );
+      if (refreshError != null && hadData && context.mounted) {
+        final msg = userFacingMessage(
+          refreshError!,
+          stackTrace: refreshStack,
+          context: 'WeeklyComparisonScreen.refreshComparison',
+        );
+        context.showSnackBar('$msg Mostrando dados salvos.');
+      }
+    }
 
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppBar(
         title: const Text('Comparação semanal'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Semantics(
-              label: 'Registrar cardio',
-              button: true,
-              child: TextButton.icon(
-                onPressed: () => LogCardioModal.show(context),
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('Cardio'),
-                style: TextButton.styleFrom(
-                  minimumSize: const Size(48, 48),
-                  foregroundColor: colors.primaryLight,
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
       body: comparisonAsync.when(
+        skipLoadingOnRefresh: true,
+        skipError: true,
         loading: () => const SafeArea(child: LiftrScreenSkeleton()),
-        error: (err, _) => ErrorStateWidget(
-          message: err.toString(),
-          onRetry: () => ref.invalidate(weeklyComparisonProvider),
+        error: (err, st) => RefreshIndicator(
+          color: colors.primary,
+          onRefresh: refreshComparison,
+          child: LayoutBuilder(
+            builder: (context, constraints) => ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: ErrorStateWidget(
+                    message: userFacingMessage(
+                      err,
+                      stackTrace: st,
+                      context: 'WeeklyComparisonScreen.build',
+                    ),
+                    safetyNote: offlineSafetyNoteFor(err),
+                    onRetry: () => ref.invalidate(weeklyComparisonProvider),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
         data: (data) {
           final current = data.currentWeek;
@@ -72,8 +101,9 @@ class WeeklyComparisonScreen extends ConsumerWidget {
 
           return RefreshIndicator(
             color: colors.primary,
-            onRefresh: () => ref.refresh(weeklyComparisonProvider.future),
+            onRefresh: refreshComparison,
             child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(0, 10, 0, 36),
               children: [
                 ResponsiveContainer(
@@ -81,15 +111,10 @@ class WeeklyComparisonScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // 1. Week Navigator Strip
-                      Container(
+                      AppCard(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 6,
                           vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.surface,
-                          borderRadius: BorderRadius.circular(radius.large),
-                          border: Border.all(color: colors.border),
                         ),
                         child: Row(
                           children: [
@@ -97,6 +122,7 @@ class WeeklyComparisonScreen extends ConsumerWidget {
                               label: 'Semana anterior',
                               button: true,
                               child: IconButton(
+                                tooltip: 'Semana anterior',
                                 onPressed: () {
                                   HapticFeedback.selectionClick();
                                   ref
@@ -141,6 +167,7 @@ class WeeklyComparisonScreen extends ConsumerWidget {
                               label: 'Próxima semana',
                               button: true,
                               child: IconButton(
+                                tooltip: 'Próxima semana',
                                 onPressed: offset < 0
                                     ? () {
                                         HapticFeedback.selectionClick();
@@ -173,27 +200,45 @@ class WeeklyComparisonScreen extends ConsumerWidget {
                       _HeroCardioCard(
                         data: data,
                         onDeleteStandalone: (log) async {
+                          final confirmed = await showLiftrConfirmDialog(
+                            context,
+                            title: 'Remover cardio?',
+                            message:
+                                'Deseja remover "${log.modality}" (${formatCardioSeconds(log.durationSeconds)}) desta semana?',
+                            confirmLabel: 'Remover',
+                            icon: Icons.delete_outline_rounded,
+                            isDestructive: true,
+                          );
+                          if (!confirmed || !context.mounted) return;
                           final repo =
                               ref.read(weeklyComparisonRepositoryProvider);
-                          await repo.deleteStandaloneCardio(log.id);
-                          ref.invalidate(weeklyComparisonProvider);
-                          ref.invalidate(currentWeekSummaryProvider);
-                          ref.invalidate(dashboardDataProvider);
-                          if (context.mounted) {
-                            context.showSnackBar('Cardio removido.');
-                          }
+                          final result = await repo.deleteStandaloneCardio(log.id);
+                          if (!context.mounted) return;
+                          result.fold(
+                            (_) {
+                              ref.invalidate(weeklyComparisonProvider);
+                              ref.invalidate(currentWeekSummaryProvider);
+                              ref.invalidate(dashboardDataProvider);
+                              context.showSnackBar('Cardio removido.');
+                            },
+                            (failure) {
+                              context.showSnackBar(
+                                userFacingMessage(
+                                  failure,
+                                  context:
+                                      'WeeklyComparisonScreen.deleteStandaloneCardio',
+                                ),
+                                isError: true,
+                              );
+                            },
+                          );
                         },
                       ),
                       const SizedBox(height: 16),
 
                       // 3. Weekly Comparison Matrix
-                      Container(
+                      AppCard(
                         padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: colors.surface,
-                          borderRadius: BorderRadius.circular(radius.large),
-                          border: Border.all(color: colors.border),
-                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -202,7 +247,7 @@ class WeeklyComparisonScreen extends ConsumerWidget {
                                 Expanded(
                                   flex: 3,
                                   child: Text(
-                                    'Comparativo semanal',
+                                    'Comparação semanal',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: context.textTheme.titleMedium,
@@ -213,12 +258,15 @@ class WeeklyComparisonScreen extends ConsumerWidget {
                                   flex: 2,
                                   child: Text(
                                     previous != null
-                                        ? 'ATUAL VS ANTERIOR'
-                                        : 'BASELINE INICIAL',
+                                        ? 'Atual vs anterior'
+                                        : 'Baseline inicial',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     textAlign: TextAlign.end,
-                                    style: AppTypography.eyebrow(context),
+                                    style: context.textTheme.labelSmall
+                                        ?.copyWith(
+                                      color: colors.textTertiary,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -343,6 +391,28 @@ class WeeklyComparisonScreen extends ConsumerWidget {
           );
         },
       ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: colors.background,
+            border: Border(
+              top: BorderSide(color: colors.borderSubtle, width: 1),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: ResponsiveContainer(
+              heightFactor: 1.0,
+              child: AppButton.primary(
+                label: 'Registrar cardio',
+                icon: Icons.add_rounded,
+                onPressed: () => LogCardioModal.show(context),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -433,6 +503,16 @@ class _HeroCardioCard extends StatelessWidget {
     'D',
   ];
 
+  static const List<String> _weekdayFullNames = [
+    'Segunda-feira',
+    'Terça-feira',
+    'Quarta-feira',
+    'Quinta-feira',
+    'Sexta-feira',
+    'Sábado',
+    'Domingo',
+  ];
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -469,13 +549,10 @@ class _HeroCardioCard extends StatelessWidget {
       );
     }
 
-    return Container(
+    return AppCard(
+      borderRadius: radius.xl,
+      borderColor: colors.primary.withValues(alpha: 0.38),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(radius.xl),
-        border: Border.all(color: colors.primary.withValues(alpha: 0.38)),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -486,10 +563,12 @@ class _HeroCardioCard extends StatelessWidget {
             runSpacing: 6,
             children: [
               Text(
-                'CARDIO NA SEMANA',
+                'Cardio na semana',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppTypography.eyebrow(context),
+                style: context.textTheme.labelMedium?.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
               deltaBadge,
             ],
@@ -512,74 +591,95 @@ class _HeroCardioCard extends StatelessWidget {
               fontFeatures: AppTypography.tabularFeatures,
             ),
           ),
-          const SizedBox(height: 18),
-          SizedBox(
-            height: 102,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(7, (idx) {
-                final dayItem = idx < data.currentWeekDailyCardio.length
-                    ? data.currentWeekDailyCardio[idx]
-                    : DailyCardioBreakdown(
-                        day: current.weekStart.add(Duration(days: idx)),
-                      );
-                final mins = dayItem.totalMinutes;
-                final barHeight = mins <= 0
-                    ? 6.0
-                    : (44.0 * (mins / maxMinutes)).clamp(10.0, 44.0);
-                final dayLabel = _weekdayInitials[
-                    (dayItem.day.weekday - 1).clamp(0, 6)];
-
-                return Expanded(
-                  child: Semantics(
-                    label: '$dayLabel: $mins minutos de cardio',
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text(
-                          mins > 0 ? '${mins}m' : '',
-                          maxLines: 1,
-                          style: context.textTheme.labelSmall?.copyWith(
-                            fontSize: 10,
-                            color: colors.primaryLight,
-                            fontFeatures: AppTypography.tabularFeatures,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          width: 18,
-                          height: barHeight,
-                          decoration: BoxDecoration(
-                            color: mins > 0
-                                ? colors.primary
-                                : colors.surfaceElevated,
-                            borderRadius: BorderRadius.circular(radius.xs),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          dayLabel,
-                          style: context.textTheme.labelSmall?.copyWith(
-                            color: mins > 0
-                                ? colors.textPrimary
-                                : colors.textTertiary,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
+          AppSpacing.verticalGap16,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final minColumnWidth = constraints.maxWidth / 7;
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minWidth: constraints.maxWidth,
+                    minHeight: 102,
                   ),
-                );
-              }),
-            ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: List.generate(7, (idx) {
+                      final dayItem = idx < data.currentWeekDailyCardio.length
+                          ? data.currentWeekDailyCardio[idx]
+                          : DailyCardioBreakdown(
+                              day: current.weekStart.add(Duration(days: idx)),
+                            );
+                      final mins = dayItem.totalMinutes;
+                      final barHeight = mins <= 0
+                          ? 6.0
+                          : (44.0 * (mins / maxMinutes)).clamp(10.0, 44.0);
+                      final weekdayIdx = (dayItem.day.weekday - 1).clamp(0, 6);
+                      final dayLabel = _weekdayInitials[weekdayIdx];
+                      final fullDayName = _weekdayFullNames[weekdayIdx];
+
+                      return ConstrainedBox(
+                        constraints: BoxConstraints(minWidth: minColumnWidth),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: Semantics(
+                            label: '$fullDayName: $mins minutos de cardio',
+                            excludeSemantics: true,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Text(
+                                  mins > 0 ? '${mins}m' : '',
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  style: context.textTheme.labelSmall?.copyWith(
+                                    color: colors.primaryLight,
+                                    fontFeatures: AppTypography.tabularFeatures,
+                                  ),
+                                ),
+                                SizedBox(height: context.appSpacing.space4),
+                                Container(
+                                  width: 18,
+                                  height: barHeight,
+                                  decoration: BoxDecoration(
+                                    color: mins > 0
+                                        ? colors.primary
+                                        : colors.surfaceElevated,
+                                    borderRadius: BorderRadius.circular(radius.xs),
+                                  ),
+                                ),
+                                SizedBox(height: context.appSpacing.space8),
+                                Text(
+                                  dayLabel,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  style: context.textTheme.labelSmall?.copyWith(
+                                    color: mins > 0
+                                        ? colors.textPrimary
+                                        : colors.textTertiary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+              );
+            },
           ),
           if (data.currentWeekStandaloneCardio.isNotEmpty) ...[
             const SizedBox(height: 14),
             Divider(height: 1, color: colors.borderSubtle),
             const SizedBox(height: 12),
             Text(
-              'CARDIOS AVULSOS',
-              style: AppTypography.eyebrow(context),
+              'Cardios avulsos',
+              style: context.textTheme.labelMedium?.copyWith(
+                color: colors.textSecondary,
+              ),
             ),
             const SizedBox(height: 8),
             ...data.currentWeekStandaloneCardio.map((log) {
@@ -632,6 +732,7 @@ class _HeroCardioCard extends StatelessWidget {
                       label: 'Remover cardio ${log.modality}',
                       button: true,
                       child: IconButton(
+                        tooltip: 'Remover cardio ${log.modality}',
                         onPressed: () => onDeleteStandalone(log),
                         constraints: const BoxConstraints(
                           minWidth: 48,
@@ -756,8 +857,10 @@ class _WeeklyHistorySection extends StatelessWidget {
                 ),
               ),
               Text(
-                'HISTÓRICO',
-                style: AppTypography.eyebrow(context),
+                'Histórico',
+                style: context.textTheme.labelMedium?.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
             ],
           ),
@@ -794,7 +897,7 @@ class _HistoryWeekRow extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                '${snapshot.workoutsCompleted} treinos · ${formatCardioSeconds(snapshot.cardioDurationSeconds)} cardio',
+                '${pluralize(snapshot.workoutsCompleted, 'treino', 'treinos')} · ${formatCardioSeconds(snapshot.cardioDurationSeconds)} cardio',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: context.textTheme.labelSmall?.copyWith(

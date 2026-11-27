@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
-import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_eyebrow.dart';
 
 class LiftrSheetHeader extends StatelessWidget {
   const LiftrSheetHeader({
@@ -32,7 +32,7 @@ class LiftrSheetHeader extends StatelessWidget {
             height: 4,
             decoration: BoxDecoration(
               color: colors.border,
-              borderRadius: BorderRadius.circular(radius.full),
+              borderRadius: BorderRadius.circular(radius.xs),
             ),
           ),
         ),
@@ -45,10 +45,7 @@ class LiftrSheetHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (eyebrow != null) ...[
-                    Text(
-                      eyebrow!.toUpperCase(),
-                      style: AppTypography.eyebrow(context),
-                    ),
+                    LiftrEyebrow(eyebrow!),
                     const SizedBox(height: 4),
                   ],
                   Text(

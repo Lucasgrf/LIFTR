@@ -1,5 +1,12 @@
 import 'package:intl/intl.dart';
 
+final Map<String, DateFormat> _ptBrDateFormatCache = <String, DateFormat>{};
+
+/// Returns a lazily cached PT-BR [DateFormat] for [pattern], avoiding repeated
+/// instantiations in `build()` while remaining safe before locale setup.
+DateFormat ptBrDateFormat(String pattern) =>
+    _ptBrDateFormatCache.putIfAbsent(pattern, () => DateFormat(pattern, 'pt_BR'));
+
 extension DateExtensions on DateTime {
   bool get isToday {
     final now = DateTime.now();
@@ -31,15 +38,15 @@ extension DateExtensions on DateTime {
   }
 
   String formatShort() {
-    return DateFormat('dd/MM', 'pt_BR').format(this);
+    return ptBrDateFormat('dd/MM').format(this);
   }
 
   String formatMedium() {
-    return DateFormat('dd MMM yyyy', 'pt_BR').format(this);
+    return ptBrDateFormat('dd MMM yyyy').format(this);
   }
 
   String formatFull() {
-    return DateFormat('EEEE, dd \'de\' MMMM \'de\' yyyy', 'pt_BR').format(this);
+    return ptBrDateFormat('EEEE, dd \'de\' MMMM \'de\' yyyy').format(this);
   }
 
   bool isSameDay(DateTime other) {

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
@@ -11,10 +13,12 @@ import 'package:personal_fitness_os/core/widgets/charts/exercise_load_progressio
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
+import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/widgets/exercise_card.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/widgets/exercise_diagram.dart';
+import 'package:personal_fitness_os/features/history/presentation/mappers/exercise_chart_mapper.dart';
 import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -98,21 +102,29 @@ class _ExerciseDetailScreenState extends ConsumerState<ExerciseDetailScreen> {
       appBar: AppBar(
         title: const Text('Detalhes do Exercício'),
       ),
-      body: exerciseAsync.when(
-        loading: () => const LoadingWidget(),
-        error: (error, _) => ErrorStateWidget(
-          message: error.toString(),
-          onRetry: () => ref.refresh(exerciseDetailProvider(widget.exerciseId)),
-        ),
-        data: (exercise) {
-          _initializeNotes(exercise.personalNotes);
-          final primaryMuscleLabel = ExerciseCard.getMuscleLabel(exercise.primaryMuscleGroup);
-          final equipmentLabel = ExerciseCard.getEquipmentLabel(exercise.equipment);
+      body: SafeArea(
+        top: false,
+        child: exerciseAsync.when(
+          loading: () => const LoadingWidget(),
+          error: (error, st) => ErrorStateWidget(
+            message: userFacingMessage(
+              error,
+              stackTrace: st,
+              context: 'ExerciseDetailScreen.build',
+            ),
+            safetyNote: offlineSafetyNoteFor(error),
+            onRetry: () => ref.refresh(exerciseDetailProvider(widget.exerciseId)),
+          ),
+          data: (exercise) {
+            _initializeNotes(exercise.personalNotes);
+            final primaryMuscleLabel = ExerciseCard.getMuscleLabel(exercise.primaryMuscleGroup);
+            final equipmentLabel = ExerciseCard.getEquipmentLabel(exercise.equipment);
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(0, 8, 0, 40),
+              child: ResponsiveContainer(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header Card
                 AppCard(
@@ -181,7 +193,7 @@ class _ExerciseDetailScreenState extends ConsumerState<ExerciseDetailScreen> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'Padrão: ${exercise.movementPattern}',
+                              'Padrão: ${formatMovementPatternPtBr(exercise.movementPattern)}',
                               style: context.textTheme.bodyMedium?.copyWith(
                                 color: context.appColors.textSecondary,
                               ),
@@ -200,7 +212,13 @@ class _ExerciseDetailScreenState extends ConsumerState<ExerciseDetailScreen> {
                     if (records.isNotEmpty) {
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16),
-                        child: ExerciseLoadProgressionChart(records: records),
+                        child: ExerciseLoadProgressionChart(
+                          series: mapExerciseHistoryToLoadSeries(
+                            records,
+                            loadColor: context.appColors.primary,
+                            e1rmColor: context.appColors.info,
+                          ),
+                        ),
                       );
                     }
                     return const SizedBox.shrink();
@@ -343,8 +361,10 @@ class _ExerciseDetailScreenState extends ConsumerState<ExerciseDetailScreen> {
                 ),
               ],
             ),
+            ),
           );
         },
+        ),
       ),
     );
   }

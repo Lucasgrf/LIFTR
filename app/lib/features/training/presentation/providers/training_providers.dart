@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:personal_fitness_os/core/errors/failures.dart';
 import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
 import 'package:personal_fitness_os/features/training/data/datasources/training_local_datasource.dart';
@@ -108,17 +109,37 @@ class TrainingPlansNotifier extends StateNotifier<AsyncValue<List<TrainingPlan>>
   final Ref _ref;
 
   Future<void> loadPlans() async {
-    state = const AsyncValue.loading();
+    await _fetchPlans(preserveExistingOnError: false);
+  }
+
+  Future<Failure?> refresh() => _fetchPlans(preserveExistingOnError: true);
+
+  Future<Failure?> _fetchPlans({required bool preserveExistingOnError}) async {
+    final previous = state;
+    if (!preserveExistingOnError || !previous.hasValue) {
+      state = const AsyncValue.loading();
+    }
     final useCase = _ref.read(getTrainingPlansUseCaseProvider);
     final result = await useCase.execute();
 
-    result.fold(
-      (plans) => state = AsyncValue.data(plans),
-      (failure) => state = AsyncValue.error(failure.message, failure.stackTrace ?? StackTrace.current),
+    return result.fold(
+      (plans) {
+        state = AsyncValue.data(plans);
+        return null;
+      },
+      (failure) {
+        if (preserveExistingOnError && previous.hasValue) {
+          state = previous;
+        } else {
+          state = AsyncValue.error(
+            failure,
+            failure.stackTrace ?? StackTrace.current,
+          );
+        }
+        return failure;
+      },
     );
   }
-
-  Future<void> refresh() => loadPlans();
 }
 
 final trainingPlansStateProvider =

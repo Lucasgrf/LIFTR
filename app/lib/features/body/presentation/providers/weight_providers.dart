@@ -4,10 +4,9 @@ import 'package:personal_fitness_os/features/body/data/repositories/weight_repos
 import 'package:personal_fitness_os/features/body/domain/entities/weight_entry.dart';
 import 'package:personal_fitness_os/features/body/domain/entities/weight_stats.dart';
 import 'package:personal_fitness_os/features/body/domain/repositories/weight_repository.dart';
-import 'package:personal_fitness_os/features/body/domain/usecases/delete_weight_entry.dart';
 import 'package:personal_fitness_os/features/body/domain/usecases/get_weight_history.dart';
 import 'package:personal_fitness_os/features/body/domain/usecases/get_weight_stats.dart';
-import 'package:personal_fitness_os/features/body/domain/usecases/log_weight_entry.dart';
+import 'package:personal_fitness_os/features/body/domain/usecases/upsert_daily_weight.dart';
 import 'package:personal_fitness_os/features/progression/presentation/providers/progression_providers.dart';
 
 final weightRemoteDataSourceProvider = Provider<WeightRemoteDataSource>((ref) {
@@ -16,10 +15,6 @@ final weightRemoteDataSourceProvider = Provider<WeightRemoteDataSource>((ref) {
 
 final weightRepositoryProvider = Provider<WeightRepository>((ref) {
   return WeightRepositoryImpl(ref.watch(weightRemoteDataSourceProvider));
-});
-
-final logWeightEntryUseCaseProvider = Provider<LogWeightEntryUseCase>((ref) {
-  return LogWeightEntryUseCase(ref.watch(weightRepositoryProvider));
 });
 
 final getWeightHistoryUseCaseProvider =
@@ -31,9 +26,16 @@ final getWeightStatsUseCaseProvider = Provider<GetWeightStatsUseCase>((ref) {
   return GetWeightStatsUseCase(ref.watch(weightRepositoryProvider));
 });
 
-final deleteWeightEntryUseCaseProvider =
-    Provider<DeleteWeightEntryUseCase>((ref) {
-  return DeleteWeightEntryUseCase(ref.watch(weightRepositoryProvider));
+/// Nullable provider so callers remain safe when Supabase is unconfigured
+/// in isolated tests unless [weightRepositoryProvider] is explicitly overridden.
+final upsertDailyWeightUseCaseProvider = Provider<UpsertDailyWeightUseCase?>((
+  ref,
+) {
+  try {
+    return UpsertDailyWeightUseCase(ref.watch(weightRepositoryProvider));
+  } catch (_) {
+    return null;
+  }
 });
 
 final weightStatsProvider =

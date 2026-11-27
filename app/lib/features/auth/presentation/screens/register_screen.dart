@@ -1,15 +1,56 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/constants/supabase_config.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
+import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_brand_mark.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 import 'package:personal_fitness_os/routing/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+typedef SignUpResult = ({String? userId, bool hasSession, bool requiresEmailConfirmation});
+typedef SignUpAction = Future<SignUpResult> Function({
+  required String name,
+  required String email,
+  required String password,
+  required String emailRedirectTo,
+});
+
+final signUpActionProvider = Provider<SignUpAction>((ref) {
+  return ({
+    required String name,
+    required String email,
+    required String password,
+    required String emailRedirectTo,
+  }) async {
+    if (!SupabaseConfig.isConfigured) {
+      return (
+        userId: null,
+        hasSession: false,
+        requiresEmailConfirmation: false,
+      );
+    }
+    final authResponse = await Supabase.instance.client.auth.signUp(
+      email: email,
+      password: password,
+      data: {'name': name},
+      emailRedirectTo: emailRedirectTo,
+    );
+    return (
+      userId: authResponse.user?.id,
+      hasSession: authResponse.session != null,
+      requiresEmailConfirmation: authResponse.session == null,
+    );
+  };
+});
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -23,14 +64,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
+  final _nameFocus = FocusNode();
+  final _emailFocus = FocusNode();
+  final _passwordFocus = FocusNode();
   bool _isLoading = false;
+  String? _pendingConfirmationEmail;
 
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _nameFocus.dispose();
+    _emailFocus.dispose();
+    _passwordFocus.dispose();
     super.dispose();
   }
 
@@ -39,34 +86,42 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     setState(() => _isLoading = true);
     try {
-      String? registeredUserId;
-      var hasSession = false;
-      if (SupabaseConfig.isConfigured) {
-        final authResponse = await Supabase.instance.client.auth.signUp(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-          data: {'name': _nameController.text.trim()},
-        );
-        registeredUserId = authResponse.user?.id;
-        hasSession = authResponse.session != null;
-      }
+      final email = _emailController.text.trim();
+      final name = _nameController.text.trim();
+      final result = await ref.read(signUpActionProvider)(
+        name: name,
+        email: email,
+        password: _passwordController.text,
+        emailRedirectTo: SupabaseConfig.authCallbackRedirectUrl,
+      );
       if (!mounted) return;
-      if (hasSession || !SupabaseConfig.isConfigured) {
-        syncActiveAuthSession(
-          ref,
-          isLoggedIn: hasSession,
-          overrideUserId: registeredUserId,
-        );
-      } else if (registeredUserId != null) {
-        ref.read(activeUserIdProvider.notifier).state = registeredUserId;
+      if (result.requiresEmailConfirmation) {
+        if (result.userId != null) {
+          ref.read(activeUserIdProvider.notifier).state = result.userId;
+        }
+        ref.read(userSettingsProvider.notifier).resetForAccount(
+              displayName: name,
+            );
+        TextInput.finishAutofillContext();
+        setState(() => _pendingConfirmationEmail = email);
+        return;
       }
+      syncActiveAuthSession(
+        ref,
+        isLoggedIn: result.hasSession,
+        overrideUserId: result.userId,
+      );
       ref.read(userSettingsProvider.notifier).resetForAccount(
-            displayName: _nameController.text.trim(),
+            displayName: name,
           );
+      TextInput.finishAutofillContext();
       context.go('/onboarding');
-    } catch (e) {
+    } catch (e, st) {
       if (!mounted) return;
-      context.showSnackBar('Erro ao criar conta: $e', isError: true);
+      context.showSnackBar(
+        userFacingMessage(e, stackTrace: st, context: 'RegisterScreen._submit'),
+        isError: true,
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -75,6 +130,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final spacing = context.appSpacing;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -83,7 +139,42 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: ResponsiveContainer(
-              child: Form(
+              child: _pendingConfirmationEmail != null
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Align(
+                          alignment: Alignment.centerLeft,
+                          child: LiftrWordmark(),
+                        ),
+                        AppSpacing.verticalGap24,
+                        AppCard(
+                          padding: EdgeInsets.all(spacing.space20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                'Confirme seu e-mail',
+                                style: context.textTheme.titleLarge,
+                              ),
+                              AppSpacing.verticalGap8,
+                              Text(
+                                'Enviamos um link de confirmação para $_pendingConfirmationEmail. Abra o link neste celular para ativar sua conta e entrar.',
+                                style: context.textTheme.bodyMedium?.copyWith(
+                                  color: colors.textSecondary,
+                                ),
+                              ),
+                              AppSpacing.verticalGap20,
+                              AppButton.primary(
+                                label: 'Ir para o login',
+                                onPressed: () => context.go('/login'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                  : Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -100,94 +191,66 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                     ),
                     const SizedBox(height: 32),
-                    Text(
-                      'Nome',
-                      style: context.textTheme.labelMedium?.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _nameController,
-                      textInputAction: TextInputAction.next,
-                      textCapitalization: TextCapitalization.words,
-                      style: context.textTheme.bodyLarge,
-                      decoration: const InputDecoration(
-                        hintText: 'Como você quer ser chamado',
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Informe seu nome';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'E-mail',
-                      style: context.textTheme.labelMedium?.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      style: context.textTheme.bodyLarge,
-                      decoration: const InputDecoration(
-                        hintText: 'voce@exemplo.com',
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Informe seu e-mail';
-                        }
-                        if (!value.contains('@')) {
-                          return 'Informe um e-mail válido';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Senha',
-                      style: context.textTheme.labelMedium?.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => _submit(),
-                      style: context.textTheme.bodyLarge,
-                      decoration: InputDecoration(
-                        hintText: 'Mínimo 6 caracteres',
-                        suffixIcon: Semantics(
-                          label: _obscurePassword
-                              ? 'Mostrar senha'
-                              : 'Ocultar senha',
-                          button: true,
-                          child: IconButton(
-                            onPressed: () => setState(
-                              () => _obscurePassword = !_obscurePassword,
-                            ),
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                              color: colors.textTertiary,
-                            ),
+                    AutofillGroup(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          AppInput(
+                            label: 'Nome',
+                            hint: 'Como você quer ser chamado',
+                            controller: _nameController,
+                            focusNode: _nameFocus,
+                            textInputAction: TextInputAction.next,
+                            textCapitalization: TextCapitalization.words,
+                            autofillHints: const [AutofillHints.name],
+                            onFieldSubmitted: (_) => _emailFocus.requestFocus(),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Informe seu nome';
+                              }
+                              return null;
+                            },
                           ),
-                        ),
+                          const SizedBox(height: 16),
+                          AppInput(
+                            label: 'E-mail',
+                            hint: 'voce@exemplo.com',
+                            controller: _emailController,
+                            focusNode: _emailFocus,
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
+                            autofillHints: const [AutofillHints.email],
+                            onFieldSubmitted: (_) =>
+                                _passwordFocus.requestFocus(),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Informe seu e-mail';
+                              }
+                              if (!value.contains('@')) {
+                                return 'Informe um e-mail válido';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          AppInput(
+                            label: 'Senha',
+                            hint: 'Mínimo 6 caracteres',
+                            controller: _passwordController,
+                            focusNode: _passwordFocus,
+                            obscureText: true,
+                            textInputAction: TextInputAction.done,
+                            autofillHints: const [AutofillHints.newPassword],
+                            onFieldSubmitted: (_) => _submit(),
+                            validator: (value) {
+                              if (value == null || value.length < 6) {
+                                return 'A senha deve ter ao menos 6 caracteres';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
                       ),
-                      validator: (value) {
-                        if (value == null || value.length < 6) {
-                          return 'A senha deve ter ao menos 6 caracteres';
-                        }
-                        return null;
-                      },
                     ),
                     const SizedBox(height: 28),
                     AppButton.primary(

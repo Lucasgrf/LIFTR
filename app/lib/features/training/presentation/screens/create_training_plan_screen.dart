@@ -4,8 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
-import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_list_group.dart';
+import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
 
 class CreateTrainingPlanScreen extends ConsumerStatefulWidget {
@@ -74,11 +75,17 @@ class _CreateTrainingPlanScreenState
       appBar: AppBar(
         title: const Text('Novo Programa de Treino'),
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+      body: SafeArea(
+        top: false,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+          padding: const EdgeInsets.fromLTRB(0, 16, 0, 40),
           children: [
+            ResponsiveContainer(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
             AppInput(
               label: 'Nome do Programa *',
               hint: 'Ex: Hipertrofia ABCD, Upper/Lower, PPL...',
@@ -101,27 +108,16 @@ class _CreateTrainingPlanScreenState
             ),
             const SizedBox(height: 20),
 
-            AppCard(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  'Definir como Plano Ativo',
-                  style: context.textTheme.titleSmall?.copyWith(
-                    color: context.appColors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+            LiftrListGroup(
+              children: [
+                LiftrListRow.toggle(
+                  label: 'Definir como programa ativo',
+                  subtitle:
+                      'Este programa se tornará o treino principal do seu dia a dia.',
+                  value: _isActive,
+                  onChanged: (val) => setState(() => _isActive = val),
                 ),
-                subtitle: Text(
-                  'Este programa se tornará o treino principal do seu dia a dia.',
-                  style: context.textTheme.bodySmall?.copyWith(
-                    color: context.appColors.textSecondary,
-                  ),
-                ),
-                value: _isActive,
-                activeColor: context.appColors.primary,
-                onChanged: (val) => setState(() => _isActive = val),
-              ),
+              ],
             ),
             const SizedBox(height: 32),
 
@@ -131,7 +127,11 @@ class _CreateTrainingPlanScreenState
               isLoading: _isLoading,
               onPressed: _submit,
             ),
+                ],
+              ),
+            ),
           ],
+        ),
         ),
       ),
     );

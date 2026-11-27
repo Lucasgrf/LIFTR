@@ -5,6 +5,7 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
@@ -37,7 +38,6 @@ class TodayWorkoutBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final radius = context.appRadius;
     final fitnessColors = context.fitnessColors;
 
     // 1. Ongoing active session
@@ -50,34 +50,10 @@ class TodayWorkoutBanner extends StatelessWidget {
           children: [
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: fitnessColors.progressUp.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(radius.full),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.timer_rounded,
-                        size: 14,
-                        color: fitnessColors.progressUp,
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        'EM ANDAMENTO',
-                        style: context.textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: fitnessColors.progressUp,
-                          letterSpacing: 0.6,
-                        ),
-                      ),
-                    ],
-                  ),
+                const LiftrBadge(
+                  label: 'EM ANDAMENTO',
+                  tone: LiftrBadgeTone.success,
+                  icon: Icons.timer_rounded,
                 ),
                 const Spacer(),
                 Text(
@@ -91,17 +67,12 @@ class TodayWorkoutBanner extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'SESSÃO ATIVA',
-              style: AppTypography.eyebrow(context),
-            ),
-            const SizedBox(height: 4),
-            Text(
               activeSession!.workoutName,
               style: context.textTheme.displayMedium,
             ),
             const SizedBox(height: 6),
             Text(
-              '${activeSession!.totalCompletedSetsCount} séries registradas até o momento',
+              '${pluralize(activeSession!.totalCompletedSetsCount, 'série', 'séries')} ${activeSession!.totalCompletedSetsCount == 1 ? 'registrada' : 'registradas'} até o momento',
               style: context.textTheme.bodyMedium?.copyWith(
                 color: colors.textSecondary,
                 fontFeatures: AppTypography.tabularFeatures,
@@ -164,17 +135,12 @@ class TodayWorkoutBanner extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'TREINO DE HOJE',
-              style: AppTypography.eyebrow(context),
-            ),
-            const SizedBox(height: 4),
-            Text(
               todayWorkout!.name,
               style: context.textTheme.displayMedium,
             ),
             const SizedBox(height: 6),
             Text(
-              '${todayWorkout!.exercises.length} exercícios · ${todayWorkout!.totalWorkingSetsCount} séries · ~$durationEst min',
+              '${pluralize(todayWorkout!.exercises.length, 'exercício', 'exercícios')} · ${pluralize(todayWorkout!.totalWorkingSetsCount, 'série', 'séries')} · ~$durationEst min',
               style: context.textTheme.bodyMedium?.copyWith(
                 color: colors.textSecondary,
                 fontFeatures: AppTypography.tabularFeatures,
@@ -211,7 +177,7 @@ class TodayWorkoutBanner extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Adicione sessões ao plano ${activePlan!.name} ou comece um treino livre.',
+              'Adicione sessões ao programa ${activePlan!.name} ou comece um treino livre.',
               style: context.textTheme.bodyMedium?.copyWith(
                 color: colors.textSecondary,
               ),

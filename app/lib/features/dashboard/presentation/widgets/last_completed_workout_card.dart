@@ -3,13 +3,15 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
+import 'package:personal_fitness_os/core/extensions/date_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/workout_mood_icon.dart';
@@ -18,21 +20,23 @@ class LastCompletedWorkoutCard extends StatelessWidget {
   const LastCompletedWorkoutCard({
     super.key,
     required this.session,
+    this.referenceNow,
     this.onTap,
   });
 
   final WorkoutSession session;
+  final DateTime? referenceNow;
   final VoidCallback? onTap;
 
   String _formatDateLabel(DateTime dt) {
-    final now = DateTime.now();
+    final now = referenceNow ?? DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final date = DateTime(dt.year, dt.month, dt.day);
     final diff = today.difference(date).inDays;
-    final hm = DateFormat('HH:mm', 'pt_BR').format(dt);
+    final hm = ptBrDateFormat('HH:mm').format(dt);
     if (diff == 0) return 'Hoje · $hm';
     if (diff == 1) return 'Ontem · $hm';
-    return DateFormat("d 'de' MMM · HH:mm", 'pt_BR').format(dt);
+    return ptBrDateFormat("d 'de' MMM · HH:mm").format(dt);
   }
 
   @override
@@ -47,17 +51,10 @@ class LastCompletedWorkoutCard extends StatelessWidget {
       session.totalVolumeKg.round(),
     );
 
-    return InkWell(
+    return AppCard(
       onTap: onTap ?? () => context.push('/session/${session.id}/summary'),
-      borderRadius: BorderRadius.circular(radius.large),
-      child: Container(
-        padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: BorderRadius.circular(radius.large),
-          border: Border.all(color: colors.border),
-        ),
-        child: Column(
+      padding: const EdgeInsets.all(15),
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -79,10 +76,12 @@ class LastCompletedWorkoutCard extends StatelessWidget {
                 Expanded(
                   flex: 3,
                   child: Text(
-                    'ÚLTIMO TREINO REALIZADO',
+                    'Último treino realizado',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTypography.eyebrow(context),
+                    style: context.textTheme.labelMedium?.copyWith(
+                      color: colors.textSecondary,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -102,37 +101,47 @@ class LastCompletedWorkoutCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
+            SizedBox(
+              width: double.infinity,
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  Text(
                     session.workoutName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: context.textTheme.titleMedium,
                   ),
-                ),
-                if (session.mood != null) ...[
-                  const SizedBox(width: 6),
-                  WorkoutMoodChip(mood: session.mood!, compact: true),
+                  if (session.mood != null ||
+                      session.executionScore != null ||
+                      session.perceivedExertion != null)
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        if (session.mood != null)
+                          WorkoutMoodChip(mood: session.mood!, compact: true),
+                        if (session.executionScore != null)
+                          LiftrBadge(
+                            label: '${session.executionScore}%',
+                            tone: session.executionScore! >= 85
+                                ? LiftrBadgeTone.success
+                                : LiftrBadgeTone.neutral,
+                          ),
+                        if (session.perceivedExertion != null)
+                          LiftrBadge(
+                            label:
+                                'RPE ${session.perceivedExertion!.toStringAsFixed(1)}',
+                            tone: LiftrBadgeTone.brand,
+                          ),
+                      ],
+                    ),
                 ],
-                if (session.executionScore != null) ...[
-                  const SizedBox(width: 6),
-                  LiftrBadge(
-                    label: '${session.executionScore}%',
-                    tone: session.executionScore! >= 85
-                        ? LiftrBadgeTone.success
-                        : LiftrBadgeTone.neutral,
-                  ),
-                ],
-                if (session.perceivedExertion != null) ...[
-                  const SizedBox(width: 6),
-                  LiftrBadge(
-                    label: 'RPE ${session.perceivedExertion!.toStringAsFixed(1)}',
-                    tone: LiftrBadgeTone.brand,
-                  ),
-                ],
-              ],
+              ),
             ),
             const SizedBox(height: 10),
             Wrap(
@@ -141,13 +150,17 @@ class LastCompletedWorkoutCard extends StatelessWidget {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 _MetricPill(
-                  icon: Icons.timer_outlined,
+                  icon: Icons.timer_rounded,
                   label: '$minutes min',
                   color: colors.textSecondary,
                 ),
                 _MetricPill(
                   icon: Icons.format_list_numbered_rounded,
-                  label: '${session.totalWorkingSetsCount} séries',
+                  label: pluralize(
+                    session.totalWorkingSetsCount,
+                    'série',
+                    'séries',
+                  ),
                   color: colors.textSecondary,
                 ),
                 _MetricPill(
@@ -165,7 +178,7 @@ class LastCompletedWorkoutCard extends StatelessWidget {
                   ),
                 if (session.totalExercisesCount > 0)
                   _MetricPill(
-                    icon: Icons.layers_outlined,
+                    icon: Icons.layers_rounded,
                     label: '${session.totalExercisesCount} exerc.',
                     color: colors.textTertiary,
                   ),
@@ -173,7 +186,6 @@ class LastCompletedWorkoutCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 }

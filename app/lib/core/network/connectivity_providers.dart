@@ -1,4 +1,5 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/network/network_info.dart';
 
@@ -30,6 +31,15 @@ final isOnlineStreamProvider = StreamProvider<bool>((ref) async* {
   }
 });
 
+/// Exposes the developer offline-simulation toggle only in non-release builds
+/// unless explicitly opted in via
+/// `--dart-define=ENABLE_OFFLINE_SIMULATION=true`.
+final offlineSimulationEnabledProvider = Provider<bool>(
+  (ref) =>
+      !kReleaseMode ||
+      const bool.fromEnvironment('ENABLE_OFFLINE_SIMULATION'),
+);
+
 /// Allows toggling a discrete offline preview banner in Settings without
 /// affecting real connectivity detection.
 final simulatedOfflineProvider = StateProvider<bool>((ref) => false);
@@ -41,7 +51,9 @@ final runtimeOfflineDetectedProvider = StateProvider<bool>((ref) => false);
 /// Combined offline state used by UI banners and offline-first repositories.
 final isOfflineModeProvider = Provider<bool>((ref) {
   final isOnline = ref.watch(isOnlineStreamProvider).asData?.value ?? true;
-  final simulated = ref.watch(simulatedOfflineProvider);
+  final simulationEnabled = ref.watch(offlineSimulationEnabledProvider);
+  final simulated =
+      simulationEnabled && ref.watch(simulatedOfflineProvider);
   final runtimeOffline = ref.watch(runtimeOfflineDetectedProvider);
   return !isOnline || simulated || runtimeOffline;
 });

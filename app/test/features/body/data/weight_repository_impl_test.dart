@@ -91,4 +91,94 @@ void main() {
       expect(result.isSuccess, isTrue);
     });
   });
+
+  group('upsertDailyWeight', () {
+    test('inserts a new entry when no weight exists for the same day',
+        () async {
+      final today = DateTime(2026, 8, 22, 10, 30);
+      when(() => mockDataSource.fetchWeightEntriesInRange(
+            start: any(named: 'start'),
+            end: any(named: 'end'),
+          )).thenAnswer((_) async => const []);
+      when(() => mockDataSource.insertWeightEntry(any()))
+          .thenAnswer((_) async => tModel);
+
+      final result = await repository.upsertDailyWeight(
+        weightKg: 80.0,
+        measuredAt: today,
+      );
+
+      expect(result.isSuccess, isTrue);
+      verify(() => mockDataSource.insertWeightEntry(any())).called(1);
+      verifyNever(() => mockDataSource.updateWeightEntry(any(), any()));
+    });
+
+    test('updates existing entry without creating duplicate on the same day',
+        () async {
+      final todayEvening = DateTime(2026, 8, 22, 20, 0);
+      final updatedModel = WeightEntryModel(
+        id: 'w-1',
+        userId: 'u-1',
+        weight: 79.4,
+        measuredAt: todayEvening,
+      );
+      when(() => mockDataSource.fetchWeightEntriesInRange(
+            start: any(named: 'start'),
+            end: any(named: 'end'),
+          )).thenAnswer((_) async => [tModel]);
+      when(() => mockDataSource.updateWeightEntry('w-1', any()))
+          .thenAnswer((_) async => updatedModel);
+
+      final result = await repository.upsertDailyWeight(
+        weightKg: 79.4,
+        measuredAt: todayEvening,
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect((result as Success<WeightEntry, Failure>).value.weightKg, 79.4);
+      verify(() => mockDataSource.updateWeightEntry('w-1', any())).called(1);
+      verifyNever(() => mockDataSource.insertWeightEntry(any()));
+    });
+
+    test('computes day boundaries in device local timezone and passes UTC bounds',
+        () async {
+      final inputUtc = DateTime.utc(2026, 8, 22, 23, 30);
+      final expectedLocal = inputUtc.toLocal();
+      final expectedStart =
+          DateTime(expectedLocal.year, expectedLocal.month, expectedLocal.day)
+              .toUtc();
+      final expectedEnd = DateTime(
+        expectedLocal.year,
+        expectedLocal.month,
+        expectedLocal.day,
+        23,
+        59,
+        59,
+        999,
+      ).toUtc();
+
+      when(() => mockDataSource.fetchWeightEntriesInRange(
+            start: any(named: 'start'),
+            end: any(named: 'end'),
+          )).thenAnswer((_) async => const []);
+      when(() => mockDataSource.insertWeightEntry(any()))
+          .thenAnswer((_) async => tModel);
+
+      await repository.upsertDailyWeight(
+        weightKg: 81.2,
+        measuredAt: inputUtc,
+      );
+
+      final captured = verify(() => mockDataSource.fetchWeightEntriesInRange(
+            start: captureAny(named: 'start'),
+            end: captureAny(named: 'end'),
+          )).captured;
+      final queriedStart = captured[0] as DateTime;
+      final queriedEnd = captured[1] as DateTime;
+      expect(queriedStart.isUtc, isTrue);
+      expect(queriedEnd.isUtc, isTrue);
+      expect(queriedStart, expectedStart);
+      expect(queriedEnd, expectedEnd);
+    });
+  });
 }

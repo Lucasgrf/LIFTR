@@ -19,6 +19,7 @@ import 'package:personal_fitness_os/features/workout_session/domain/usecases/fin
 import 'package:personal_fitness_os/features/workout_session/domain/usecases/get_active_workout_session.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/usecases/get_workout_session_by_id.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/usecases/log_set.dart';
+import 'package:personal_fitness_os/features/workout_session/domain/usecases/restore_logged_set.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/usecases/start_workout_session.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/usecases/swap_session_exercise.dart';
 import 'package:personal_fitness_os/routing/app_router.dart';
@@ -124,6 +125,11 @@ final logSetUseCaseProvider = Provider<LogSetUseCase>((ref) {
 
 final deleteLoggedSetUseCaseProvider = Provider<DeleteLoggedSetUseCase>((ref) {
   return DeleteLoggedSetUseCase(ref.watch(sessionRepositoryProvider));
+});
+
+final restoreLoggedSetUseCaseProvider =
+    Provider<RestoreLoggedSetUseCase>((ref) {
+  return RestoreLoggedSetUseCase(ref.watch(sessionRepositoryProvider));
 });
 
 final addExerciseToSessionUseCaseProvider =

@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:personal_fitness_os/core/errors/failures.dart';
 import 'package:personal_fitness_os/core/errors/result.dart';
 import 'package:personal_fitness_os/core/network/network_info.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/features/history/data/datasources/history_remote_datasource.dart';
 import 'package:personal_fitness_os/features/history/domain/entities/exercise_history_record.dart';
 import 'package:personal_fitness_os/features/history/domain/entities/history_event_type.dart';
@@ -129,7 +130,13 @@ class HistoryRepositoryImpl implements HistoryRepository {
     T Function()? onOfflineFallback,
   }) async {
     if (onOfflineFallback != null && await _shouldUseOffline()) {
-      return Success(onOfflineFallback());
+      try {
+        return Success(onOfflineFallback());
+      } catch (e, stack) {
+        return Err(
+          CacheFailure('Erro ao ler histórico no cache local: $e', stack),
+        );
+      }
     }
     try {
       final data = await call();
@@ -139,13 +146,31 @@ class HistoryRepositoryImpl implements HistoryRepository {
     } on PostgrestException catch (e, stack) {
       if (onOfflineFallback != null && isNetworkError(e)) {
         _onConnectivityFallback?.call(true);
-        return Success(onOfflineFallback());
+        try {
+          return Success(onOfflineFallback());
+        } catch (cacheErr, cacheStack) {
+          return Err(
+            CacheFailure(
+              'Erro ao ler histórico no cache local: $cacheErr',
+              cacheStack,
+            ),
+          );
+        }
       }
       return Err(ServerFailure(e.message, stack));
     } catch (e, stack) {
       if (onOfflineFallback != null && isNetworkError(e)) {
         _onConnectivityFallback?.call(true);
-        return Success(onOfflineFallback());
+        try {
+          return Success(onOfflineFallback());
+        } catch (cacheErr, cacheStack) {
+          return Err(
+            CacheFailure(
+              'Erro ao ler histórico no cache local: $cacheErr',
+              cacheStack,
+            ),
+          );
+        }
       }
       if (e is SocketException) {
         return Err(NetworkFailure('Sem conexão com a internet.', stack));
@@ -258,7 +283,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
                       timestamp: s.completedAt ?? s.startedAt,
                       title: s.workoutName,
                       subtitle:
-                          '${s.exercises.length} exercícios • ${s.durationSeconds ~/ 60} min',
+                          '${pluralize(s.exercises.length, 'exercício', 'exercícios')} • ${s.durationSeconds ~/ 60} min',
                       referenceId: s.id,
                       metadata: {'durationSeconds': s.durationSeconds},
                     ),

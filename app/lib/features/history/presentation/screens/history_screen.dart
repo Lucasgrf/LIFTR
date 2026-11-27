@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/body/presentation/providers/weight_providers.dart';
 import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
@@ -34,15 +37,51 @@ class HistoryScreen extends ConsumerWidget {
       body: RefreshIndicator(
         color: colors.primary,
         onRefresh: () async {
-          ref.invalidate(currentWeekSummaryProvider);
+          final hadPrimaryData = viewMode == 1
+              ? ref.read(weightHistoryProvider).hasValue
+              : ref.read(historyListProvider).hasValue;
+          Object? refreshError;
+          StackTrace? refreshStack;
+          final summaryFuture = ref
+              .refresh(currentWeekSummaryProvider.future)
+              .then<void>((_) {}, onError: (Object _, StackTrace _) {});
           if (viewMode == 1) {
-            ref.invalidate(weightHistoryProvider);
-            ref.invalidate(weightStatsProvider);
+            await Future.wait<void>([
+              summaryFuture,
+              ref.refresh(weightHistoryProvider.future).then<void>(
+                (_) {},
+                onError: (Object error, StackTrace st) {
+                  refreshError = error;
+                  refreshStack = st;
+                },
+              ),
+              ref
+                  .refresh(weightStatsProvider.future)
+                  .then<void>((_) {}, onError: (Object _, StackTrace _) {}),
+            ]);
           } else {
-            ref.invalidate(historyListProvider);
+            await Future.wait<void>([
+              summaryFuture,
+              ref.refresh(historyListProvider.future).then<void>(
+                (_) {},
+                onError: (Object error, StackTrace st) {
+                  refreshError = error;
+                  refreshStack = st;
+                },
+              ),
+            ]);
+          }
+          if (refreshError != null && hadPrimaryData && context.mounted) {
+            final msg = userFacingMessage(
+              refreshError!,
+              stackTrace: refreshStack,
+              context: 'HistoryScreen.onRefresh',
+            );
+            context.showSnackBar('$msg Mostrando dados salvos.');
           }
         },
         child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(0, 12, 0, 36),
           children: [
             ResponsiveContainer(
@@ -51,40 +90,23 @@ class HistoryScreen extends ConsumerWidget {
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'EVOLUÇÃO OBJETIVA',
-                          style: AppTypography.eyebrow(context),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          'Progresso',
-                          style: context.textTheme.displayMedium,
-                        ),
-                      ],
+                    child: Text(
+                      'Progresso',
+                      style: context.textTheme.displayMedium,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Semantics(
                     label: 'Abrir comparação semanal e cardio',
                     button: true,
-                    child: InkWell(
+                    child: AppCard(
                       onTap: () => context.push('/weekly-comparison'),
-                      borderRadius: BorderRadius.circular(radius.large),
-                      child: Container(
-                        constraints: const BoxConstraints(minHeight: 56),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.surface,
-                          borderRadius: BorderRadius.circular(radius.large),
-                          border: Border.all(color: colors.border),
-                        ),
-                        child: Row(
+                      constraints: const BoxConstraints(minHeight: 56),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      child: Row(
                           children: [
                             Container(
                               width: 34,
@@ -114,7 +136,7 @@ class HistoryScreen extends ConsumerWidget {
                                   if (weekSummary != null) ...[
                                     const SizedBox(height: 2),
                                     Text(
-                                      '${formatCardioSeconds(weekSummary.currentWeek.cardioDurationSeconds)} cardio · ${weekSummary.currentWeek.workoutsCompleted} treinos esta semana',
+                                      '${formatCardioSeconds(weekSummary.currentWeek.cardioDurationSeconds)} cardio · ${pluralize(weekSummary.currentWeek.workoutsCompleted, 'treino', 'treinos')} esta semana',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: context.textTheme.labelSmall
@@ -134,7 +156,6 @@ class HistoryScreen extends ConsumerWidget {
                             ),
                           ],
                         ),
-                      ),
                     ),
                   ),
                   const SizedBox(height: 12),

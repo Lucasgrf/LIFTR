@@ -48,24 +48,60 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
   Future<Result<List<Exercise>, Failure>> getExercises() async {
     final local = _localDataSource;
     if (local != null && await _shouldUseOffline()) {
-      return Success(local.getExercises().map((m) => m.toDomain()).toList());
+      try {
+        return Success(local.getExercises().map((m) => m.toDomain()).toList());
+      } catch (e, stack) {
+        return Err(
+          CacheFailure('Erro ao ler cache local de exercícios: $e', stack),
+        );
+      }
     }
 
     try {
       final models = await _remoteDataSource.fetchExercises();
-      await local?.saveExercises(models);
+      if (local != null) {
+        try {
+          await local.saveExercises(models);
+        } catch (e, stack) {
+          return Err(
+            CacheFailure('Erro ao salvar cache local de exercícios: $e', stack),
+          );
+        }
+      }
       final entities = models.map((m) => m.toDomain()).toList();
       return Success(entities);
     } on PostgrestException catch (e, stack) {
       if (local != null && isNetworkError(e)) {
         _onConnectivityFallback?.call(true);
-        return Success(local.getExercises().map((m) => m.toDomain()).toList());
+        try {
+          return Success(
+            local.getExercises().map((m) => m.toDomain()).toList(),
+          );
+        } catch (cacheErr, cacheStack) {
+          return Err(
+            CacheFailure(
+              'Erro ao ler cache local de exercícios: $cacheErr',
+              cacheStack,
+            ),
+          );
+        }
       }
       return Err(ServerFailure(e.message, stack));
     } catch (e, stack) {
       if (local != null && isNetworkError(e)) {
         _onConnectivityFallback?.call(true);
-        return Success(local.getExercises().map((m) => m.toDomain()).toList());
+        try {
+          return Success(
+            local.getExercises().map((m) => m.toDomain()).toList(),
+          );
+        } catch (cacheErr, cacheStack) {
+          return Err(
+            CacheFailure(
+              'Erro ao ler cache local de exercícios: $cacheErr',
+              cacheStack,
+            ),
+          );
+        }
       }
       if (e is SocketException) {
         return Err(NetworkFailure('Sem conexão com a internet. Verifique sua rede.', stack));
@@ -78,26 +114,58 @@ class ExerciseRepositoryImpl implements ExerciseRepository {
   Future<Result<Exercise, Failure>> getExerciseById(String id) async {
     final local = _localDataSource;
     if (local != null && await _shouldUseOffline()) {
-      final cached = local.getExerciseById(id);
-      if (cached != null) return Success(cached.toDomain());
+      try {
+        final cached = local.getExerciseById(id);
+        if (cached != null) return Success(cached.toDomain());
+      } catch (e, stack) {
+        return Err(
+          CacheFailure('Erro ao ler exercício no cache local: $e', stack),
+        );
+      }
     }
 
     try {
       final model = await _remoteDataSource.fetchExerciseById(id);
-      await local?.upsertExercise(model);
+      if (local != null) {
+        try {
+          await local.upsertExercise(model);
+        } catch (e, stack) {
+          return Err(
+            CacheFailure('Erro ao salvar exercício no cache local: $e', stack),
+          );
+        }
+      }
       return Success(model.toDomain());
     } on PostgrestException catch (e, stack) {
-      final cached = local?.getExerciseById(id);
-      if (cached != null && isNetworkError(e)) {
+      if (local != null && isNetworkError(e)) {
         _onConnectivityFallback?.call(true);
-        return Success(cached.toDomain());
+        try {
+          final cached = local.getExerciseById(id);
+          if (cached != null) return Success(cached.toDomain());
+        } catch (cacheErr, cacheStack) {
+          return Err(
+            CacheFailure(
+              'Erro ao ler exercício no cache local: $cacheErr',
+              cacheStack,
+            ),
+          );
+        }
       }
       return Err(ServerFailure(e.message, stack));
     } catch (e, stack) {
       if (local != null && isNetworkError(e)) {
         _onConnectivityFallback?.call(true);
-        final cached = local.getExerciseById(id);
-        if (cached != null) return Success(cached.toDomain());
+        try {
+          final cached = local.getExerciseById(id);
+          if (cached != null) return Success(cached.toDomain());
+        } catch (cacheErr, cacheStack) {
+          return Err(
+            CacheFailure(
+              'Erro ao ler exercício no cache local: $cacheErr',
+              cacheStack,
+            ),
+          );
+        }
       }
       if (e is SocketException) {
         return Err(NetworkFailure('Sem conexão com a internet.', stack));

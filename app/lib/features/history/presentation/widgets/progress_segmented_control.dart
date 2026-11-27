@@ -28,33 +28,26 @@ class ProgressSegmentedControl extends StatelessWidget {
     final radius = context.appRadius;
     final motion = context.appMotion;
 
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: colors.surfaceSubtle,
+    return Material(
+      color: colors.surfaceSubtle,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(radius.medium),
-        border: Border.all(color: colors.border),
+        side: BorderSide(color: colors.border),
       ),
-      child: Row(
-        children: List.generate(segments.length, (index) {
-          final isSelected = selectedIndex == index;
-          return Expanded(
-            child: Semantics(
-              selected: isSelected,
-              button: true,
-              child: InkWell(
-                onTap: () {
-                  if (selectedIndex == index) return;
-                  HapticFeedback.selectionClick();
-                  onChanged(index);
-                },
-                borderRadius: BorderRadius.circular(radius.small),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Row(
+          children: List.generate(segments.length, (index) {
+            final isSelected = selectedIndex == index;
+            return Expanded(
+              child: Semantics(
+                selected: isSelected,
+                button: true,
+                label: segments[index],
                 child: AnimatedContainer(
                   duration: motion.resolve(context, motion.fast),
                   curve: motion.curveStandard,
-                  constraints: const BoxConstraints(minHeight: 48),
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: isSelected
                         ? colors.surfaceElevated
@@ -64,26 +57,49 @@ class ProgressSegmentedControl extends StatelessWidget {
                         ? Border.all(color: colors.border)
                         : null,
                   ),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      segments[index],
-                      maxLines: 1,
-                      softWrap: false,
-                      style: context.textTheme.labelMedium?.copyWith(
-                        color: isSelected
-                            ? colors.textPrimary
-                            : colors.textTertiary,
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.w500,
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: InkWell(
+                      onTap: () {
+                        if (selectedIndex == index) return;
+                        HapticFeedback.selectionClick();
+                        onChanged(index);
+                      },
+                      borderRadius: BorderRadius.circular(radius.small),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 48),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Center(
+                            widthFactor: 1,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: ExcludeSemantics(
+                                child: Text(
+                                  segments[index],
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  style: context.textTheme.labelMedium?.copyWith(
+                                    color: isSelected
+                                        ? colors.textPrimary
+                                        : colors.textTertiary,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          );
-        }),
+            );
+          }),
+        ),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
@@ -10,6 +11,7 @@ import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
+import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
 import 'package:personal_fitness_os/features/training/presentation/widgets/export_plan_sheet.dart';
@@ -44,7 +46,7 @@ class _TrainingPlanDetailScreenState
       (updated) {
         ref.invalidate(trainingPlanDetailProvider(widget.planId));
         ref.read(trainingPlansStateProvider.notifier).refresh();
-        context.showSnackBar('Programa "${updated.name}" agora é o plano ativo!');
+        context.showSnackBar('Programa "${updated.name}" agora é o programa ativo!');
       },
       (failure) {
         context.showSnackBar('Erro ao ativar programa: ${failure.message}', isError: true);
@@ -66,28 +68,40 @@ class _TrainingPlanDetailScreenState
               label: 'Compartilhar programa',
               button: true,
               child: IconButton(
+                tooltip: 'Compartilhar programa',
                 onPressed: () => ExportPlanSheet.show(
                   context,
                   plan: planAsync.asData!.value,
                 ),
                 constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                icon: const Icon(Icons.ios_share_rounded),
+                icon: Icon(Icons.adaptive.share),
               ),
             ),
         ],
       ),
-      body: planAsync.when(
-        loading: () => const LoadingWidget(),
-        error: (error, _) => ErrorStateWidget(
-          message: error.toString(),
+      body: SafeArea(
+        top: false,
+        child: planAsync.when(
+          loading: () => const LoadingWidget(),
+        error: (error, st) => ErrorStateWidget(
+          message: userFacingMessage(
+            error,
+            stackTrace: st,
+            context: 'TrainingPlanDetailScreen.build',
+          ),
+          safetyNote: offlineSafetyNoteFor(error),
           onRetry: () => ref.invalidate(trainingPlanDetailProvider(widget.planId)),
         ),
         data: (plan) {
           final activeColor = context.fitnessColors.progressUp;
 
           return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
+            padding: const EdgeInsets.fromLTRB(0, 12, 0, 90),
             children: [
+              ResponsiveContainer(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
               // Header Card
               AppCard(
                 padding: const EdgeInsets.all(20),
@@ -182,11 +196,9 @@ class _TrainingPlanDetailScreenState
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'TREINOS DA SEMANA',
+                    'Treinos da semana',
                     style: context.textTheme.labelMedium?.copyWith(
                       color: context.appColors.textSecondary,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1,
                     ),
                   ),
                   TextButton.icon(
@@ -218,9 +230,13 @@ class _TrainingPlanDetailScreenState
                     onTap: () => context.push('/training/${plan.id}/workout/${workout.id}'),
                   ),
                 ),
+                  ],
+                ),
+              ),
             ],
           );
         },
+        ),
       ),
     );
   }

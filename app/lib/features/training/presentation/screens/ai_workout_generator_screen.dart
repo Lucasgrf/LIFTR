@@ -3,14 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
+import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
+import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
@@ -144,7 +149,7 @@ class _AiWorkoutGeneratorScreenState
 
   void _startProgressTicker() {
     _progressTimer?.cancel();
-    _progressTimer = Timer.periodic(const Duration(milliseconds: 220), (timer) {
+    _progressTimer = Timer.periodic(context.appMotion.standard, (timer) {
       if (!mounted || !_isGenerating) {
         timer.cancel();
         return;
@@ -176,12 +181,15 @@ class _AiWorkoutGeneratorScreenState
       final plan = await remote.generatePlan(_buildRequest());
       _progressTimer?.cancel();
       if (!mounted) return;
-      final disableAnimations = MediaQuery.disableAnimationsOf(context);
+      final completionDelay = context.appMotion.resolve(
+        context,
+        context.appMotion.fast,
+      );
       setState(() {
         _generationPercent = 100;
       });
-      if (!disableAnimations) {
-        await Future<void>.delayed(const Duration(milliseconds: 180));
+      if (completionDelay > Duration.zero) {
+        await Future<void>.delayed(completionDelay);
         if (!mounted) return;
       }
       setState(() {
@@ -195,11 +203,15 @@ class _AiWorkoutGeneratorScreenState
         _errorMessage = e.message;
         _isGenerating = false;
       });
-    } catch (e) {
+    } catch (e, st) {
       _progressTimer?.cancel();
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Não foi possível gerar seu treino agora: $e';
+        _errorMessage = userFacingMessage(
+          e,
+          stackTrace: st,
+          context: 'AiWorkoutGeneratorScreen._generatePlan',
+        );
         _isGenerating = false;
       });
     }
@@ -231,7 +243,10 @@ class _AiWorkoutGeneratorScreenState
       },
       (failure) {
         context.showSnackBar(
-          'Erro ao salvar programa: ${failure.message}',
+          userFacingMessage(
+            failure,
+            context: 'AiWorkoutGeneratorScreen._applyGeneratedPlan',
+          ),
           isError: true,
         );
       },
@@ -241,8 +256,11 @@ class _AiWorkoutGeneratorScreenState
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final showWizard =
-        !_isGenerating && _errorMessage == null && _generatedPlan == null;
+    final isOffline = ref.watch(isOfflineModeProvider);
+    final showWizard = !isOffline &&
+        !_isGenerating &&
+        _errorMessage == null &&
+        _generatedPlan == null;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -258,6 +276,7 @@ class _AiWorkoutGeneratorScreenState
                     label: 'Voltar',
                     button: true,
                     child: IconButton(
+                      tooltip: 'Voltar',
                       onPressed: _handleBack,
                       constraints: const BoxConstraints(
                         minWidth: 48,
@@ -277,8 +296,10 @@ class _AiWorkoutGeneratorScreenState
                             height: 4,
                           )
                         : Text(
-                            'TREINO PERSONALIZADO COM IA',
-                            style: AppTypography.eyebrow(context),
+                            'Treino personalizado com IA',
+                            style: context.textTheme.labelMedium?.copyWith(
+                              color: colors.textSecondary,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -302,7 +323,7 @@ class _AiWorkoutGeneratorScreenState
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 child: ResponsiveContainer(
-                  child: _buildBodyContent(context),
+                  child: _buildBodyContent(context, isOffline: isOffline),
                 ),
               ),
             ),
@@ -380,7 +401,7 @@ class _AiWorkoutGeneratorScreenState
     );
   }
 
-  Widget _buildBodyContent(BuildContext context) {
+  Widget _buildBodyContent(BuildContext context, {required bool isOffline}) {
     if (_isGenerating) {
       return _buildGeneratingState(context);
     }
@@ -389,6 +410,9 @@ class _AiWorkoutGeneratorScreenState
     }
     if (_generatedPlan != null) {
       return _buildPreviewState(context, _generatedPlan!);
+    }
+    if (isOffline) {
+      return _buildOfflineState(context);
     }
 
     switch (_step) {
@@ -405,9 +429,50 @@ class _AiWorkoutGeneratorScreenState
     }
   }
 
+  Widget _buildOfflineState(BuildContext context) {
+    final colors = context.appColors;
+    final radius = context.appRadius;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(radius.large),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Icon(
+            Icons.wifi_off_rounded,
+            size: 36,
+            color: colors.warning,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Você está sem conexão com a internet',
+            style: context.textTheme.titleMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'A criação de treino com IA precisa de acesso à rede para montar e personalizar a sua ficha.',
+            style: context.textTheme.bodyMedium?.copyWith(
+              color: colors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          AppButton.secondary(
+            label: 'Voltar',
+            onPressed: _handleBack,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStepHeader(
     BuildContext context, {
-    required String eyebrow,
     required String title,
     required String subtitle,
   }) {
@@ -415,8 +480,6 @@ class _AiWorkoutGeneratorScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(eyebrow, style: AppTypography.eyebrow(context)),
-        const SizedBox(height: 6),
         Text(title, style: context.textTheme.headlineMedium),
         const SizedBox(height: 6),
         Text(
@@ -436,10 +499,9 @@ class _AiWorkoutGeneratorScreenState
       children: [
         _buildStepHeader(
           context,
-          eyebrow: 'ESTUDO RÁPIDO · OBJETIVO',
           title: 'Qual é o foco principal deste treino?',
           subtitle:
-              'O Gemini calibra volume de séries, faixas de repetições e intervalos para o seu objetivo.',
+              'Calibramos volume de séries, faixas de repetições e intervalos para o seu objetivo.',
         ),
         ...AiWorkoutGoal.values.map(
           (g) => Padding(
@@ -460,17 +522,22 @@ class _AiWorkoutGeneratorScreenState
   }
 
   Widget _buildExperienceAndEquipmentStep(BuildContext context) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildStepHeader(
           context,
-          eyebrow: 'ESTUDO RÁPIDO · PERFIL TÉCNICO',
           title: 'Experiência e equipamentos',
           subtitle:
               'Adequamos a complexidade dos exercícios e o volume semanal ao que você tem disponível.',
         ),
-        Text('NÍVEL DE EXPERIÊNCIA', style: AppTypography.eyebrow(context)),
+        Text(
+          'Nível de experiência',
+          style: context.textTheme.labelMedium?.copyWith(
+            color: colors.textSecondary,
+          ),
+        ),
         const SizedBox(height: 8),
         ...AiWorkoutExperience.values.map(
           (exp) => Padding(
@@ -487,7 +554,12 @@ class _AiWorkoutGeneratorScreenState
           ),
         ),
         const SizedBox(height: 14),
-        Text('ESTRUTURA DISPONÍVEL', style: AppTypography.eyebrow(context)),
+        Text(
+          'Estrutura disponível',
+          style: context.textTheme.labelMedium?.copyWith(
+            color: colors.textSecondary,
+          ),
+        ),
         const SizedBox(height: 8),
         ...AiEquipmentAccess.values.map(
           (eq) => Padding(
@@ -517,12 +589,16 @@ class _AiWorkoutGeneratorScreenState
       children: [
         _buildStepHeader(
           context,
-          eyebrow: 'ESTUDO RÁPIDO · ROTINA SEMANAL',
           title: 'Frequência, duração e divisão',
           subtitle:
               'Escolha quantos dias você treina e se prefere alguma divisão específica (ABC, ABCD, Upper/Lower, etc.).',
         ),
-        Text('DIAS POR SEMANA', style: AppTypography.eyebrow(context)),
+        Text(
+          'Dias por semana',
+          style: context.textTheme.labelMedium?.copyWith(
+            color: colors.textSecondary,
+          ),
+        ),
         const SizedBox(height: 10),
         Row(
           children: [2, 3, 4, 5, 6].asMap().entries.map((entry) {
@@ -536,35 +612,36 @@ class _AiWorkoutGeneratorScreenState
                   label: '$days dias por semana',
                   selected: isSelected,
                   button: true,
-                  child: InkWell(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      setState(() {
-                        _daysPerWeek = days;
-                        _preferredSplit = null;
-                      });
-                    },
-                    borderRadius: BorderRadius.circular(radius.medium),
-                    child: Container(
-                      height: 48,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? colors.primary
-                            : colors.surfaceElevated,
-                        borderRadius: BorderRadius.circular(radius.medium),
-                        border: Border.all(
-                          color: isSelected ? colors.primary : colors.border,
-                          width: 1.5,
-                        ),
+                  child: Material(
+                    color: isSelected ? colors.primary : colors.surfaceElevated,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(radius.medium),
+                      side: BorderSide(
+                        color: isSelected ? colors.primary : colors.border,
+                        width: 1.5,
                       ),
-                      child: Text(
-                        '$days',
-                        style: context.textTheme.titleLarge?.copyWith(
-                          color: isSelected
-                              ? colors.onPrimary
-                              : colors.textPrimary,
-                          fontFeatures: AppTypography.tabularFeatures,
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() {
+                          _daysPerWeek = days;
+                          _preferredSplit = null;
+                        });
+                      },
+                      child: SizedBox(
+                        height: 48,
+                        child: Center(
+                          child: Text(
+                            '$days',
+                            style: context.textTheme.titleLarge?.copyWith(
+                              color: isSelected
+                                  ? colors.onPrimary
+                                  : colors.textPrimary,
+                              fontFeatures: AppTypography.tabularFeatures,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -575,7 +652,12 @@ class _AiWorkoutGeneratorScreenState
           }).toList(),
         ),
         const SizedBox(height: 20),
-        Text('TEMPO POR SESSÃO', style: AppTypography.eyebrow(context)),
+        Text(
+          'Tempo por sessão',
+          style: context.textTheme.labelMedium?.copyWith(
+            color: colors.textSecondary,
+          ),
+        ),
         const SizedBox(height: 10),
         Wrap(
           spacing: 8,
@@ -593,12 +675,17 @@ class _AiWorkoutGeneratorScreenState
           }).toList(),
         ),
         const SizedBox(height: 20),
-        Text('DIVISÃO DE TREINO', style: AppTypography.eyebrow(context)),
+        Text(
+          'Divisão de treino',
+          style: context.textTheme.labelMedium?.copyWith(
+            color: colors.textSecondary,
+          ),
+        ),
         const SizedBox(height: 10),
         _StudyOptionCard(
           title: 'Sugestão inteligente da IA',
           subtitle:
-              'Deixar o Gemini escolher a melhor divisão para $_daysPerWeek dias/semana',
+              'Escolher automaticamente a melhor divisão para $_daysPerWeek dias/semana',
           selected: _preferredSplit == null,
           onTap: () {
             HapticFeedback.selectionClick();
@@ -634,14 +721,15 @@ class _AiWorkoutGeneratorScreenState
       children: [
         _buildStepHeader(
           context,
-          eyebrow: 'ESTUDO RÁPIDO · ÊNFASE & CARDIO',
           title: 'Grupos prioritários e cardio',
           subtitle:
               'Marque até 3 grupos musculares caso queira dar foco extra (opcional) e configure seu cardio.',
         ),
         Text(
-          'ÊNFASE MUSCULAR (OPCIONAL)',
-          style: AppTypography.eyebrow(context),
+          'Ênfase muscular (opcional)',
+          style: context.textTheme.labelMedium?.copyWith(
+            color: colors.textSecondary,
+          ),
         ),
         const SizedBox(height: 10),
         Wrap(
@@ -666,53 +754,70 @@ class _AiWorkoutGeneratorScreenState
           }).toList(),
         ),
         const SizedBox(height: 24),
-        Text('CARDIO EM TEMPO', style: AppTypography.eyebrow(context)),
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: colors.surface,
-            borderRadius: BorderRadius.circular(radius.large),
-            border: Border.all(color: colors.border),
+        Text(
+          'Cardio em tempo',
+          style: context.textTheme.labelMedium?.copyWith(
+            color: colors.textSecondary,
           ),
+        ),
+        const SizedBox(height: 10),
+        AppCard(
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Incluir cardio nas sessões',
-                          style: context.textTheme.titleSmall,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Registrado em minutos para comparação semanal',
-                          style: context.textTheme.bodySmall?.copyWith(
-                            color: colors.textSecondary,
+              MergeSemantics(
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(radius.medium),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() => _includeCardio = !_includeCardio);
+                    },
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 48),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Incluir cardio nas sessões',
+                                  style: context.textTheme.titleSmall,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Registrado em minutos para comparação semanal',
+                                  style: context.textTheme.bodySmall?.copyWith(
+                                    color: colors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                          Switch.adaptive(
+                            value: _includeCardio,
+                            activeTrackColor: colors.primary,
+                            onChanged: (val) {
+                              HapticFeedback.selectionClick();
+                              setState(() => _includeCardio = val);
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  Switch(
-                    value: _includeCardio,
-                    activeTrackColor: colors.primary,
-                    onChanged: (val) {
-                      HapticFeedback.selectionClick();
-                      setState(() => _includeCardio = val);
-                    },
-                  ),
-                ],
+                ),
               ),
               if (_includeCardio) ...[
                 const SizedBox(height: 14),
                 Text(
-                  'DURAÇÃO ALVO POR SESSÃO',
-                  style: AppTypography.eyebrow(context),
+                  'Duração alvo por sessão',
+                  style: context.textTheme.labelMedium?.copyWith(
+                    color: colors.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Wrap(
@@ -746,22 +851,18 @@ class _AiWorkoutGeneratorScreenState
       children: [
         _buildStepHeader(
           context,
-          eyebrow: 'ESTUDO RÁPIDO · REVISÃO FINAL',
           title: 'Alguma restrição ou preferência?',
           subtitle:
               'Informe dores articulares, exercícios que prefere evitar ou qualquer detalhe adicional.',
         ),
-        TextField(
+        AppInput(
           key: const Key('ai_restrictions_input'),
           controller: _restrictionsController,
           minLines: 2,
           maxLines: 4,
-          decoration: InputDecoration(
-            hintText:
-                'Ex: desconforto no ombro, foco em glúteos e posterior, evitar agachamento livre...',
-            filled: true,
-            fillColor: colors.surface,
-          ),
+          hint:
+              'Ex: desconforto no ombro, foco em glúteos e posterior, evitar agachamento livre...',
+          fillColor: colors.surface,
         ),
         const SizedBox(height: 20),
         Container(
@@ -777,8 +878,10 @@ class _AiWorkoutGeneratorScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'RESUMO DO SEU PERFIL',
-                style: AppTypography.eyebrow(context),
+                'Resumo do seu perfil',
+                style: context.textTheme.labelMedium?.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
               const SizedBox(height: 10),
               _SummaryRow(label: 'Objetivo', value: _goal.label),
@@ -822,7 +925,6 @@ class _AiWorkoutGeneratorScreenState
     final colors = context.appColors;
     final fitnessColors = context.fitnessColors;
     final radius = context.appRadius;
-    final motion = context.appMotion;
     final percent = _generationPercent.clamp(0, 100);
     final stageLabel = _generatingStageLabel(percent);
 
@@ -851,8 +953,10 @@ class _AiWorkoutGeneratorScreenState
               children: [
                 Expanded(
                   child: Text(
-                    'MONTANDO TREINO COM IA',
-                    style: AppTypography.eyebrow(context),
+                    'Montando programa com IA',
+                    style: context.textTheme.labelMedium?.copyWith(
+                      color: colors.textSecondary,
+                    ),
                   ),
                 ),
                 Text(
@@ -868,16 +972,12 @@ class _AiWorkoutGeneratorScreenState
               ],
             ),
             const SizedBox(height: 12),
-            AnimatedContainer(
-              duration: motion.resolve(context, motion.fast),
-              curve: motion.curveStandard,
-              child: LiftrProgressBar(
-                progress: percent / 100.0,
-                height: 6,
-                color: percent >= 100
-                    ? fitnessColors.progressUp
-                    : colors.primary,
-              ),
+            LiftrProgressBar(
+              progress: percent / 100.0,
+              height: 6,
+              color: percent >= 100
+                  ? fitnessColors.progressUp
+                  : colors.primary,
             ),
             const SizedBox(height: 16),
             Text(
@@ -886,7 +986,7 @@ class _AiWorkoutGeneratorScreenState
             ),
             const SizedBox(height: 6),
             Text(
-              'O Gemini está estruturando $_daysPerWeek sessões (${_goal.label}) para o seu nível.',
+              'A IA está estruturando $_daysPerWeek sessões (${_goal.label}) para o seu nível.',
               style: context.textTheme.bodySmall?.copyWith(
                 color: colors.textSecondary,
               ),
@@ -994,8 +1094,10 @@ class _AiWorkoutGeneratorScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'PLANO RECOMENDADO PELO GEMINI',
-          style: AppTypography.eyebrow(context),
+          'Programa recomendado',
+          style: context.textTheme.labelMedium?.copyWith(
+            color: colors.textSecondary,
+          ),
         ),
         const SizedBox(height: 6),
         Text(plan.planName, style: context.textTheme.headlineMedium),
@@ -1009,15 +1111,20 @@ class _AiWorkoutGeneratorScreenState
               tone: LiftrBadgeTone.brand,
             ),
             LiftrBadge(
-              label: '${plan.totalWorkoutsCount} sessões',
+              label: pluralize(plan.totalWorkoutsCount, 'sessão', 'sessões'),
               tone: LiftrBadgeTone.neutral,
             ),
             LiftrBadge(
-              label: '${plan.totalExercisesCount} exercícios',
+              label: pluralize(
+                plan.totalExercisesCount,
+                'exercício',
+                'exercícios',
+              ),
               tone: LiftrBadgeTone.neutral,
             ),
             LiftrBadge(
-              label: '${plan.totalWorkingSetsCount} séries/sem',
+              label:
+                  '${plan.totalWorkingSetsCount} ${plan.totalWorkingSetsCount == 1 ? 'série/sem' : 'séries/sem'}',
               tone: LiftrBadgeTone.neutral,
             ),
           ],
@@ -1074,7 +1181,7 @@ class _AiWorkoutGeneratorScreenState
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  AppSpacing.verticalGap12,
                   ...workout.exercises.map((ex) {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
@@ -1083,7 +1190,7 @@ class _AiWorkoutGeneratorScreenState
                         children: [
                           Icon(
                             ex.isCardio
-                                ? Icons.timer_outlined
+                                ? Icons.timer_rounded
                                 : Icons.fitness_center_rounded,
                             size: 16,
                             color: ex.isCardio
@@ -1140,85 +1247,76 @@ class _StudyOptionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final radius = context.appRadius;
 
     return Semantics(
       selected: selected,
       button: true,
-      child: InkWell(
+      child: AppCard(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(radius.large),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 58),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: selected
-                ? colors.primary.withValues(alpha: 0.12)
-                : colors.surface,
-            borderRadius: BorderRadius.circular(radius.large),
-            border: Border.all(
-              color: selected ? colors.primary : colors.border,
-              width: selected ? 1.5 : 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Text(
-                          title,
-                          style: context.textTheme.titleSmall?.copyWith(
-                            color: colors.textPrimary,
-                          ),
-                        ),
-                        if (badgeLabel != null)
-                          LiftrBadge(
-                            label: badgeLabel!,
-                            tone: LiftrBadgeTone.brand,
-                          ),
-                      ],
-                    ),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 4),
+        backgroundColor: selected
+            ? colors.primary.withValues(alpha: 0.12)
+            : colors.surface,
+        borderColor: selected ? colors.primary : colors.border,
+        borderWidth: selected ? 1.5 : 1,
+        constraints: const BoxConstraints(minHeight: 58),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
                       Text(
-                        subtitle!,
-                        style: context.textTheme.bodySmall?.copyWith(
-                          color: colors.textSecondary,
+                        title,
+                        style: context.textTheme.titleSmall?.copyWith(
+                          color: colors.textPrimary,
                         ),
                       ),
+                      if (badgeLabel != null)
+                        LiftrBadge(
+                          label: badgeLabel!,
+                          tone: LiftrBadgeTone.brand,
+                        ),
                     ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: selected ? colors.primary : Colors.transparent,
-                  border: Border.all(
-                    color: selected ? colors.primary : colors.border,
-                    width: 1.5,
                   ),
-                ),
-                child: selected
-                    ? Icon(
-                        Icons.check_rounded,
-                        size: 16,
-                        color: colors.onPrimary,
-                      )
-                    : null,
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle!,
+                      style: context.textTheme.bodySmall?.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected ? colors.primary : Colors.transparent,
+                border: Border.all(
+                  color: selected ? colors.primary : colors.border,
+                  width: 1.5,
+                ),
+              ),
+              child: selected
+                  ? Icon(
+                      Icons.check_rounded,
+                      size: 16,
+                      color: colors.onPrimary,
+                    )
+                  : null,
+            ),
+          ],
         ),
       ),
     );
@@ -1244,24 +1342,26 @@ class _SelectableChip extends StatelessWidget {
     return Semantics(
       selected: selected,
       button: true,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(radius.medium),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 48, minWidth: 56),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: selected ? colors.primary : colors.surfaceElevated,
-            borderRadius: BorderRadius.circular(radius.medium),
-            border: Border.all(
-              color: selected ? colors.primary : colors.border,
-            ),
+      child: Material(
+        color: selected ? colors.primary : colors.surfaceElevated,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radius.medium),
+          side: BorderSide(
+            color: selected ? colors.primary : colors.border,
           ),
-          child: Text(
-            label,
-            style: context.textTheme.labelMedium?.copyWith(
-              color: selected ? colors.onPrimary : colors.textPrimary,
-              fontFeatures: AppTypography.tabularFeatures,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 48, minWidth: 56),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Text(
+              label,
+              style: context.textTheme.labelMedium?.copyWith(
+                color: selected ? colors.onPrimary : colors.textPrimary,
+                fontFeatures: AppTypography.tabularFeatures,
+              ),
             ),
           ),
         ),

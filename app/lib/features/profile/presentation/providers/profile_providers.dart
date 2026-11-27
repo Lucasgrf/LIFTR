@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/constants/supabase_config.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/features/profile/data/datasources/profile_remote_datasource.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 import 'package:personal_fitness_os/routing/app_router.dart';
@@ -118,23 +119,47 @@ class ProfileController extends StateNotifier<ProfileControllerState> {
           );
       state = state.copyWith(isUploadingAvatar: false);
       return true;
-    } catch (e) {
+    } catch (e, st) {
       state = state.copyWith(
         isUploadingAvatar: false,
-        errorMessage: 'Não foi possível enviar a foto de perfil: $e',
+        errorMessage: userFacingMessage(
+          e,
+          stackTrace: st,
+          context: 'ProfileController.uploadAvatar',
+        ),
       );
       return false;
     }
   }
 
-  Future<void> removeAvatar() async {
-    final storagePath = _ref.read(userSettingsProvider).avatarStoragePath;
+  Future<bool> removeAvatar() async {
+    final settings = _ref.read(userSettingsProvider);
+    final previousUrl = settings.avatarUrl;
+    final previousStoragePath = settings.avatarStoragePath;
+
+    state = state.copyWith(clearError: true);
     _ref.read(userSettingsProvider.notifier).updateProfileIdentity(
           clearAvatar: true,
         );
     final remote = _remoteDataSource;
-    if (remote != null) {
-      await remote.removeAvatar(storagePath);
+    if (remote == null) return true;
+
+    try {
+      await remote.removeAvatar(previousStoragePath);
+      return true;
+    } catch (e, st) {
+      _ref.read(userSettingsProvider.notifier).updateProfileIdentity(
+            avatarUrl: previousUrl,
+            avatarStoragePath: previousStoragePath,
+          );
+      state = state.copyWith(
+        errorMessage: userFacingMessage(
+          e,
+          stackTrace: st,
+          context: 'ProfileController.removeAvatar',
+        ),
+      );
+      return false;
     }
   }
 

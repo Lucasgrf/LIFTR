@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
+import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/ai_generated_plan.dart';
@@ -15,14 +20,18 @@ import 'package:personal_fitness_os/features/training/presentation/providers/ai_
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
 
 class ImportPlanSheet extends ConsumerStatefulWidget {
-  const ImportPlanSheet({super.key});
+  const ImportPlanSheet({
+    super.key,
+    this.embedded = false,
+  });
+
+  final bool embedded;
 
   static Future<void> show(BuildContext context) {
-    return showModalBottomSheet<void>(
+    return showLiftrSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const ImportPlanSheet(),
+      maxHeightFactor: 0.86,
+      builder: (_) => const ImportPlanSheet(embedded: true),
     );
   }
 
@@ -113,7 +122,7 @@ class _ImportPlanSheetState extends ConsumerState<ImportPlanSheet> {
       },
       (failure) {
         context.showSnackBar(
-          'Erro ao importar treino: ${failure.message}',
+          userFacingMessage(failure, context: 'ImportPlanSheet._import'),
           isError: true,
         );
       },
@@ -126,6 +135,179 @@ class _ImportPlanSheetState extends ConsumerState<ImportPlanSheet> {
     final radius = context.appRadius;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final preview = _decodedPlan;
+
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        LiftrSheetHeader(
+          title: 'Importar treino por código',
+          trailing: Semantics(
+            label: 'Fechar importação de treino',
+            button: true,
+            child: IconButton(
+              tooltip: 'Fechar importação de treino',
+              onPressed: () => Navigator.of(context).pop(),
+              constraints: const BoxConstraints(
+                minWidth: 48,
+                minHeight: 48,
+              ),
+              icon: Icon(
+                Icons.close_rounded,
+                color: colors.textSecondary,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Cole o código LIFTR-PLAN-V1:... (ou a mensagem inteira do WhatsApp) '
+          'para clonar as sessões e séries na sua conta.',
+          style: context.textTheme.bodySmall?.copyWith(
+            color: colors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 14),
+        AppInput(
+          key: const Key('import_plan_code_input'),
+          controller: _controller,
+          onChanged: _onInputChanged,
+          minLines: 2,
+          maxLines: 4,
+          hint: 'LIFTR-PLAN-V1:...',
+          fillColor: colors.surfaceSubtle,
+          style: context.textTheme.bodySmall?.copyWith(
+            color: colors.textPrimary,
+            fontFeatures: AppTypography.tabularFeatures,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: _pasteFromClipboard,
+            style: TextButton.styleFrom(
+              minimumSize: const Size(48, 48),
+              foregroundColor: colors.primaryLight,
+            ),
+            icon: const Icon(Icons.content_paste_rounded, size: 18),
+            label: const Text('Colar da área de transferência'),
+          ),
+        ),
+        if (_decodeError != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colors.danger.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(radius.medium),
+              border: Border.all(
+                color: colors.danger.withValues(alpha: 0.4),
+              ),
+            ),
+            child: Text(
+              _decodeError!,
+              style: context.textTheme.bodySmall?.copyWith(
+                color: colors.danger,
+              ),
+            ),
+          ),
+        ],
+        if (preview != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: colors.surfaceElevated,
+              borderRadius: BorderRadius.circular(radius.large),
+              border: Border.all(
+                color: colors.primary.withValues(alpha: 0.45),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Prévia do programa',
+                  style: context.textTheme.labelMedium?.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  preview.planName,
+                  style: context.textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    LiftrBadge(
+                      label: pluralize(
+                        preview.totalWorkoutsCount,
+                        'sessão',
+                        'sessões',
+                      ),
+                      tone: LiftrBadgeTone.brand,
+                    ),
+                    LiftrBadge(
+                      label: pluralize(
+                        preview.totalExercisesCount,
+                        'exercício',
+                        'exercícios',
+                      ),
+                      tone: LiftrBadgeTone.neutral,
+                    ),
+                    LiftrBadge(
+                      label: pluralize(
+                        preview.totalWorkingSetsCount,
+                        'série',
+                        'séries',
+                      ),
+                      tone: LiftrBadgeTone.neutral,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                ...preview.workouts.map(
+                  (w) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '• ${w.name} (${pluralize(w.exercises.length, 'exercício', 'exercícios')})',
+                      style: context.textTheme.bodySmall?.copyWith(
+                        color: colors.textSecondary,
+                        fontFeatures: AppTypography.tabularFeatures,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Exercícios personalizados que não existirem na sua conta serão criados automaticamente.',
+                  style: context.textTheme.labelSmall?.copyWith(
+                    color: colors.primaryLight,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 18),
+        AppButton.primary(
+          label: 'Importar e ativar treino',
+          icon: Icons.download_done_rounded,
+          isLoading: _isSaving,
+          onPressed: preview != null && !_isSaving
+              ? _importAndActivate
+              : null,
+        ),
+      ],
+    );
+
+    if (widget.embedded) {
+      return content;
+    }
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
@@ -142,190 +324,7 @@ class _ImportPlanSheetState extends ConsumerState<ImportPlanSheet> {
           top: false,
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Container(
-                    width: 38,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: colors.border,
-                      borderRadius: BorderRadius.circular(radius.full),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'IMPORTAR PROGRAMA',
-                            style: AppTypography.eyebrow(context),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Importar treino por código',
-                            style: context.textTheme.headlineMedium,
-                          ),
-                        ],
-                      ),
-                    ),
-                    Semantics(
-                      label: 'Fechar importação de treino',
-                      button: true,
-                      child: IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        constraints: const BoxConstraints(
-                          minWidth: 48,
-                          minHeight: 48,
-                        ),
-                        icon: Icon(
-                          Icons.close_rounded,
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Cole o código LIFTR-PLAN-V1:... (ou a mensagem inteira do WhatsApp) '
-                  'para clonar as sessões e séries na sua conta.',
-                  style: context.textTheme.bodySmall?.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  key: const Key('import_plan_code_input'),
-                  controller: _controller,
-                  onChanged: _onInputChanged,
-                  minLines: 2,
-                  maxLines: 4,
-                  style: context.textTheme.bodySmall?.copyWith(
-                    color: colors.textPrimary,
-                    fontFeatures: AppTypography.tabularFeatures,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'LIFTR-PLAN-V1:...',
-                    filled: true,
-                    fillColor: colors.surfaceSubtle,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: _pasteFromClipboard,
-                    style: TextButton.styleFrom(
-                      minimumSize: const Size(48, 48),
-                      foregroundColor: colors.primaryLight,
-                    ),
-                    icon: const Icon(Icons.content_paste_rounded, size: 18),
-                    label: const Text('Colar da área de transferência'),
-                  ),
-                ),
-                if (_decodeError != null) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: colors.danger.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(radius.medium),
-                      border: Border.all(
-                        color: colors.danger.withValues(alpha: 0.4),
-                      ),
-                    ),
-                    child: Text(
-                      _decodeError!,
-                      style: context.textTheme.bodySmall?.copyWith(
-                        color: colors.danger,
-                      ),
-                    ),
-                  ),
-                ],
-                if (preview != null) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: colors.surfaceElevated,
-                      borderRadius: BorderRadius.circular(radius.large),
-                      border: Border.all(
-                        color: colors.primary.withValues(alpha: 0.45),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'PRÉVIA DO PROGRAMA',
-                          style: AppTypography.eyebrow(context),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          preview.planName,
-                          style: context.textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            LiftrBadge(
-                              label: '${preview.totalWorkoutsCount} sessões',
-                              tone: LiftrBadgeTone.brand,
-                            ),
-                            LiftrBadge(
-                              label: '${preview.totalExercisesCount} exercícios',
-                              tone: LiftrBadgeTone.neutral,
-                            ),
-                            LiftrBadge(
-                              label: '${preview.totalWorkingSetsCount} séries',
-                              tone: LiftrBadgeTone.neutral,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        ...preview.workouts.map(
-                          (w) => Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
-                            child: Text(
-                              '• ${w.name} (${w.exercises.length} exercícios)',
-                              style: context.textTheme.bodySmall?.copyWith(
-                                color: colors.textSecondary,
-                                fontFeatures: AppTypography.tabularFeatures,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Exercícios personalizados que não existirem na sua conta serão criados automaticamente.',
-                          style: context.textTheme.labelSmall?.copyWith(
-                            color: colors.primaryLight,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 18),
-                AppButton.primary(
-                  label: 'Importar e ativar treino',
-                  icon: Icons.download_done_rounded,
-                  isLoading: _isSaving,
-                  onPressed: preview != null && !_isSaving
-                      ? _importAndActivate
-                      : null,
-                ),
-              ],
-            ),
+            child: content,
           ),
         ),
       ),

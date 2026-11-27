@@ -49,9 +49,16 @@ android {
         !releaseKeyPassword.isNullOrBlank() &&
         file(releaseStoreFilePath).exists()
 
-    if (System.getenv("REQUIRE_RELEASE_SIGNING") == "true" && !hasReleaseSigning) {
+    val isReleaseTaskRequested = gradle.startParameter.taskNames.any {
+        it.contains("Release", ignoreCase = true)
+    }
+    if ((isReleaseTaskRequested || System.getenv("REQUIRE_RELEASE_SIGNING") == "true") &&
+        !hasReleaseSigning
+    ) {
         throw GradleException(
-            "Release signing credentials are required when REQUIRE_RELEASE_SIGNING=true.",
+            "Release signing credentials are missing. Configure app/android/key.properties " +
+                "or set ANDROID_KEYSTORE_PATH, ANDROID_KEYSTORE_PASSWORD, " +
+                "ANDROID_KEY_ALIAS, and ANDROID_KEY_PASSWORD.",
         )
     }
 
@@ -68,10 +75,8 @@ android {
 
     buildTypes {
         release {
-            signingConfig = if (hasReleaseSigning) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
             }
         }
     }

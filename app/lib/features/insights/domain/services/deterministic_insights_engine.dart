@@ -1,3 +1,4 @@
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/features/body/domain/entities/weight_entry.dart';
 import 'package:personal_fitness_os/features/insights/domain/entities/fitness_insight.dart';
 import 'package:personal_fitness_os/features/nutrition/domain/entities/nutrition_goal.dart';
@@ -107,7 +108,7 @@ class DeterministicInsightsEngine {
       return FitnessInsight(
         id: 'insight-weight-cut-divergence',
         title: 'Tendência de peso em alta com meta de déficit',
-        description: 'Sua média de peso subiu +${diff.toStringAsFixed(1)} kg na última semana. Verifique a precisão das pesagens de alimentos ou retenção hídrica.',
+        description: 'Sua média de peso subiu +${formatWeightKgPtBr(diff)} na última semana. Verifique a precisão das pesagens de alimentos ou retenção hídrica.',
         category: InsightCategory.nutrition,
         severity: InsightSeverity.warning,
         createdAt: now,
@@ -127,7 +128,7 @@ class DeterministicInsightsEngine {
       return FitnessInsight(
         id: 'insight-consistency-streak',
         title: 'Excelente consistência!',
-        description: 'Você completou ${last7d.length} treinos nos últimos 7 dias. O estímulo muscular e a disciplina estão ótimos.',
+        description: 'Você completou ${pluralize(last7d.length, 'treino', 'treinos')} nos últimos 7 dias. O estímulo muscular e a disciplina estão ótimos.',
         category: InsightCategory.consistency,
         severity: InsightSeverity.success,
         createdAt: now,

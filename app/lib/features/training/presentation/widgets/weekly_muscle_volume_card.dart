@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
-import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
+import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 
@@ -28,9 +29,6 @@ class WeeklyMuscleVolumeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final radius = context.appRadius;
-
     final counts = <String, int>{
       'chest': 0,
       'back': 0,
@@ -66,13 +64,9 @@ class WeeklyMuscleVolumeCard extends StatelessWidget {
       (prev, e) => e.sets > prev ? e.sets : prev,
     );
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(radius.large),
-        border: Border.all(color: colors.border),
-      ),
+    final colors = context.appColors;
+    return AppCard(
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -91,11 +85,13 @@ class WeeklyMuscleVolumeCard extends StatelessWidget {
               Flexible(
                 flex: 2,
                 child: Text(
-                  'SÉRIES VÁLIDAS',
+                  'Séries válidas',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.end,
-                  style: AppTypography.eyebrow(context),
+                  style: context.textTheme.labelSmall?.copyWith(
+                    color: colors.textTertiary,
+                  ),
                 ),
               ),
             ],
@@ -123,6 +119,26 @@ class WeeklyMuscleVolumeCard extends StatelessWidget {
             ),
             if (row < 2) const SizedBox(height: 14),
           ],
+          const SizedBox(height: 14),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              Icon(
+                Icons.check_circle_rounded,
+                size: 14,
+                color: colors.primaryLight,
+              ),
+              Text(
+                'Meta: $_targetWeeklySets+ séries/semana',
+                style: context.textTheme.labelSmall?.copyWith(
+                  color: colors.textSecondary,
+                  fontFeatures: AppTypography.tabularFeatures,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -172,8 +188,9 @@ class _MuscleBarItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final reachedTarget = entry.sets >= targetSets;
     final ratio = maxSets > 0 ? (entry.sets / maxSets).clamp(0.0, 1.0) : 0.0;
-    final barColor = entry.sets >= targetSets
+    final barColor = reachedTarget
         ? colors.primary
         : entry.sets > 0
             ? colors.textSecondary
@@ -181,14 +198,21 @@ class _MuscleBarItem extends StatelessWidget {
 
     return Semantics(
       container: true,
-      label: '${entry.label}: ${entry.sets} séries válidas na semana',
+      excludeSemantics: true,
+      label:
+          '${entry.label}: ${pluralize(entry.sets, 'série', 'séries')} ${entry.sets == 1 ? 'válida' : 'válidas'} na semana${reachedTarget ? ' (meta atingida)' : ''}',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
+          SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 6,
+              runSpacing: 2,
+              children: [
+                Text(
                   entry.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -196,19 +220,33 @@ class _MuscleBarItem extends StatelessWidget {
                     color: colors.textSecondary,
                   ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                '${entry.sets} séries',
-                style: context.textTheme.labelSmall?.copyWith(
-                  color: entry.sets >= targetSets
-                      ? colors.primaryLight
-                      : colors.textTertiary,
-                  fontWeight: FontWeight.w600,
-                  fontFeatures: AppTypography.tabularFeatures,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (reachedTarget) ...[
+                      Icon(
+                        Icons.check_circle_rounded,
+                        size: 12,
+                        color: colors.primaryLight,
+                      ),
+                      const SizedBox(width: 4),
+                    ],
+                    Flexible(
+                      child: Text(
+                        pluralize(entry.sets, 'série', 'séries'),
+                        style: context.textTheme.labelSmall?.copyWith(
+                          color: reachedTarget
+                              ? colors.primaryLight
+                              : colors.textTertiary,
+                          fontWeight: FontWeight.w600,
+                          fontFeatures: AppTypography.tabularFeatures,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 6),
           LiftrProgressBar(

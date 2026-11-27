@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/widgets/exercise_card.dart';
@@ -58,7 +59,7 @@ class WorkoutExerciseCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                AppSpacing.horizontalGap12,
 
                 // Name and tags
                 Expanded(
@@ -72,7 +73,7 @@ class WorkoutExerciseCard extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      AppSpacing.verticalGap4,
                       Row(
                         children: [
                           LiftrBadge(
@@ -80,17 +81,18 @@ class WorkoutExerciseCard extends StatelessWidget {
                             tone: LiftrBadgeTone.neutral,
                           ),
                           if (equipmentLabel.isNotEmpty) ...[
-                            const SizedBox(width: 6),
+                            AppSpacing.horizontalGap8,
                             Text(
                               '·',
-                              style: TextStyle(color: context.appColors.textTertiary),
+                              style: context.textTheme.bodySmall?.copyWith(
+                                color: context.appColors.textTertiary,
+                              ),
                             ),
-                            const SizedBox(width: 6),
+                            AppSpacing.horizontalGap8,
                             Text(
                               equipmentLabel,
-                              style: context.textTheme.bodySmall?.copyWith(
+                              style: context.textTheme.labelSmall?.copyWith(
                                 color: context.appColors.textSecondary,
-                                fontSize: 11,
                               ),
                             ),
                           ],
@@ -113,7 +115,7 @@ class WorkoutExerciseCard extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 14),
+            AppSpacing.verticalGap16,
 
             // Sets List
             if (workoutExercise.setTemplates.isEmpty)

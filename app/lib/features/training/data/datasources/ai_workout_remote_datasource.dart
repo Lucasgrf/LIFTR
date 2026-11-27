@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:personal_fitness_os/core/constants/supabase_config.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/ai_generated_plan.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/ai_workout_request.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -38,7 +39,8 @@ class SupabaseAiWorkoutRemoteDataSource implements AiWorkoutRemoteDataSource {
   final SupabaseClient? _client;
 
   SupabaseClient _resolveClient() {
-    if (_client != null) return _client!;
+    final client = _client;
+    if (client != null) return client;
     if (!SupabaseConfig.isConfigured) {
       throw const AiWorkoutException(
         code: AiWorkoutErrorCode.network,
@@ -92,7 +94,7 @@ class SupabaseAiWorkoutRemoteDataSource implements AiWorkoutRemoteDataSource {
       if (planMap is! Map) {
         throw const AiWorkoutException(
           code: AiWorkoutErrorCode.invalidResponse,
-          message: 'O plano gerado não pôde ser interpretado.',
+          message: 'O programa gerado não pôde ser interpretado.',
         );
       }
 
@@ -116,10 +118,14 @@ class SupabaseAiWorkoutRemoteDataSource implements AiWorkoutRemoteDataSource {
         message:
             'Sem conexão com a internet. Verifique sua rede e tente novamente.',
       );
-    } catch (e) {
+    } catch (e, st) {
       throw AiWorkoutException(
         code: AiWorkoutErrorCode.unknown,
-        message: 'Não foi possível gerar o treino agora: $e',
+        message: userFacingMessage(
+          e,
+          stackTrace: st,
+          context: 'SupabaseAiWorkoutRemoteDataSource.generateWorkoutPlan',
+        ),
       );
     }
   }
@@ -145,7 +151,7 @@ class SupabaseAiWorkoutRemoteDataSource implements AiWorkoutRemoteDataSource {
       return const AiWorkoutException(
         code: AiWorkoutErrorCode.keyNotConfigured,
         message:
-            'A chave GEMINI_API_KEY ainda não foi configurada no Supabase (secrets da Edge Function). Configure a chave para liberar a geração com o Gemini.',
+            'A geração automática de treinos com IA está temporariamente indisponível no servidor.',
       );
     }
 
@@ -169,7 +175,7 @@ class SupabaseAiWorkoutRemoteDataSource implements AiWorkoutRemoteDataSource {
       code: AiWorkoutErrorCode.unknown,
       message: serverMessage?.trim().isNotEmpty == true
           ? serverMessage!
-          : 'Erro ao consultar o Gemini (HTTP ${e.status}). Tente novamente.',
+          : 'Erro ao gerar programa com IA (HTTP ${e.status}). Tente novamente.',
     );
   }
 }
