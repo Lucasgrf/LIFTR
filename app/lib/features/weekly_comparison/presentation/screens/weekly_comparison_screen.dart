@@ -40,9 +40,19 @@ class WeeklyComparisonScreen extends ConsumerWidget {
     final offset = ref.watch(weeklyComparisonOffsetProvider);
     final comparisonAsync = ref.watch(weeklyComparisonProvider);
 
-    Future<void> refreshComparison() => ref
-        .refresh(weeklyComparisonProvider.future)
-        .then<void>((_) {}, onError: (Object _, StackTrace _) {});
+    Future<void> refreshComparison() async {
+      final hadData = ref.read(weeklyComparisonProvider).hasValue;
+      var failed = false;
+      await ref.refresh(weeklyComparisonProvider.future).then<void>(
+        (_) {},
+        onError: (Object _, StackTrace _) {
+          failed = true;
+        },
+      );
+      if (failed && hadData && context.mounted) {
+        context.showSnackBar('Sem conexão. Mostrando dados salvos.');
+      }
+    }
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -50,6 +60,8 @@ class WeeklyComparisonScreen extends ConsumerWidget {
         title: const Text('Comparação semanal'),
       ),
       body: comparisonAsync.when(
+        skipLoadingOnRefresh: true,
+        skipError: true,
         loading: () => const SafeArea(child: LiftrScreenSkeleton()),
         error: (err, st) => RefreshIndicator(
           color: colors.primary,

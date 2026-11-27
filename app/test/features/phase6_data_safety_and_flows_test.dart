@@ -11,6 +11,7 @@ import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/providers/clock_provider.dart';
 import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
 import 'package:personal_fitness_os/core/theme/app_theme.dart';
+import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/offline_banner_widget.dart';
 import 'package:personal_fitness_os/features/body/domain/entities/weight_entry.dart';
 import 'package:personal_fitness_os/features/body/domain/entities/weight_stats.dart';
@@ -25,6 +26,7 @@ import 'package:personal_fitness_os/features/exercise_library/presentation/widge
 import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
 import 'package:personal_fitness_os/features/history/presentation/screens/history_screen.dart';
 import 'package:personal_fitness_os/features/history/presentation/widgets/progress_exercises_view.dart';
+import 'package:personal_fitness_os/features/insights/presentation/providers/insight_providers.dart';
 import 'package:personal_fitness_os/features/profile/data/datasources/profile_remote_datasource.dart';
 import 'package:personal_fitness_os/features/profile/presentation/providers/profile_providers.dart';
 import 'package:personal_fitness_os/features/profile/presentation/screens/profile_screen.dart';
@@ -273,9 +275,13 @@ class _MutableTrainingPlansNotifier extends TrainingPlansNotifier {
   }
 
   @override
-  Future<void> refresh() async {
+  Future<bool> refresh() async {
     refreshCalls++;
+    if (value.hasError && state.hasValue) {
+      return false;
+    }
     state = value;
+    return !value.hasError;
   }
 }
 
@@ -291,9 +297,13 @@ class _MutableExerciseListNotifier extends ExerciseListNotifier {
   }
 
   @override
-  Future<void> refresh() async {
+  Future<bool> refresh() async {
     refreshCalls++;
+    if (value.hasError && state.hasValue) {
+      return false;
+    }
     state = value;
+    return !value.hasError;
   }
 }
 
@@ -1095,6 +1105,138 @@ void main() {
         await tester.tap(find.text('Limpar busca'));
         await tester.pumpAndSettle();
         expect(find.text('Supino Reto'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'DashboardScreen preserves cached data and shows offline SnackBar when pull-to-refresh fails',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        var fetchCount = 0;
+        const cachedWorkout = Workout(
+          id: 'w-cached',
+          trainingPlanId: 'p-cached',
+          name: 'Push A Offline',
+          sortOrder: 0,
+        );
+        const cachedPlan = TrainingPlan(
+          id: 'p-cached',
+          userId: 'u-1',
+          name: 'Push Pull Legs',
+          isActive: true,
+          workouts: [cachedWorkout],
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              appClockProvider.overrideWithValue(() => fixedNow),
+              isOnlineStreamProvider.overrideWith((_) => Stream.value(true)),
+              currentWeekSummaryProvider.overrideWith((_) async => populatedWeek),
+              fitnessInsightsProvider.overrideWith((_) async => const []),
+              dashboardDataProvider.overrideWith((_) async {
+                fetchCount++;
+                if (fetchCount == 1) {
+                  return const DashboardData(
+                    activePlan: cachedPlan,
+                    todayWorkout: cachedWorkout,
+                  );
+                }
+                throw const NetworkFailure('Sem internet');
+              }),
+            ],
+            child: MaterialApp(
+              theme: AppTheme.dark(),
+              home: const DashboardScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Push A Offline'), findsOneWidget);
+
+        unawaited(
+          tester
+              .state<RefreshIndicatorState>(find.byType(RefreshIndicator))
+              .show(),
+        );
+        await tester.pumpAndSettle();
+
+        expect(fetchCount, 2);
+        expect(find.byType(ErrorStateWidget), findsNothing);
+        expect(find.text('Push A Offline'), findsOneWidget);
+        expect(
+          find.text('Sem conexão. Mostrando dados salvos.'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'TrainingListScreen preserves cached plans and shows offline SnackBar when pull-to-refresh fails',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        const cachedPlan = TrainingPlan(
+          id: 'p-1',
+          userId: 'u-1',
+          name: 'Programa Cached',
+          isActive: true,
+          workouts: [
+            Workout(
+              id: 'w-1',
+              trainingPlanId: 'p-1',
+              name: 'Upper A Salvo',
+              sortOrder: 0,
+            ),
+          ],
+        );
+        late _MutableTrainingPlansNotifier plansNotifier;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              appClockProvider.overrideWithValue(() => fixedNow),
+              isOnlineStreamProvider.overrideWith((_) => Stream.value(true)),
+              trainingPlansStateProvider.overrideWith((ref) {
+                plansNotifier = _MutableTrainingPlansNotifier(
+                  ref,
+                  const AsyncValue.data([cachedPlan]),
+                );
+                return plansNotifier;
+              }),
+            ],
+            child: MaterialApp(
+              theme: AppTheme.dark(),
+              home: const TrainingListScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Upper A Salvo'), findsOneWidget);
+
+        plansNotifier.value = AsyncValue.error(
+          const NetworkFailure('Sem conexão'),
+          StackTrace.current,
+        );
+        unawaited(
+          tester
+              .state<RefreshIndicatorState>(find.byType(RefreshIndicator))
+              .show(),
+        );
+        await tester.pumpAndSettle();
+
+        expect(plansNotifier.refreshCalls, 1);
+        expect(find.byType(ErrorStateWidget), findsNothing);
+        expect(find.text('Upper A Salvo'), findsOneWidget);
+        expect(
+          find.text('Sem conexão. Mostrando dados salvos.'),
+          findsOneWidget,
+        );
       },
     );
 

@@ -84,6 +84,8 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
     final settings = ref.watch(userSettingsProvider);
 
     return historyAsync.when(
+      skipLoadingOnRefresh: true,
+      skipError: true,
       loading: () => const LiftrScreenSkeleton(showHero: false, itemCount: 2),
       error: (err, st) => ErrorStateWidget(
         message: userFacingMessage(

@@ -131,6 +131,8 @@ class _ProgressExercisesViewState extends ConsumerState<ProgressExercisesView> {
     final historyAsync = ref.watch(historyListProvider);
 
     return historyAsync.when(
+      skipLoadingOnRefresh: true,
+      skipError: true,
       loading: () => const LiftrScreenSkeleton(showHero: false),
       error: (err, st) => ErrorStateWidget(
         message: userFacingMessage(

@@ -85,20 +85,37 @@ class ExerciseListNotifier extends StateNotifier<AsyncValue<List<Exercise>>> {
   final Ref _ref;
 
   Future<void> loadExercises() async {
-    state = const AsyncValue.loading();
+    await _fetchExercises(preserveExistingOnError: false);
+  }
+
+  Future<bool> refresh() => _fetchExercises(preserveExistingOnError: true);
+
+  Future<bool> _fetchExercises({required bool preserveExistingOnError}) async {
+    final previous = state;
+    if (!preserveExistingOnError || !previous.hasValue) {
+      state = const AsyncValue.loading();
+    }
     final useCase = _ref.read(getExercisesUseCaseProvider);
     final result = await useCase.execute();
 
-    result.fold(
-      (exercises) => state = AsyncValue.data(exercises),
-      (failure) => state = AsyncValue.error(
-        failure,
-        failure.stackTrace ?? StackTrace.current,
-      ),
+    return result.fold(
+      (exercises) {
+        state = AsyncValue.data(exercises);
+        return true;
+      },
+      (failure) {
+        if (preserveExistingOnError && previous.hasValue) {
+          state = previous;
+        } else {
+          state = AsyncValue.error(
+            failure,
+            failure.stackTrace ?? StackTrace.current,
+          );
+        }
+        return false;
+      },
     );
   }
-
-  Future<void> refresh() => loadExercises();
 }
 
 final exerciseListStateProvider =

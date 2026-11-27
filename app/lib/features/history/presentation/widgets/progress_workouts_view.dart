@@ -20,6 +20,8 @@ class ProgressWorkoutsView extends ConsumerWidget {
     final historyAsync = ref.watch(historyListProvider);
 
     return historyAsync.when(
+      skipLoadingOnRefresh: true,
+      skipError: true,
       loading: () => const LiftrScreenSkeleton(showHero: false, itemCount: 3),
       error: (err, st) => ErrorStateWidget(
         message: userFacingMessage(

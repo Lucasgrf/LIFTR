@@ -37,6 +37,8 @@ class _ProgressConsistencyViewState
     final historyAsync = ref.watch(historyListProvider);
 
     return historyAsync.when(
+      skipLoadingOnRefresh: true,
+      skipError: true,
       loading: () => const LiftrScreenSkeleton(showHero: false, itemCount: 2),
       error: (err, st) => ErrorStateWidget(
         message: userFacingMessage(

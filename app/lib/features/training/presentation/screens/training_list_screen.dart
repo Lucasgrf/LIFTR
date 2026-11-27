@@ -76,8 +76,14 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
     final plansAsync = ref.watch(trainingPlansStateProvider);
     ref.watch(workoutQueueProvider);
 
-    Future<void> refreshPlans() =>
-        ref.read(trainingPlansStateProvider.notifier).refresh();
+    Future<void> refreshPlans() async {
+      final hadData = ref.read(trainingPlansStateProvider).hasValue;
+      final refreshed =
+          await ref.read(trainingPlansStateProvider.notifier).refresh();
+      if (!refreshed && hadData && context.mounted) {
+        context.showSnackBar('Sem conexão. Mostrando dados salvos.');
+      }
+    }
 
     return Scaffold(
       backgroundColor: colors.background,

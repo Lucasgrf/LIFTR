@@ -35,15 +35,22 @@ class HistoryScreen extends ConsumerWidget {
       body: RefreshIndicator(
         color: colors.primary,
         onRefresh: () async {
+          final hadPrimaryData = viewMode == 1
+              ? ref.read(weightHistoryProvider).hasValue
+              : ref.read(historyListProvider).hasValue;
+          var primaryFailed = false;
           final summaryFuture = ref
               .refresh(currentWeekSummaryProvider.future)
               .then<void>((_) {}, onError: (Object _, StackTrace _) {});
           if (viewMode == 1) {
             await Future.wait<void>([
               summaryFuture,
-              ref
-                  .refresh(weightHistoryProvider.future)
-                  .then<void>((_) {}, onError: (Object _, StackTrace _) {}),
+              ref.refresh(weightHistoryProvider.future).then<void>(
+                (_) {},
+                onError: (Object _, StackTrace _) {
+                  primaryFailed = true;
+                },
+              ),
               ref
                   .refresh(weightStatsProvider.future)
                   .then<void>((_) {}, onError: (Object _, StackTrace _) {}),
@@ -51,10 +58,16 @@ class HistoryScreen extends ConsumerWidget {
           } else {
             await Future.wait<void>([
               summaryFuture,
-              ref
-                  .refresh(historyListProvider.future)
-                  .then<void>((_) {}, onError: (Object _, StackTrace _) {}),
+              ref.refresh(historyListProvider.future).then<void>(
+                (_) {},
+                onError: (Object _, StackTrace _) {
+                  primaryFailed = true;
+                },
+              ),
             ]);
+          }
+          if (primaryFailed && hadPrimaryData && context.mounted) {
+            context.showSnackBar('Sem conexão. Mostrando dados salvos.');
           }
         },
         child: ListView(

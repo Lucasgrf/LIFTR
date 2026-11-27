@@ -108,20 +108,37 @@ class TrainingPlansNotifier extends StateNotifier<AsyncValue<List<TrainingPlan>>
   final Ref _ref;
 
   Future<void> loadPlans() async {
-    state = const AsyncValue.loading();
+    await _fetchPlans(preserveExistingOnError: false);
+  }
+
+  Future<bool> refresh() => _fetchPlans(preserveExistingOnError: true);
+
+  Future<bool> _fetchPlans({required bool preserveExistingOnError}) async {
+    final previous = state;
+    if (!preserveExistingOnError || !previous.hasValue) {
+      state = const AsyncValue.loading();
+    }
     final useCase = _ref.read(getTrainingPlansUseCaseProvider);
     final result = await useCase.execute();
 
-    result.fold(
-      (plans) => state = AsyncValue.data(plans),
-      (failure) => state = AsyncValue.error(
-        failure,
-        failure.stackTrace ?? StackTrace.current,
-      ),
+    return result.fold(
+      (plans) {
+        state = AsyncValue.data(plans);
+        return true;
+      },
+      (failure) {
+        if (preserveExistingOnError && previous.hasValue) {
+          state = previous;
+        } else {
+          state = AsyncValue.error(
+            failure,
+            failure.stackTrace ?? StackTrace.current,
+          );
+        }
+        return false;
+      },
     );
   }
-
-  Future<void> refresh() => loadPlans();
 }
 
 final trainingPlansStateProvider =

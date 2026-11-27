@@ -200,18 +200,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final capitalizedDate =
         formattedDate[0].toUpperCase() + formattedDate.substring(1);
 
-    Future<void> refreshDashboard() => Future.wait<void>([
-          ref
-              .refresh(currentWeekSummaryProvider.future)
-              .then<void>((_) {}, onError: (Object _, StackTrace _) {}),
-          ref
-              .refresh(dashboardDataProvider.future)
-              .then<void>((_) {}, onError: (Object _, StackTrace _) {}),
-        ]);
+    Future<void> refreshDashboard() async {
+      final hadData = ref.read(dashboardDataProvider).hasValue;
+      var dashboardFailed = false;
+      await Future.wait<void>([
+        ref
+            .refresh(currentWeekSummaryProvider.future)
+            .then<void>((_) {}, onError: (Object _, StackTrace _) {}),
+        ref.refresh(dashboardDataProvider.future).then<void>(
+          (_) {},
+          onError: (Object _, StackTrace _) {
+            dashboardFailed = true;
+          },
+        ),
+      ]);
+      if (dashboardFailed && hadData && context.mounted) {
+        context.showSnackBar('Sem conexão. Mostrando dados salvos.');
+      }
+    }
 
     return Scaffold(
       backgroundColor: colors.background,
       body: dashboardAsync.when(
+        skipLoadingOnRefresh: true,
+        skipError: true,
         loading: () => const SafeArea(child: LiftrScreenSkeleton()),
         error: (err, st) => RefreshIndicator(
           color: colors.primary,

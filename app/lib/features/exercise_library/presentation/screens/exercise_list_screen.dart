@@ -108,10 +108,22 @@ class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
             // Exercise List content
             Expanded(
               child: filteredExercisesAsync.when(
+                skipLoadingOnRefresh: true,
+                skipError: true,
                 loading: () => const LoadingWidget(),
                 error: (error, st) => RefreshIndicator(
-                  onRefresh: () =>
-                      ref.read(exerciseListStateProvider.notifier).refresh(),
+                  onRefresh: () async {
+                    final hadData =
+                        ref.read(exerciseListStateProvider).hasValue;
+                    final refreshed = await ref
+                        .read(exerciseListStateProvider.notifier)
+                        .refresh();
+                    if (!refreshed && hadData && context.mounted) {
+                      context.showSnackBar(
+                        'Sem conexão. Mostrando dados salvos.',
+                      );
+                    }
+                  },
                   color: context.appColors.primary,
                   child: LayoutBuilder(
                     builder: (context, constraints) => ListView(
@@ -137,11 +149,22 @@ class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
                   ),
                 ),
                 data: (exercises) {
+                  Future<void> refreshExercises() async {
+                    final hadData =
+                        ref.read(exerciseListStateProvider).hasValue;
+                    final refreshed = await ref
+                        .read(exerciseListStateProvider.notifier)
+                        .refresh();
+                    if (!refreshed && hadData && context.mounted) {
+                      context.showSnackBar(
+                        'Sem conexão. Mostrando dados salvos.',
+                      );
+                    }
+                  }
+
                   if (exercises.isEmpty) {
                     return RefreshIndicator(
-                      onRefresh: () => ref
-                          .read(exerciseListStateProvider.notifier)
-                          .refresh(),
+                      onRefresh: refreshExercises,
                       color: context.appColors.primary,
                       child: LayoutBuilder(
                         builder: (context, constraints) => ListView(
@@ -174,7 +197,7 @@ class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
                   }
 
                   return RefreshIndicator(
-                    onRefresh: () => ref.read(exerciseListStateProvider.notifier).refresh(),
+                    onRefresh: refreshExercises,
                     color: context.appColors.primary,
                     child: ListView.builder(
                       physics: const AlwaysScrollableScrollPhysics(),
