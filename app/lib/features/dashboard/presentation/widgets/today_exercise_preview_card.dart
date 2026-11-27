@@ -10,6 +10,21 @@ import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/features/progression/domain/entities/progression_recommendation.dart';
 import 'package:personal_fitness_os/features/progression/presentation/providers/progression_providers.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout_exercise.dart';
+import 'package:personal_fitness_os/features/workout_session/domain/entities/logged_set.dart';
+
+/// Computes the fraction (0.0..1.0) of [previousWorkingSets] that reached or
+/// exceeded [targetRepsMax]. Returns `null` when there is no history or no
+/// valid rep ceiling.
+double? computeDoubleProgressionRatio({
+  required List<LoggedSet> previousWorkingSets,
+  required int targetRepsMax,
+}) {
+  if (previousWorkingSets.isEmpty || targetRepsMax <= 0) return null;
+  final setsAtCeiling = previousWorkingSets
+      .where((s) => s.repsCompleted >= targetRepsMax)
+      .length;
+  return (setsAtCeiling / previousWorkingSets.length).clamp(0.0, 1.0);
+}
 
 class TodayExercisePreviewCard extends ConsumerWidget {
   const TodayExercisePreviewCard({
@@ -70,21 +85,22 @@ class TodayExercisePreviewCard extends ConsumerWidget {
         ? '${_formatWeight(suggestedWeight)} kg · '
         : '';
     final String targetSummary;
-    final double progressValue;
+    final double? progressValue;
     final String noteText;
     final bool isIncrease;
 
     if (isCardio) {
       targetSummary = repsMin == repsMax ? '$repsMin min' : '$repsMin–$repsMax min';
-      progressValue = 0.5;
+      progressValue = null;
       noteText = 'Cardio por tempo · Meta $targetSummary';
       isIncrease = false;
     } else {
       targetSummary = '$weightText$setsCount×$repsMin–$repsMax';
       isIncrease = rec?.type == ProgressionType.increase;
-      progressValue = isIncrease
-          ? 1.0
-          : (rec != null && rec.suggestedWeightKg > 0 ? 0.78 : 0.45);
+      progressValue = computeDoubleProgressionRatio(
+        previousWorkingSets: rec?.previousWorkingSets ?? const [],
+        targetRepsMax: repsMax,
+      );
       noteText = isIncrease
           ? 'Meta batida · +${_formatWeight(rec!.weightDeltaKg)} kg hoje'
           : (rec?.previousSummary != null && rec!.previousSummary!.isNotEmpty
@@ -159,13 +175,15 @@ class TodayExercisePreviewCard extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  AppSpacing.verticalGap12,
-                  LiftrProgressBar(
-                    progress: progressValue,
-                    height: 5,
-                    color: isIncrease ? fitnessColors.progressUp : colors.primary,
-                    trackColor: colors.surfaceElevated,
-                  ),
+                  if (progressValue != null) ...[
+                    AppSpacing.verticalGap12,
+                    LiftrProgressBar(
+                      progress: progressValue,
+                      height: 5,
+                      color: isIncrease ? fitnessColors.progressUp : colors.primary,
+                      trackColor: colors.surfaceElevated,
+                    ),
+                  ],
                   AppSpacing.verticalGap8,
                   Text(
                     noteText,

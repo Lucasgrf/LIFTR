@@ -66,7 +66,7 @@ void main() {
           expect(find.text('Carga máx'), findsOneWidget);
           expect(find.text('1RM est'), findsOneWidget);
           expect(
-            find.bySemanticsLabel('Gráfico de progressão de carga'),
+            find.bySemanticsLabel(RegExp('^Gráfico de progressão de carga')),
             findsOneWidget,
           );
         }

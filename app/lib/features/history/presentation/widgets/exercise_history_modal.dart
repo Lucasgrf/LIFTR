@@ -89,7 +89,7 @@ class ExerciseHistoryModal extends ConsumerWidget {
                     series: mapExerciseHistoryToLoadSeries(
                       records,
                       loadColor: colors.primary,
-                      e1rmColor: context.fitnessColors.progressUp,
+                      e1rmColor: colors.info,
                     ),
                   ),
                   const SizedBox(height: 18),

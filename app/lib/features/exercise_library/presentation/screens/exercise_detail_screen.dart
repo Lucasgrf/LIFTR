@@ -215,7 +215,7 @@ class _ExerciseDetailScreenState extends ConsumerState<ExerciseDetailScreen> {
                           series: mapExerciseHistoryToLoadSeries(
                             records,
                             loadColor: context.appColors.primary,
-                            e1rmColor: context.fitnessColors.progressUp,
+                            e1rmColor: context.appColors.info,
                           ),
                         ),
                       );

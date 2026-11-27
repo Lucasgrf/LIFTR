@@ -12,6 +12,7 @@ import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
+import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
@@ -99,6 +100,15 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
         },
       ),
       data: (entries) {
+        if (entries.isEmpty) {
+          return const EmptyStateWidget(
+            icon: Icons.monitor_weight_outlined,
+            title: 'Nenhuma pesagem registrada',
+            subtitle:
+                'Envie seu peso pelo WhatsApp pela manhã para acompanhar sua curva de tendência.',
+          );
+        }
+
         final now = DateTime.now();
         final cutoff = _selectedDays > 0
             ? now.subtract(Duration(days: _selectedDays))
@@ -108,9 +118,7 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
             ? allSeries.where((p) => !p.date.isBefore(cutoff)).toList()
             : allSeries;
 
-        final currentEma = allSeries.isNotEmpty
-            ? allSeries.last.emaKg
-            : settings.weightKg;
+        final currentEma = allSeries.last.emaKg;
         final deltaPerWeek = statsAsync.asData?.value.deltaVsPreviousWeekKg ?? 0.0;
         final rateSign = deltaPerWeek >= 0 ? '+' : '';
         final rateText =
@@ -241,7 +249,7 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
                 )
               else
                 SizedBox(
-                  height: 200,
+                  height: 224,
                   child: _WeightEmaChart(series: series),
                 ),
 
@@ -288,112 +296,201 @@ class _WeightEmaChart extends StatelessWidget {
     minY = (minY - pad).clamp(0.0, double.infinity);
     maxY = maxY + pad;
 
-    return LineChart(
-      duration: context.appMotion.resolve(context, context.appMotion.fast),
-      LineChartData(
-        minY: minY,
-        maxY: maxY,
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          getDrawingHorizontalLine: (_) => FlLine(
-            color: colors.border.withValues(alpha: 0.5),
-            strokeWidth: 1,
-            dashArray: const [4, 4],
-          ),
-        ),
-        borderData: FlBorderData(show: false),
-        lineTouchData: LineTouchData(
-          handleBuiltInTouches: true,
-          touchTooltipData: LineTouchTooltipData(
-            getTooltipColor: (_) => colors.surfaceElevated,
-            getTooltipItems: (touchedSpots) {
-              return touchedSpots.map((spot) {
-                final idx = spot.x.toInt().clamp(0, series.length - 1);
-                final point = series[idx];
-                if (spot.barIndex == 0) return null;
-                return LineTooltipItem(
-                  '${point.date.formatShort()}\nEMA: ${point.emaKg.toStringAsFixed(1)} kg',
-                  context.textTheme.labelSmall!.copyWith(
-                    color: colors.textPrimary,
-                    fontFeatures: AppTypography.tabularFeatures,
+    final startEma = series.first.emaKg;
+    final endEma = series.last.emaKg;
+    final trendDirection = endEma > startEma
+        ? 'tendência de alta'
+        : endEma < startEma
+            ? 'tendência de queda'
+            : 'estável';
+    final semanticsLabel =
+        'Gráfico de tendência EMA de peso: média móvel de '
+        '${startEma.toStringAsFixed(1).replaceAll('.', ',')} kg para '
+        '${endEma.toStringAsFixed(1).replaceAll('.', ',')} kg, $trendDirection';
+
+    return Semantics(
+      container: true,
+      explicitChildNodes: true,
+      label: semanticsLabel,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Wrap(
+            spacing: 12,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: colors.textTertiary.withValues(alpha: 0.65),
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                );
-              }).toList();
-            },
-          ),
-        ),
-        titlesData: FlTitlesData(
-          topTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 38,
-              getTitlesWidget: (value, meta) => Text(
-                value.toStringAsFixed(1),
-                style: context.textTheme.labelSmall?.copyWith(
-                  color: colors.textTertiary,
-                  fontFeatures: AppTypography.tabularFeatures,
-                ),
-              ),
-            ),
-          ),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 22,
-              interval: math.max(1.0, (series.length / 4).floorToDouble()),
-              getTitlesWidget: (value, meta) {
-                final idx = value.toInt();
-                if (idx >= 0 && idx < series.length) {
-                  return Padding(
-                    padding: EdgeInsets.only(top: context.appSpacing.space8),
+                  const SizedBox(width: 6),
+                  Flexible(
                     child: Text(
-                      series[idx].date.formatShort(),
+                      'Peso',
                       style: context.textTheme.labelSmall?.copyWith(
-                        color: colors.textTertiary,
-                        fontFeatures: AppTypography.tabularFeatures,
+                        color: colors.textSecondary,
                       ),
                     ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        ),
-        lineBarsData: [
-          // Raw daily scatter dots
-          LineChartBarData(
-            spots: rawSpots,
-            barWidth: 0,
-            color: Colors.transparent,
-            dotData: FlDotData(
-              show: true,
-              getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                radius: 3,
-                color: colors.textTertiary.withValues(alpha: 0.45),
-                strokeWidth: 0,
+                  ),
+                ],
               ),
-            ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 12,
+                    height: 2.5,
+                    decoration: BoxDecoration(
+                      color: colors.primary,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      'Média móvel (EMA)',
+                      style: context.textTheme.labelSmall?.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          // Smooth EMA trend curve
-          LineChartBarData(
-            spots: emaSpots,
-            isCurved: true,
-            curveSmoothness: 0.35,
-            color: colors.primary,
-            barWidth: 2.5,
-            isStrokeCapRound: true,
-            dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(
-              show: true,
-              color: colors.primary.withValues(alpha: 0.08),
+          const SizedBox(height: 10),
+          Expanded(
+            child: LineChart(
+              duration:
+                  context.appMotion.resolve(context, context.appMotion.fast),
+              LineChartData(
+                minY: minY,
+                maxY: maxY,
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  getDrawingHorizontalLine: (_) => FlLine(
+                    color: colors.border.withValues(alpha: 0.5),
+                    strokeWidth: 1,
+                    dashArray: const [4, 4],
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                lineTouchData: LineTouchData(
+                  handleBuiltInTouches: true,
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipColor: (_) => colors.surfaceElevated,
+                    getTooltipItems: (touchedSpots) {
+                      var emitted = false;
+                      return touchedSpots.map((spot) {
+                        if (emitted) return null;
+                        emitted = true;
+                        final idx = spot.x.toInt().clamp(0, series.length - 1);
+                        final point = series[idx];
+                        final rawStr = point.rawKg
+                            .toStringAsFixed(1)
+                            .replaceAll('.', ',');
+                        final emaStr = point.emaKg
+                            .toStringAsFixed(1)
+                            .replaceAll('.', ',');
+                        return LineTooltipItem(
+                          '${point.date.formatShort()}\n'
+                          'Peso bruto: $rawStr kg\n'
+                          'EMA: $emaStr kg',
+                          context.textTheme.labelSmall!.copyWith(
+                            color: colors.textPrimary,
+                            fontFeatures: AppTypography.tabularFeatures,
+                          ),
+                        );
+                      }).toList();
+                    },
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 54,
+                      getTitlesWidget: (value, meta) => Text(
+                        '${value.toStringAsFixed(1).replaceAll('.', ',')} kg',
+                        style: context.textTheme.labelSmall?.copyWith(
+                          color: colors.textTertiary,
+                          fontFeatures: AppTypography.tabularFeatures,
+                        ),
+                      ),
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 22,
+                      interval: math.max(1.0, (series.length / 4).floorToDouble()),
+                      getTitlesWidget: (value, meta) {
+                        final idx = value.toInt();
+                        if (idx >= 0 && idx < series.length) {
+                          return Padding(
+                            padding:
+                                EdgeInsets.only(top: context.appSpacing.space8),
+                            child: Text(
+                              series[idx].date.formatShort(),
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: colors.textTertiary,
+                                fontFeatures: AppTypography.tabularFeatures,
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ),
+                ),
+                lineBarsData: [
+                  // Raw daily scatter dots
+                  LineChartBarData(
+                    spots: rawSpots,
+                    barWidth: 0,
+                    color: Colors.transparent,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) =>
+                          FlDotCirclePainter(
+                        radius: 3,
+                        color: colors.textTertiary.withValues(alpha: 0.45),
+                        strokeWidth: 0,
+                      ),
+                    ),
+                  ),
+                  // Smooth EMA trend curve
+                  LineChartBarData(
+                    spots: emaSpots,
+                    isCurved: true,
+                    curveSmoothness: 0.35,
+                    color: colors.primary,
+                    barWidth: 2.5,
+                    isStrokeCapRound: true,
+                    dotData: const FlDotData(show: false),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: colors.primary.withValues(alpha: 0.08),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

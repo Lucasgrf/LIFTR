@@ -18,12 +18,42 @@ class ExerciseLoadProgressionChart extends StatelessWidget {
     this.emptyMessage =
         'Execute este exercício em pelo menos 2 sessões para visualizar a curva de força.',
     this.height = 180,
+    this.referenceValue,
+    this.referenceLabel,
   });
 
   final List<ChartSeries> series;
   final String title;
   final String emptyMessage;
   final double height;
+  final double? referenceValue;
+  final String? referenceLabel;
+
+  String _formatValue(double value) {
+    if (value == value.roundToDouble()) {
+      return value.round().toString();
+    }
+    return value.toStringAsFixed(1).replaceAll('.', ',');
+  }
+
+  String _trendSemantics(List<ChartSeries> activeSeries) {
+    if (activeSeries.isEmpty) return 'Gráfico de progressão de carga';
+    final primary = activeSeries.first;
+    if (primary.points.length < 2) {
+      return 'Gráfico de progressão de carga';
+    }
+    final firstVal = primary.points.first.value;
+    final lastVal = primary.points.last.value;
+    final unit = primary.unit;
+    final direction = lastVal > firstVal
+        ? 'tendência de alta'
+        : lastVal < firstVal
+            ? 'tendência de queda'
+            : 'estável';
+    return 'Gráfico de progressão de carga: ${primary.label} de '
+        '${_formatValue(firstVal)} $unit para ${_formatValue(lastVal)} $unit, '
+        '$direction';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +69,7 @@ class ExerciseLoadProgressionChart extends StatelessWidget {
       return AppCard(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildHeader(context, nonEmptySeries),
             const SizedBox(height: 24),
@@ -65,6 +96,10 @@ class ExerciseLoadProgressionChart extends StatelessWidget {
         if (point.value > maxY) maxY = point.value;
       }
     }
+    if (referenceValue != null) {
+      if (referenceValue! < minY) minY = referenceValue!;
+      if (referenceValue! > maxY) maxY = referenceValue!;
+    }
 
     final paddingY = math.max(2.0, (maxY - minY) * 0.2);
     minY = (minY - paddingY).clamp(0.0, double.infinity);
@@ -83,11 +118,11 @@ class ExerciseLoadProgressionChart extends StatelessWidget {
     return Semantics(
       container: true,
       explicitChildNodes: true,
-      label: 'Gráfico de progressão de carga',
+      label: _trendSemantics(nonEmptySeries),
       child: AppCard(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildHeader(context, nonEmptySeries),
             const SizedBox(height: 16),
@@ -99,6 +134,31 @@ class ExerciseLoadProgressionChart extends StatelessWidget {
                 LineChartData(
                   minY: minY,
                   maxY: maxY,
+                  extraLinesData: referenceValue != null
+                      ? ExtraLinesData(
+                          horizontalLines: [
+                            HorizontalLine(
+                              y: referenceValue!,
+                              color: colors.textSecondary.withValues(alpha: 0.6),
+                              strokeWidth: 1,
+                              dashArray: const [6, 4],
+                              label: referenceLabel != null
+                                  ? HorizontalLineLabel(
+                                      show: true,
+                                      alignment: Alignment.topRight,
+                                      style:
+                                          context.textTheme.labelSmall?.copyWith(
+                                        color: colors.textSecondary,
+                                        fontFeatures:
+                                            AppTypography.tabularFeatures,
+                                      ),
+                                      labelResolver: (_) => referenceLabel!,
+                                    )
+                                  : null,
+                            ),
+                          ],
+                        )
+                      : const ExtraLinesData(),
                   gridData: FlGridData(
                     show: true,
                     drawVerticalLine: false,
@@ -106,6 +166,32 @@ class ExerciseLoadProgressionChart extends StatelessWidget {
                       color: colors.border.withValues(alpha: 0.5),
                       strokeWidth: 1,
                       dashArray: [4, 4],
+                    ),
+                  ),
+                  lineTouchData: LineTouchData(
+                    handleBuiltInTouches: true,
+                    touchTooltipData: LineTouchTooltipData(
+                      getTooltipColor: (_) => colors.surfaceElevated,
+                      getTooltipItems: (touchedSpots) {
+                        return touchedSpots.map((spot) {
+                          final s = orderedForPaint[spot.barIndex];
+                          final idx = spot.x.toInt().clamp(
+                                0,
+                                s.points.length - 1,
+                              );
+                          final pt = s.points[idx];
+                          final header = spot == touchedSpots.first
+                              ? '${pt.date.formatShort()}\n'
+                              : '';
+                          return LineTooltipItem(
+                            '$header${s.label}: ${_formatValue(pt.value)} ${s.unit}',
+                            context.textTheme.labelSmall!.copyWith(
+                              color: colors.textPrimary,
+                              fontFeatures: AppTypography.tabularFeatures,
+                            ),
+                          );
+                        }).toList();
+                      },
                     ),
                   ),
                   titlesData: FlTitlesData(
@@ -119,13 +205,12 @@ class ExerciseLoadProgressionChart extends StatelessWidget {
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        reservedSize: 42,
+                        reservedSize: 48,
                         getTitlesWidget: (value, meta) {
                           return Text(
-                            '${value.toStringAsFixed(0)}$unit',
+                            '${value.toStringAsFixed(0)} $unit',
                             style: context.textTheme.labelSmall?.copyWith(
                               color: colors.textTertiary,
-                              fontSize: 11,
                               fontFeatures: AppTypography.tabularFeatures,
                             ),
                           );
@@ -149,7 +234,6 @@ class ExerciseLoadProgressionChart extends StatelessWidget {
                                 primaryPoints[idx].date.formatShort(),
                                 style: context.textTheme.labelSmall?.copyWith(
                                   color: colors.textTertiary,
-                                  fontSize: 11,
                                   fontFeatures: AppTypography.tabularFeatures,
                                 ),
                               ),
@@ -199,37 +283,34 @@ class ExerciseLoadProgressionChart extends StatelessWidget {
   Widget _buildHeader(BuildContext context, List<ChartSeries> activeSeries) {
     final colors = context.appColors;
 
-    return Row(
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 12,
+      runSpacing: 8,
       children: [
-        Expanded(
-          child: Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: context.textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: colors.textSecondary,
-              letterSpacing: 1.1,
-            ),
+        Text(
+          title,
+          style: context.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: colors.textSecondary,
+            letterSpacing: 1.1,
           ),
         ),
-        if (activeSeries.isNotEmpty) ...[
-          const SizedBox(width: 8),
-          Row(
-            mainAxisSize: MainAxisSize.min,
+        if (activeSeries.isNotEmpty)
+          Wrap(
+            spacing: 10,
+            runSpacing: 4,
             children: [
-              for (int i = 0; i < activeSeries.length; i++) ...[
-                if (i > 0) const SizedBox(width: 10),
+              for (final item in activeSeries)
                 _buildLegendItem(
-                  activeSeries[i].color,
-                  activeSeries[i].label,
+                  item.color,
+                  item.label,
                   context,
-                  dashed: activeSeries[i].isDashed,
+                  dashed: item.isDashed,
                 ),
-              ],
             ],
           ),
-        ],
       ],
     );
   }
@@ -266,7 +347,6 @@ class ExerciseLoadProgressionChart extends StatelessWidget {
           label,
           style: context.textTheme.labelSmall?.copyWith(
             color: context.appColors.textSecondary,
-            fontSize: 11,
           ),
         ),
       ],

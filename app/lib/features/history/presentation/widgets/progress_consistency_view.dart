@@ -141,62 +141,180 @@ class _ProgressConsistencyViewState
                     LayoutBuilder(
                       builder: (context, constraints) {
                         const gap = 5.0;
+                        const weekdayWidth = 18.0;
+                        const weekdayGap = 6.0;
+                        final gridMaxWidth =
+                            (constraints.maxWidth - weekdayWidth - weekdayGap)
+                                .clamp(120.0, double.infinity);
                         final size =
-                            ((constraints.maxWidth - (totalWeeks - 1) * gap) /
+                            ((gridMaxWidth - (totalWeeks - 1) * gap) /
                                     totalWeeks)
-                                .clamp(10.0, 22.0);
+                                .clamp(9.0, 22.0);
+                        final gridWidth =
+                            totalWeeks * size + (totalWeeks - 1) * gap;
 
-                        return Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: List.generate(totalWeeks, (weekIdx) {
-                            return Column(
-                              children: List.generate(7, (dayIdx) {
-                                final cellDate = startOfGrid.add(
-                                  Duration(days: weekIdx * 7 + dayIdx),
-                                );
-                                final daySessions =
-                                    sessionsByDay[cellDate] ?? const [];
-                                final isSelected = cellDate == selectedDay;
-                                final intensity = _cellColor(
-                                  context,
-                                  daySessions,
-                                );
+                        const weekdayInitials = [
+                          'S',
+                          'T',
+                          'Q',
+                          'Q',
+                          'S',
+                          'S',
+                          'D',
+                        ];
 
-                                return Padding(
-                                  padding: EdgeInsets.only(
-                                    bottom: dayIdx < 6 ? gap : 0,
-                                  ),
-                                  child: Semantics(
-                                    label:
-                                        '${DateFormat('d MMM', 'pt_BR').format(cellDate)}, ${daySessions.length} treinos',
-                                    button: true,
-                                    selected: isSelected,
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        HapticFeedback.selectionClick();
-                                        setState(() => _selectedDay = cellDate);
-                                      },
-                                      child: Container(
-                                        width: size,
-                                        height: size,
-                                        decoration: BoxDecoration(
-                                          color: intensity,
-                                          borderRadius:
-                                              BorderRadius.circular(radius.xs),
-                                          border: isSelected
-                                              ? Border.all(
-                                                  color: colors.textPrimary,
-                                                  width: 1.5,
-                                                )
-                                              : null,
+                        final monthLabels = <(int, String)>[];
+                        int? lastMonth;
+                        int? lastLabelWeek;
+                        for (int w = 0; w < totalWeeks; w++) {
+                          final weekDate =
+                              startOfGrid.add(Duration(days: w * 7));
+                          if (lastMonth != weekDate.month) {
+                            lastMonth = weekDate.month;
+                            if (lastLabelWeek == null ||
+                                w - lastLabelWeek >= 2) {
+                              final rawMonth = DateFormat('MMM', 'pt_BR')
+                                  .format(weekDate)
+                                  .replaceAll('.', '');
+                              final label = rawMonth.isNotEmpty
+                                  ? rawMonth[0].toUpperCase() +
+                                      rawMonth.substring(1)
+                                  : rawMonth;
+                              monthLabels.add((w, label));
+                              lastLabelWeek = w;
+                            }
+                          }
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                left: weekdayWidth + weekdayGap,
+                                bottom: 6,
+                              ),
+                              child: SizedBox(
+                                width: gridWidth,
+                                height: 18,
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    for (final entry in monthLabels)
+                                      Positioned(
+                                        left: entry.$1 * (size + gap),
+                                        top: 0,
+                                        child: Text(
+                                          entry.$2,
+                                          maxLines: 1,
+                                          softWrap: false,
+                                          style: context.textTheme.labelSmall
+                                              ?.copyWith(
+                                            color: colors.textTertiary,
+                                          ),
                                         ),
                                       ),
-                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(
+                                  width: weekdayWidth,
+                                  child: Column(
+                                    children: List.generate(7, (dayIdx) {
+                                      return Container(
+                                        height: size,
+                                        margin: EdgeInsets.only(
+                                          bottom: dayIdx < 6 ? gap : 0,
+                                        ),
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          weekdayInitials[dayIdx],
+                                          maxLines: 1,
+                                          softWrap: false,
+                                          style: context.textTheme.labelSmall
+                                              ?.copyWith(
+                                            color: colors.textTertiary,
+                                            height: 1.0,
+                                          ),
+                                        ),
+                                      );
+                                    }),
                                   ),
-                                );
-                              }),
-                            );
-                          }),
+                                ),
+                                const SizedBox(width: weekdayGap),
+                                SizedBox(
+                                  width: gridWidth,
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children:
+                                        List.generate(totalWeeks, (weekIdx) {
+                                      return Column(
+                                        children: List.generate(7, (dayIdx) {
+                                          final cellDate = startOfGrid.add(
+                                            Duration(days: weekIdx * 7 + dayIdx),
+                                          );
+                                          final daySessions =
+                                              sessionsByDay[cellDate] ??
+                                                  const [];
+                                          final isSelected =
+                                              cellDate == selectedDay;
+                                          final intensity = _cellColor(
+                                            context,
+                                            daySessions,
+                                          );
+
+                                          return Padding(
+                                            padding: EdgeInsets.only(
+                                              bottom: dayIdx < 6 ? gap : 0,
+                                            ),
+                                            child: Semantics(
+                                              label:
+                                                  '${DateFormat('d MMM', 'pt_BR').format(cellDate)}, ${daySessions.length} treinos',
+                                              button: true,
+                                              selected: isSelected,
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  HapticFeedback
+                                                      .selectionClick();
+                                                  setState(
+                                                    () =>
+                                                        _selectedDay = cellDate,
+                                                  );
+                                                },
+                                                child: Container(
+                                                  width: size,
+                                                  height: size,
+                                                  decoration: BoxDecoration(
+                                                    color: intensity,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                      radius.xs,
+                                                    ),
+                                                    border: isSelected
+                                                        ? Border.all(
+                                                            color: colors
+                                                                .textPrimary,
+                                                            width: 1.5,
+                                                          )
+                                                        : null,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        }),
+                                      );
+                                    }),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         );
                       },
                     ),
@@ -243,49 +361,122 @@ class _ProgressConsistencyViewState
             SizedBox(height: context.appSpacing.space12),
 
             // Selected Day Detail Strip
-            AppCard(
-              onTap: selectedSessions.isNotEmpty
-                  ? () => context.push(
-                        '/session/${selectedSessions.first.id}/summary',
-                      )
-                  : null,
-              borderRadius: radius.medium,
-              constraints: const BoxConstraints(minHeight: 48),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-              child: Row(
-                children: [
-                  Text(
-                    DateFormat("d 'de' MMM", 'pt_BR').format(selectedDay),
-                    style: context.textTheme.labelMedium?.copyWith(
-                      color: colors.textSecondary,
-                      fontFeatures: AppTypography.tabularFeatures,
-                    ),
-                  ),
-                  const Spacer(),
-                  Flexible(
-                    child: Text(
-                      selectedSessions.isEmpty
-                          ? 'Dia de descanso'
-                          : '${selectedSessions.first.workoutName} · ${selectedSessions.first.totalWorkingSetsCount} séries · ${mathMaxOne(selectedSessions.first.durationSeconds ~/ 60)} min',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+            if (selectedSessions.isEmpty)
+              AppCard(
+                borderRadius: radius.medium,
+                constraints: const BoxConstraints(minHeight: 48),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                child: Row(
+                  children: [
+                    Text(
+                      DateFormat("d 'de' MMM", 'pt_BR').format(selectedDay),
                       style: context.textTheme.labelMedium?.copyWith(
-                        color: colors.textPrimary,
+                        color: colors.textSecondary,
                         fontFeatures: AppTypography.tabularFeatures,
                       ),
                     ),
-                  ),
-                  if (selectedSessions.isNotEmpty) ...[
-                    const SizedBox(width: 6),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: 18,
-                      color: colors.textTertiary,
+                    const Spacer(),
+                    Flexible(
+                      child: Text(
+                        'Dia de descanso',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textTheme.labelMedium?.copyWith(
+                          color: colors.textPrimary,
+                        ),
+                      ),
                     ),
                   ],
-                ],
+                ),
+              )
+            else
+              AppCard(
+                borderRadius: radius.medium,
+                padding: EdgeInsets.zero,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
+                      child: Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        spacing: 8,
+                        children: [
+                          Text(
+                            DateFormat("d 'de' MMM", 'pt_BR')
+                                .format(selectedDay),
+                            style: context.textTheme.labelMedium?.copyWith(
+                              color: colors.textSecondary,
+                              fontFeatures: AppTypography.tabularFeatures,
+                            ),
+                          ),
+                          if (selectedSessions.length > 1)
+                            Text(
+                              '${selectedSessions.length} sessões',
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: colors.textTertiary,
+                                fontFeatures: AppTypography.tabularFeatures,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    for (int i = 0; i < selectedSessions.length; i++) ...[
+                      if (i > 0)
+                        Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: colors.borderSubtle,
+                        ),
+                      InkWell(
+                        onTap: () => context.push(
+                          '/session/${selectedSessions[i].id}/summary',
+                        ),
+                        borderRadius: i == selectedSessions.length - 1
+                            ? BorderRadius.vertical(
+                                bottom: Radius.circular(radius.medium),
+                              )
+                            : BorderRadius.zero,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 48),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 11,
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    '${selectedSessions[i].workoutName} · '
+                                    '${selectedSessions[i].totalWorkingSetsCount} séries · '
+                                    '${mathMaxOne(selectedSessions[i].durationSeconds ~/ 60)} min',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: context.textTheme.labelMedium
+                                        ?.copyWith(
+                                      color: colors.textPrimary,
+                                      fontFeatures:
+                                          AppTypography.tabularFeatures,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 18,
+                                  color: colors.textTertiary,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
-            ),
           ],
         );
       },
