@@ -280,6 +280,28 @@ class SupabaseProfileRemoteDataSource implements ProfileRemoteDataSource {
     );
   }
 
+  /// Updates auth display name (when provided) and persists the profile row
+  /// best-effort, logging upsert failures via [appErrorLogger] without
+  /// changing caller-visible UX behavior.
+  static Future<void> saveProfileOrdered({
+    Future<void> Function()? updateAuthDisplayName,
+    required Future<void> Function() upsertProfileRow,
+  }) async {
+    if (updateAuthDisplayName != null) {
+      await updateAuthDisplayName();
+    }
+
+    try {
+      await upsertProfileRow();
+    } catch (error, stackTrace) {
+      appErrorLogger(
+        error,
+        stackTrace: stackTrace,
+        context: 'ProfileRemoteDataSource.saveProfile.upsert',
+      );
+    }
+  }
+
   @override
   Future<void> saveProfile({
     String? displayName,
@@ -295,14 +317,13 @@ class SupabaseProfileRemoteDataSource implements ProfileRemoteDataSource {
     final user = _client.auth.currentUser;
     if (user == null) return;
 
-    if (displayName != null) {
-      await _client.auth.updateUser(
-        UserAttributes(data: {'name': displayName}),
-      );
-    }
-
-    try {
-      await _client.from('user_profiles').upsert({
+    await saveProfileOrdered(
+      updateAuthDisplayName: displayName != null
+          ? () => _client.auth.updateUser(
+                UserAttributes(data: {'name': displayName}),
+              )
+          : null,
+      upsertProfileRow: () => _client.from('user_profiles').upsert({
         'id': user.id,
         'display_name': ?displayName,
         'biological_sex': ?biologicalSex,
@@ -314,9 +335,7 @@ class SupabaseProfileRemoteDataSource implements ProfileRemoteDataSource {
         'experience': ?experience,
         'activity_level': ?activityLevel,
         'updated_at': DateTime.now().toIso8601String(),
-      });
-    } catch (_) {
-      // Best-effort sync if user_profiles migration hasn't run yet.
-    }
+      }),
+    );
   }
 }

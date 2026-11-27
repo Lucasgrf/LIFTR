@@ -617,6 +617,40 @@ void main() {
       },
     );
 
+    test(
+      'saveProfileOrdered logs upsert errors with stackTrace via appErrorLogger without throwing',
+      () async {
+        final previousLogger = appErrorLogger;
+        addTearDown(() => appErrorLogger = previousLogger);
+
+        final logged = <({
+          Object error,
+          StackTrace? stackTrace,
+          String? context,
+        })>[];
+        appErrorLogger = (error, {stackTrace, context}) {
+          logged.add((error: error, stackTrace: stackTrace, context: context));
+        };
+
+        var authUpdated = false;
+        await SupabaseProfileRemoteDataSource.saveProfileOrdered(
+          updateAuthDisplayName: () async => authUpdated = true,
+          upsertProfileRow: () async => throw Exception(
+            'PGRST204: Could not find the height_cm column',
+          ),
+        );
+
+        expect(authUpdated, isTrue);
+        expect(logged, hasLength(1));
+        expect(
+          logged.single.context,
+          'ProfileRemoteDataSource.saveProfile.upsert',
+        );
+        expect(logged.single.error.toString(), contains('height_cm'));
+        expect(logged.single.stackTrace, isNotNull);
+      },
+    );
+
     testWidgets(
       'ConfigureSetsScreen offers functional Desfazer SnackBar after removing a set',
       (tester) async {
