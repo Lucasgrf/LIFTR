@@ -11,6 +11,7 @@ import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
+import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
@@ -47,24 +48,6 @@ class WeeklyComparisonScreen extends ConsumerWidget {
       backgroundColor: colors.background,
       appBar: AppBar(
         title: const Text('Comparação semanal'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Semantics(
-              label: 'Registrar cardio',
-              button: true,
-              child: TextButton.icon(
-                onPressed: () => LogCardioModal.show(context),
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('Cardio'),
-                style: TextButton.styleFrom(
-                  minimumSize: const Size(48, 48),
-                  foregroundColor: colors.primaryLight,
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
       body: comparisonAsync.when(
         loading: () => const SafeArea(child: LiftrScreenSkeleton()),
@@ -382,6 +365,28 @@ class WeeklyComparisonScreen extends ConsumerWidget {
             ),
           );
         },
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: colors.background,
+            border: Border(
+              top: BorderSide(color: colors.borderSubtle, width: 1),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: ResponsiveContainer(
+              heightFactor: 1.0,
+              child: AppButton.primary(
+                label: 'Registrar cardio',
+                icon: Icons.add_rounded,
+                onPressed: () => LogCardioModal.show(context),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

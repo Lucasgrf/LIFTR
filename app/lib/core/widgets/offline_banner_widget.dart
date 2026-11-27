@@ -46,7 +46,6 @@ class OfflineBannerWidget extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (onDismiss != null) const SizedBox(width: 48),
                 Icon(
                   Icons.wifi_off_rounded,
                   size: 16,
