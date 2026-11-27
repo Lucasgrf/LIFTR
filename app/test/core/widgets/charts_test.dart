@@ -4,34 +4,39 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_theme.dart';
+import 'package:personal_fitness_os/core/widgets/charts/chart_models.dart';
 import 'package:personal_fitness_os/core/widgets/charts/exercise_load_progression_chart.dart';
-import 'package:personal_fitness_os/features/history/domain/entities/exercise_history_record.dart';
 
 void main() {
   setUpAll(() async {
     await initializeDateFormatting('pt_BR', null);
   });
 
-  final tRecords = [
-    ExerciseHistoryRecord(
-      sessionId: 's-1',
-      sessionName: 'Treino A',
-      date: DateTime.now().subtract(const Duration(days: 7)),
-      setsCount: 3,
-      topWeightKg: 80.0,
-      topReps: 10,
-      bestEstimated1Rm: 106.7,
-    ),
-    ExerciseHistoryRecord(
-      sessionId: 's-2',
-      sessionName: 'Treino A',
-      date: DateTime.now(),
-      setsCount: 4,
-      topWeightKg: 85.0,
-      topReps: 8,
-      bestEstimated1Rm: 107.6,
-    ),
-  ];
+  List<ChartSeries> buildSeries() {
+    final now = DateTime.now();
+    final weekAgo = now.subtract(const Duration(days: 7));
+    return [
+      ChartSeries(
+        id: 'max_load',
+        label: 'Carga máx',
+        color: const Color(0xFF72A987),
+        points: [
+          ChartPoint(date: weekAgo, value: 80.0),
+          ChartPoint(date: now, value: 85.0),
+        ],
+      ),
+      ChartSeries(
+        id: 'e1rm',
+        label: '1RM est',
+        color: const Color(0xFF6BAED6),
+        isDashed: true,
+        points: [
+          ChartPoint(date: weekAgo, value: 106.7),
+          ChartPoint(date: now, value: 107.6),
+        ],
+      ),
+    ];
+  }
 
   Widget createWidgetUnderTest(Widget child, {ThemeData? theme}) {
     return MaterialApp(
@@ -51,7 +56,7 @@ void main() {
         for (final theme in [AppTheme.dark(), AppTheme.light()]) {
           await tester.pumpWidget(
             createWidgetUnderTest(
-              ExerciseLoadProgressionChart(records: tRecords),
+              ExerciseLoadProgressionChart(series: buildSeries()),
               theme: theme,
             ),
           );
@@ -73,11 +78,12 @@ void main() {
     testWidgets(
         'ExerciseLoadProgressionChart honors MediaQuery disableAnimations on LineChart duration',
         (tester) async {
+      final series = buildSeries();
       await tester.pumpWidget(
         MediaQuery(
           data: const MediaQueryData(disableAnimations: true),
           child: createWidgetUnderTest(
-            ExerciseLoadProgressionChart(records: tRecords),
+            ExerciseLoadProgressionChart(series: series),
           ),
         ),
       );
@@ -90,7 +96,7 @@ void main() {
         MediaQuery(
           data: const MediaQueryData(disableAnimations: false),
           child: createWidgetUnderTest(
-            ExerciseLoadProgressionChart(records: tRecords),
+            ExerciseLoadProgressionChart(series: series),
           ),
         ),
       );

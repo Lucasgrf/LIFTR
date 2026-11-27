@@ -7,35 +7,44 @@ import 'package:personal_fitness_os/core/extensions/date_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
-import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
-import 'package:personal_fitness_os/features/history/domain/entities/exercise_history_record.dart';
+import 'package:personal_fitness_os/core/widgets/charts/chart_models.dart';
 
 class ExerciseLoadProgressionChart extends StatelessWidget {
   const ExerciseLoadProgressionChart({
     super.key,
-    required this.records,
+    required this.series,
+    this.title = 'PROGRESSÃO DE CARGA',
+    this.emptyMessage =
+        'Execute este exercício em pelo menos 2 sessões para visualizar a curva de força.',
+    this.height = 180,
   });
 
-  final List<ExerciseHistoryRecord> records;
+  final List<ChartSeries> series;
+  final String title;
+  final String emptyMessage;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final fitnessColors = context.fitnessColors;
+    final nonEmptySeries =
+        series.where((s) => s.points.isNotEmpty).toList(growable: false);
+    final maxPointsCount = nonEmptySeries.fold<int>(
+      0,
+      (prev, s) => s.points.length > prev ? s.points.length : prev,
+    );
 
-    final sorted = [...records]..sort((a, b) => a.date.compareTo(b.date));
-
-    if (sorted.length < 2) {
+    if (maxPointsCount < 2) {
       return AppCard(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            _buildHeader(context),
+            _buildHeader(context, nonEmptySeries),
             const SizedBox(height: 24),
             Center(
               child: Text(
-                'Execute este exercício em pelo menos 2 sessões para visualizar a curva de força.',
+                emptyMessage,
                 textAlign: TextAlign.center,
                 style: context.textTheme.bodySmall?.copyWith(
                   color: colors.textSecondary,
@@ -48,23 +57,28 @@ class ExerciseLoadProgressionChart extends StatelessWidget {
       );
     }
 
-    final topWeightSpots = <FlSpot>[];
-    final e1rmSpots = <FlSpot>[];
-    double minY = double.infinity;
-    double maxY = -double.infinity;
-
-    for (int i = 0; i < sorted.length; i++) {
-      final rec = sorted[i];
-      topWeightSpots.add(FlSpot(i.toDouble(), rec.topWeightKg));
-      e1rmSpots.add(FlSpot(i.toDouble(), rec.bestEstimated1Rm));
-
-      if (rec.topWeightKg < minY) minY = rec.topWeightKg;
-      if (rec.bestEstimated1Rm > maxY) maxY = rec.bestEstimated1Rm;
+    var minY = double.infinity;
+    var maxY = -double.infinity;
+    for (final item in nonEmptySeries) {
+      for (final point in item.points) {
+        if (point.value < minY) minY = point.value;
+        if (point.value > maxY) maxY = point.value;
+      }
     }
 
     final paddingY = math.max(2.0, (maxY - minY) * 0.2);
     minY = (minY - paddingY).clamp(0.0, double.infinity);
     maxY = maxY + paddingY;
+
+    final primarySeries = nonEmptySeries.first;
+    final primaryPoints = primarySeries.points;
+    final unit = primarySeries.unit;
+
+    // Render dashed secondary series beneath solid primary series when both exist.
+    final orderedForPaint = [
+      ...nonEmptySeries.where((s) => s.isDashed),
+      ...nonEmptySeries.where((s) => !s.isDashed),
+    ];
 
     return Semantics(
       container: true,
@@ -75,12 +89,13 @@ class ExerciseLoadProgressionChart extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(context),
+            _buildHeader(context, nonEmptySeries),
             const SizedBox(height: 16),
             SizedBox(
-              height: 180,
+              height: height,
               child: LineChart(
-                duration: context.appMotion.resolve(context, context.appMotion.fast),
+                duration:
+                    context.appMotion.resolve(context, context.appMotion.fast),
                 LineChartData(
                   minY: minY,
                   maxY: maxY,
@@ -95,15 +110,19 @@ class ExerciseLoadProgressionChart extends StatelessWidget {
                   ),
                   titlesData: FlTitlesData(
                     show: true,
-                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
                         reservedSize: 42,
                         getTitlesWidget: (value, meta) {
                           return Text(
-                            '${value.toStringAsFixed(0)}kg',
+                            '${value.toStringAsFixed(0)}$unit',
                             style: context.textTheme.labelSmall?.copyWith(
                               color: colors.textTertiary,
                               fontSize: 11,
@@ -117,14 +136,17 @@ class ExerciseLoadProgressionChart extends StatelessWidget {
                       sideTitles: SideTitles(
                         showTitles: true,
                         reservedSize: 24,
-                        interval: math.max(1.0, (sorted.length / 4).floorToDouble()),
+                        interval: math.max(
+                          1.0,
+                          (primaryPoints.length / 4).floorToDouble(),
+                        ),
                         getTitlesWidget: (value, meta) {
                           final idx = value.toInt();
-                          if (idx >= 0 && idx < sorted.length) {
+                          if (idx >= 0 && idx < primaryPoints.length) {
                             return Padding(
                               padding: const EdgeInsets.only(top: 4),
                               child: Text(
-                                sorted[idx].date.formatShort(),
+                                primaryPoints[idx].date.formatShort(),
                                 style: context.textTheme.labelSmall?.copyWith(
                                   color: colors.textTertiary,
                                   fontSize: 11,
@@ -139,47 +161,32 @@ class ExerciseLoadProgressionChart extends StatelessWidget {
                     ),
                   ),
                   borderData: FlBorderData(show: false),
-                  lineBarsData: [
-                    // 1RM Estimado Line (tracejada)
-                    LineChartBarData(
-                      spots: e1rmSpots,
-                      isCurved: true,
-                      curveSmoothness: 0.35,
-                      color: fitnessColors.progressUp,
-                      barWidth: 2,
-                      dashArray: const [5, 4],
-                      isStrokeCapRound: true,
-                      dotData: FlDotData(
-                        show: e1rmSpots.length <= 15,
-                        getDotPainter: (spot, percent, barData, index) =>
-                            FlDotCirclePainter(
-                          radius: 3,
-                          color: fitnessColors.progressUp,
-                          strokeWidth: 1.5,
-                          strokeColor: colors.surface,
+                  lineBarsData: orderedForPaint
+                      .map(
+                        (s) => LineChartBarData(
+                          spots: [
+                            for (int i = 0; i < s.points.length; i++)
+                              FlSpot(i.toDouble(), s.points[i].value),
+                          ],
+                          isCurved: true,
+                          curveSmoothness: 0.35,
+                          color: s.color,
+                          barWidth: s.isDashed ? 2 : 2.5,
+                          dashArray: s.isDashed ? const [5, 4] : null,
+                          isStrokeCapRound: true,
+                          dotData: FlDotData(
+                            show: s.points.length <= 15,
+                            getDotPainter: (spot, percent, barData, index) =>
+                                FlDotCirclePainter(
+                              radius: s.isDashed ? 3 : 3.5,
+                              color: s.color,
+                              strokeWidth: 1.5,
+                              strokeColor: colors.surface,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    // Carga Máxima Line (sólida)
-                    LineChartBarData(
-                      spots: topWeightSpots,
-                      isCurved: true,
-                      curveSmoothness: 0.35,
-                      color: colors.primary,
-                      barWidth: 2.5,
-                      isStrokeCapRound: true,
-                      dotData: FlDotData(
-                        show: topWeightSpots.length <= 15,
-                        getDotPainter: (spot, percent, barData, index) =>
-                            FlDotCirclePainter(
-                          radius: 3.5,
-                          color: colors.primary,
-                          strokeWidth: 1.5,
-                          strokeColor: colors.surface,
-                        ),
-                      ),
-                    ),
-                  ],
+                      )
+                      .toList(growable: false),
                 ),
               ),
             ),
@@ -189,15 +196,14 @@ class ExerciseLoadProgressionChart extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, List<ChartSeries> activeSeries) {
     final colors = context.appColors;
-    final fitnessColors = context.fitnessColors;
 
     return Row(
       children: [
         Expanded(
           child: Text(
-            'PROGRESSÃO DE CARGA',
+            title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: context.textTheme.labelMedium?.copyWith(
@@ -207,20 +213,23 @@ class ExerciseLoadProgressionChart extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 8),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildLegendItem(colors.primary, 'Carga máx', context),
-            const SizedBox(width: 10),
-            _buildLegendItem(
-              fitnessColors.progressUp,
-              '1RM est',
-              context,
-              dashed: true,
-            ),
-          ],
-        ),
+        if (activeSeries.isNotEmpty) ...[
+          const SizedBox(width: 8),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (int i = 0; i < activeSeries.length; i++) ...[
+                if (i > 0) const SizedBox(width: 10),
+                _buildLegendItem(
+                  activeSeries[i].color,
+                  activeSeries[i].label,
+                  context,
+                  dashed: activeSeries[i].isDashed,
+                ),
+              ],
+            ],
+          ),
+        ],
       ],
     );
   }

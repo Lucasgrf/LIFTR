@@ -14,6 +14,7 @@ import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
+import 'package:personal_fitness_os/features/history/presentation/mappers/exercise_chart_mapper.dart';
 import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
 
 class ExerciseHistoryModal extends ConsumerWidget {
@@ -84,7 +85,13 @@ class ExerciseHistoryModal extends ConsumerWidget {
 
               return ListView(
                 children: [
-                  ExerciseLoadProgressionChart(records: records),
+                  ExerciseLoadProgressionChart(
+                    series: mapExerciseHistoryToLoadSeries(
+                      records,
+                      loadColor: colors.primary,
+                      e1rmColor: context.fitnessColors.progressUp,
+                    ),
+                  ),
                   const SizedBox(height: 18),
                   Text(
                     'ÚLTIMAS SESSÕES',

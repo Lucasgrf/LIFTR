@@ -17,6 +17,7 @@ import 'package:personal_fitness_os/features/exercise_library/domain/entities/ex
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/widgets/exercise_card.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/widgets/exercise_diagram.dart';
+import 'package:personal_fitness_os/features/history/presentation/mappers/exercise_chart_mapper.dart';
 import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -210,7 +211,13 @@ class _ExerciseDetailScreenState extends ConsumerState<ExerciseDetailScreen> {
                     if (records.isNotEmpty) {
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16),
-                        child: ExerciseLoadProgressionChart(records: records),
+                        child: ExerciseLoadProgressionChart(
+                          series: mapExerciseHistoryToLoadSeries(
+                            records,
+                            loadColor: context.appColors.primary,
+                            e1rmColor: context.fitnessColors.progressUp,
+                          ),
+                        ),
                       );
                     }
                     return const SizedBox.shrink();
