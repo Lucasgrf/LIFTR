@@ -240,50 +240,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         const SizedBox(height: 22),
 
                         LiftrListGroup(
-                          header: 'WhatsApp',
-                          children: [
-                            LiftrListRow(
-                              label: 'Vínculo',
-                              value: settings.whatsappConnected
-                                  ? 'Conectado'
-                                  : 'Não conectado',
-                              subtitle: settings.whatsappConnected
-                                  ? (settings.whatsappMaskedPhone.isNotEmpty
-                                      ? settings.whatsappMaskedPhone
-                                      : 'Número vinculado')
-                                  : 'Toque para vincular número',
-                              valueColor: settings.whatsappConnected
-                                  ? fitnessColors.progressUp
-                                  : colors.textTertiary,
-                              onTap: () => ref
-                                  .read(userSettingsProvider.notifier)
-                                  .setWhatsappConnected(
-                                    !settings.whatsappConnected,
-                                  ),
-                            ),
-                            LiftrListRow(
-                              label: 'Relatório semanal',
-                              value:
-                                  '${settings.weeklyReportDay} · ${settings.weeklyReportTime}',
-                              onTap: () => _showReportSchedulePicker(
-                                context,
-                                ref,
-                                settings,
-                              ),
-                            ),
-                            LiftrListRow.toggle(
-                              label: 'Horário silencioso',
-                              subtitle: settings.quietHoursRange,
-                              value: settings.quietHoursEnabled,
-                              onChanged: (val) => ref
-                                  .read(userSettingsProvider.notifier)
-                                  .setQuietHoursEnabled(val),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 22),
-
-                        LiftrListGroup(
                           header: 'Sincronização offline e dados',
                           children: [
                             LiftrListRow.toggle(
@@ -461,48 +417,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               selectedColor: colors.primaryMuted,
               onSelected: (_) {
                 onSelect(val);
-                Navigator.pop(ctx);
-              },
-            );
-          }).toList(),
-        );
-      },
-    );
-  }
-
-  void _showReportSchedulePicker(
-    BuildContext context,
-    WidgetRef ref,
-    UserSettingsState settings,
-  ) {
-    const schedules = [
-      ('Domingo', '19:00'),
-      ('Domingo', '09:00'),
-      ('Segunda-feira', '08:00'),
-      ('Sexta-feira', '18:00'),
-    ];
-    showLiftrSheet<void>(
-      context: context,
-      title: 'Relatório semanal',
-      builder: (ctx) {
-        final colors = ctx.appColors;
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: schedules.map((item) {
-            final selected =
-                settings.weeklyReportDay == item.$1 &&
-                settings.weeklyReportTime == item.$2;
-            return ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text('${item.$1} · ${item.$2}'),
-              trailing: selected
-                  ? Icon(Icons.check_rounded, color: colors.primary)
-                  : null,
-              onTap: () {
-                ref
-                    .read(userSettingsProvider.notifier)
-                    .setWeeklyReportSchedule(item.$1, item.$2);
                 Navigator.pop(ctx);
               },
             );

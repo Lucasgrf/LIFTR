@@ -60,3 +60,9 @@ Registro de dívidas técnicas identificadas durante a execução da auditoria d
 - **Contexto:** `deleteTrainingPlanUseCaseProvider` (em `app/lib/features/training/presentation/providers/training_providers.dart`) e os respectivos métodos de domínio/dados existem desde o commit `27eda13`, mas nunca tiveram ponto de chamada na UI.
 - **Impacto adicional:** Essa UI também é a saída manual para o usuário remover eventuais planos órfãos/incompletos caso uma falha de rollback em `SwitchProgramSheet` impeça a exclusão automática (`deleteTrainingPlan`).
 - **Ação futura:** Expor a opção de excluir plano (por exemplo em `TrainingPlanDetailScreen` e/ou `SwitchProgramSheet`), protegida por `showLiftrConfirmDialog(..., isDestructive: true)` e tratando a reativação de outro plano caso o plano ativo seja excluído.
+
+## 9. [Backlog — Integração Backend] Seção WhatsApp Coach oculta nas Configurações
+
+- **Contexto:** O backend WhatsApp (Deno) mantém `public.perfil` (`whatsapp_numero`, `horario_relatorio`, `silencio_inicio`, `silencio_fim`), enquanto o aplicativo Flutter lê e persiste hoje `public.user_profiles` + `SharedPreferences` local e ainda não possui fluxo real de vinculação/OTP nem sincronização desses campos.
+- **Decisão nesta branch:** A seção **WhatsApp** foi ocultada em `Configurações` (`SettingsScreen`) para evitar exibir um estado enganoso (`"Não conectado"` ou horários locais não sincronizados) para usuários que já utilizam o bot no WhatsApp.
+- **Ação futura:** Conectar o app à tabela/endpoint autoritativo do vínculo WhatsApp (lendo `whatsapp_numero` mascarado e preferências de `perfil`/RPC dedicada) e implementar fluxo real de vinculação/verificação antes de reexibir a seção em `SettingsScreen`.

@@ -30,7 +30,6 @@ import 'package:personal_fitness_os/features/history/presentation/providers/hist
 import 'package:personal_fitness_os/features/history/presentation/widgets/progress_segmented_control.dart';
 import 'package:personal_fitness_os/features/insights/presentation/providers/insight_providers.dart';
 import 'package:personal_fitness_os/features/onboarding/presentation/screens/onboarding_screen.dart';
-import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 import 'package:personal_fitness_os/features/settings/presentation/screens/settings_screen.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/set_template.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
@@ -716,7 +715,7 @@ void main() {
         expect(value, isFalse);
         expect(calls, 2);
 
-        // SettingsScreen integration: tapping label 'Horário silencioso' toggles provider state
+        // SettingsScreen integration: tapping label 'Simular modo offline' toggles provider state
         SharedPreferences.setMockInitialValues({});
         final prefs = await SharedPreferences.getInstance();
         late ProviderContainer container;
@@ -740,13 +739,13 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final initialQuietHours =
-            container.read(userSettingsProvider).quietHoursEnabled;
-        await tester.tap(find.text('Horário silencioso'));
+        final initialSimulatedOffline =
+            container.read(simulatedOfflineProvider);
+        await tester.tap(find.text('Simular modo offline'));
         await tester.pumpAndSettle();
         expect(
-          container.read(userSettingsProvider).quietHoursEnabled,
-          !initialQuietHours,
+          container.read(simulatedOfflineProvider),
+          !initialSimulatedOffline,
         );
       },
     );

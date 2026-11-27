@@ -812,7 +812,7 @@ void main() {
   });
 
   group('SettingsScreen & Reduced Motion', () {
-    testWidgets('renders 4 settings sections and toggles offline/theme',
+    testWidgets('renders 3 settings sections without unbacked WhatsApp section and toggles offline',
         (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
@@ -844,7 +844,7 @@ void main() {
 
       expect(find.text('Configurações'), findsOneWidget);
       expect(find.text('Treino e equipamentos'), findsOneWidget);
-      expect(find.text('WhatsApp'), findsOneWidget);
+      expect(find.text('WhatsApp'), findsNothing);
       expect(find.text('Sincronização offline e dados'), findsOneWidget);
       expect(find.text('Conta'), findsOneWidget);
       expect(find.text('Online · Tudo sincronizado'), findsOneWidget);
