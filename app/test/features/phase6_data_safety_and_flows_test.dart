@@ -137,6 +137,7 @@ class _FakeTrainingRepo implements TrainingRepository {
   final List<String> deletedPlanIds = [];
   bool failSecondWorkout = false;
   bool failSetActive = false;
+  bool failDeletePlan = false;
 
   @override
   Future<Result<TrainingPlan, Failure>> createTrainingPlan({
@@ -249,6 +250,9 @@ class _FakeTrainingRepo implements TrainingRepository {
   Future<Result<void, Failure>> deleteTrainingPlan(String planId) async {
     deletePlanCalls++;
     deletedPlanIds.add(planId);
+    if (failDeletePlan) {
+      return const Err(ServerFailure('Erro simulado no rollback'));
+    }
     return const Success(null);
   }
 
@@ -728,6 +732,75 @@ void main() {
         expect(
           find.text('Programa "AB (Superior / Inferior)" criado e ativado!'),
           findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'SwitchProgramSheet logs planId via appErrorLogger when rollback deleteTrainingPlan fails',
+      (tester) async {
+        final previousLogger = appErrorLogger;
+        addTearDown(() => appErrorLogger = previousLogger);
+        final logged = <({Object error, String? context})>[];
+        appErrorLogger = (error, {stackTrace, context}) {
+          logged.add((error: error, context: context));
+        };
+
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final repo = _FakeTrainingRepo()
+          ..failSecondWorkout = true
+          ..failDeletePlan = true;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              trainingRepositoryProvider.overrideWithValue(repo),
+            ],
+            child: MaterialApp(
+              theme: AppTheme.dark(),
+              home: Scaffold(
+                body: Builder(
+                  builder: (ctx) => ElevatedButton(
+                    onPressed: () =>
+                        SwitchProgramSheet.show(ctx, plans: const []),
+                    child: const Text('Trocar'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Trocar'));
+        await tester.pumpAndSettle();
+
+        final presetFinder = find.text('AB (Superior / Inferior)');
+        await tester.dragUntilVisible(
+          presetFinder,
+          find.byType(ListView),
+          const Offset(0, -250),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(presetFinder);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Criar e ativar'));
+        await tester.pumpAndSettle();
+
+        expect(repo.deletePlanCalls, 1);
+        expect(repo.setActiveCalls, 0);
+        expect(find.byType(SwitchProgramSheet), findsOneWidget);
+        expect(
+          find.textContaining('Não foi possível criar o programa'),
+          findsOneWidget,
+        );
+        expect(
+          logged.any(
+            (e) =>
+                e.context == 'SwitchProgramSheet.rollback(planId=plan-created)',
+          ),
+          isTrue,
         );
       },
     );

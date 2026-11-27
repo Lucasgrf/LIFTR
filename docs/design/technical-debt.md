@@ -58,4 +58,5 @@ Registro de dívidas técnicas identificadas durante a execução da auditoria d
 ## 8. [Backlog — Não bloqueador] Ausência de UI para exclusão de planos de treino
 
 - **Contexto:** `deleteTrainingPlanUseCaseProvider` (em `app/lib/features/training/presentation/providers/training_providers.dart`) e os respectivos métodos de domínio/dados existem desde o commit `27eda13`, mas nunca tiveram ponto de chamada na UI.
+- **Impacto adicional:** Essa UI também é a saída manual para o usuário remover eventuais planos órfãos/incompletos caso uma falha de rollback em `SwitchProgramSheet` impeça a exclusão automática (`deleteTrainingPlan`).
 - **Ação futura:** Expor a opção de excluir plano (por exemplo em `TrainingPlanDetailScreen` e/ou `SwitchProgramSheet`), protegida por `showLiftrConfirmDialog(..., isDestructive: true)` e tratando a reativação de outro plano caso o plano ativo seja excluído.

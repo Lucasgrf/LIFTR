@@ -76,6 +76,19 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
     );
   }
 
+  Future<void> _rollbackCreatedPlan(String planId) async {
+    final deleteResult =
+        await ref.read(deleteTrainingPlanUseCaseProvider).execute(planId);
+    deleteResult.fold(
+      (_) {},
+      (deleteFailure) => appErrorLogger(
+        deleteFailure,
+        stackTrace: deleteFailure.stackTrace,
+        context: 'SwitchProgramSheet.rollback(planId=$planId)',
+      ),
+    );
+  }
+
   Future<void> _createFromTemplate(SplitPreset template) async {
     if (_busyKey != null) return;
     final confirmed = await showLiftrConfirmDialog(
@@ -118,7 +131,7 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
         }
 
         if (firstFailure != null) {
-          await ref.read(deleteTrainingPlanUseCaseProvider).execute(plan.id);
+          await _rollbackCreatedPlan(plan.id);
           if (!mounted) return;
           context.showSnackBar(
             'Não foi possível criar o programa "${plan.name}". ${userFacingMessage(firstFailure!, context: 'SwitchProgramSheet._createFromTemplate')}',
@@ -141,7 +154,7 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
             Navigator.pop(context);
           },
           (activationFailure) async {
-            await ref.read(deleteTrainingPlanUseCaseProvider).execute(plan.id);
+            await _rollbackCreatedPlan(plan.id);
             if (!mounted) return;
             context.showSnackBar(
               'Não foi possível criar o programa "${plan.name}". ${userFacingMessage(activationFailure, context: 'SwitchProgramSheet._createFromTemplate.activate')}',
