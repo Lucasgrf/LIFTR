@@ -9,6 +9,12 @@ abstract class WeightRepository {
     String? notes,
   });
 
+  Future<Result<WeightEntry, Failure>> upsertDailyWeight({
+    required double weightKg,
+    required DateTime measuredAt,
+    String? notes,
+  });
+
   Future<Result<List<WeightEntry>, Failure>> getWeightHistory({
     int limit = 100,
     int offset = 0,

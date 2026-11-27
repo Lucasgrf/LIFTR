@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -6,7 +7,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
+import 'package:personal_fitness_os/core/providers/clock_provider.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
@@ -19,6 +22,7 @@ import 'package:personal_fitness_os/core/widgets/liftr_confirm_dialog.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_list_group.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
+import 'package:personal_fitness_os/features/body/presentation/providers/weight_providers.dart';
 import 'package:personal_fitness_os/features/profile/presentation/providers/profile_providers.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 
@@ -423,11 +427,7 @@ class ProfileScreen extends ConsumerWidget {
     BuildContext context,
     UserSettingsState settings,
   ) {
-    showLiftrSheet<void>(
-      context: context,
-      title: 'Dados corporais',
-      builder: (_) => _BodyDataSheet(initialSettings: settings),
-    );
+    showProfileBodyDataSheet(context, settings);
   }
 
   void _showGoalPicker(
@@ -700,10 +700,29 @@ class _EditNameDialogState extends State<_EditNameDialog> {
   }
 }
 
+Future<void> showProfileBodyDataSheet(
+  BuildContext context,
+  UserSettingsState settings, {
+  bool forceRecordWeight = false,
+}) {
+  return showLiftrSheet<void>(
+    context: context,
+    title: 'Dados corporais',
+    builder: (_) => _BodyDataSheet(
+      initialSettings: settings,
+      forceRecordWeight: forceRecordWeight,
+    ),
+  );
+}
+
 class _BodyDataSheet extends ConsumerStatefulWidget {
-  const _BodyDataSheet({required this.initialSettings});
+  const _BodyDataSheet({
+    required this.initialSettings,
+    this.forceRecordWeight = false,
+  });
 
   final UserSettingsState initialSettings;
+  final bool forceRecordWeight;
 
   @override
   ConsumerState<_BodyDataSheet> createState() => _BodyDataSheetState();
@@ -716,6 +735,7 @@ class _BodyDataSheetState extends ConsumerState<_BodyDataSheet> {
   late final TextEditingController _ageCtrl;
   late final TextEditingController _bodyFatCtrl;
   late String _sex;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -743,24 +763,57 @@ class _BodyDataSheetState extends ConsumerState<_BodyDataSheet> {
     super.dispose();
   }
 
-  void _submit() {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    final w = parsePtBrDouble(_weightCtrl.text);
-    final h = int.tryParse(_heightCtrl.text.trim());
-    final a = int.tryParse(_ageCtrl.text.trim());
-    final bfRaw = _bodyFatCtrl.text.trim();
-    final bf = bfRaw.isEmpty ? null : parsePtBrDouble(bfRaw);
+  Future<void> _submit() async {
+    if (_isSaving || !(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _isSaving = true);
 
-    ref.read(userSettingsProvider.notifier).updateBodyData(
-          biologicalSex: _sex,
-          weightKg: w,
-          heightCm: h,
-          age: a,
-          bodyFatPercent: bf,
-          clearBodyFat: bfRaw.isEmpty,
-        );
-    ref.read(profileControllerProvider.notifier).syncSettingsToRemote();
-    Navigator.pop(context);
+    try {
+      final w = parsePtBrDouble(_weightCtrl.text);
+      final h = int.tryParse(_heightCtrl.text.trim());
+      final a = int.tryParse(_ageCtrl.text.trim());
+      final bfRaw = _bodyFatCtrl.text.trim();
+      final bf = bfRaw.isEmpty ? null : parsePtBrDouble(bfRaw);
+
+      final weightChanged = w != null && w != widget.initialSettings.weightKg;
+
+      ref.read(userSettingsProvider.notifier).updateBodyData(
+            biologicalSex: _sex,
+            weightKg: w,
+            heightCm: h,
+            age: a,
+            bodyFatPercent: bf,
+            clearBodyFat: bfRaw.isEmpty,
+          );
+      unawaited(
+        ref.read(profileControllerProvider.notifier).syncSettingsToRemote(),
+      );
+
+      if (w != null && (weightChanged || widget.forceRecordWeight)) {
+        final upsertWeight = ref.read(upsertDailyWeightUseCaseProvider);
+        if (upsertWeight != null) {
+          final result = await upsertWeight.execute(
+            weightKg: w,
+            measuredAt: ref.read(appClockProvider)(),
+          );
+          result.fold(
+            (_) {},
+            (failure) => appErrorLogger(
+              failure,
+              stackTrace: failure.stackTrace,
+              context: 'ProfileScreen.BodyDataSheet.upsertDailyWeight',
+            ),
+          );
+          ref.invalidate(weightHistoryProvider);
+          ref.invalidate(weightStatsProvider);
+        }
+      }
+
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override

@@ -1,20 +1,26 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:personal_fitness_os/core/errors/failures.dart';
+import 'package:personal_fitness_os/core/errors/result.dart';
 import 'package:personal_fitness_os/core/providers/clock_provider.dart';
 import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_theme.dart';
+import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/charts/chart_models.dart';
 import 'package:personal_fitness_os/core/widgets/charts/exercise_load_progression_chart.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/features/body/domain/entities/weight_entry.dart';
 import 'package:personal_fitness_os/features/body/domain/entities/weight_stats.dart';
+import 'package:personal_fitness_os/features/body/domain/repositories/weight_repository.dart';
 import 'package:personal_fitness_os/features/body/presentation/providers/weight_providers.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/widgets/today_exercise_preview_card.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
@@ -24,8 +30,11 @@ import 'package:personal_fitness_os/features/history/presentation/providers/hist
 import 'package:personal_fitness_os/features/history/presentation/widgets/progress_consistency_view.dart';
 import 'package:personal_fitness_os/features/history/presentation/widgets/progress_segmented_control.dart';
 import 'package:personal_fitness_os/features/history/presentation/widgets/progress_weight_view.dart';
+import 'package:personal_fitness_os/features/onboarding/presentation/screens/onboarding_screen.dart';
+import 'package:personal_fitness_os/features/profile/presentation/screens/profile_screen.dart';
 import 'package:personal_fitness_os/features/progression/domain/entities/progression_recommendation.dart';
 import 'package:personal_fitness_os/features/progression/presentation/providers/progression_providers.dart';
+import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/set_template.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
@@ -713,4 +722,199 @@ void main() {
       expect(find.byType(LiftrProgressBar), findsNothing);
     });
   });
+
+  group('Pre-Phase-8 — In-app daily weight logging', () {
+    testWidgets(
+      'ProgressWeightView empty CTA opens Dados corporais and upserts at most once per day',
+      (tester) async {
+        final fakeRepo = _InMemoryWeightRepository();
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              appClockProvider.overrideWithValue(() => fixedNow),
+              weightRepositoryProvider.overrideWithValue(fakeRepo),
+            ],
+            child: MaterialApp(
+              theme: AppTheme.dark(),
+              home: const Scaffold(
+                body: SingleChildScrollView(
+                  padding: EdgeInsets.all(16),
+                  child: ProgressWeightView(),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.textContaining('Atualize seu peso em Perfil → Dados corporais'),
+          findsOneWidget,
+        );
+        await tester.tap(find.text('Atualizar peso'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Dados corporais'), findsOneWidget);
+        final weightField = find.descendant(
+          of: find.widgetWithText(AppInput, 'Peso (kg)'),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(weightField, '81,5');
+        await tester.tap(find.text('Salvar'));
+        await tester.pumpAndSettle();
+
+        expect(fakeRepo.entries, hasLength(1));
+        expect(fakeRepo.entries.single.weightKg, 81.5);
+        expect(find.text('TENDÊNCIA EMA ATUAL'), findsOneWidget);
+        expect(find.text('81,5 kg'), findsOneWidget);
+
+        // Editing weight again on the same day updates the single entry instead of duplicating.
+        unawaited(
+          showProfileBodyDataSheet(
+            tester.element(find.byType(ProgressWeightView)),
+            const UserSettingsState(weightKg: 81.5),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final updatedField = find.descendant(
+          of: find.widgetWithText(AppInput, 'Peso (kg)'),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(updatedField, '80,8');
+        await tester.tap(find.text('Salvar'));
+        await tester.pumpAndSettle();
+
+        expect(fakeRepo.entries, hasLength(1));
+        expect(fakeRepo.entries.single.weightKg, 80.8);
+        expect(find.text('80,8 kg'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'OnboardingScreen _finish persists initial daily weight entry',
+      (tester) async {
+        final fakeRepo = _InMemoryWeightRepository();
+        final router = GoRouter(
+          initialLocation: '/onboarding',
+          routes: [
+            GoRoute(
+              path: '/onboarding',
+              builder: (_, _) => const OnboardingScreen(),
+            ),
+            GoRoute(
+              path: '/',
+              builder: (_, _) => const Scaffold(body: Text('Home')),
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              appClockProvider.overrideWithValue(() => fixedNow),
+              weightRepositoryProvider.overrideWithValue(fakeRepo),
+            ],
+            child: MaterialApp.router(
+              theme: AppTheme.dark(),
+              routerConfig: router,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Step 0 fields: Idade (0), Altura (1), Peso atual (2), % gordura (3).
+        expect(find.text('Peso atual'), findsOneWidget);
+        await tester.enterText(find.byType(TextFormField).at(2), '74,2');
+        await tester.pump();
+
+        for (var i = 0; i < 5; i++) {
+          final nextLabel = i == 4 ? 'Confirmar plano' : 'Continuar';
+          await tester.tap(find.text(nextLabel));
+          await tester.pumpAndSettle();
+        }
+
+        final skipBtn = find.text('Pular e fazer depois');
+        await tester.ensureVisible(skipBtn);
+        await tester.tap(skipBtn);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Home'), findsOneWidget);
+        expect(fakeRepo.entries, hasLength(1));
+        expect(fakeRepo.entries.single.weightKg, 74.2);
+      },
+    );
+  });
+}
+
+class _InMemoryWeightRepository implements WeightRepository {
+  final List<WeightEntry> entries = [];
+
+  @override
+  Future<Result<WeightEntry, Failure>> upsertDailyWeight({
+    required double weightKg,
+    required DateTime measuredAt,
+    String? notes,
+  }) async {
+    final idx = entries.indexWhere(
+      (e) =>
+          e.measuredAt.year == measuredAt.year &&
+          e.measuredAt.month == measuredAt.month &&
+          e.measuredAt.day == measuredAt.day,
+    );
+    if (idx >= 0) {
+      final updated = entries[idx].copyWith(
+        weightKg: weightKg,
+        measuredAt: measuredAt,
+      );
+      entries[idx] = updated;
+      return Success(updated);
+    }
+    final created = WeightEntry(
+      id: 'w-${entries.length + 1}',
+      weightKg: weightKg,
+      measuredAt: measuredAt,
+      notes: notes,
+    );
+    entries.add(created);
+    return Success(created);
+  }
+
+  @override
+  Future<Result<WeightEntry, Failure>> logWeight({
+    required double weightKg,
+    required DateTime measuredAt,
+    String? notes,
+  }) =>
+      upsertDailyWeight(weightKg: weightKg, measuredAt: measuredAt, notes: notes);
+
+  @override
+  Future<Result<List<WeightEntry>, Failure>> getWeightHistory({
+    int limit = 100,
+    int offset = 0,
+  }) async =>
+      Success([...entries]);
+
+  @override
+  Future<Result<List<WeightEntry>, Failure>> getWeightEntriesInRange({
+    required DateTime start,
+    required DateTime end,
+  }) async =>
+      Success(
+        entries
+            .where(
+              (e) => !e.measuredAt.isBefore(start) && !e.measuredAt.isAfter(end),
+            )
+            .toList(),
+      );
+
+  @override
+  Future<Result<void, Failure>> deleteWeightEntry(String entryId) async {
+    entries.removeWhere((e) => e.id == entryId);
+    return const Success(null);
+  }
 }

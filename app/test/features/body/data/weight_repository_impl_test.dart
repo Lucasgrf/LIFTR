@@ -91,4 +91,53 @@ void main() {
       expect(result.isSuccess, isTrue);
     });
   });
+
+  group('upsertDailyWeight', () {
+    test('inserts a new entry when no weight exists for the same day',
+        () async {
+      final today = DateTime(2026, 8, 22, 10, 30);
+      when(() => mockDataSource.fetchWeightEntriesInRange(
+            start: any(named: 'start'),
+            end: any(named: 'end'),
+          )).thenAnswer((_) async => const []);
+      when(() => mockDataSource.insertWeightEntry(any()))
+          .thenAnswer((_) async => tModel);
+
+      final result = await repository.upsertDailyWeight(
+        weightKg: 80.0,
+        measuredAt: today,
+      );
+
+      expect(result.isSuccess, isTrue);
+      verify(() => mockDataSource.insertWeightEntry(any())).called(1);
+      verifyNever(() => mockDataSource.updateWeightEntry(any(), any()));
+    });
+
+    test('updates existing entry without creating duplicate on the same day',
+        () async {
+      final todayEvening = DateTime(2026, 8, 22, 20, 0);
+      final updatedModel = WeightEntryModel(
+        id: 'w-1',
+        userId: 'u-1',
+        weight: 79.4,
+        measuredAt: todayEvening,
+      );
+      when(() => mockDataSource.fetchWeightEntriesInRange(
+            start: any(named: 'start'),
+            end: any(named: 'end'),
+          )).thenAnswer((_) async => [tModel]);
+      when(() => mockDataSource.updateWeightEntry('w-1', any()))
+          .thenAnswer((_) async => updatedModel);
+
+      final result = await repository.upsertDailyWeight(
+        weightKg: 79.4,
+        measuredAt: todayEvening,
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect((result as Success<WeightEntry, Failure>).value.weightKg, 79.4);
+      verify(() => mockDataSource.updateWeightEntry('w-1', any())).called(1);
+      verifyNever(() => mockDataSource.insertWeightEntry(any()));
+    });
+  });
 }

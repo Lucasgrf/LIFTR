@@ -37,6 +37,47 @@ class WeightRepositoryImpl implements WeightRepository {
   }
 
   @override
+  Future<Result<WeightEntry, Failure>> upsertDailyWeight({
+    required double weightKg,
+    required DateTime measuredAt,
+    String? notes,
+  }) async {
+    try {
+      final dayStart = DateTime(measuredAt.year, measuredAt.month, measuredAt.day);
+      final dayEnd = DateTime(
+        measuredAt.year,
+        measuredAt.month,
+        measuredAt.day,
+        23,
+        59,
+        59,
+        999,
+      );
+      final existing = await _remoteDataSource.fetchWeightEntriesInRange(
+        start: dayStart,
+        end: dayEnd,
+      );
+      final payload = <String, dynamic>{
+        'weight': weightKg,
+        'measured_at': measuredAt.toIso8601String(),
+        'notes': ?notes,
+      };
+      final model = existing.isNotEmpty
+          ? await _remoteDataSource.updateWeightEntry(existing.last.id, payload)
+          : await _remoteDataSource.insertWeightEntry(payload);
+      return Success(model.toDomain());
+    } on AuthException catch (e, stack) {
+      return Err(AuthFailure(e.message, stack));
+    } on PostgrestException catch (e, stack) {
+      return Err(ServerFailure(e.message, stack));
+    } on SocketException catch (e, stack) {
+      return Err(NetworkFailure('Sem conexão com a internet.', stack));
+    } catch (e, stack) {
+      return Err(UnexpectedFailure('Erro ao registrar peso: $e', stack));
+    }
+  }
+
+  @override
   Future<Result<List<WeightEntry>, Failure>> getWeightHistory({
     int limit = 100,
     int offset = 0,

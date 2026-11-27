@@ -18,6 +18,7 @@ import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/features/body/domain/entities/weight_entry.dart';
 import 'package:personal_fitness_os/features/body/presentation/providers/weight_providers.dart';
+import 'package:personal_fitness_os/features/profile/presentation/screens/profile_screen.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 
 class WeightEmaPoint {
@@ -101,11 +102,17 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
       ),
       data: (entries) {
         if (entries.isEmpty) {
-          return const EmptyStateWidget(
+          return EmptyStateWidget(
             icon: Icons.monitor_weight_outlined,
             title: 'Nenhuma pesagem registrada',
             subtitle:
-                'Envie seu peso pelo WhatsApp pela manhã para acompanhar sua curva de tendência.',
+                'Atualize seu peso em Perfil → Dados corporais para acompanhar sua curva de tendência.',
+            actionLabel: 'Atualizar peso',
+            onAction: () => showProfileBodyDataSheet(
+              context,
+              settings,
+              forceRecordWeight: true,
+            ),
           );
         }
 

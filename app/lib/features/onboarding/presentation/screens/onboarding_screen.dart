@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/constants/supabase_config.dart';
 import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
+import 'package:personal_fitness_os/core/providers/clock_provider.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
@@ -19,6 +20,7 @@ import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
+import 'package:personal_fitness_os/features/body/presentation/providers/weight_providers.dart';
 import 'package:personal_fitness_os/features/profile/presentation/providers/profile_providers.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 import 'package:personal_fitness_os/features/training/domain/constants/split_presets.dart';
@@ -205,6 +207,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         splitName: _selectedSplit.name,
       );
       notifier.completeOnboarding(whatsappConnected: whatsappConnected);
+
+      final upsertWeight = ref.read(upsertDailyWeightUseCaseProvider);
+      if (upsertWeight != null) {
+        final weightResult = await upsertWeight.execute(
+          weightKg: weight,
+          measuredAt: ref.read(appClockProvider)(),
+        );
+        weightResult.fold(
+          (_) {},
+          (failure) => appErrorLogger(
+            failure,
+            stackTrace: failure.stackTrace,
+            context: 'OnboardingScreen._finish.upsertDailyWeight',
+          ),
+        );
+        ref.invalidate(weightHistoryProvider);
+        ref.invalidate(weightStatsProvider);
+      }
 
       final targetRoute = openAiGenerator ? '/training/ai-generator' : '/';
 
