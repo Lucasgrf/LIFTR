@@ -125,8 +125,15 @@ class _FakeProfileRemote implements ProfileRemoteDataSource {
 
 class _FakeTrainingRepo implements TrainingRepository {
   int createPlanCalls = 0;
+  bool? lastCreateIsActive;
+  String? lastCreatedPlanName;
   int addWorkoutCalls = 0;
+  int setActiveCalls = 0;
+  String? lastActivatedPlanId;
+  int deletePlanCalls = 0;
+  final List<String> deletedPlanIds = [];
   bool failSecondWorkout = false;
+  bool failSetActive = false;
 
   @override
   Future<Result<TrainingPlan, Failure>> createTrainingPlan({
@@ -137,6 +144,8 @@ class _FakeTrainingRepo implements TrainingRepository {
     DateTime? endDate,
   }) async {
     createPlanCalls++;
+    lastCreateIsActive = isActive;
+    lastCreatedPlanName = name;
     return Success(
       TrainingPlan(
         id: 'plan-created',
@@ -186,8 +195,21 @@ class _FakeTrainingRepo implements TrainingRepository {
   @override
   Future<Result<TrainingPlan, Failure>> setActiveTrainingPlan(
     String planId,
-  ) async =>
-      throw UnimplementedError();
+  ) async {
+    setActiveCalls++;
+    lastActivatedPlanId = planId;
+    if (failSetActive) {
+      return const Err(ServerFailure('Erro simulado ao ativar plano'));
+    }
+    return Success(
+      TrainingPlan(
+        id: planId,
+        userId: 'u-1',
+        name: lastCreatedPlanName ?? 'AB (Superior / Inferior)',
+        isActive: true,
+      ),
+    );
+  }
 
   @override
   Future<Result<WorkoutExercise, Failure>> addExerciseToWorkout({
@@ -221,8 +243,11 @@ class _FakeTrainingRepo implements TrainingRepository {
       const Success(null);
 
   @override
-  Future<Result<void, Failure>> deleteTrainingPlan(String planId) async =>
-      const Success(null);
+  Future<Result<void, Failure>> deleteTrainingPlan(String planId) async {
+    deletePlanCalls++;
+    deletedPlanIds.add(planId);
+    return const Success(null);
+  }
 
   @override
   Future<Result<void, Failure>> deleteWorkout(String workoutId) async =>
@@ -513,7 +538,7 @@ void main() {
     );
 
     testWidgets(
-      'SwitchProgramSheet confirms before creating preset and reports partial addWorkout failure',
+      'SwitchProgramSheet confirms before creating preset and rolls back on partial addWorkout failure without activating',
       (tester) async {
         SharedPreferences.setMockInitialValues({});
         final prefs = await SharedPreferences.getInstance();
@@ -567,13 +592,75 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(repo.createPlanCalls, 1);
+        expect(repo.lastCreateIsActive, isFalse);
         expect(repo.addWorkoutCalls, 2);
+        expect(repo.setActiveCalls, 0);
+        expect(repo.deletePlanCalls, 1);
+        expect(repo.deletedPlanIds, ['plan-created']);
+        expect(find.byType(SwitchProgramSheet), findsOneWidget);
         expect(
           find.text('Programa "AB (Superior / Inferior)" criado e ativado!'),
           findsNothing,
         );
         expect(
-          find.textContaining('falhou ao adicionar 1 sessão'),
+          find.textContaining('Não foi possível criar o programa'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'SwitchProgramSheet activates preset plan only after all workouts succeed',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final repo = _FakeTrainingRepo();
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              trainingRepositoryProvider.overrideWithValue(repo),
+            ],
+            child: MaterialApp(
+              theme: AppTheme.dark(),
+              home: Scaffold(
+                body: Builder(
+                  builder: (ctx) => ElevatedButton(
+                    onPressed: () =>
+                        SwitchProgramSheet.show(ctx, plans: const []),
+                    child: const Text('Trocar'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Trocar'));
+        await tester.pumpAndSettle();
+
+        final presetFinder = find.text('AB (Superior / Inferior)');
+        await tester.dragUntilVisible(
+          presetFinder,
+          find.byType(ListView),
+          const Offset(0, -250),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(presetFinder);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Criar e ativar'));
+        await tester.pumpAndSettle();
+
+        expect(repo.createPlanCalls, 1);
+        expect(repo.lastCreateIsActive, isFalse);
+        expect(repo.addWorkoutCalls, 2);
+        expect(repo.setActiveCalls, 1);
+        expect(repo.lastActivatedPlanId, 'plan-created');
+        expect(repo.deletePlanCalls, 0);
+        expect(find.byType(SwitchProgramSheet), findsNothing);
+        expect(
+          find.text('Programa "AB (Superior / Inferior)" criado e ativado!'),
           findsOneWidget,
         );
       },

@@ -96,13 +96,12 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
         .execute(
           name: template.name,
           description: template.queueDescription,
-          isActive: true,
+          isActive: false,
         );
 
     await createResult.fold(
       (plan) async {
         final addWorkout = ref.read(addWorkoutToPlanUseCaseProvider);
-        var failedCount = 0;
         Failure? firstFailure;
         for (int i = 0; i < template.sessions.length; i++) {
           final addResult = await addWorkout.execute(
@@ -113,24 +112,43 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
           );
           addResult.fold(
             (_) {},
-            (failure) {
-              failedCount++;
-              firstFailure ??= failure;
-            },
+            (failure) => firstFailure ??= failure,
           );
+          if (firstFailure != null) break;
         }
-        ref.read(trainingPlansStateProvider.notifier).refresh();
-        ref.invalidate(dashboardDataProvider);
-        if (!mounted) return;
-        if (failedCount > 0 && firstFailure != null) {
+
+        if (firstFailure != null) {
+          await ref.read(deleteTrainingPlanUseCaseProvider).execute(plan.id);
+          if (!mounted) return;
           context.showSnackBar(
-            'Programa "${plan.name}" criado, mas falhou ao adicionar $failedCount sessão(ões). ${userFacingMessage(firstFailure!, context: 'SwitchProgramSheet._createFromTemplate')}',
+            'Não foi possível criar o programa "${plan.name}". ${userFacingMessage(firstFailure!, context: 'SwitchProgramSheet._createFromTemplate')}',
             isError: true,
           );
-        } else {
-          context.showSnackBar('Programa "${plan.name}" criado e ativado!');
+          return;
         }
-        Navigator.pop(context);
+
+        final activateResult = await ref
+            .read(setActiveTrainingPlanUseCaseProvider)
+            .execute(plan.id);
+        await activateResult.fold(
+          (activated) async {
+            ref.read(trainingPlansStateProvider.notifier).refresh();
+            ref.invalidate(dashboardDataProvider);
+            if (!mounted) return;
+            context.showSnackBar(
+              'Programa "${activated.name}" criado e ativado!',
+            );
+            Navigator.pop(context);
+          },
+          (activationFailure) async {
+            await ref.read(deleteTrainingPlanUseCaseProvider).execute(plan.id);
+            if (!mounted) return;
+            context.showSnackBar(
+              'Não foi possível criar o programa "${plan.name}". ${userFacingMessage(activationFailure, context: 'SwitchProgramSheet._createFromTemplate.activate')}',
+              isError: true,
+            );
+          },
+        );
       },
       (failure) async {
         if (!mounted) return;
