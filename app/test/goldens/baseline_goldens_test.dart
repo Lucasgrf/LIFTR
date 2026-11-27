@@ -17,8 +17,10 @@ import 'package:personal_fitness_os/features/dashboard/presentation/providers/da
 import 'package:personal_fitness_os/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
+import 'package:personal_fitness_os/features/history/domain/entities/exercise_history_record.dart';
 import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
 import 'package:personal_fitness_os/features/history/presentation/screens/history_screen.dart';
+import 'package:personal_fitness_os/features/history/presentation/widgets/exercise_history_modal.dart';
 import 'package:personal_fitness_os/features/insights/domain/entities/fitness_insight.dart';
 import 'package:personal_fitness_os/features/insights/presentation/providers/insight_providers.dart';
 import 'package:personal_fitness_os/features/onboarding/presentation/screens/onboarding_screen.dart';
@@ -1130,6 +1132,137 @@ void main() {
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile('pngs/import_plan_sheet_dark.png'),
+      );
+    });
+
+    testWidgets('ExerciseHistoryModal', (tester) async {
+      final records = [
+        ExerciseHistoryRecord(
+          sessionId: 's-4',
+          sessionName: 'Lower A',
+          date: kFixedGoldenNow.subtract(const Duration(days: 2)),
+          setsCount: 3,
+          topWeightKg: 82.5,
+          topReps: 8,
+          bestEstimated1Rm: 104.5,
+        ),
+        ExerciseHistoryRecord(
+          sessionId: 's-3',
+          sessionName: 'Lower A',
+          date: kFixedGoldenNow.subtract(const Duration(days: 9)),
+          setsCount: 3,
+          topWeightKg: 80.0,
+          topReps: 8,
+          bestEstimated1Rm: 101.3,
+        ),
+        ExerciseHistoryRecord(
+          sessionId: 's-2',
+          sessionName: 'Lower A',
+          date: kFixedGoldenNow.subtract(const Duration(days: 16)),
+          setsCount: 3,
+          topWeightKg: 75.0,
+          topReps: 8,
+          bestEstimated1Rm: 95.0,
+        ),
+        ExerciseHistoryRecord(
+          sessionId: 's-1',
+          sessionName: 'Lower A',
+          date: kFixedGoldenNow.subtract(const Duration(days: 23)),
+          setsCount: 3,
+          topWeightKg: 70.0,
+          topReps: 10,
+          bestEstimated1Rm: 93.3,
+        ),
+      ];
+
+      await pumpSheetLauncher(
+        tester,
+        overrides: [
+          exerciseHistoryProvider('ex-squat').overrideWith((_) async => records),
+        ],
+        onOpen: (ctx) => ExerciseHistoryModal.show(
+          ctx,
+          exerciseId: 'ex-squat',
+          exerciseName: 'Agachamento Livre',
+        ),
+      );
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('pngs/exercise_history_modal_dark.png'),
+      );
+    });
+  });
+
+  group('Dark 375dp — Phase 7 Charts & Weight', () {
+    testWidgets('HistoryScreen (Peso tab populated)', (tester) async {
+      final weighIns = [
+        WeightEntry(
+          id: 'w-4',
+          weightKg: 80.2,
+          measuredAt: kFixedGoldenNow.subtract(const Duration(days: 1)),
+        ),
+        WeightEntry(
+          id: 'w-3',
+          weightKg: 80.7,
+          measuredAt: kFixedGoldenNow.subtract(const Duration(days: 6)),
+        ),
+        WeightEntry(
+          id: 'w-2',
+          weightKg: 81.0,
+          measuredAt: kFixedGoldenNow.subtract(const Duration(days: 13)),
+        ),
+        WeightEntry(
+          id: 'w-1',
+          weightKg: 81.8,
+          measuredAt: kFixedGoldenNow.subtract(const Duration(days: 20)),
+        ),
+      ];
+
+      await pumpGoldenWidget(
+        tester,
+        themeMode: ThemeMode.dark,
+        prefs: prefs,
+        child: const HistoryScreen(),
+        overrides: [
+          historyListProvider.overrideWith((_) async => [tCompletedSession]),
+          currentWeekSummaryProvider.overrideWith((_) async => tWeekSummary),
+          weightHistoryProvider.overrideWith((_) async => weighIns),
+          weightStatsProvider.overrideWith(
+            (_) async => const WeightStats(deltaVsPreviousWeekKg: -0.55),
+          ),
+        ],
+      );
+
+      await tester.tap(find.text('Peso'));
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('pngs/progress_weight_populated_dark.png'),
+      );
+    });
+
+    testWidgets('HistoryScreen (Peso tab empty)', (tester) async {
+      await pumpGoldenWidget(
+        tester,
+        themeMode: ThemeMode.dark,
+        prefs: prefs,
+        child: const HistoryScreen(),
+        overrides: [
+          historyListProvider.overrideWith((_) async => [tCompletedSession]),
+          currentWeekSummaryProvider.overrideWith((_) async => tWeekSummary),
+          weightHistoryProvider.overrideWith((_) async => const []),
+          weightStatsProvider.overrideWith((_) async => const WeightStats()),
+        ],
+      );
+
+      await tester.tap(find.text('Peso'));
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('pngs/progress_weight_empty_dark.png'),
       );
     });
   });

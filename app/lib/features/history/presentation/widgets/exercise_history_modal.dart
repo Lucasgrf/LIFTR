@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
@@ -7,6 +9,7 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_number_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/charts/exercise_load_progression_chart.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
@@ -83,6 +86,10 @@ class ExerciseHistoryModal extends ConsumerWidget {
                 );
               }
 
+              final prWeight = records.length >= 2
+                  ? records.map((r) => r.topWeightKg).reduce(math.max)
+                  : null;
+
               return ListView(
                 children: [
                   ExerciseLoadProgressionChart(
@@ -91,6 +98,10 @@ class ExerciseHistoryModal extends ConsumerWidget {
                       loadColor: colors.primary,
                       e1rmColor: colors.info,
                     ),
+                    referenceValue: prWeight,
+                    referenceLabel: prWeight != null
+                        ? 'PR ${formatPtBrDecimal(prWeight)} kg'
+                        : null,
                   ),
                   const SizedBox(height: 18),
                   Text(

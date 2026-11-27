@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -406,6 +407,34 @@ void main() {
         }
       },
     );
+
+    test('colors.info meets WCAG >= 3:1 graphical contrast against card surfaces in dark and light themes',
+        () {
+      double contrastRatio(Color fg, Color bg) {
+        final l1 = fg.computeLuminance();
+        final l2 = bg.computeLuminance();
+        final hi = math.max(l1, l2);
+        final lo = math.min(l1, l2);
+        return (hi + 0.05) / (lo + 0.05);
+      }
+
+      expect(
+        contrastRatio(AppColors.dark.info, AppColors.dark.surface),
+        greaterThanOrEqualTo(3.0),
+      );
+      expect(
+        contrastRatio(AppColors.dark.info, AppColors.dark.background),
+        greaterThanOrEqualTo(3.0),
+      );
+      expect(
+        contrastRatio(AppColors.light.info, AppColors.light.surface),
+        greaterThanOrEqualTo(3.0),
+      );
+      expect(
+        contrastRatio(AppColors.light.info, AppColors.light.background),
+        greaterThanOrEqualTo(3.0),
+      );
+    });
 
     testWidgets('renders without overflow at 320dp @ 1.3x', (tester) async {
       await useCompactViewport(tester);

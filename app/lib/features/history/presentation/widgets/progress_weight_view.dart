@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/extensions/date_extensions.dart';
+import 'package:personal_fitness_os/core/providers/clock_provider.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
@@ -116,7 +117,7 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
           );
         }
 
-        final now = DateTime.now();
+        final now = ref.watch(appClockProvider)();
         final cutoff = _selectedDays > 0
             ? now.subtract(Duration(days: _selectedDays))
             : DateTime.fromMillisecondsSinceEpoch(0);
