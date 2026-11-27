@@ -13,6 +13,7 @@ import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_eyebrow.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/features/progression/domain/entities/progression_recommendation.dart';
 import 'package:personal_fitness_os/features/progression/domain/services/progression_engine.dart';
@@ -644,9 +645,8 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                         children: [
                           if (widget.exerciseIndex != null &&
                               widget.totalExercises != null)
-                            Text(
-                              'EXERCÍCIO ${widget.exerciseIndex! + 1} DE ${widget.totalExercises}',
-                              style: AppTypography.eyebrow(context),
+                            LiftrEyebrow(
+                              'Exercício ${widget.exerciseIndex! + 1} de ${widget.totalExercises}',
                             ),
                           if (muscle != null)
                             LiftrBadge(

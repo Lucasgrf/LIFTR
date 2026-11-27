@@ -61,7 +61,7 @@ class ExportPlanSheet extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         LiftrSheetHeader(
-          eyebrow: 'COMPARTILHAR PROGRAMA',
+          eyebrow: 'Compartilhar programa',
           title: plan.name,
           trailing: Semantics(
             label: 'Fechar compartilhamento',

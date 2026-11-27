@@ -9,6 +9,7 @@ import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
+import 'package:personal_fitness_os/features/exercise_library/presentation/widgets/exercise_card.dart';
 import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
 
 class SwapExerciseSheet extends ConsumerStatefulWidget {
@@ -132,7 +133,7 @@ class _SwapExerciseSheetState extends ConsumerState<SwapExerciseSheet> {
           eyebrow: (widget.eyebrow != null || widget.subtitle == null)
               ? (widget.eyebrow ??
                   (currentMuscle.isNotEmpty
-                      ? currentMuscle.toUpperCase()
+                      ? ExerciseCard.getMuscleLabel(currentMuscle)
                       : null))
               : null,
           title: widget.title ?? 'Trocar exercício',

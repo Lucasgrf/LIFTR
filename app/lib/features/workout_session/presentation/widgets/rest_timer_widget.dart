@@ -7,6 +7,7 @@ import 'package:personal_fitness_os/core/theme/app_motion.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_eyebrow.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
 
@@ -48,10 +49,10 @@ class RestTimerWidget extends ConsumerWidget {
             : 0.0);
 
     final statusLabel = isCompleted
-        ? 'DESCANSO CONCLUÍDO'
+        ? 'Descanso concluído'
         : isPaused
-            ? 'PAUSADO'
-            : 'DESCANSO';
+            ? 'Pausado'
+            : 'Descanso';
     final statusColor = isCompleted
         ? fitnessColors.progressUp
         : isPaused
@@ -154,15 +155,9 @@ class RestTimerWidget extends ConsumerWidget {
                                           CrossAxisAlignment.start,
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Text(
+                                        LiftrEyebrow(
                                           statusLabel,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style:
-                                              AppTypography.eyebrow(context)
-                                                  .copyWith(
-                                            color: statusColor,
-                                          ),
+                                          color: statusColor,
                                         ),
                                         if (timerState.exerciseName !=
                                             null) ...[

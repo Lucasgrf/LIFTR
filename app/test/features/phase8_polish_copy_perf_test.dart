@@ -8,6 +8,7 @@ import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/extensions/date_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_theme.dart';
 import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_eyebrow.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_list_group.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
@@ -47,8 +48,20 @@ void main() {
         eyebrowOccurrences += eyebrowRegex.allMatches(content).length;
       }
 
-      // Pruned from ~52 sites down to only intentional contextual call sites.
+      // Pruned from ~52 sites down to only intentional contextual call sites,
+      // and AppTypography.eyebrow( is centralized strictly in LiftrEyebrow.
       expect(eyebrowOccurrences, lessThanOrEqualTo(10));
+      for (final file in files) {
+        final content = file.readAsStringSync();
+        if (content.contains('AppTypography.eyebrow(')) {
+          expect(
+            file.path.endsWith('liftr_eyebrow.dart'),
+            isTrue,
+            reason:
+                'Direct AppTypography.eyebrow() call outside LiftrEyebrow in ${file.path}',
+          );
+        }
+      }
 
       final featuresDir = Directory('${libDir.path}/features');
       const removedEyebrows = <String>[
@@ -96,6 +109,26 @@ void main() {
       expect(headerFinder, findsOneWidget);
       final textWidget = tester.widget<Text>(headerFinder);
       expect(textWidget.style?.letterSpacing, isNot(1.2));
+    });
+
+    testWidgets(
+        'LiftrEyebrow transforms sentence-case copy to tracked uppercase',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.dark(),
+          home: const Scaffold(
+            body: LiftrEyebrow('Compartilhar programa'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final rendered = find.text('COMPARTILHAR PROGRAMA');
+      expect(rendered, findsOneWidget);
+      final widget = tester.widget<Text>(rendered);
+      expect(widget.style?.fontSize, 11);
+      expect(widget.style?.letterSpacing, 1.2);
     });
   });
 
