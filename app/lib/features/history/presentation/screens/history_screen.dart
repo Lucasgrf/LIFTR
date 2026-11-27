@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
@@ -38,7 +39,8 @@ class HistoryScreen extends ConsumerWidget {
           final hadPrimaryData = viewMode == 1
               ? ref.read(weightHistoryProvider).hasValue
               : ref.read(historyListProvider).hasValue;
-          var primaryFailed = false;
+          Object? refreshError;
+          StackTrace? refreshStack;
           final summaryFuture = ref
               .refresh(currentWeekSummaryProvider.future)
               .then<void>((_) {}, onError: (Object _, StackTrace _) {});
@@ -47,8 +49,9 @@ class HistoryScreen extends ConsumerWidget {
               summaryFuture,
               ref.refresh(weightHistoryProvider.future).then<void>(
                 (_) {},
-                onError: (Object _, StackTrace _) {
-                  primaryFailed = true;
+                onError: (Object error, StackTrace st) {
+                  refreshError = error;
+                  refreshStack = st;
                 },
               ),
               ref
@@ -60,14 +63,20 @@ class HistoryScreen extends ConsumerWidget {
               summaryFuture,
               ref.refresh(historyListProvider.future).then<void>(
                 (_) {},
-                onError: (Object _, StackTrace _) {
-                  primaryFailed = true;
+                onError: (Object error, StackTrace st) {
+                  refreshError = error;
+                  refreshStack = st;
                 },
               ),
             ]);
           }
-          if (primaryFailed && hadPrimaryData && context.mounted) {
-            context.showSnackBar('Sem conexão. Mostrando dados salvos.');
+          if (refreshError != null && hadPrimaryData && context.mounted) {
+            final msg = userFacingMessage(
+              refreshError!,
+              stackTrace: refreshStack,
+              context: 'HistoryScreen.onRefresh',
+            );
+            context.showSnackBar('$msg Mostrando dados salvos.');
           }
         },
         child: ListView(

@@ -78,10 +78,15 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
 
     Future<void> refreshPlans() async {
       final hadData = ref.read(trainingPlansStateProvider).hasValue;
-      final refreshed =
+      final failure =
           await ref.read(trainingPlansStateProvider.notifier).refresh();
-      if (!refreshed && hadData && context.mounted) {
-        context.showSnackBar('Sem conexão. Mostrando dados salvos.');
+      if (failure != null && hadData && context.mounted) {
+        final msg = userFacingMessage(
+          failure,
+          stackTrace: failure.stackTrace,
+          context: 'TrainingListScreen.refreshPlans',
+        );
+        context.showSnackBar('$msg Mostrando dados salvos.');
       }
     }
 

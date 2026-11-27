@@ -42,15 +42,22 @@ class WeeklyComparisonScreen extends ConsumerWidget {
 
     Future<void> refreshComparison() async {
       final hadData = ref.read(weeklyComparisonProvider).hasValue;
-      var failed = false;
+      Object? refreshError;
+      StackTrace? refreshStack;
       await ref.refresh(weeklyComparisonProvider.future).then<void>(
         (_) {},
-        onError: (Object _, StackTrace _) {
-          failed = true;
+        onError: (Object error, StackTrace st) {
+          refreshError = error;
+          refreshStack = st;
         },
       );
-      if (failed && hadData && context.mounted) {
-        context.showSnackBar('Sem conexão. Mostrando dados salvos.');
+      if (refreshError != null && hadData && context.mounted) {
+        final msg = userFacingMessage(
+          refreshError!,
+          stackTrace: refreshStack,
+          context: 'WeeklyComparisonScreen.refreshComparison',
+        );
+        context.showSnackBar('$msg Mostrando dados salvos.');
       }
     }
 

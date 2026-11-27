@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:personal_fitness_os/core/errors/failures.dart';
 import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
 import 'package:personal_fitness_os/features/exercise_library/data/datasources/exercise_local_datasource.dart';
@@ -88,9 +89,11 @@ class ExerciseListNotifier extends StateNotifier<AsyncValue<List<Exercise>>> {
     await _fetchExercises(preserveExistingOnError: false);
   }
 
-  Future<bool> refresh() => _fetchExercises(preserveExistingOnError: true);
+  Future<Failure?> refresh() => _fetchExercises(preserveExistingOnError: true);
 
-  Future<bool> _fetchExercises({required bool preserveExistingOnError}) async {
+  Future<Failure?> _fetchExercises({
+    required bool preserveExistingOnError,
+  }) async {
     final previous = state;
     if (!preserveExistingOnError || !previous.hasValue) {
       state = const AsyncValue.loading();
@@ -101,7 +104,7 @@ class ExerciseListNotifier extends StateNotifier<AsyncValue<List<Exercise>>> {
     return result.fold(
       (exercises) {
         state = AsyncValue.data(exercises);
-        return true;
+        return null;
       },
       (failure) {
         if (preserveExistingOnError && previous.hasValue) {
@@ -112,7 +115,7 @@ class ExerciseListNotifier extends StateNotifier<AsyncValue<List<Exercise>>> {
             failure.stackTrace ?? StackTrace.current,
           );
         }
-        return false;
+        return failure;
       },
     );
   }

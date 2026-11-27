@@ -202,20 +202,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     Future<void> refreshDashboard() async {
       final hadData = ref.read(dashboardDataProvider).hasValue;
-      var dashboardFailed = false;
+      Object? refreshError;
+      StackTrace? refreshStack;
       await Future.wait<void>([
         ref
             .refresh(currentWeekSummaryProvider.future)
             .then<void>((_) {}, onError: (Object _, StackTrace _) {}),
         ref.refresh(dashboardDataProvider.future).then<void>(
           (_) {},
-          onError: (Object _, StackTrace _) {
-            dashboardFailed = true;
+          onError: (Object error, StackTrace st) {
+            refreshError = error;
+            refreshStack = st;
           },
         ),
       ]);
-      if (dashboardFailed && hadData && context.mounted) {
-        context.showSnackBar('Sem conexão. Mostrando dados salvos.');
+      if (refreshError != null && hadData && context.mounted) {
+        final msg = userFacingMessage(
+          refreshError!,
+          stackTrace: refreshStack,
+          context: 'DashboardScreen.refreshDashboard',
+        );
+        context.showSnackBar('$msg Mostrando dados salvos.');
       }
     }
 

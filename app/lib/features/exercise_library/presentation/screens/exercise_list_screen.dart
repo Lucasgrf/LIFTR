@@ -115,13 +115,16 @@ class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
                   onRefresh: () async {
                     final hadData =
                         ref.read(exerciseListStateProvider).hasValue;
-                    final refreshed = await ref
+                    final failure = await ref
                         .read(exerciseListStateProvider.notifier)
                         .refresh();
-                    if (!refreshed && hadData && context.mounted) {
-                      context.showSnackBar(
-                        'Sem conexão. Mostrando dados salvos.',
+                    if (failure != null && hadData && context.mounted) {
+                      final msg = userFacingMessage(
+                        failure,
+                        stackTrace: failure.stackTrace,
+                        context: 'ExerciseListScreen.refreshExercises',
                       );
+                      context.showSnackBar('$msg Mostrando dados salvos.');
                     }
                   },
                   color: context.appColors.primary,
@@ -152,13 +155,16 @@ class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
                   Future<void> refreshExercises() async {
                     final hadData =
                         ref.read(exerciseListStateProvider).hasValue;
-                    final refreshed = await ref
+                    final failure = await ref
                         .read(exerciseListStateProvider.notifier)
                         .refresh();
-                    if (!refreshed && hadData && context.mounted) {
-                      context.showSnackBar(
-                        'Sem conexão. Mostrando dados salvos.',
+                    if (failure != null && hadData && context.mounted) {
+                      final msg = userFacingMessage(
+                        failure,
+                        stackTrace: failure.stackTrace,
+                        context: 'ExerciseListScreen.refreshExercises',
                       );
+                      context.showSnackBar('$msg Mostrando dados salvos.');
                     }
                   }
 

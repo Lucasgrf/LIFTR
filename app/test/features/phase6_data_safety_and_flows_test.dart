@@ -279,13 +279,22 @@ class _MutableTrainingPlansNotifier extends TrainingPlansNotifier {
   }
 
   @override
-  Future<bool> refresh() async {
+  Future<Failure?> refresh() async {
     refreshCalls++;
     if (value.hasError && state.hasValue) {
-      return false;
+      final err = value.error;
+      return err is Failure
+          ? err
+          : UnexpectedFailure('$err', value.stackTrace);
     }
     state = value;
-    return !value.hasError;
+    if (value.hasError) {
+      final err = value.error;
+      return err is Failure
+          ? err
+          : UnexpectedFailure('$err', value.stackTrace);
+    }
+    return null;
   }
 }
 
@@ -301,13 +310,22 @@ class _MutableExerciseListNotifier extends ExerciseListNotifier {
   }
 
   @override
-  Future<bool> refresh() async {
+  Future<Failure?> refresh() async {
     refreshCalls++;
     if (value.hasError && state.hasValue) {
-      return false;
+      final err = value.error;
+      return err is Failure
+          ? err
+          : UnexpectedFailure('$err', value.stackTrace);
     }
     state = value;
-    return !value.hasError;
+    if (value.hasError) {
+      final err = value.error;
+      return err is Failure
+          ? err
+          : UnexpectedFailure('$err', value.stackTrace);
+    }
+    return null;
   }
 }
 
@@ -1253,7 +1271,10 @@ void main() {
                     todayWorkout: cachedWorkout,
                   );
                 }
-                throw const NetworkFailure('Sem internet');
+                if (fetchCount == 2) {
+                  throw const NetworkFailure('Sem internet');
+                }
+                throw const ServerFailure('500 internal');
               }),
             ],
             child: MaterialApp(
@@ -1276,7 +1297,29 @@ void main() {
         expect(find.byType(ErrorStateWidget), findsNothing);
         expect(find.text('Push A Offline'), findsOneWidget);
         expect(
-          find.text('Sem conexão. Mostrando dados salvos.'),
+          find.text(
+            '${userFacingMessage(const NetworkFailure('Sem internet'))} Mostrando dados salvos.',
+          ),
+          findsOneWidget,
+        );
+
+        ScaffoldMessenger.of(
+          tester.element(find.byType(DashboardScreen)),
+        ).clearSnackBars();
+        unawaited(
+          tester
+              .state<RefreshIndicatorState>(find.byType(RefreshIndicator))
+              .show(),
+        );
+        await tester.pumpAndSettle();
+
+        expect(fetchCount, 3);
+        expect(find.byType(ErrorStateWidget), findsNothing);
+        expect(find.text('Push A Offline'), findsOneWidget);
+        expect(
+          find.text(
+            '${userFacingMessage(const ServerFailure('500 internal'))} Mostrando dados salvos.',
+          ),
           findsOneWidget,
         );
       },
@@ -1342,7 +1385,33 @@ void main() {
         expect(find.byType(ErrorStateWidget), findsNothing);
         expect(find.text('Upper A Salvo'), findsOneWidget);
         expect(
-          find.text('Sem conexão. Mostrando dados salvos.'),
+          find.text(
+            '${userFacingMessage(const NetworkFailure('Sem conexão'))} Mostrando dados salvos.',
+          ),
+          findsOneWidget,
+        );
+
+        ScaffoldMessenger.of(
+          tester.element(find.byType(TrainingListScreen)),
+        ).clearSnackBars();
+        plansNotifier.value = AsyncValue.error(
+          const ServerFailure('Erro 503'),
+          StackTrace.current,
+        );
+        unawaited(
+          tester
+              .state<RefreshIndicatorState>(find.byType(RefreshIndicator))
+              .show(),
+        );
+        await tester.pumpAndSettle();
+
+        expect(plansNotifier.refreshCalls, 2);
+        expect(find.byType(ErrorStateWidget), findsNothing);
+        expect(find.text('Upper A Salvo'), findsOneWidget);
+        expect(
+          find.text(
+            '${userFacingMessage(const ServerFailure('Erro 503'))} Mostrando dados salvos.',
+          ),
           findsOneWidget,
         );
       },
