@@ -651,6 +651,57 @@ void main() {
       },
     );
 
+    test(
+      'buildSaveProfilePayload matches production user_profiles columns and omits null optional fields',
+      () {
+        const expectedProductionColumns = <String>{
+          'id',
+          'display_name',
+          'biological_sex',
+          'age',
+          'height_cm',
+          'weight_kg',
+          'body_fat_percent',
+          'goal',
+          'experience',
+          'activity_level',
+          'updated_at',
+        };
+        final fixedTime = DateTime.utc(2026, 11, 27, 6, 0, 0);
+
+        final fullPayload =
+            SupabaseProfileRemoteDataSource.buildSaveProfilePayload(
+          userId: 'user-123',
+          displayName: 'Lucas',
+          biologicalSex: 'male',
+          age: 28,
+          heightCm: 178,
+          weightKg: 78.4,
+          bodyFatPercent: 14.5,
+          goal: 'bulking',
+          experience: 'intermediate',
+          activityLevel: 'moderatelyActive',
+          updatedAt: fixedTime,
+        );
+        expect(fullPayload.keys.toSet(), expectedProductionColumns);
+        expect(fullPayload['height_cm'], 178);
+        expect(fullPayload['updated_at'], fixedTime.toIso8601String());
+
+        final partialPayload =
+            SupabaseProfileRemoteDataSource.buildSaveProfilePayload(
+          userId: 'user-123',
+          heightCm: 178,
+          weightKg: 78.4,
+          updatedAt: fixedTime,
+        );
+        expect(partialPayload.containsKey('display_name'), isFalse);
+        expect(
+          partialPayload.keys.toSet(),
+          {'id', 'height_cm', 'weight_kg', 'updated_at'},
+        );
+      },
+    );
+
     testWidgets(
       'ConfigureSetsScreen offers functional Desfazer SnackBar after removing a set',
       (tester) async {

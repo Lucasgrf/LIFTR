@@ -280,6 +280,36 @@ class SupabaseProfileRemoteDataSource implements ProfileRemoteDataSource {
     );
   }
 
+  /// Builds the `public.user_profiles` upsert payload using the exact column
+  /// names verified in production.
+  static Map<String, dynamic> buildSaveProfilePayload({
+    required String userId,
+    String? displayName,
+    String? biologicalSex,
+    int? age,
+    int? heightCm,
+    double? weightKg,
+    double? bodyFatPercent,
+    String? goal,
+    String? experience,
+    String? activityLevel,
+    DateTime? updatedAt,
+  }) {
+    return <String, dynamic>{
+      'id': userId,
+      'display_name': ?displayName,
+      'biological_sex': ?biologicalSex,
+      'age': ?age,
+      'height_cm': ?heightCm,
+      'weight_kg': ?weightKg,
+      'body_fat_percent': ?bodyFatPercent,
+      'goal': ?goal,
+      'experience': ?experience,
+      'activity_level': ?activityLevel,
+      'updated_at': (updatedAt ?? DateTime.now()).toIso8601String(),
+    };
+  }
+
   /// Updates auth display name (when provided) and persists the profile row
   /// best-effort, logging upsert failures via [appErrorLogger] without
   /// changing caller-visible UX behavior.
@@ -323,19 +353,20 @@ class SupabaseProfileRemoteDataSource implements ProfileRemoteDataSource {
                 UserAttributes(data: {'name': displayName}),
               )
           : null,
-      upsertProfileRow: () => _client.from('user_profiles').upsert({
-        'id': user.id,
-        'display_name': ?displayName,
-        'biological_sex': ?biologicalSex,
-        'age': ?age,
-        'height_cm': ?heightCm,
-        'weight_kg': ?weightKg,
-        'body_fat_percent': ?bodyFatPercent,
-        'goal': ?goal,
-        'experience': ?experience,
-        'activity_level': ?activityLevel,
-        'updated_at': DateTime.now().toIso8601String(),
-      }),
+      upsertProfileRow: () => _client.from('user_profiles').upsert(
+            buildSaveProfilePayload(
+              userId: user.id,
+              displayName: displayName,
+              biologicalSex: biologicalSex,
+              age: age,
+              heightCm: heightCm,
+              weightKg: weightKg,
+              bodyFatPercent: bodyFatPercent,
+              goal: goal,
+              experience: experience,
+              activityLevel: activityLevel,
+            ),
+          ),
     );
   }
 }
