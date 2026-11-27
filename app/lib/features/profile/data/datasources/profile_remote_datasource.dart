@@ -88,6 +88,23 @@ class SupabaseProfileRemoteDataSource implements ProfileRemoteDataSource {
     }
   }
 
+  /// Reads avatar metadata exclusively from `auth.userMetadata` so a failed
+  /// mirror write on `user_profiles` never resurrects a removed profile photo.
+  static ({String? avatarUrl, String? storagePath}) resolveAvatarMetadata(
+    Map<String, dynamic> authMetadata,
+  ) {
+    String? nonEmpty(dynamic raw) {
+      if (raw is! String) return null;
+      final trimmed = raw.trim();
+      return trimmed.isEmpty ? null : trimmed;
+    }
+
+    return (
+      avatarUrl: nonEmpty(authMetadata['avatar_url']),
+      storagePath: nonEmpty(authMetadata['avatar_storage_path']),
+    );
+  }
+
   @override
   Future<UserProfileData?> fetchProfile() async {
     if (!SupabaseConfig.isConfigured) return null;
@@ -106,10 +123,9 @@ class SupabaseProfileRemoteDataSource implements ProfileRemoteDataSource {
       row = null;
     }
 
-    final storagePath = (row?['avatar_storage_path'] as String?) ??
-        (meta['avatar_storage_path'] as String?);
-    var avatarUrl = (row?['avatar_url'] as String?) ??
-        (meta['avatar_url'] as String?);
+    final resolvedAvatar = resolveAvatarMetadata(meta);
+    final storagePath = resolvedAvatar.storagePath;
+    var avatarUrl = resolvedAvatar.avatarUrl;
 
     if (storagePath != null && storagePath.isNotEmpty) {
       avatarUrl = await _resolveAvatarUrl(

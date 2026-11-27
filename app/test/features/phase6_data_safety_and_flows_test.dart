@@ -564,6 +564,41 @@ void main() {
       },
     );
 
+    test(
+      'resolveAvatarMetadata uses auth metadata only so failed user_profiles clear cannot resurrect deleted photo',
+      () async {
+        final previousLogger = appErrorLogger;
+        addTearDown(() => appErrorLogger = previousLogger);
+        appErrorLogger = (_, {stackTrace, context}) {};
+
+        final authMeta = <String, dynamic>{
+          'avatar_url': 'https://example.com/avatar.jpg',
+          'avatar_storage_path': 'u-1/avatar.jpg',
+        };
+        final userProfilesMirror = <String, dynamic>{
+          'avatar_url': 'https://example.com/avatar.jpg',
+          'avatar_storage_path': 'u-1/avatar.jpg',
+        };
+
+        await SupabaseProfileRemoteDataSource.removeAvatarOrdered(
+          storagePath: 'u-1/avatar.jpg',
+          clearAuthMetadata: () async {
+            authMeta['avatar_url'] = null;
+            authMeta['avatar_storage_path'] = null;
+          },
+          clearProfileTable: () async => throw Exception('mirror offline'),
+          removeFromStorage: (_) async {},
+        );
+
+        // Even with stale mirror values still present, UI source returns null.
+        expect(userProfilesMirror['avatar_url'], isNotNull);
+        final resolved =
+            SupabaseProfileRemoteDataSource.resolveAvatarMetadata(authMeta);
+        expect(resolved.avatarUrl, isNull);
+        expect(resolved.storagePath, isNull);
+      },
+    );
+
     testWidgets(
       'ConfigureSetsScreen offers functional Desfazer SnackBar after removing a set',
       (tester) async {
