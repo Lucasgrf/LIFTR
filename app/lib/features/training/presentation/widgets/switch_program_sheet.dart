@@ -8,6 +8,7 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
@@ -95,7 +96,7 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
       context,
       title: 'Criar e ativar "${template.name}"?',
       message:
-          'Um novo programa com ${template.sessions.length} sessões será criado e ativado. Seu histórico de cargas continua preservado.',
+          'Um novo programa com ${pluralize(template.sessions.length, 'sessão', 'sessões')} será criado e ativado. Seu histórico de cargas continua preservado.',
       confirmLabel: 'Criar e ativar',
       icon: Icons.fitness_center_rounded,
       isDestructive: false,
@@ -277,7 +278,7 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Estudo rápido com Gemini para criar as sessões e séries no seu perfil',
+                                'Estudo rápido com IA para criar as sessões e séries no seu perfil',
                                 style: context.textTheme.labelSmall?.copyWith(
                                   color: colors.textSecondary,
                                 ),
@@ -377,7 +378,7 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
                                     ),
                                     const SizedBox(height: 3),
                                     Text(
-                                      '${plan.totalWorkoutsCount} sessões · ${plan.totalWeeklySetsCount} séries',
+                                      '${pluralize(plan.totalWorkoutsCount, 'sessão', 'sessões')} · ${pluralize(plan.totalWeeklySetsCount, 'série', 'séries')}',
                                       style: context.textTheme.labelSmall
                                           ?.copyWith(
                                         color: colors.textSecondary,

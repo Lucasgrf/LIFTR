@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:personal_fitness_os/core/errors/failures.dart';
 import 'package:personal_fitness_os/core/errors/result.dart';
 import 'package:personal_fitness_os/core/network/network_info.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/features/history/data/datasources/history_remote_datasource.dart';
 import 'package:personal_fitness_os/features/history/domain/entities/exercise_history_record.dart';
 import 'package:personal_fitness_os/features/history/domain/entities/history_event_type.dart';
@@ -282,7 +283,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
                       timestamp: s.completedAt ?? s.startedAt,
                       title: s.workoutName,
                       subtitle:
-                          '${s.exercises.length} exercícios • ${s.durationSeconds ~/ 60} min',
+                          '${pluralize(s.exercises.length, 'exercício', 'exercícios')} • ${s.durationSeconds ~/ 60} min',
                       referenceId: s.id,
                       metadata: {'durationSeconds': s.durationSeconds},
                     ),

@@ -5,6 +5,7 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/set_template.dart';
 
 class SetTemplateRow extends StatelessWidget {
@@ -122,7 +123,7 @@ class SetTemplateRow extends StatelessWidget {
                         BorderRadius.circular(context.appRadius.small),
                   ),
                   child: Text(
-                    '${template.targetWeight!.toStringAsFixed(1)} kg',
+                    formatWeightKgPtBr(template.targetWeight!),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: context.textTheme.labelSmall?.copyWith(

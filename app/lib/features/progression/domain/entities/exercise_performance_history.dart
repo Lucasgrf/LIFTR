@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/logged_set.dart';
 
 /// Pure Domain Entity representing the aggregated last session performance for a specific exercise.
@@ -47,7 +48,7 @@ class ExercisePerformanceHistory {
       if (!s.hasDropSets) return '${s.repsCompleted}';
       return '${s.repsCompleted} (${s.formattedDropSummary})';
     }).join(', ');
-    return '${maxWeightKg.toStringAsFixed(1)} kg × $repsList reps';
+    return '${formatWeightKgPtBr(maxWeightKg)} × $repsList reps';
   }
 
   @override

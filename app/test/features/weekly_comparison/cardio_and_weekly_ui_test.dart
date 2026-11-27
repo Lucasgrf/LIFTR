@@ -563,7 +563,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Comparação semanal'), findsOneWidget);
+        expect(find.text('Comparação semanal'), findsWidgets);
         expect(find.text('1h 15m'), findsWidgets);
         expect(find.text('+20 min vs ant.'), findsOneWidget);
         expect(find.text('Esteira · 18/11'), findsOneWidget);

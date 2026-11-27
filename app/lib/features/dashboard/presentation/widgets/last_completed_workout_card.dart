@@ -9,6 +9,7 @@ import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
@@ -154,7 +155,11 @@ class LastCompletedWorkoutCard extends StatelessWidget {
                 ),
                 _MetricPill(
                   icon: Icons.format_list_numbered_rounded,
-                  label: '${session.totalWorkingSetsCount} séries',
+                  label: pluralize(
+                    session.totalWorkingSetsCount,
+                    'série',
+                    'séries',
+                  ),
                   color: colors.textSecondary,
                 ),
                 _MetricPill(

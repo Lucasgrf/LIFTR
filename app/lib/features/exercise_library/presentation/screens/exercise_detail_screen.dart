@@ -5,6 +5,7 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
@@ -192,7 +193,7 @@ class _ExerciseDetailScreenState extends ConsumerState<ExerciseDetailScreen> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'Padrão: ${exercise.movementPattern}',
+                              'Padrão: ${formatMovementPatternPtBr(exercise.movementPattern)}',
                               style: context.textTheme.bodyMedium?.copyWith(
                                 color: context.appColors.textSecondary,
                               ),

@@ -399,7 +399,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 child: ResponsiveContainer(
                   padding: EdgeInsets.zero,
                   child: AppButton.primary(
-                    label: _step == 4 ? 'Confirmar plano' : 'Continuar',
+                    label: _step == 4 ? 'Confirmar programa' : 'Continuar',
                     onPressed: _isCurrentStepValid ? _nextStep : null,
                   ),
                 ),

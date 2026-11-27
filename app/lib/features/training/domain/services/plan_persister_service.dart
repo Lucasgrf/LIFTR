@@ -33,7 +33,7 @@ class PlanPersisterService {
   }) async {
     if (draft.workouts.isEmpty) {
       return const Err(
-        ValidationFailure('O plano precisa ter ao menos uma sessão de treino.'),
+        ValidationFailure('O programa precisa ter ao menos uma sessão de treino.'),
       );
     }
 

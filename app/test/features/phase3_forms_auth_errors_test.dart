@@ -1353,7 +1353,7 @@ void main() {
       expect(find.text('Passo 1 de 6'), findsOneWidget);
 
       for (var i = 0; i < 5; i++) {
-        final nextLabel = i == 4 ? 'Confirmar plano' : 'Continuar';
+        final nextLabel = i == 4 ? 'Confirmar programa' : 'Continuar';
         await tester.tap(find.text(nextLabel));
         await tester.pumpAndSettle();
       }
@@ -1466,7 +1466,7 @@ void main() {
       await tester.pumpAndSettle();
 
       for (var i = 0; i < 5; i++) {
-        final nextLabel = i == 4 ? 'Confirmar plano' : 'Continuar';
+        final nextLabel = i == 4 ? 'Confirmar programa' : 'Continuar';
         await tester.tap(find.text(nextLabel));
         await tester.pumpAndSettle();
       }

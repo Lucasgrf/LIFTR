@@ -13,6 +13,7 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_brand_mark.dart';
@@ -161,7 +162,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
                 title: Text(w.name),
                 subtitle: Text(
-                  '${w.exercises.length} exercícios · ${w.totalWorkingSetsCount} séries',
+                  '${pluralize(w.exercises.length, 'exercício', 'exercícios')} · ${pluralize(w.totalWorkingSetsCount, 'série', 'séries')}',
                   style: ctx.textTheme.bodySmall?.copyWith(
                     color: colors.textSecondary,
                     fontFeatures: AppTypography.tabularFeatures,
@@ -424,7 +425,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             Flexible(
                               flex: 2,
                               child: Text(
-                                '${todayWorkout.exercises.length} prescritos',
+                                '${todayWorkout.exercises.length} ${todayWorkout.exercises.length == 1 ? 'prescrito' : 'prescritos'}',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.end,

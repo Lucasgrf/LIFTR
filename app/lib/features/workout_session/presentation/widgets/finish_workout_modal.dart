@@ -11,6 +11,7 @@ import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
@@ -227,7 +228,7 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
             children: [
               Expanded(
                 child: _FinishMetricItem(
-                  value: '${minutes}m',
+                  value: '$minutes min',
                   label: 'Duração',
                   valueColor: colors.primaryLight,
                 ),
@@ -250,7 +251,10 @@ class _FinishWorkoutModalState extends ConsumerState<FinishWorkoutModal> {
               else
                 Expanded(
                   child: _FinishMetricItem(
-                    value: '${widget.session.totalVolumeKg.toStringAsFixed(0)} kg',
+                    value: formatWeightKgPtBr(
+                      widget.session.totalVolumeKg,
+                      decimals: 0,
+                    ),
                     label: 'Volume',
                     valueColor: fitnessColors.progressUp,
                   ),

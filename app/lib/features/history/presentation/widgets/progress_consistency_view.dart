@@ -10,6 +10,7 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
@@ -274,7 +275,7 @@ class _ProgressConsistencyViewState
                                             ),
                                             child: Semantics(
                                               label:
-                                                  '${DateFormat('d MMM', 'pt_BR').format(cellDate)}, ${daySessions.length} treinos',
+                                                  '${DateFormat('d MMM', 'pt_BR').format(cellDate)}, ${pluralize(daySessions.length, 'treino', 'treinos')}',
                                               button: true,
                                               selected: isSelected,
                                               child: GestureDetector(
@@ -413,7 +414,11 @@ class _ProgressConsistencyViewState
                           ),
                           if (selectedSessions.length > 1)
                             Text(
-                              '${selectedSessions.length} sessões',
+                              pluralize(
+                                selectedSessions.length,
+                                'sessão',
+                                'sessões',
+                              ),
                               style: context.textTheme.labelSmall?.copyWith(
                                 color: colors.textTertiary,
                                 fontFeatures: AppTypography.tabularFeatures,

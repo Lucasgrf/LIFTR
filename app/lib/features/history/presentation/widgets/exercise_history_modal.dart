@@ -9,6 +9,7 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/utils/pt_br_number_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/charts/exercise_load_progression_chart.dart';
@@ -128,7 +129,7 @@ class ExerciseHistoryModal extends ConsumerWidget {
                                   ),
                                   const SizedBox(height: 3),
                                   Text(
-                                    '${rec.setsCount} séries · Top: ${rec.topWeightKg.toStringAsFixed(1)} kg × ${rec.topReps} reps',
+                                    '${pluralize(rec.setsCount, 'série', 'séries')} · Melhor: ${formatWeightKgPtBr(rec.topWeightKg)} × ${pluralize(rec.topReps, 'rep', 'reps')}',
                                     style: context.textTheme.bodySmall
                                         ?.copyWith(
                                       color: colors.textSecondary,
@@ -143,7 +144,7 @@ class ExerciseHistoryModal extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(
-                                  '1RM ${rec.bestEstimated1Rm.toStringAsFixed(1)} kg',
+                                  '1RM ${formatWeightKgPtBr(rec.bestEstimated1Rm)}',
                                   style: context.textTheme.labelSmall
                                       ?.copyWith(
                                     fontWeight: FontWeight.w700,

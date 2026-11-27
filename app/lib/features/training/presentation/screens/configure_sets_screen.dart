@@ -636,7 +636,7 @@ class _ConfigureSetsScreenState extends ConsumerState<ConfigureSetsScreen> {
                     ),
                     icon: const Icon(Icons.add_rounded, size: 16),
                     label: const Text(
-                      '+ Série Válida',
+                      'Série válida',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),

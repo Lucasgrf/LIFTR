@@ -286,7 +286,7 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          final cellFinder = find.bySemanticsLabel(RegExp(r', 1 treinos$'));
+          final cellFinder = find.bySemanticsLabel(RegExp(r', 1 treino$'));
           expect(cellFinder, findsOneWidget);
           expect(
             tester.getSemantics(cellFinder),
@@ -862,7 +862,7 @@ void main() {
         await tester.pump();
 
         for (var i = 0; i < 5; i++) {
-          final nextLabel = i == 4 ? 'Confirmar plano' : 'Continuar';
+          final nextLabel = i == 4 ? 'Confirmar programa' : 'Continuar';
           await tester.tap(find.text(nextLabel));
           await tester.pumpAndSettle();
         }

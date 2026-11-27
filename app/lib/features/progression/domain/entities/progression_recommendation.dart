@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/logged_set.dart';
 
 enum ProgressionType {
@@ -42,11 +43,11 @@ class ProgressionRecommendation {
   String get shortActionLabel {
     switch (type) {
       case ProgressionType.increase:
-        return '↗ Aumentar (+${weightDeltaKg.toStringAsFixed(1)} kg)';
+        return '↗ Aumentar (+${formatWeightKgPtBr(weightDeltaKg)})';
       case ProgressionType.maintain:
-        return '→ Manter (${suggestedWeightKg.toStringAsFixed(1)} kg)';
+        return '→ Manter (${formatWeightKgPtBr(suggestedWeightKg)})';
       case ProgressionType.decrease:
-        return '↘ Ajustar (${suggestedWeightKg.toStringAsFixed(1)} kg)';
+        return '↘ Ajustar (${formatWeightKgPtBr(suggestedWeightKg)})';
     }
   }
 

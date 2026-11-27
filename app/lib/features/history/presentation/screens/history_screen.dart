@@ -7,6 +7,7 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/body/presentation/providers/weight_providers.dart';
@@ -135,7 +136,7 @@ class HistoryScreen extends ConsumerWidget {
                                   if (weekSummary != null) ...[
                                     const SizedBox(height: 2),
                                     Text(
-                                      '${formatCardioSeconds(weekSummary.currentWeek.cardioDurationSeconds)} cardio · ${weekSummary.currentWeek.workoutsCompleted} treinos esta semana',
+                                      '${formatCardioSeconds(weekSummary.currentWeek.cardioDurationSeconds)} cardio · ${pluralize(weekSummary.currentWeek.workoutsCompleted, 'treino', 'treinos')} esta semana',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: context.textTheme.labelSmall

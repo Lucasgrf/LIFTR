@@ -5,6 +5,7 @@ import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
@@ -139,7 +140,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
     if (widget.planId == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Detalhes do Treino')),
-        body: const Center(child: Text('Plano não especificado')),
+        body: const Center(child: Text('Programa não especificado')),
       );
     }
 
@@ -237,7 +238,11 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                           Row(
                             children: [
                               Text(
-                                '${workout.totalExercisesCount} exercícios',
+                                pluralize(
+                                  workout.totalExercisesCount,
+                                  'exercício',
+                                  'exercícios',
+                                ),
                                 style: context.textTheme.bodySmall?.copyWith(
                                   color: context.appColors.textSecondary,
                                   fontWeight: FontWeight.w600,
@@ -252,7 +257,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                               ),
                               AppSpacing.horizontalGap8,
                               Text(
-                                '${workout.totalWorkingSetsCount} séries válidas',
+                                '${pluralize(workout.totalWorkingSetsCount, 'série', 'séries')} ${workout.totalWorkingSetsCount == 1 ? 'válida' : 'válidas'}',
                                 style: context.textTheme.bodySmall?.copyWith(
                                   color: context.appColors.primary,
                                   fontWeight: FontWeight.w600,
@@ -328,7 +333,11 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                                 ),
                               ),
                               subtitle: Text(
-                                '${exercise.totalSetsCount} séries',
+                                pluralize(
+                                  exercise.totalSetsCount,
+                                  'série',
+                                  'séries',
+                                ),
                                 style: context.textTheme.bodySmall?.copyWith(
                                   color: context.appColors.textSecondary,
                                 ),

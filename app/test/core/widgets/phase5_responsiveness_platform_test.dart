@@ -664,7 +664,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.ensureVisible(find.text('Compartilhar plano'));
+        await tester.ensureVisible(find.text('Compartilhar programa'));
         await tester.pumpAndSettle();
 
         expect(find.byIcon(Icons.adaptive.share), findsOneWidget);

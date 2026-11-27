@@ -64,7 +64,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   String _updateRowSubtitle(AppUpdateState updateState) {
     if (updateState.phase == AppUpdatePhase.checking) {
-      return 'Consultando GitHub Releases';
+      return 'Verificando atualizações...';
     }
     if (updateState.availableUpdate != null) {
       return 'Nova versão pronta para instalar';
@@ -248,7 +248,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   ? 'Conectado'
                                   : 'Não conectado',
                               subtitle: settings.whatsappConnected
-                                  ? settings.whatsappMaskedPhone
+                                  ? (settings.whatsappMaskedPhone.isNotEmpty
+                                      ? settings.whatsappMaskedPhone
+                                      : 'Número vinculado')
                                   : 'Toque para vincular número',
                               valueColor: settings.whatsappConnected
                                   ? fitnessColors.progressUp
@@ -333,7 +335,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             ),
                             LiftrListRow(
                               label: 'Exportar meus dados',
-                              value: 'CSV / JSON',
+                              value: 'JSON',
                               onTap: () =>
                                   _showExportModal(context, settings),
                             ),

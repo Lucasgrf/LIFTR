@@ -15,6 +15,7 @@ import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
@@ -906,7 +907,7 @@ class _LoggedExerciseDetailTile extends StatelessWidget {
 
     final summaryText = isCardio
         ? formatCardioSeconds(sessionExercise.totalCardioDurationSeconds)
-        : '${sessionExercise.completedWorkingSetsCount} séries · ${_formatKg(sessionExercise.totalVolumeKg)} kg';
+        : '${pluralize(sessionExercise.completedWorkingSetsCount, 'série', 'séries')} · ${_formatKg(sessionExercise.totalVolumeKg)} kg';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),

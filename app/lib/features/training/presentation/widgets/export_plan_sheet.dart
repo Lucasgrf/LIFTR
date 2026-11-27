@@ -4,6 +4,7 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
@@ -85,15 +86,16 @@ class ExportPlanSheet extends StatelessWidget {
           runSpacing: 8,
           children: [
             LiftrBadge(
-              label: '${plan.totalWorkoutsCount} sessões',
+              label: pluralize(plan.totalWorkoutsCount, 'sessão', 'sessões'),
               tone: LiftrBadgeTone.brand,
             ),
             LiftrBadge(
-              label: '$totalExercises exercícios',
+              label: pluralize(totalExercises, 'exercício', 'exercícios'),
               tone: LiftrBadgeTone.neutral,
             ),
             LiftrBadge(
-              label: '${plan.totalWeeklySetsCount} séries/sem',
+              label:
+                  '${plan.totalWeeklySetsCount} ${plan.totalWeeklySetsCount == 1 ? 'série/sem' : 'séries/sem'}',
               tone: LiftrBadgeTone.neutral,
             ),
           ],

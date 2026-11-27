@@ -860,7 +860,7 @@ void main() {
           await tester.tap(find.text('Continuar'));
           await tester.pumpAndSettle();
         }
-        await tester.tap(find.text('Confirmar plano'));
+        await tester.tap(find.text('Confirmar programa'));
         await tester.pumpAndSettle();
 
         await expectLater(

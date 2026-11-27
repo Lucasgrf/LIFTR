@@ -93,7 +93,7 @@ class _AddWorkoutScreenState extends ConsumerState<AddWorkoutScreen> {
     return Scaffold(
       backgroundColor: context.appColors.background,
       appBar: AppBar(
-        title: const Text('Adicionar Treino ao Plano'),
+        title: const Text('Adicionar treino ao programa'),
       ),
       body: SafeArea(
         top: false,

@@ -4,6 +4,7 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
@@ -96,13 +97,20 @@ class HistoryWorkoutCard extends StatelessWidget {
                     _buildMetricChip(
                       context,
                       icon: Icons.checklist_rounded,
-                      label: '${session.totalWorkingSetsCount} séries',
+                      label: pluralize(
+                        session.totalWorkingSetsCount,
+                        'série',
+                        'séries',
+                      ),
                       color: fitnessColors.progressNeutral,
                     ),
                     _buildMetricChip(
                       context,
                       icon: Icons.fitness_center_rounded,
-                      label: '${session.totalVolumeKg.toStringAsFixed(0)} kg',
+                      label: formatWeightKgPtBr(
+                        session.totalVolumeKg,
+                        decimals: 0,
+                      ),
                       color: fitnessColors.progressUp,
                     ),
                   ],

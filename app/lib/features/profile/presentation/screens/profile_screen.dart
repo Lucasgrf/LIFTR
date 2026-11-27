@@ -13,6 +13,7 @@ import 'package:personal_fitness_os/core/providers/clock_provider.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/utils/pt_br_number_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
@@ -260,8 +261,10 @@ class ProfileScreen extends ConsumerWidget {
                               value:
                                   '${formatPtBrDecimal(settings.weightKg, trimTrailingZero: false)} kg · ${settings.heightCm} cm · ${settings.age} anos',
                               subtitle: settings.bodyFatPercent != null
-                                  ? 'Sexo ${settings.biologicalSex} · ${formatPtBrDecimal(settings.bodyFatPercent!, trimTrailingZero: false)}% gordura'
-                                  : 'Sexo ${settings.biologicalSex}',
+                                  ? '${formatBiologicalSexPtBr(settings.biologicalSex)} · ${formatPtBrDecimal(settings.bodyFatPercent!, trimTrailingZero: false)}% gordura'
+                                  : formatBiologicalSexPtBr(
+                                      settings.biologicalSex,
+                                    ),
                               onTap: () => _showBodyDataSheet(context, settings),
                             ),
                             LiftrListRow(

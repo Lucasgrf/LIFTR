@@ -94,7 +94,7 @@ class SupabaseAiWorkoutRemoteDataSource implements AiWorkoutRemoteDataSource {
       if (planMap is! Map) {
         throw const AiWorkoutException(
           code: AiWorkoutErrorCode.invalidResponse,
-          message: 'O plano gerado não pôde ser interpretado.',
+          message: 'O programa gerado não pôde ser interpretado.',
         );
       }
 
@@ -151,7 +151,7 @@ class SupabaseAiWorkoutRemoteDataSource implements AiWorkoutRemoteDataSource {
       return const AiWorkoutException(
         code: AiWorkoutErrorCode.keyNotConfigured,
         message:
-            'A chave GEMINI_API_KEY ainda não foi configurada no Supabase (secrets da Edge Function). Configure a chave para liberar a geração com o Gemini.',
+            'A geração automática de treinos com IA está temporariamente indisponível no servidor.',
       );
     }
 
@@ -175,7 +175,7 @@ class SupabaseAiWorkoutRemoteDataSource implements AiWorkoutRemoteDataSource {
       code: AiWorkoutErrorCode.unknown,
       message: serverMessage?.trim().isNotEmpty == true
           ? serverMessage!
-          : 'Erro ao consultar o Gemini (HTTP ${e.status}). Tente novamente.',
+          : 'Erro ao gerar programa com IA (HTTP ${e.status}). Tente novamente.',
     );
   }
 }

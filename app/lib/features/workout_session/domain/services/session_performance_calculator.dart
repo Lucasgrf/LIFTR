@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/logged_set.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/session_exercise.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
@@ -359,11 +360,11 @@ class SessionPerformanceCalculator {
       parts.add('$cardioMinutesLogged min cardio');
     }
     if (exercisesWithLoadUp > 0) {
-      parts.add('$exercisesWithLoadUp subida(s) de carga');
+      parts.add('${pluralize(exercisesWithLoadUp, 'subida', 'subidas')} de carga');
     } else if (exercisesWithLoadDrop > 0) {
-      parts.add('$exercisesWithLoadDrop queda(s) de carga');
+      parts.add('${pluralize(exercisesWithLoadDrop, 'queda', 'quedas')} de carga');
     } else if (setsBelowMinReps > 0) {
-      parts.add('$setsBelowMinReps série(s) abaixo do mínimo');
+      parts.add('${pluralize(setsBelowMinReps, 'série', 'séries')} abaixo do mínimo');
     } else if (strengthExercises.isNotEmpty) {
       parts.add('carga mantida e faixa cumprida');
     }

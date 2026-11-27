@@ -3,6 +3,7 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
 
@@ -90,7 +91,11 @@ class WorkoutCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${workout.totalExercisesCount} exercícios',
+                        pluralize(
+                          workout.totalExercisesCount,
+                          'exercício',
+                          'exercícios',
+                        ),
                         style: context.textTheme.bodySmall?.copyWith(
                           color: context.appColors.textSecondary,
                         ),
@@ -100,7 +105,7 @@ class WorkoutCard extends StatelessWidget {
                   if (workout.totalWorkingSetsCount > 0) ...[
                     AppSpacing.verticalGap4,
                     Text(
-                      '${workout.totalWorkingSetsCount} séries válidas',
+                      '${pluralize(workout.totalWorkingSetsCount, 'série', 'séries')} ${workout.totalWorkingSetsCount == 1 ? 'válida' : 'válidas'}',
                       style: context.textTheme.labelSmall?.copyWith(
                         color: context.appColors.primary,
                         fontWeight: FontWeight.w600,

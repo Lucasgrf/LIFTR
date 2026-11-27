@@ -111,7 +111,7 @@ class _CreateTrainingPlanScreenState
             LiftrListGroup(
               children: [
                 LiftrListRow.toggle(
-                  label: 'Definir como Plano Ativo',
+                  label: 'Definir como programa ativo',
                   subtitle:
                       'Este programa se tornará o treino principal do seu dia a dia.',
                   value: _isActive,

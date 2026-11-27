@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
@@ -199,7 +200,7 @@ class _MuscleBarItem extends StatelessWidget {
       container: true,
       excludeSemantics: true,
       label:
-          '${entry.label}: ${entry.sets} séries válidas na semana${reachedTarget ? ' (meta atingida)' : ''}',
+          '${entry.label}: ${pluralize(entry.sets, 'série', 'séries')} ${entry.sets == 1 ? 'válida' : 'válidas'} na semana${reachedTarget ? ' (meta atingida)' : ''}',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -232,7 +233,7 @@ class _MuscleBarItem extends StatelessWidget {
                     ],
                     Flexible(
                       child: Text(
-                        '${entry.sets} séries',
+                        pluralize(entry.sets, 'série', 'séries'),
                         style: context.textTheme.labelSmall?.copyWith(
                           color: reachedTarget
                               ? colors.primaryLight

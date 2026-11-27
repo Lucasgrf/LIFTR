@@ -5,6 +5,7 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
@@ -71,7 +72,7 @@ class TodayWorkoutBanner extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              '${activeSession!.totalCompletedSetsCount} séries registradas até o momento',
+              '${pluralize(activeSession!.totalCompletedSetsCount, 'série', 'séries')} ${activeSession!.totalCompletedSetsCount == 1 ? 'registrada' : 'registradas'} até o momento',
               style: context.textTheme.bodyMedium?.copyWith(
                 color: colors.textSecondary,
                 fontFeatures: AppTypography.tabularFeatures,
@@ -139,7 +140,7 @@ class TodayWorkoutBanner extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              '${todayWorkout!.exercises.length} exercícios · ${todayWorkout!.totalWorkingSetsCount} séries · ~$durationEst min',
+              '${pluralize(todayWorkout!.exercises.length, 'exercício', 'exercícios')} · ${pluralize(todayWorkout!.totalWorkingSetsCount, 'série', 'séries')} · ~$durationEst min',
               style: context.textTheme.bodyMedium?.copyWith(
                 color: colors.textSecondary,
                 fontFeatures: AppTypography.tabularFeatures,
@@ -176,7 +177,7 @@ class TodayWorkoutBanner extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Adicione sessões ao plano ${activePlan!.name} ou comece um treino livre.',
+              'Adicione sessões ao programa ${activePlan!.name} ou comece um treino livre.',
               style: context.textTheme.bodyMedium?.copyWith(
                 color: colors.textSecondary,
               ),

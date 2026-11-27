@@ -11,6 +11,7 @@ import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
@@ -246,7 +247,7 @@ class WeeklyComparisonScreen extends ConsumerWidget {
                                 Expanded(
                                   flex: 3,
                                   child: Text(
-                                    'Comparativo semanal',
+                                    'Comparação semanal',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: context.textTheme.titleMedium,
@@ -896,7 +897,7 @@ class _HistoryWeekRow extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                '${snapshot.workoutsCompleted} treinos · ${formatCardioSeconds(snapshot.cardioDurationSeconds)} cardio',
+                '${pluralize(snapshot.workoutsCompleted, 'treino', 'treinos')} · ${formatCardioSeconds(snapshot.cardioDurationSeconds)} cardio',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: context.textTheme.labelSmall?.copyWith(

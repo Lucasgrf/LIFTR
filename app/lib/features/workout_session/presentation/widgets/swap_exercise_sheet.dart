@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
@@ -181,12 +182,13 @@ class _SwapExerciseSheetState extends ConsumerState<SwapExerciseSheet> {
             padding: EdgeInsets.only(top: 4, bottom: widget.embedded ? 0 : 24),
             children: [
               if (usedList.isNotEmpty) ...[
-                const _SheetSectionLabel('JÁ USADOS POR VOCÊ'),
+                const _SheetSectionLabel('Já usados por você'),
                 ...usedList.map(
                   (ex) => _SwapOptionRow(
                     exercise: ex,
-                    subtitle:
-                        'Última carga: ${lastWeightByExerciseId[ex.id]?.toStringAsFixed(1).replaceAll('.0', '') ?? '--'} kg',
+                    subtitle: lastWeightByExerciseId[ex.id] != null
+                        ? 'Última carga: ${formatWeightKgPtBr(lastWeightByExerciseId[ex.id]!)}'
+                        : 'Última carga: -- kg',
                     onTap: () {
                       HapticFeedback.selectionClick();
                       widget.onSelect(ex);

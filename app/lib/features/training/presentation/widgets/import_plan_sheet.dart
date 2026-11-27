@@ -6,6 +6,7 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
@@ -243,15 +244,27 @@ class _ImportPlanSheetState extends ConsumerState<ImportPlanSheet> {
                   runSpacing: 8,
                   children: [
                     LiftrBadge(
-                      label: '${preview.totalWorkoutsCount} sessões',
+                      label: pluralize(
+                        preview.totalWorkoutsCount,
+                        'sessão',
+                        'sessões',
+                      ),
                       tone: LiftrBadgeTone.brand,
                     ),
                     LiftrBadge(
-                      label: '${preview.totalExercisesCount} exercícios',
+                      label: pluralize(
+                        preview.totalExercisesCount,
+                        'exercício',
+                        'exercícios',
+                      ),
                       tone: LiftrBadgeTone.neutral,
                     ),
                     LiftrBadge(
-                      label: '${preview.totalWorkingSetsCount} séries',
+                      label: pluralize(
+                        preview.totalWorkingSetsCount,
+                        'série',
+                        'séries',
+                      ),
                       tone: LiftrBadgeTone.neutral,
                     ),
                   ],
@@ -261,7 +274,7 @@ class _ImportPlanSheetState extends ConsumerState<ImportPlanSheet> {
                   (w) => Padding(
                     padding: const EdgeInsets.only(bottom: 4),
                     child: Text(
-                      '• ${w.name} (${w.exercises.length} exercícios)',
+                      '• ${w.name} (${pluralize(w.exercises.length, 'exercício', 'exercícios')})',
                       style: context.textTheme.bodySmall?.copyWith(
                         color: colors.textSecondary,
                         fontFeatures: AppTypography.tabularFeatures,

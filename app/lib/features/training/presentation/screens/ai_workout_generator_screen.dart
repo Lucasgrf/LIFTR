@@ -12,6 +12,7 @@ import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
@@ -985,7 +986,7 @@ class _AiWorkoutGeneratorScreenState
             ),
             const SizedBox(height: 6),
             Text(
-              'O Gemini está estruturando $_daysPerWeek sessões (${_goal.label}) para o seu nível.',
+              'A IA está estruturando $_daysPerWeek sessões (${_goal.label}) para o seu nível.',
               style: context.textTheme.bodySmall?.copyWith(
                 color: colors.textSecondary,
               ),
@@ -1110,15 +1111,20 @@ class _AiWorkoutGeneratorScreenState
               tone: LiftrBadgeTone.brand,
             ),
             LiftrBadge(
-              label: '${plan.totalWorkoutsCount} sessões',
+              label: pluralize(plan.totalWorkoutsCount, 'sessão', 'sessões'),
               tone: LiftrBadgeTone.neutral,
             ),
             LiftrBadge(
-              label: '${plan.totalExercisesCount} exercícios',
+              label: pluralize(
+                plan.totalExercisesCount,
+                'exercício',
+                'exercícios',
+              ),
               tone: LiftrBadgeTone.neutral,
             ),
             LiftrBadge(
-              label: '${plan.totalWorkingSetsCount} séries/sem',
+              label:
+                  '${plan.totalWorkingSetsCount} ${plan.totalWorkingSetsCount == 1 ? 'série/sem' : 'séries/sem'}',
               tone: LiftrBadgeTone.neutral,
             ),
           ],

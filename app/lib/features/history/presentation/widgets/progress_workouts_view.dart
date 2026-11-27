@@ -5,6 +5,7 @@ import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
@@ -58,7 +59,7 @@ class ProgressWorkoutsView extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  '${sessions.length} ${sessions.length == 1 ? 'sessão' : 'sessões'}',
+                  pluralize(sessions.length, 'sessão', 'sessões'),
                   style: context.textTheme.labelSmall?.copyWith(
                     color: colors.textTertiary,
                     fontFeatures: AppTypography.tabularFeatures,

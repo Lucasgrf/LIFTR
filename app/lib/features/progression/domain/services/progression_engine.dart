@@ -1,4 +1,5 @@
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/features/progression/domain/entities/exercise_performance_history.dart';
 import 'package:personal_fitness_os/features/progression/domain/entities/progression_recommendation.dart';
 
@@ -150,7 +151,7 @@ class ProgressionEngine {
           requiredCeilingHits: requiredCeilingHitsForIncrease,
           previousWorkingSets: workingSets,
           rationale:
-              'Topo da faixa ($targetRepsMax reps) atingido $consecutiveCeilingHits/$requiredCeilingHitsForIncrease vezes com ${baseWeight.toStringAsFixed(1)} kg. Repita o topo na próxima sessão para confirmar a subida de carga.',
+              'Topo da faixa (${pluralize(targetRepsMax, 'rep', 'reps')}) atingido $consecutiveCeilingHits/$requiredCeilingHitsForIncrease vezes com ${formatWeightKgPtBr(baseWeight)}. Repita o topo na próxima sessão para confirmar a subida de carga.',
           previousSummary: history.summaryString,
           targetRepsMin: targetRepsMin,
           targetRepsMax: targetRepsMax,
@@ -169,7 +170,7 @@ class ProgressionEngine {
         requiredCeilingHits: requiredCeilingHitsForIncrease,
         previousWorkingSets: workingSets,
         rationale:
-            'Meta consolidada ($consecutiveCeilingHits/$requiredCeilingHitsForIncrease)! Todas as séries bateram o topo ($targetRepsMax reps) em $requiredCeilingHitsForIncrease sessões seguidas com boa execução. Suba para ${newWeight.toStringAsFixed(1)} kg (+${delta.toStringAsFixed(1)} kg).',
+            'Meta consolidada ($consecutiveCeilingHits/$requiredCeilingHitsForIncrease)! Todas as séries bateram o topo ($targetRepsMax reps) em $requiredCeilingHitsForIncrease sessões seguidas com boa execução. Suba para ${formatWeightKgPtBr(newWeight)} (+${formatWeightKgPtBr(delta)}).',
         previousSummary: history.summaryString,
         targetRepsMin: targetRepsMin,
         targetRepsMax: targetRepsMax,
@@ -186,7 +187,7 @@ class ProgressionEngine {
         requiredCeilingHits: requiredCeilingHitsForIncrease,
         previousWorkingSets: workingSets,
         rationale:
-            'Dentro da faixa alvo ($targetRepsMin-$targetRepsMax reps). Mantenha ${baseWeight.toStringAsFixed(1)} kg e busque mais repetições até atingir $targetRepsMax reps em todas as séries.',
+            'Dentro da faixa alvo ($targetRepsMin-$targetRepsMax reps). Mantenha ${formatWeightKgPtBr(baseWeight)} e busque mais repetições até atingir $targetRepsMax reps em todas as séries.',
         previousSummary: history.summaryString,
         targetRepsMin: targetRepsMin,
         targetRepsMax: targetRepsMax,
@@ -210,7 +211,7 @@ class ProgressionEngine {
         requiredCeilingHits: requiredCeilingHitsForIncrease,
         previousWorkingSets: workingSets,
         rationale:
-            'Dificuldade excessiva ou queda abaixo de $targetRepsMin reps. Reduza para ${roundedSuggested.toStringAsFixed(1)} kg para restaurar o volume e a técnica.',
+            'Dificuldade excessiva ou queda abaixo de $targetRepsMin reps. Reduza para ${formatWeightKgPtBr(roundedSuggested)} para restaurar o volume e a técnica.',
         previousSummary: history.summaryString,
         targetRepsMin: targetRepsMin,
         targetRepsMax: targetRepsMax,
@@ -226,7 +227,7 @@ class ProgressionEngine {
       requiredCeilingHits: requiredCeilingHitsForIncrease,
       previousWorkingSets: workingSets,
       rationale:
-          'Mantenha a carga de ${baseWeight.toStringAsFixed(1)} kg e foque em atingir ao menos $targetRepsMin reps em todas as séries.',
+          'Mantenha a carga de ${formatWeightKgPtBr(baseWeight)} e foque em atingir ao menos $targetRepsMin reps em todas as séries.',
       previousSummary: history.summaryString,
       targetRepsMin: targetRepsMin,
       targetRepsMax: targetRepsMax,

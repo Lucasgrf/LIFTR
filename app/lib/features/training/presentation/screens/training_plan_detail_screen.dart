@@ -46,7 +46,7 @@ class _TrainingPlanDetailScreenState
       (updated) {
         ref.invalidate(trainingPlanDetailProvider(widget.planId));
         ref.read(trainingPlansStateProvider.notifier).refresh();
-        context.showSnackBar('Programa "${updated.name}" agora é o plano ativo!');
+        context.showSnackBar('Programa "${updated.name}" agora é o programa ativo!');
       },
       (failure) {
         context.showSnackBar('Erro ao ativar programa: ${failure.message}', isError: true);

@@ -7,6 +7,7 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
@@ -226,7 +227,7 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
                                 ),
                                 const SizedBox(height: 3),
                                 Text(
-                                  '${activePlan.name} · ${orderedWorkouts.length} sessões',
+                                  '${activePlan.name} · ${pluralize(orderedWorkouts.length, 'sessão', 'sessões')}',
                                   style: context.textTheme.bodySmall?.copyWith(
                                     color: colors.textSecondary,
                                     fontFeatures: AppTypography.tabularFeatures,
@@ -369,7 +370,7 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
                               foregroundColor: colors.textSecondary,
                             ),
                             icon: Icon(Icons.adaptive.share, size: 17),
-                            label: const Text('Compartilhar plano'),
+                            label: const Text('Compartilhar programa'),
                           ),
                           TextButton.icon(
                             onPressed: () => context.push(

@@ -522,7 +522,7 @@ void main() {
       await tester.pump();
       expect(find.text('6 dias → Push / Pull / Legs 2×'), findsOneWidget);
 
-      await tester.tap(find.text('Confirmar plano'));
+      await tester.tap(find.text('Confirmar programa'));
       await tester.pumpAndSettle();
 
       expect(find.text('Passo 6 de 6'), findsOneWidget);
