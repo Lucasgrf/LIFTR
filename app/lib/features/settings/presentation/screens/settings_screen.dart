@@ -117,7 +117,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final fitnessColors = context.fitnessColors;
     final settings = ref.watch(userSettingsProvider);
     final themeMode = ref.watch(themeModeProvider);
-    final simulatedOffline = ref.watch(simulatedOfflineProvider);
+    final offlineSimulationEnabled =
+        ref.watch(offlineSimulationEnabledProvider);
+    final simulatedOffline =
+        offlineSimulationEnabled && ref.watch(simulatedOfflineProvider);
     final isOfflineState = ref.watch(isOfflineModeProvider);
     final pendingCount = ref.watch(pendingSyncCountProvider);
     final updateState = ref.watch(appUpdateProvider);
@@ -242,14 +245,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         LiftrListGroup(
                           header: 'Sincronização offline e dados',
                           children: [
-                            LiftrListRow.toggle(
-                              label: 'Simular modo offline',
-                              value: simulatedOffline,
-                              activeColor: colors.warning,
-                              onChanged: (val) => ref
-                                  .read(simulatedOfflineProvider.notifier)
-                                  .state = val,
-                            ),
+                            if (offlineSimulationEnabled)
+                              LiftrListRow.toggle(
+                                label: 'Simular modo offline',
+                                value: simulatedOffline,
+                                activeColor: colors.warning,
+                                onChanged: (val) => ref
+                                    .read(simulatedOfflineProvider.notifier)
+                                    .state = val,
+                              ),
                             LiftrListRow(
                               label: 'Status local',
                               value: isOfflineState

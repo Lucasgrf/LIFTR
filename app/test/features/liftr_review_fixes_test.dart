@@ -201,6 +201,33 @@ void main() {
       expect(container.read(simulatedOfflineProvider), isTrue);
     });
 
+    test(
+      'isOfflineModeProvider ignores simulatedOfflineProvider when simulation is disabled (release guard)',
+      () {
+        final releaseContainer = ProviderContainer(
+          overrides: [
+            offlineSimulationEnabledProvider.overrideWithValue(false),
+            isOnlineStreamProvider.overrideWith((_) => Stream.value(true)),
+          ],
+        );
+        addTearDown(releaseContainer.dispose);
+
+        releaseContainer.read(simulatedOfflineProvider.notifier).state = true;
+        expect(releaseContainer.read(isOfflineModeProvider), isFalse);
+
+        final debugContainer = ProviderContainer(
+          overrides: [
+            offlineSimulationEnabledProvider.overrideWithValue(true),
+            isOnlineStreamProvider.overrideWith((_) => Stream.value(true)),
+          ],
+        );
+        addTearDown(debugContainer.dispose);
+
+        debugContainer.read(simulatedOfflineProvider.notifier).state = true;
+        expect(debugContainer.read(isOfflineModeProvider), isTrue);
+      },
+    );
+
     test('ThemeModeNotifier persists ThemeMode across restarts', () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();

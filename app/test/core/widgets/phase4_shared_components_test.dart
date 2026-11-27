@@ -751,6 +751,32 @@ void main() {
     );
 
     testWidgets(
+      'SettingsScreen hides Simular modo offline when offlineSimulationEnabledProvider is false',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              isOnlineStreamProvider.overrideWith((_) => Stream.value(true)),
+              offlineSimulationEnabledProvider.overrideWithValue(false),
+            ],
+            child: MaterialApp(
+              theme: AppTheme.dark(),
+              home: const SettingsScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Simular modo offline'), findsNothing);
+        expect(find.text('Status local'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
       'A11Y-02: InkWells in LastCompletedWorkoutCard, WeeklySummaryCard, ProgressSegmentedControl, LogCardioModal, SwitchProgramSheet, OnboardingScreen (step 5) and AppShell satisfy Material ancestor, tap targets, and 320dp @ 1.3x',
       (tester) async {
         SharedPreferences.setMockInitialValues({});
