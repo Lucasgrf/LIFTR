@@ -69,20 +69,21 @@ Registro de dívidas técnicas identificadas durante a execução da auditoria d
 
 ## 10. [Prioridade Alta — Banco de Dados] Esquemas paralelos entre App Flutter e Bot WhatsApp (`user_profiles` / `weight_entries` vs `perfil` / `pesagem`)
 
-- **Contexto e consequência:** O aplicativo Flutter lê e grava em `public.user_profiles` (`20261121000004_post_first_use_fixes.sql`) e `public.weight_entries` (`20261121000001_flutter_app_schema.sql`), enquanto o backend/bot do WhatsApp (Deno, `supabase/functions/_shared/repo/supabase_repo.ts`) utiliza `public.perfil` e `public.pesagem` (`20261103000001_schema_inicial.sql`), tabela que já possui `origem text not null default 'whatsapp' check (origem in ('app', 'whatsapp', 'foto'))`. Como consequência direta, **a aba Peso no app não exibe pesagens registradas via WhatsApp**, e os dados cadastrais/fisiológicos dos dois canais divergem silenciosamente.
-- **Sobreposição de colunas (verificada via migrações SQL e datasources):**
+- **Contexto e consequência:** O aplicativo Flutter lê e grava em `public.user_profiles` e `public.weight_entries`, enquanto o backend/bot do WhatsApp (Deno, `supabase/functions/_shared/repo/supabase_repo.ts`) espera `public.perfil` e `public.pesagem` (`20261103000001_schema_inicial.sql`, com `origem in ('app', 'whatsapp', 'foto')`). Como consequência direta, **a aba Peso no app não compartilha pesagens com o canal WhatsApp**, e os modelos cadastrais divergem entre código Flutter e Edge Functions Deno.
+- **Sobreposição de colunas (verificada contra produção `keqlezlqyxdygiqulgau` e `20261103000001_schema_inicial.sql`):**
   - **`public.user_profiles` vs `public.perfil`:**
     - `id` ↔ `usuario_id` (ambos `uuid PK` referenciando `auth.users(id)`)
-    - `biological_sex` (`text`, sem `CHECK`; app envia em inglês) ↔ `sexo` (`text check (in ('masculino', 'feminino'))`)
-    - `age` (`integer`) ↔ `nascimento` (`date` — divergência de modelo)
-    - `height_cm` (**nota de esquema:** `ProfileRemoteDataSource` tenta ler/gravar `height_cm` em `user_profiles` dentro de `try/catch` best-effort, porém `20261121000004_post_first_use_fixes.sql` não declara essa coluna) ↔ `altura_cm` (`numeric(5,1) check (between 100 and 250)`)
+    - `biological_sex` (sem `CHECK`; app envia `'male'`/`'female'`) / `gender` (`CHECK in ('male','female','other','prefer_not_to_say')`) ↔ `sexo` (`CHECK in ('masculino', 'feminino')`)
+    - `age` (`integer`) / `date_of_birth` (`date`) ↔ `nascimento` (`date`)
+    - `height_cm` (`numeric(5,1)` em produção, reconciliada em `20261127000002_reconcile_production_schema_drift.sql`) ↔ `altura_cm` (`numeric(5,1) check (between 100 and 250)`)
     - `body_fat_percent` (`numeric(4,1)`) ↔ `percentual_gordura` (`numeric(4,1) check (between 3 and 70)`)
     - `goal` (`bulking | cutting | maintenance`) ↔ `objetivo` (`bulking | cutting | manutencao`)
     - `experience` (`beginner | intermediate | advanced`) ↔ `experiencia` (`iniciante | intermediario` — sem `avancado` no `CHECK`)
     - `activity_level` (`sedentary | lightlyActive | moderatelyActive | veryActive`) ↔ `atividade` (`sedentario | leve | moderado | alto`)
+    - `timezone` ↔ `fuso`
     - `created_at` ↔ `criado_em`
-    - *Exclusivas de `user_profiles`:* `display_name`, `avatar_url`, `avatar_storage_path`, `weight_kg`, `updated_at`.
-    - *Exclusivas de `perfil`:* `fuso`, `whatsapp_numero` (`unique`), `horario_relatorio`, `silencio_inicio`, `silencio_fim`, `sinal_transtorno_alimentar`.
+    - *Exclusivas de `user_profiles`:* `display_name`, `avatar_url`, `avatar_storage_path`, `weight_kg`, `preferred_weight_unit`, `preferred_measurement_unit`, `updated_at`.
+    - *Exclusivas de `perfil`:* `whatsapp_numero` (`unique`), `horario_relatorio`, `silencio_inicio`, `silencio_fim`, `sinal_transtorno_alimentar`.
   - **`public.weight_entries` vs `public.pesagem`:**
     - `id` ↔ `id` (`uuid PK`)
     - `user_id` ↔ `usuario_id` (`uuid not null default auth.uid()`)
@@ -91,19 +92,22 @@ Registro de dívidas técnicas identificadas durante a execução da auditoria d
     - `created_at` ↔ `criado_em` (`timestamptz`)
     - *Exclusiva de `weight_entries`:* `notes` (`text`).
     - *Exclusiva de `pesagem`:* `origem` (`'app' | 'whatsapp' | 'foto'`).
-    - Nenhuma das duas tabelas possui `UNIQUE` por usuário/dia hoje (ambas têm apenas índices não-únicos: `idx_weight_entries_user_date` e `pesagem_usuario_data_idx`).
-- **Situação de dados (consulta apenas de esquema/código, sem acesso ao banco de produção):**
-  - `supabase/seed/seed.sql` popula apenas catálogos globais (`equipamento`, `exercicio`, `alimento`, `medida_caseira`), sem inserir linhas em nenhuma das 4 tabelas.
-  - Pelo código ativo, o app Flutter escreve em `user_profiles` e `weight_entries`, enquanto `supabase_repo.ts` consulta/atualiza `perfil` e consulta `pesagem` (embora o contrato da tabela e `skills/registrar-peso/SKILL.md` já existam, ainda não há `insert` em `pesagem` nas Edge Functions atuais). Antes de escolher/executar a migração, executar consulta de contagem de linhas e interseção de usuários (`perfil`/`user_profiles` e `pesagem`/`weight_entries`) no ambiente alvo.
-- **Opções de unificação:**
-  - **Opção 1 — Adotar `perfil` e `pesagem` como fonte única (migrando o app Flutter):**
-    - Estender `perfil` com as colunas de UI (`display_name`, `avatar_url`, `avatar_storage_path`, `updated_at`) e alinhar `experiencia`/`age` vs `nascimento`; estender `pesagem` com `notes`, opcionalmente `measured_at`, revisar o `CHECK` de faixa (`30..300` vs `20..400`) e aplicar `UNIQUE (usuario_id, data)`. Fazer backfill de `user_profiles`/`weight_entries` (`origem = 'app'`), apontar os datasources do Flutter para `perfil`/`pesagem` com tradução de enums e aposentar as tabelas paralelas após janela de transição.
-    - *Prós:* fonte única de verdade sem sincronização dupla; aproveita `origem ('app' | 'whatsapp' | 'foto')` e `fuso`; aba Peso passa a exibir pesagens do WhatsApp/foto nativamente; simplifica a futura seção WhatsApp Coach e a Edge Function de exclusão de conta.
-    - *Contras:* exige alteração nos datasources/DTOs do Flutter, mapeamento de enums PT-BR ↔ EN, decisão de modelo entre `age` e `nascimento` e período de transição para não quebrar builds antigas já instaladas.
-  - **Opção 2 — View unificada ou sincronização (triggers / Edge Function) mantendo os dois pares:**
-    - Manter `user_profiles`/`weight_entries` para o app e `perfil`/`pesagem` para o bot, usando uma `VIEW` (`UNION ALL`/`JOIN`) para leitura na aba Peso ou triggers bidirecionais sincronizando escritas entre as tabelas.
-    - *Prós:* preserva compatibilidade imediata com builds antigas do app sem alterar o bot nesta etapa; permite adoção incremental apenas de leitura via `VIEW`.
-    - *Contras:* uma `VIEW` sozinha não resolve deduplicação diária nem edição pelo app de uma pesagem vinda do WhatsApp; triggers bidirecionais entre esquemas com enums, granularidades (`timestamptz` vs `date`, `age` vs `nascimento`) e `CHECK`s distintos são frágeis, sujeitos a loops/conflitos e mantêm o custo permanente de dois esquemas.
+    - Nenhuma das duas tabelas possui `UNIQUE` por usuário/dia hoje (ambas têm apenas índices não-únicos).
+- **Situação real verificada no banco de produção (`LIFTR`, `keqlezlqyxdygiqulgau`, 2026-11-27):**
+  - `public.perfil`: **tabela não existe em produção** (`20261103000001_schema_inicial.sql` nunca foi aplicada ao projeto `LIFTR` — existe apenas no repositório).
+  - `public.pesagem`: **tabela não existe em produção**.
+  - `public.user_profiles`: **`1` linha** (`count(height_cm) = 1`).
+  - `public.weight_entries`: **`0` linhas**.
+  - As 24 tabelas existentes hoje em produção pertencem exclusivamente ao esquema Flutter; `supabase/seed/seed.sql` também não roda nesse projeto em produção.
+- **Opções de unificação (com menor custo dado `weight_entries = 0` e `perfil`/`pesagem` ausentes em prod):**
+  - **Opção 1 — Adotar `user_profiles` e `weight_entries` como fonte única (adaptando o bot WhatsApp Deno):**
+    - Como produção já usa `user_profiles` (`1` linha) e `weight_entries` (`0` linhas) e `perfil`/`pesagem` não existem no banco ativo, adicionar apenas os campos WhatsApp em `user_profiles` (ou tabela satélite `whatsapp_links`) e adicionar `measured_date` + `source ('app'|'whatsapp'|'foto')` + `UNIQUE (user_id, measured_date)` em `weight_entries`, adaptando `supabase/functions/_shared/repo/supabase_repo.ts` e aposentando o schema PT-BR paralelo antes que chegue à produção.
+    - *Prós:* zero migração de dados no app Flutter nem risco de quebra de builds instaladas; aproveita todas as 24 tabelas já ativas com RLS em produção e elimina permanentemente o esquema paralelo antes de existir dado em `perfil`/`pesagem`.
+    - *Contras:* exige refatorar as queries das Edge Functions Deno (`supabase_repo.ts`) do schema PT-BR para os nomes/enums de `user_profiles` e `weight_entries`.
+  - **Opção 2 — Aplicar `perfil`/`pesagem` como fonte única e migrar o app Flutter:**
+    - Criar `perfil` e `pesagem` em produção, estender ambas com colunas de UI (`display_name`, `avatar_*`, `notes`), migrar o `1` perfil de `user_profiles` (`weight_entries` tem `0` linhas) e apontar os datasources do Flutter para `perfil`/`pesagem`.
+    - *Prós:* mantém intacto o contrato das Edge Functions Deno (`supabase_repo.ts`) e aproveita `origem` e `fuso` nativos.
+    - *Contras:* exige alterar os datasources/DTOs do app Flutter e coordenar atualização forçada de builds em produção antes de desativar `user_profiles`/`weight_entries`.
 
 ## 11. [Backlog — Banco de Dados — NÃO APLICAR ANTES DA DECISÃO DE UNIFICAÇÃO] Unicidade atômica de `weight_entries` e política com pesagem do WhatsApp
 
@@ -150,25 +154,16 @@ Registro de dívidas técnicas identificadas durante a execução da auditoria d
   - Trocar a chave de assinatura (por exemplo, ao gerar uma nova keystore na migração para o Google Play) **quebra a atualização de todos os usuários atuais** (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`), exigindo desinstalação manual (com risco de perda de sessões/outbox locais ainda não sincronizadas). A keystore atual (`SHA-256: db7f763c...`) deve ser preservada e reutilizada/importada no Google Play App Signing.
   - **Backup offline obrigatório:** o arquivo da keystore (`liftr-release.jks`), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` e `ANDROID_KEY_PASSWORD` **devem ter backup offline seguro fora do GitHub** (ex.: cofre de senhas + mídia segura), pois **Secrets do GitHub Actions não podem ser lidos de volta**. Perder a keystore ou suas senhas impede assinar atualizações compatíveis para a base já instalada.
 
-## 13. [Prioridade Alta — Bug de Perda de Dados] Coluna `height_cm` ausente em `user_profiles` pode invalidar todo o upsert remoto de perfil
+## 13. [Resolvido — Banco de Dados] Diagnóstico real de `height_cm` e correção de `user_profiles.display_name NOT NULL`
 
-- **Persistência verificada no código (independente da unificação da Seção 10):**
-  - **Local (`SharedPreferences`):** `heightCm` é persistido localmente em `UserSettings` (`app/lib/features/settings/presentation/providers/settings_providers.dart`).
-  - **`auth.userMetadata`:** Nunca grava `heightCm` (`ProfileRemoteDataSource.saveProfile` envia apenas `name` no auth; `fetchProfile` apenas lê `meta['heightCm']` como fallback se existir).
-  - **Servidor (`public.user_profiles`):** `ProfileController.syncSettingsToRemote()` envia `heightCm: settings.heightCm` para `ProfileRemoteDataSource.saveProfile()`, que executa um único `upsert` com `'height_cm': ?heightCm` junto com `display_name`, `biological_sex`, `age`, `weight_kg`, `body_fat_percent`, `goal`, `experience` e `activity_level`. Porém, `20261121000004_post_first_use_fixes.sql` (e demais migrações em `supabase/migrations/`) **não declara a coluna `height_cm` em `public.user_profiles`**.
-- **Verificação obrigatória no banco real antes de migrar (possível schema drift):**
-  - Como colunas podem ter sido criadas manualmente fora das migrações versionadas, confirmar antes no SQL Editor do Supabase com a consulta exata:
-    ```sql
-    select column_name from information_schema.columns where table_schema='public' and table_name='user_profiles';
-    ```
-- **Impacto se a ausência for confirmada:** Em um banco sem `height_cm`, o PostgREST rejeita **todo o `upsert`** (`PGRST204` — coluna desconhecida). Isso significa que **nenhum dado de perfil** (`display_name`, `biological_sex`, `age`, `height_cm`, `weight_kg`, `body_fat_percent`, `goal`, `experience`, `activity_level`) **foi sincronizado com `public.user_profiles` no servidor — e não apenas a altura** — resultando em perda silenciosa ao trocar de aparelho ou reinstalar o app.
-- **Log de diagnóstico aplicado (`6bcb83a`):** `ProfileRemoteDataSource.saveProfile` passou a delegar para `saveProfileOrdered` e registrar falhas de `upsert` via `appErrorLogger` (`ProfileRemoteDataSource.saveProfile.upsert`) com `stackTrace`, mantendo o comportamento UX inalterado para o usuário.
-- **Migração SQL proposta (NÃO aplicada nesta branch — aplicar somente após confirmar na consulta acima):**
-  ```sql
-  alter table public.user_profiles
-    add column if not exists height_cm integer
-    check (height_cm between 100 and 250);
-  ```
+- **Verificação em produção (`keqlezlqyxdygiqulgau`, 2026-11-27):**
+  - `height_cm` (`numeric(5,1)`) **já existia** em `public.user_profiles` por *schema drift* (herdada da migração `20240115000000_initial_schema` fora do repositório) e foi reconciliada em `supabase/migrations/20261127000002_reconcile_production_schema_drift.sql`.
+  - Consulta de auditoria confirmou que o upsert remoto **já funcionou**: `count(*) = 1`, `count(height_cm) = 1`, `count(weight_kg) = 1`, `count(biological_sex) = 1`, `count(age) = 1`, `count(goal) = 1`, `count(experience) = 1`, `count(activity_level) = 1`, `max(updated_at) = 2026-11-22 01:42:44.199002+00`.
+- **Incompatibilidade real encontrada e corrigida:**
+  - `user_profiles.display_name` era `NOT NULL` sem default em produção, enquanto as migrações locais (`20261121000004_post_first_use_fixes.sql`) definiam `display_name text` nullable. Upserts parciais sem `display_name` (como `saveProfile` com `displayName == null` ou o espelho de `uploadAvatar` em `user_profiles`) podiam falhar na verificação `NOT NULL` antes do `ON CONFLICT (id) DO UPDATE`.
+  - **Solução aplicada:**
+    1. Migração `20261127000001_user_profiles_nullable_display_name.sql` criada e aplicada em produção (`user_profiles_nullable_display_name`, versão `20261127061134`: `display_name` agora `is_nullable = 'YES'`).
+    2. `ProfileRemoteDataSource.buildSaveProfilePayload` extraído e testado em `app/test/features/phase6_data_safety_and_flows_test.dart` contra as colunas reais de produção (`1781bf6`), complementado pelo log via `appErrorLogger` (`6bcb83a`).
 
 ## 14. [Auditoria] Inventário de `catch (_)` e blocos `catch` vazios em `app/lib/**/data/**` e `app/lib/**/providers/**`
 
@@ -217,3 +212,15 @@ Levantamento completo nos 53 arquivos Dart de `app/lib/**/data/**` e `app/lib/**
 | `app/lib/features/workout_session/data/repositories/session_repository_impl.dart:283` | Erro ao checar `_networkInfo.isConnected` antes do flush da outbox | **Aceitável** | Adia o flush preservando todas as operações intactas na outbox local. |
 | `app/lib/features/workout_session/presentation/providers/session_providers.dart:369` | Erro ao buscar sessões remotas para `previousPerformance` | **Aceitável** | Enriquecimento best-effort de referência histórica, complementado pelo cache local. |
 | `app/lib/features/workout_session/presentation/providers/session_providers.dart:385` | Erro ao ler cache local para `previousPerformance` | **Aceitável** | Enriquecimento best-effort de dica visual de carga anterior; não afeta registro/persistência do treino. |
+
+## 15. [Resolvido — Banco de Dados] Schema drift entre `supabase/migrations/` e o banco de produção
+
+- **Causa raiz:** O projeto Supabase de produção (`LIFTR`, `keqlezlqyxdygiqulgau`) foi inicializado com a migração remota `20240115000000_initial_schema` (fora do repositório), enquanto `supabase/migrations/` no Git começava por `20261103000001_schema_inicial.sql` (esquema PT-BR do WhatsApp — **não aplicado em produção**) seguido por `20261121000001_flutter_app_schema.sql` (`CREATE TABLE IF NOT EXISTS`).
+- **Diferenças reais reconciliadas em `supabase/migrations/20261127000002_reconcile_production_schema_drift.sql` (versão `20261127061657` em produção):**
+  1. **3 tabelas ausentes no Git:** `public.custom_measurements`, `public.exercise_performances` e `public.set_performances`, com PKs, FKs, índices, `CHECK` e políticas RLS correspondentes.
+  2. **7 enums Postgres em `public`:** `execution_quality`, `goal_category`, `goal_status`, `meal_type`, `mood_type`, `session_status` e `set_type` (além da conversão das colunas em bancos criados do zero).
+  3. **Colunas & constraints faltantes:** em `user_profiles` (`date_of_birth`, `gender`, `height_cm`, `preferred_weight_unit`, `preferred_measurement_unit`, `timezone` e 3 `CHECK`s) e em `workout_sessions` (`training_plan_id`, `duration_minutes`, `overall_difficulty`, `overall_notes` e `workout_sessions_overall_difficulty_check`).
+  4. **Função e triggers:** `public.update_updated_at_column()` (`SET search_path = public`) e `11` triggers `set_updated_at` (`BEFORE UPDATE`).
+  5. **14 índices ausentes, bucket & Storage RLS, nulabilidade/defaults:** índices GIN em português (`exercises.name`, `foods.name`), B-tree/parciais (`idx_goals_active`, `idx_sessions_*`, etc.), bucket `progress-photos` (`public = false`, `5 MiB`, 3 políticas `storage.objects`) e alinhamento de nulabilidade/defaults com produção.
+- **Verificação realizada:** replay completo do zero em Postgres 17 (Docker `public.ecr.aws/supabase/postgres:17.6.1.141`) aplicando todas as migrações em sequência e uma segunda execução validando idempotência (`0` tabelas/constraints/índices/triggers faltantes nas 24 tabelas de produção), seguido por `apply_migration` em produção com `0` novos alertas no Security Advisor.
+- **Observação:** `20261103000001_schema_inicial.sql` permanece em `supabase/migrations/` aguardando a decisão de unificação da Seção 10.
