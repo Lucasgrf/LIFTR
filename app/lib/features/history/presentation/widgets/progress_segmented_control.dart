@@ -74,17 +74,19 @@ class ProgressSegmentedControl extends StatelessWidget {
                             widthFactor: 1,
                             child: FittedBox(
                               fit: BoxFit.scaleDown,
-                              child: Text(
-                                segments[index],
-                                maxLines: 1,
-                                softWrap: false,
-                                style: context.textTheme.labelMedium?.copyWith(
-                                  color: isSelected
-                                      ? colors.textPrimary
-                                      : colors.textTertiary,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w600
-                                      : FontWeight.w500,
+                              child: ExcludeSemantics(
+                                child: Text(
+                                  segments[index],
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  style: context.textTheme.labelMedium?.copyWith(
+                                    color: isSelected
+                                        ? colors.textPrimary
+                                        : colors.textTertiary,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
+                                  ),
                                 ),
                               ),
                             ),

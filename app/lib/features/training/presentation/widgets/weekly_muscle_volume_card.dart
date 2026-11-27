@@ -195,6 +195,7 @@ class _MuscleBarItem extends StatelessWidget {
 
     return Semantics(
       container: true,
+      excludeSemantics: true,
       label:
           '${entry.label}: ${entry.sets} séries válidas na semana${reachedTarget ? ' (meta atingida)' : ''}',
       child: Column(
