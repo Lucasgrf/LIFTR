@@ -874,49 +874,58 @@ void main() {
       },
     );
 
-    test('Ombros filter matches shoulders and all deltoid sub-groups', () {
-      const shoulderMain = Exercise(
-        id: '1',
-        name: 'Desenvolvimento',
-        primaryMuscleGroup: 'shoulders',
-      );
-      const antDelt = Exercise(
-        id: '2',
-        name: 'Elevação Frontal',
-        primaryMuscleGroup: 'anterior_deltoid',
-      );
-      const latDelt = Exercise(
-        id: '3',
-        name: 'Elevação Lateral',
-        primaryMuscleGroup: 'lateral_deltoid',
-      );
-      const postDelt = Exercise(
-        id: '4',
-        name: 'Crucifixo Inverso',
-        primaryMuscleGroup: 'posterior_deltoid',
-      );
-      const secondaryDelt = Exercise(
-        id: '5',
-        name: 'Supino Inclinado',
-        primaryMuscleGroup: 'chest',
-        secondaryMuscles: ['lateral_deltoid'],
-      );
-      const legs = Exercise(
-        id: '6',
-        name: 'Agachamento',
-        primaryMuscleGroup: 'quadriceps',
-      );
+    test(
+      'Ombros and muscle filters match only primaryMuscleGroup and exclude secondary-only exercises',
+      () {
+        const shoulderMain = Exercise(
+          id: '1',
+          name: 'Desenvolvimento',
+          primaryMuscleGroup: 'shoulders',
+        );
+        const antDelt = Exercise(
+          id: '2',
+          name: 'Elevação Frontal',
+          primaryMuscleGroup: 'anterior_deltoid',
+        );
+        const latDelt = Exercise(
+          id: '3',
+          name: 'Elevação Lateral',
+          primaryMuscleGroup: 'lateral_deltoid',
+        );
+        const postDelt = Exercise(
+          id: '4',
+          name: 'Crucifixo Inverso',
+          primaryMuscleGroup: 'posterior_deltoid',
+        );
+        const secondaryDelt = Exercise(
+          id: '5',
+          name: 'Supino Inclinado',
+          primaryMuscleGroup: 'chest',
+          secondaryMuscles: ['lateral_deltoid', 'triceps'],
+        );
+        const legs = Exercise(
+          id: '6',
+          name: 'Agachamento',
+          primaryMuscleGroup: 'quadriceps',
+        );
 
-      final ombrosOption = MuscleFilterChips.muscleOptions
-          .firstWhere((o) => o['label'] == 'Ombros');
-      expect(ombrosOption['key'], 'shoulders');
+        final ombrosOption = MuscleFilterChips.muscleOptions
+            .firstWhere((o) => o['label'] == 'Ombros');
+        expect(ombrosOption['key'], 'shoulders');
 
-      final matched = filterExercises(
-        const [shoulderMain, antDelt, latDelt, postDelt, secondaryDelt, legs],
-        selectedMuscle: 'shoulders',
-      );
-      expect(matched.map((e) => e.id).toList(), ['1', '2', '3', '4', '5']);
-    });
+        final shoulderMatched = filterExercises(
+          const [shoulderMain, antDelt, latDelt, postDelt, secondaryDelt, legs],
+          selectedMuscle: 'shoulders',
+        );
+        expect(shoulderMatched.map((e) => e.id).toList(), ['1', '2', '3', '4']);
+
+        final tricepsMatched = filterExercises(
+          const [secondaryDelt, legs],
+          selectedMuscle: 'triceps',
+        );
+        expect(tricepsMatched, isEmpty);
+      },
+    );
 
     testWidgets(
       'Search state is isolated across ExerciseListScreen & AddExerciseToWorkoutScreen and Limpar busca works everywhere',

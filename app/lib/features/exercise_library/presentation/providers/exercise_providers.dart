@@ -114,26 +114,22 @@ const Set<String> shoulderMuscleKeys = {
   'posterior_deltoid',
 };
 
-/// Returns whether [exercise] belongs to [selectedMuscle], treating
-/// `'shoulders'` as inclusive of all deltoid sub-groups.
+/// Returns whether [exercise]'s primary muscle group belongs to
+/// [selectedMuscle], treating `'shoulders'` as inclusive of all deltoid
+/// sub-groups (never matching [exercise.secondaryMuscles]).
 bool matchesMuscleGroupFilter(Exercise exercise, String selectedMuscle) {
   final normalizedSelected = selectedMuscle.toLowerCase().trim();
   if (normalizedSelected.isEmpty) return true;
 
-  bool matchesValue(String raw) {
-    final normalized = raw.toLowerCase().trim();
-    if (normalizedSelected == 'shoulders' ||
-        normalizedSelected.contains('deltoid') ||
-        normalizedSelected.contains('shoulder')) {
-      return shoulderMuscleKeys.contains(normalized) ||
-          normalized.contains('deltoid') ||
-          normalized.contains('shoulder');
-    }
-    return normalized == normalizedSelected;
+  final normalizedPrimary = exercise.primaryMuscleGroup.toLowerCase().trim();
+  if (normalizedSelected == 'shoulders' ||
+      normalizedSelected.contains('deltoid') ||
+      normalizedSelected.contains('shoulder')) {
+    return shoulderMuscleKeys.contains(normalizedPrimary) ||
+        normalizedPrimary.contains('deltoid') ||
+        normalizedPrimary.contains('shoulder');
   }
-
-  if (matchesValue(exercise.primaryMuscleGroup)) return true;
-  return exercise.secondaryMuscles.any(matchesValue);
+  return normalizedPrimary == normalizedSelected;
 }
 
 /// Pure filter helper shared across exercise library & workout pickers.
