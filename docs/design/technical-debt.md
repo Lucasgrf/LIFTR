@@ -131,3 +131,53 @@ Registro de dívidas técnicas identificadas durante a execução da auditoria d
     unique (user_id, measured_date);
   ```
 - **Decisão pendente ao unificar WhatsApp + App:** definir na cláusula `ON CONFLICT (user_id, measured_date) DO UPDATE` se uma edição manual em `Perfil → Dados corporais` pode atualizar pesagem já vinda do WhatsApp no mesmo dia ou se `source = 'whatsapp'` tem precedência quando mais recente.
+
+## 12. [Prioridade Máxima — Release Android] Fallback silencioso para chave de debug em builds release
+
+- **Chave atual verificada no GitHub Releases (`v0.1.0-build.112`, `liftr-arm64-release.apk`, 2026-11-24):**
+  - Verificada com `apksigner verify --verbose --print-certs`:
+    - Esquema: `APK Signature Scheme v2` (`v1: false`, `v2: true`)
+    - `DN`: `CN=LIFTR, OU=Mobile, O=LIFTR, L=Sao Paulo, ST=SP, C=BR`
+    - `SHA-256`: `db7f763cb8ac32a16e78b05252f03e3b10f006e5d6e598216551a7a24412ffb3`
+    - `SHA-1`: `5cd3fe57da39f666e5a1577f8881fe12ce5a24ee`
+    - `MD5`: `0c524842e3fd3f1a089a0d90627b6e62`
+    - Chave: `RSA 2048 bits`
+  - Ou seja, as releases geradas pelo CI (`.github/workflows/release-apk.yml`, que define `REQUIRE_RELEASE_SIGNING=true` e decodifica `ANDROID_KEYSTORE_BASE64`) **já são assinadas com keystore dedicada de produção** (não debug).
+- **Bug / Risco crítico em `app/android/app/build.gradle.kts` (linhas 52–77):**
+  - Quando `REQUIRE_RELEASE_SIGNING` não é `"true"` e `app/android/key.properties` / variáveis `ANDROID_KEYSTORE_*` estão ausentes (ex.: build local `flutter build apk --release`), `buildTypes.release` faz **fallback silencioso para `signingConfigs.getByName("debug")`**.
+  - **Impacto:** Trocar a chave de assinatura (seja por fallback acidental para debug, seja ao gerar nova keystore ao publicar na Play Store) **quebra a atualização de todos os usuários atuais** (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`), exigindo desinstalação manual (com risco de perda de sessões/outbox locais ainda não sincronizadas). A keystore atual (`SHA-256: db7f763c...`) precisa ser preservada e reutilizada/importada no Google Play App Signing.
+- **Mudança proposta em `app/android/app/build.gradle.kts` (NÃO aplicada nesta branch):**
+  ```kotlin
+  val isReleaseTaskRequested = gradle.startParameter.taskNames.any {
+      it.contains("Release", ignoreCase = true)
+  }
+  if (isReleaseTaskRequested && !hasReleaseSigning) {
+      throw GradleException(
+          "Release signing credentials are missing. Configure app/android/key.properties " +
+              "or ANDROID_KEYSTORE_PATH/PASSWORD/ALIAS/KEY_PASSWORD env vars.",
+      )
+  }
+
+  buildTypes {
+      release {
+          if (hasReleaseSigning) {
+              signingConfig = signingConfigs.getByName("release")
+          }
+      }
+  }
+  ```
+
+## 13. [Prioridade Alta — Bug de Perda de Dados] Coluna `height_cm` ausente em `user_profiles` quebra o upsert remoto de perfil
+
+- **Persistência verificada no código (independente da unificação da Seção 10):**
+  - **Local (`SharedPreferences`):** `heightCm` é persistido localmente em `UserSettings` (`app/lib/features/settings/presentation/providers/settings_providers.dart`).
+  - **`auth.userMetadata`:** Nunca grava `heightCm` (`ProfileRemoteDataSource.saveProfile` envia apenas `name` no auth; `fetchProfile` apenas lê `meta['heightCm']` como fallback se existir).
+  - **Servidor (`public.user_profiles`):** `ProfileController.syncSettingsToRemote()` envia `heightCm: settings.heightCm` para `ProfileRemoteDataSource.saveProfile()`, que executa um único `upsert` com `'height_cm': ?heightCm` junto com `display_name`, `biological_sex`, `age`, `weight_kg`, `body_fat_percent`, `goal`, `experience` e `activity_level`. Porém, `20261121000004_post_first_use_fixes.sql` (e demais migrações em `supabase/migrations/`) **não declara a coluna `height_cm` em `public.user_profiles`**.
+- **Impacto (perda silenciosa de dados):** Em bancos provisionados pelas migrações versionadas, o PostgREST rejeita **todo o `upsert`** (`PGRST204` — coluna desconhecida `height_cm`), e o `catch (_)` em `app/lib/features/profile/data/datasources/profile_remote_datasource.dart` engole a exceção sem logar. Como consequência, a altura **e todos os demais dados corporais/perfil** desse upsert não chegam ao servidor e são perdidos ao trocar de aparelho ou reinstalar o app.
+- **Migração SQL proposta (NÃO aplicada nesta branch):**
+  ```sql
+  alter table public.user_profiles
+    add column if not exists height_cm integer
+    check (height_cm between 100 and 250);
+  ```
+- **Correção complementar futura no app:** substituir o `catch (_)` silencioso em `ProfileRemoteDataSource.saveProfile` por registro via `appErrorLogger` para expor erros de schema drift em `upsert`.
