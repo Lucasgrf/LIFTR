@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:personal_fitness_os/core/errors/failures.dart';
 import 'package:personal_fitness_os/core/errors/result.dart';
+import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/providers/clock_provider.dart';
 import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
@@ -877,11 +878,136 @@ void main() {
         expect(fakeRepo.entries.single.weightKg, 74.2);
       },
     );
+
+    testWidgets(
+      'OnboardingScreen _finish logs weight error and completes without blocking when upsert fails',
+      (tester) async {
+        final previousLogger = appErrorLogger;
+        final loggedContexts = <String?>[];
+        appErrorLogger = (err, {stackTrace, context}) {
+          loggedContexts.add(context);
+        };
+        addTearDown(() => appErrorLogger = previousLogger);
+
+        final failingRepo = _InMemoryWeightRepository(
+          failureToReturn: const NetworkFailure('Sem conexão'),
+        );
+        final router = GoRouter(
+          initialLocation: '/onboarding',
+          routes: [
+            GoRoute(
+              path: '/onboarding',
+              builder: (_, _) => const OnboardingScreen(),
+            ),
+            GoRoute(
+              path: '/',
+              builder: (_, _) => const Scaffold(body: Text('Home')),
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              appClockProvider.overrideWithValue(() => fixedNow),
+              weightRepositoryProvider.overrideWithValue(failingRepo),
+            ],
+            child: MaterialApp.router(
+              theme: AppTheme.dark(),
+              routerConfig: router,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        for (var i = 0; i < 5; i++) {
+          final nextLabel = i == 4 ? 'Confirmar programa' : 'Continuar';
+          await tester.tap(find.text(nextLabel));
+          await tester.pumpAndSettle();
+        }
+
+        final skipBtn = find.text('Pular e fazer depois');
+        await tester.ensureVisible(skipBtn);
+        await tester.tap(skipBtn);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Home'), findsOneWidget);
+        expect(
+          loggedContexts,
+          contains('OnboardingScreen._finish.upsertDailyWeight'),
+        );
+      },
+    );
+
+    testWidgets(
+      'Dados corporais calls upsertDailyWeight only when weight changes',
+      (tester) async {
+        final fakeRepo = _InMemoryWeightRepository();
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              appClockProvider.overrideWithValue(() => fixedNow),
+              weightRepositoryProvider.overrideWithValue(fakeRepo),
+            ],
+            child: MaterialApp(
+              theme: AppTheme.dark(),
+              home: const Scaffold(body: SizedBox.shrink()),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Save with unchanged weight (78.4 -> only height changed): 0 upserts.
+        unawaited(
+          showProfileBodyDataSheet(
+            tester.element(find.byType(SizedBox).first),
+            const UserSettingsState(weightKg: 78.4, heightCm: 178, age: 27),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final heightField = find.descendant(
+          of: find.widgetWithText(AppInput, 'Altura (cm)'),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(heightField, '180');
+        await tester.tap(find.text('Salvar'));
+        await tester.pumpAndSettle();
+        expect(fakeRepo.upsertCalls, 0);
+
+        // Save with modified weight (78.4 -> 79,1): 1 upsert.
+        unawaited(
+          showProfileBodyDataSheet(
+            tester.element(find.byType(SizedBox).first),
+            const UserSettingsState(weightKg: 78.4, heightCm: 180, age: 27),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final weightField = find.descendant(
+          of: find.widgetWithText(AppInput, 'Peso (kg)'),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(weightField, '79,1');
+        await tester.tap(find.text('Salvar'));
+        await tester.pumpAndSettle();
+        expect(fakeRepo.upsertCalls, 1);
+        expect(fakeRepo.entries.single.weightKg, 79.1);
+      },
+    );
   });
 }
 
 class _InMemoryWeightRepository implements WeightRepository {
+  _InMemoryWeightRepository({this.failureToReturn});
+
+  final Failure? failureToReturn;
   final List<WeightEntry> entries = [];
+  int upsertCalls = 0;
 
   @override
   Future<Result<WeightEntry, Failure>> upsertDailyWeight({
@@ -889,6 +1015,10 @@ class _InMemoryWeightRepository implements WeightRepository {
     required DateTime measuredAt,
     String? notes,
   }) async {
+    upsertCalls++;
+    if (failureToReturn != null) {
+      return Err(failureToReturn!);
+    }
     final idx = entries.indexWhere(
       (e) =>
           e.measuredAt.year == measuredAt.year &&

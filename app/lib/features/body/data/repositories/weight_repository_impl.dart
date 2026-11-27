@@ -21,7 +21,7 @@ class WeightRepositoryImpl implements WeightRepository {
     try {
       final model = await _remoteDataSource.insertWeightEntry({
         'weight': weightKg,
-        'measured_at': measuredAt.toIso8601String(),
+        'measured_at': measuredAt.toUtc().toIso8601String(),
         if (notes != null) 'notes': notes,
       });
       return Success(model.toDomain());
@@ -43,23 +43,24 @@ class WeightRepositoryImpl implements WeightRepository {
     String? notes,
   }) async {
     try {
-      final dayStart = DateTime(measuredAt.year, measuredAt.month, measuredAt.day);
-      final dayEnd = DateTime(
-        measuredAt.year,
-        measuredAt.month,
-        measuredAt.day,
+      final local = measuredAt.toLocal();
+      final dayStartLocal = DateTime(local.year, local.month, local.day);
+      final dayEndLocal = DateTime(
+        local.year,
+        local.month,
+        local.day,
         23,
         59,
         59,
         999,
       );
       final existing = await _remoteDataSource.fetchWeightEntriesInRange(
-        start: dayStart,
-        end: dayEnd,
+        start: dayStartLocal.toUtc(),
+        end: dayEndLocal.toUtc(),
       );
       final payload = <String, dynamic>{
         'weight': weightKg,
-        'measured_at': measuredAt.toIso8601String(),
+        'measured_at': measuredAt.toUtc().toIso8601String(),
         'notes': ?notes,
       };
       final model = existing.isNotEmpty

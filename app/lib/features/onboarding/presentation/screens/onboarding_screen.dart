@@ -210,18 +210,26 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
       final upsertWeight = ref.read(upsertDailyWeightUseCaseProvider);
       if (upsertWeight != null) {
-        final weightResult = await upsertWeight.execute(
-          weightKg: weight,
-          measuredAt: ref.read(appClockProvider)(),
-        );
-        weightResult.fold(
-          (_) {},
-          (failure) => appErrorLogger(
-            failure,
-            stackTrace: failure.stackTrace,
+        try {
+          final weightResult = await upsertWeight.execute(
+            weightKg: weight,
+            measuredAt: ref.read(appClockProvider)(),
+          );
+          weightResult.fold(
+            (_) {},
+            (failure) => appErrorLogger(
+              failure,
+              stackTrace: failure.stackTrace,
+              context: 'OnboardingScreen._finish.upsertDailyWeight',
+            ),
+          );
+        } catch (e, st) {
+          appErrorLogger(
+            e,
+            stackTrace: st,
             context: 'OnboardingScreen._finish.upsertDailyWeight',
-          ),
-        );
+          );
+        }
         ref.invalidate(weightHistoryProvider);
         ref.invalidate(weightStatsProvider);
       }

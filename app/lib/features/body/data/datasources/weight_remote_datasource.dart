@@ -101,8 +101,8 @@ class SupabaseWeightRemoteDataSource implements WeightRemoteDataSource {
         .from('weight_entries')
         .select()
         .eq('user_id', user.id)
-        .gte('measured_at', start.toIso8601String())
-        .lte('measured_at', end.toIso8601String())
+        .gte('measured_at', start.toUtc().toIso8601String())
+        .lte('measured_at', end.toUtc().toIso8601String())
         .order('measured_at', ascending: true);
 
     return (response as List<dynamic>)

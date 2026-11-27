@@ -139,5 +139,46 @@ void main() {
       verify(() => mockDataSource.updateWeightEntry('w-1', any())).called(1);
       verifyNever(() => mockDataSource.insertWeightEntry(any()));
     });
+
+    test('computes day boundaries in device local timezone and passes UTC bounds',
+        () async {
+      final inputUtc = DateTime.utc(2026, 8, 22, 23, 30);
+      final expectedLocal = inputUtc.toLocal();
+      final expectedStart =
+          DateTime(expectedLocal.year, expectedLocal.month, expectedLocal.day)
+              .toUtc();
+      final expectedEnd = DateTime(
+        expectedLocal.year,
+        expectedLocal.month,
+        expectedLocal.day,
+        23,
+        59,
+        59,
+        999,
+      ).toUtc();
+
+      when(() => mockDataSource.fetchWeightEntriesInRange(
+            start: any(named: 'start'),
+            end: any(named: 'end'),
+          )).thenAnswer((_) async => const []);
+      when(() => mockDataSource.insertWeightEntry(any()))
+          .thenAnswer((_) async => tModel);
+
+      await repository.upsertDailyWeight(
+        weightKg: 81.2,
+        measuredAt: inputUtc,
+      );
+
+      final captured = verify(() => mockDataSource.fetchWeightEntriesInRange(
+            start: captureAny(named: 'start'),
+            end: captureAny(named: 'end'),
+          )).captured;
+      final queriedStart = captured[0] as DateTime;
+      final queriedEnd = captured[1] as DateTime;
+      expect(queriedStart.isUtc, isTrue);
+      expect(queriedEnd.isUtc, isTrue);
+      expect(queriedStart, expectedStart);
+      expect(queriedEnd, expectedEnd);
+    });
   });
 }

@@ -66,3 +66,29 @@ Registro de dívidas técnicas identificadas durante a execução da auditoria d
 - **Contexto:** O backend WhatsApp (Deno) mantém `public.perfil` (`whatsapp_numero`, `horario_relatorio`, `silencio_inicio`, `silencio_fim`), enquanto o aplicativo Flutter lê e persiste hoje `public.user_profiles` + `SharedPreferences` local e ainda não possui fluxo real de vinculação/OTP nem sincronização desses campos.
 - **Decisão nesta branch:** A seção **WhatsApp** foi ocultada em `Configurações` (`SettingsScreen`) para evitar exibir um estado enganoso (`"Não conectado"` ou horários locais não sincronizados) para usuários que já utilizam o bot no WhatsApp.
 - **Ação futura:** Conectar o app à tabela/endpoint autoritativo do vínculo WhatsApp (lendo `whatsapp_numero` mascarado e preferências de `perfil`/RPC dedicada) e implementar fluxo real de vinculação/verificação antes de reexibir a seção em `SettingsScreen`.
+
+## 10. [Backlog — Banco de Dados] Unicidade atômica de `weight_entries` e política com pesagem do WhatsApp
+
+- **Contexto:** Hoje o aplicativo Flutter grava e lê pesagens em `public.weight_entries` (apenas índice não-único `idx_weight_entries_user_date`), usando read-then-write (`fetchWeightEntriesInRange` no dia civil local + `update`/`insert`), enquanto o backend WhatsApp (Deno) grava em `public.pesagem` (`usuario_id, data, peso_kg, origem`). Por isso, hoje uma edição de peso no perfil não sobrescreve registros de `pesagem`, mas ainda não há garantia atômica contra duplicatas concorrentes em `weight_entries` (ex.: dois dispositivos).
+- **Migração SQL proposta (NÃO aplicada nesta branch — revisar antes de executar em produção):**
+  ```sql
+  -- 1. Adicionar coluna de data local e origem na tabela weight_entries
+  alter table public.weight_entries
+    add column if not exists measured_date date,
+    add column if not exists source text not null default 'app'
+      check (source in ('app', 'whatsapp'));
+
+  -- 2. Backfill no fuso do usuário (ou America/Sao_Paulo como fallback)
+  update public.weight_entries
+  set measured_date = (measured_at at time zone 'America/Sao_Paulo')::date
+  where measured_date is null;
+
+  alter table public.weight_entries
+    alter column measured_date set not null;
+
+  -- 3. Restrição única atômica (1 pesagem por usuário por dia civil)
+  alter table public.weight_entries
+    add constraint weight_entries_user_date_unique
+    unique (user_id, measured_date);
+  ```
+- **Decisão pendente ao unificar WhatsApp + App:** definir na cláusula `ON CONFLICT (user_id, measured_date) DO UPDATE` se uma edição manual em `Perfil → Dados corporais` pode atualizar pesagem já vinda do WhatsApp no mesmo dia ou se `source = 'whatsapp'` tem precedência quando mais recente.
