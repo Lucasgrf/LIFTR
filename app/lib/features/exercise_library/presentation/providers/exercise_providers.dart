@@ -107,53 +107,96 @@ final exerciseListStateProvider =
   return ExerciseListNotifier(ref);
 });
 
+const Set<String> shoulderMuscleKeys = {
+  'shoulders',
+  'anterior_deltoid',
+  'lateral_deltoid',
+  'posterior_deltoid',
+};
+
+/// Returns whether [exercise] belongs to [selectedMuscle], treating
+/// `'shoulders'` as inclusive of all deltoid sub-groups.
+bool matchesMuscleGroupFilter(Exercise exercise, String selectedMuscle) {
+  final normalizedSelected = selectedMuscle.toLowerCase().trim();
+  if (normalizedSelected.isEmpty) return true;
+
+  bool matchesValue(String raw) {
+    final normalized = raw.toLowerCase().trim();
+    if (normalizedSelected == 'shoulders' ||
+        normalizedSelected.contains('deltoid') ||
+        normalizedSelected.contains('shoulder')) {
+      return shoulderMuscleKeys.contains(normalized) ||
+          normalized.contains('deltoid') ||
+          normalized.contains('shoulder');
+    }
+    return normalized == normalizedSelected;
+  }
+
+  if (matchesValue(exercise.primaryMuscleGroup)) return true;
+  return exercise.secondaryMuscles.any(matchesValue);
+}
+
+/// Pure filter helper shared across exercise library & workout pickers.
+List<Exercise> filterExercises(
+  List<Exercise> exercises, {
+  String query = '',
+  String? selectedMuscle,
+  String? selectedEquipment,
+}) {
+  final normalizedQuery = query.toLowerCase().trim();
+
+  return exercises.where((exercise) {
+    if (normalizedQuery.isNotEmpty) {
+      final matchesName =
+          exercise.name.toLowerCase().contains(normalizedQuery);
+      final matchesPrimary =
+          exercise.primaryMuscleGroup.toLowerCase().contains(normalizedQuery);
+      final matchesSecondary = exercise.secondaryMuscles.any(
+        (m) => m.toLowerCase().contains(normalizedQuery),
+      );
+      final matchesEquipment = exercise.equipment != null &&
+          exercise.equipment!.toLowerCase().contains(normalizedQuery);
+
+      if (!matchesName &&
+          !matchesPrimary &&
+          !matchesSecondary &&
+          !matchesEquipment) {
+        return false;
+      }
+    }
+
+    if (selectedMuscle != null && selectedMuscle.trim().isNotEmpty) {
+      if (!matchesMuscleGroupFilter(exercise, selectedMuscle)) {
+        return false;
+      }
+    }
+
+    if (selectedEquipment != null && selectedEquipment.trim().isNotEmpty) {
+      if (exercise.equipment?.toLowerCase() !=
+          selectedEquipment.toLowerCase()) {
+        return false;
+      }
+    }
+
+    return true;
+  }).toList();
+}
+
 /// Filtered exercises provider that reacts to search query and selected filters.
 final filteredExercisesListProvider = Provider<AsyncValue<List<Exercise>>>((ref) {
   final asyncExercises = ref.watch(exerciseListStateProvider);
-  final query = ref.watch(exerciseSearchQueryProvider).toLowerCase().trim();
+  final query = ref.watch(exerciseSearchQueryProvider);
   final selectedMuscle = ref.watch(exerciseSelectedMuscleFilterProvider);
   final selectedEquipment = ref.watch(exerciseSelectedEquipmentFilterProvider);
 
-  return asyncExercises.whenData((exercises) {
-    return exercises.where((exercise) {
-      // Query filter
-      if (query.isNotEmpty) {
-        final matchesName = exercise.name.toLowerCase().contains(query);
-        final matchesPrimary = exercise.primaryMuscleGroup.toLowerCase().contains(query);
-        final matchesSecondary = exercise.secondaryMuscles.any(
-          (m) => m.toLowerCase().contains(query),
-        );
-        final matchesEquipment = exercise.equipment != null &&
-            exercise.equipment!.toLowerCase().contains(query);
-
-        if (!matchesName && !matchesPrimary && !matchesSecondary && !matchesEquipment) {
-          return false;
-        }
-      }
-
-      // Muscle group filter
-      if (selectedMuscle != null && selectedMuscle.isNotEmpty) {
-        final normalizedSelected = selectedMuscle.toLowerCase();
-        final matchesPrimary = exercise.primaryMuscleGroup.toLowerCase() == normalizedSelected;
-        final matchesSecondary = exercise.secondaryMuscles.any(
-          (m) => m.toLowerCase() == normalizedSelected,
-        );
-
-        if (!matchesPrimary && !matchesSecondary) {
-          return false;
-        }
-      }
-
-      // Equipment filter
-      if (selectedEquipment != null && selectedEquipment.isNotEmpty) {
-        if (exercise.equipment?.toLowerCase() != selectedEquipment.toLowerCase()) {
-          return false;
-        }
-      }
-
-      return true;
-    }).toList();
-  });
+  return asyncExercises.whenData(
+    (exercises) => filterExercises(
+      exercises,
+      query: query,
+      selectedMuscle: selectedMuscle,
+      selectedEquipment: selectedEquipment,
+    ),
+  );
 });
 
 /// Detail provider for a specific exercise ID.

@@ -22,6 +22,8 @@ class ExerciseListScreen extends ConsumerStatefulWidget {
 
 class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
   late final TextEditingController _searchController;
+  String _searchQuery = '';
+  String? _selectedMuscle;
 
   @override
   void initState() {
@@ -37,17 +39,23 @@ class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
 
   void _clearFilters() {
     _searchController.clear();
-    ref.read(exerciseSearchQueryProvider.notifier).state = '';
-    ref.read(exerciseSelectedMuscleFilterProvider.notifier).state = null;
-    ref.read(exerciseSelectedEquipmentFilterProvider.notifier).state = null;
+    setState(() {
+      _searchQuery = '';
+      _selectedMuscle = null;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredExercisesAsync = ref.watch(filteredExercisesListProvider);
-    final searchQuery = ref.watch(exerciseSearchQueryProvider);
-    final selectedMuscle = ref.watch(exerciseSelectedMuscleFilterProvider);
-    final hasActiveFilter = searchQuery.isNotEmpty || selectedMuscle != null;
+    final exercisesAsync = ref.watch(exerciseListStateProvider);
+    final filteredExercisesAsync = exercisesAsync.whenData(
+      (exercises) => filterExercises(
+        exercises,
+        query: _searchQuery,
+        selectedMuscle: _selectedMuscle,
+      ),
+    );
+    final hasActiveFilter = _searchQuery.isNotEmpty || _selectedMuscle != null;
 
     return Scaffold(
       backgroundColor: context.appColors.background,
@@ -73,23 +81,28 @@ class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
                 hint: 'Buscar exercício por nome...',
                 controller: _searchController,
                 prefix: Icon(Icons.search_rounded, color: context.appColors.textTertiary),
-                suffix: searchQuery.isNotEmpty
+                suffix: _searchQuery.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear_rounded, size: 18),
+                        tooltip: 'Limpar busca',
                         onPressed: () {
                           _searchController.clear();
-                          ref.read(exerciseSearchQueryProvider.notifier).state = '';
+                          setState(() => _searchQuery = '');
                         },
                       )
                     : null,
                 onChanged: (value) {
-                  ref.read(exerciseSearchQueryProvider.notifier).state = value;
+                  setState(() => _searchQuery = value);
                 },
               ),
             ),
 
             // Muscle group filter chips
-            const MuscleFilterChips(horizontalPadding: 0),
+            MuscleFilterChips(
+              horizontalPadding: 0,
+              selectedMuscle: _selectedMuscle,
+              onSelected: (value) => setState(() => _selectedMuscle = value),
+            ),
             const SizedBox(height: 8),
 
             // Exercise List content
@@ -144,9 +157,11 @@ class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
                                 subtitle: hasActiveFilter
                                     ? 'Tente buscar por outro nome ou limpar os filtros aplicados.'
                                     : 'Nenhum exercício cadastrado no momento.',
-                                actionLabel: hasActiveFilter
-                                    ? 'Limpar Filtros'
-                                    : 'Criar Exercício',
+                                actionLabel: _searchQuery.isNotEmpty
+                                    ? 'Limpar busca'
+                                    : (hasActiveFilter
+                                        ? 'Limpar Filtros'
+                                        : 'Criar Exercício'),
                                 onAction: hasActiveFilter
                                     ? _clearFilters
                                     : () => context.push('/exercises/new'),

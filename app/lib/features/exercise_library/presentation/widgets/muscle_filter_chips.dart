@@ -11,9 +11,13 @@ class MuscleFilterChips extends ConsumerWidget {
   const MuscleFilterChips({
     super.key,
     this.horizontalPadding,
+    this.selectedMuscle,
+    this.onSelected,
   });
 
   final double? horizontalPadding;
+  final String? selectedMuscle;
+  final ValueChanged<String?>? onSelected;
 
   static const List<Map<String, String?>> muscleOptions = [
     {'label': 'Todos', 'key': null},
@@ -23,7 +27,7 @@ class MuscleFilterChips extends ConsumerWidget {
     {'label': 'Posterior', 'key': 'hamstrings'},
     {'label': 'Glúteos', 'key': 'glutes'},
     {'label': 'Panturrilha', 'key': 'calves'},
-    {'label': 'Ombros', 'key': 'anterior_deltoid'},
+    {'label': 'Ombros', 'key': 'shoulders'},
     {'label': 'Bíceps', 'key': 'biceps'},
     {'label': 'Tríceps', 'key': 'triceps'},
     {'label': 'Abdômen', 'key': 'abs'},
@@ -34,7 +38,9 @@ class MuscleFilterChips extends ConsumerWidget {
     final colors = context.appColors;
     final radius = context.appRadius;
     final spacing = context.appSpacing;
-    final selectedMuscle = ref.watch(exerciseSelectedMuscleFilterProvider);
+    final effectiveSelectedMuscle = onSelected != null
+        ? selectedMuscle
+        : ref.watch(exerciseSelectedMuscleFilterProvider);
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -52,7 +58,7 @@ class MuscleFilterChips extends ConsumerWidget {
                   final option = muscleOptions[index];
                   final key = option['key'];
                   final label = option['label']!;
-                  final isSelected = selectedMuscle == key;
+                  final isSelected = effectiveSelectedMuscle == key;
 
                   return FilterChip(
                     selected: isSelected,
@@ -80,9 +86,14 @@ class MuscleFilterChips extends ConsumerWidget {
                     ),
                     onSelected: (_) {
                       HapticFeedback.selectionClick();
-                      ref
-                          .read(exerciseSelectedMuscleFilterProvider.notifier)
-                          .state = isSelected ? null : key;
+                      final nextValue = isSelected ? null : key;
+                      if (onSelected != null) {
+                        onSelected!(nextValue);
+                      } else {
+                        ref
+                            .read(exerciseSelectedMuscleFilterProvider.notifier)
+                            .state = nextValue;
+                      }
                     },
                   );
                 },

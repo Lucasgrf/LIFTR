@@ -60,6 +60,8 @@ class AddExerciseToWorkoutScreen extends ConsumerStatefulWidget {
 class _AddExerciseToWorkoutScreenState
     extends ConsumerState<AddExerciseToWorkoutScreen> {
   late final TextEditingController _searchController;
+  String _searchQuery = '';
+  String? _selectedMuscle;
   Exercise? _selectedExercise;
 
   // Set parameters
@@ -82,6 +84,14 @@ class _AddExerciseToWorkoutScreenState
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _clearFilters() {
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+      _selectedMuscle = null;
+    });
   }
 
   Future<void> _submit() async {
@@ -155,8 +165,15 @@ class _AddExerciseToWorkoutScreenState
       return _buildPrescribeSetsView();
     }
 
-    final filteredExercisesAsync = ref.watch(filteredExercisesListProvider);
-    final searchQuery = ref.watch(exerciseSearchQueryProvider);
+    final exercisesAsync = ref.watch(exerciseListStateProvider);
+    final filteredExercisesAsync = exercisesAsync.whenData(
+      (exercises) => filterExercises(
+        exercises,
+        query: _searchQuery,
+        selectedMuscle: _selectedMuscle,
+      ),
+    );
+    final hasActiveFilter = _searchQuery.isNotEmpty || _selectedMuscle != null;
 
     return Scaffold(
       backgroundColor: context.appColors.background,
@@ -174,21 +191,26 @@ class _AddExerciseToWorkoutScreenState
                   hint: 'Buscar exercício por nome...',
                   controller: _searchController,
                   prefix: Icon(Icons.search_rounded, color: context.appColors.textTertiary),
-                  suffix: searchQuery.isNotEmpty
+                  suffix: _searchQuery.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear_rounded, size: 18),
+                          tooltip: 'Limpar busca',
                           onPressed: () {
                             _searchController.clear();
-                            ref.read(exerciseSearchQueryProvider.notifier).state = '';
+                            setState(() => _searchQuery = '');
                           },
                         )
                       : null,
                   onChanged: (value) {
-                    ref.read(exerciseSearchQueryProvider.notifier).state = value;
+                    setState(() => _searchQuery = value);
                   },
                 ),
               ),
-              const MuscleFilterChips(horizontalPadding: 0),
+              MuscleFilterChips(
+                horizontalPadding: 0,
+                selectedMuscle: _selectedMuscle,
+                onSelected: (value) => setState(() => _selectedMuscle = value),
+              ),
               const SizedBox(height: 8),
 
               Expanded(
@@ -206,10 +228,18 @@ class _AddExerciseToWorkoutScreenState
                   ),
                   data: (exercises) {
                     if (exercises.isEmpty) {
-                      return const EmptyStateWidget(
+                      return EmptyStateWidget(
                         icon: Icons.search_off_rounded,
                         title: 'Nenhum exercício encontrado',
-                        subtitle: 'Tente alterar os termos de busca.',
+                        subtitle: hasActiveFilter
+                            ? 'Tente alterar os termos de busca ou limpar os filtros.'
+                            : 'Nenhum exercício disponível no catálogo.',
+                        actionLabel: hasActiveFilter
+                            ? (_searchQuery.isNotEmpty
+                                ? 'Limpar busca'
+                                : 'Limpar filtros')
+                            : null,
+                        onAction: hasActiveFilter ? _clearFilters : null,
                       );
                     }
 

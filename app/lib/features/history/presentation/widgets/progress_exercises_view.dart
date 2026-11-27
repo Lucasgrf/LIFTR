@@ -175,10 +175,32 @@ class _ProgressExercisesViewState extends ConsumerState<ProgressExercisesView> {
                     Icons.search_rounded,
                     color: colors.textTertiary,
                   ),
+                  suffixIcon: _query.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear_rounded, size: 18),
+                          tooltip: 'Limpar busca',
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _query = '');
+                          },
+                        )
+                      : null,
                 ),
               ),
               const SizedBox(height: 16),
             ],
+            if (filtered.isEmpty)
+              EmptyStateWidget(
+                icon: Icons.search_off_rounded,
+                title: 'Nenhum exercício encontrado',
+                subtitle: 'Nenhum exercício corresponde a "$_query".',
+                actionLabel: 'Limpar busca',
+                onAction: () {
+                  _searchController.clear();
+                  setState(() => _query = '');
+                },
+              )
+            else ...[
             Text('DUPLA PROGRESSÃO', style: AppTypography.eyebrow(context)),
             const SizedBox(height: 10),
             ...filtered.map((item) {
@@ -266,6 +288,7 @@ class _ProgressExercisesViewState extends ConsumerState<ProgressExercisesView> {
                 ),
               );
             }),
+            ],
           ],
         );
       },

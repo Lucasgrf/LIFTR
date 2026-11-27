@@ -163,6 +163,16 @@ class _SwapExerciseSheetState extends ConsumerState<SwapExerciseSheet> {
               Icons.search_rounded,
               color: colors.textTertiary,
             ),
+            suffixIcon: _query.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear_rounded, size: 18),
+                    tooltip: 'Limpar busca',
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _query = '');
+                    },
+                  )
+                : null,
           ),
         ),
         const SizedBox(height: 10),
@@ -220,12 +230,32 @@ class _SwapExerciseSheetState extends ConsumerState<SwapExerciseSheet> {
                   catalogList.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 32),
-                  child: Text(
-                    'Nenhum exercício encontrado para "$_query".',
-                    textAlign: TextAlign.center,
-                    style: context.textTheme.bodyMedium?.copyWith(
-                      color: colors.textSecondary,
-                    ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Nenhum exercício encontrado para "$_query".',
+                        textAlign: TextAlign.center,
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                      if (_query.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        TextButton.icon(
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _query = '');
+                          },
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(48, 48),
+                            foregroundColor: colors.primaryLight,
+                          ),
+                          icon: const Icon(Icons.clear_rounded, size: 18),
+                          label: const Text('Limpar busca'),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
             ],
