@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
+import 'package:personal_fitness_os/core/extensions/date_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
@@ -26,7 +26,7 @@ class HistoryWorkoutCard extends StatelessWidget {
     final fitnessColors = context.fitnessColors;
 
     final date = session.completedAt ?? session.startedAt;
-    final dateStr = DateFormat("d 'de' MMMM • HH:mm", 'pt_BR').format(date);
+    final dateStr = ptBrDateFormat("d 'de' MMMM • HH:mm").format(date);
     final minutes = session.durationSeconds ~/ 60;
 
     return AppCard(

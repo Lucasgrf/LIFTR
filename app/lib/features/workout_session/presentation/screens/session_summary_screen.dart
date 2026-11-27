@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:personal_fitness_os/core/constants/app_constants.dart';
 import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
+import 'package:personal_fitness_os/core/extensions/date_extensions.dart';
 import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_motion.dart';
@@ -17,7 +18,6 @@ import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
 import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
-import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_brand_mark.dart';
@@ -242,8 +242,7 @@ class SessionSummaryScreen extends ConsumerWidget {
               session.executionScore != null ||
               cardioSeconds > 0;
           final dateObj = session.completedAt ?? session.startedAt;
-          final dateLabel =
-              DateFormat('EEEE, d MMM', 'pt_BR').format(dateObj);
+          final dateLabel = ptBrDateFormat('EEEE, d MMM').format(dateObj);
           final capitalizedDate =
               dateLabel[0].toUpperCase() + dateLabel.substring(1);
           final summary = progressionSummaryAsync.asData?.value ??
@@ -295,12 +294,30 @@ class SessionSummaryScreen extends ConsumerWidget {
                     ),
                   ),
                 Expanded(
-                  child: ListView(
-                    padding: EdgeInsets.fromLTRB(0, canPop ? 12 : 28, 0, 24),
-                    children: [
-                      ResponsiveContainer(
-                        child: Column(
-                          children: [
+                  child: Builder(
+                    builder: (context) {
+                      final screenWidth = MediaQuery.sizeOf(context).width;
+                      final minPad =
+                          ResponsiveContainer.horizontalPaddingForWidth(
+                        screenWidth,
+                      );
+                      final horizontalInset = screenWidth > 560
+                          ? (screenWidth - 560) / 2 + minPad
+                          : minPad;
+
+                      return CustomScrollView(
+                        slivers: [
+                          SliverPadding(
+                            padding: EdgeInsets.fromLTRB(
+                              0,
+                              canPop ? 12 : 28,
+                              0,
+                              0,
+                            ),
+                            sliver: SliverToBoxAdapter(
+                              child: ResponsiveContainer(
+                                child: Column(
+                                  children: [
                             if (!canPop) ...[
                               const LiftrBrandMark(size: 18),
                               const SizedBox(height: 14),
@@ -754,7 +771,7 @@ class SessionSummaryScreen extends ConsumerWidget {
                               ),
                             ],
 
-                            // Full workout exercises & sets log
+                            // Full workout exercises & sets log header
                             if (session.exercises.isNotEmpty) ...[
                               const SizedBox(height: 20),
                               Align(
@@ -768,75 +785,101 @@ class SessionSummaryScreen extends ConsumerWidget {
                                 ),
                               ),
                               const SizedBox(height: 10),
-                              AppCard(
-                                padding: EdgeInsets.zero,
-                                child: Column(
-                                  children: [
-                                    for (var i = 0;
-                                        i < session.exercises.length;
-                                        i++) ...[
-                                      if (i > 0)
-                                        Divider(
-                                          height: 1,
-                                          thickness: 1,
-                                          color: colors.borderSubtle,
-                                        ),
-                                      _LoggedExerciseDetailTile(
-                                        sessionExercise: session.exercises[i],
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
                             ],
-
-                            const SizedBox(height: 18),
-
-                            // WhatsApp sync pill
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.surfaceSubtle,
-                                borderRadius:
-                                    BorderRadius.circular(radius.full),
-                                border: Border.all(color: colors.border),
-                              ),
-                              child: Row(
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (session.exercises.isNotEmpty)
+                      SliverPadding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: horizontalInset,
+                        ),
+                        sliver: DecoratedSliver(
+                          decoration: BoxDecoration(
+                            color: colors.surface,
+                            borderRadius: BorderRadius.circular(radius.large),
+                            border: Border.all(color: colors.border),
+                          ),
+                          sliver: SliverPadding(
+                            padding: const EdgeInsets.all(1),
+                            sliver: SliverList.builder(
+                              itemCount: session.exercises.length,
+                              itemBuilder: (context, i) => Column(
                                 mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  Icon(
-                                    isOnline
-                                        ? Icons.check_circle_outline_rounded
-                                        : Icons.chat_bubble_outline_rounded,
-                                    size: 15,
-                                    color: isOnline
-                                        ? fitnessColors.progressUp
-                                        : colors.textTertiary,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Flexible(
-                                    child: Text(
-                                      isOnline
-                                          ? 'Sincronizado com o WhatsApp'
-                                          : 'Resumo enviado para o WhatsApp quando sincronizado',
-                                      style: context.textTheme.labelSmall
-                                          ?.copyWith(
-                                        color: colors.textSecondary,
-                                      ),
+                                  if (i > 0)
+                                    Divider(
+                                      height: 1,
+                                      thickness: 1,
+                                      color: colors.borderSubtle,
                                     ),
+                                  _LoggedExerciseDetailTile(
+                                    sessionExercise: session.exercises[i],
                                   ),
                                 ],
                               ),
                             ),
-                          ],
+                          ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(0, 18, 0, 24),
+                      sliver: SliverToBoxAdapter(
+                        child: ResponsiveContainer(
+                          child: Column(
+                            children: [
+                              // WhatsApp sync pill
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colors.surfaceSubtle,
+                                  borderRadius:
+                                      BorderRadius.circular(radius.full),
+                                  border: Border.all(color: colors.border),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      isOnline
+                                          ? Icons.check_circle_outline_rounded
+                                          : Icons.chat_bubble_outline_rounded,
+                                      size: 15,
+                                      color: isOnline
+                                          ? fitnessColors.progressUp
+                                          : colors.textTertiary,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        isOnline
+                                            ? 'Sincronizado com o WhatsApp'
+                                            : 'Resumo enviado para o WhatsApp quando sincronizado',
+                                        style: context.textTheme.labelSmall
+                                            ?.copyWith(
+                                          color: colors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
 
                 // Fixed bottom CTA
                 Padding(

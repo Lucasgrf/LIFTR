@@ -704,6 +704,11 @@ void main() {
       expect(find.text('Subidas de carga desbloqueadas'), findsOneWidget);
       expect(find.text('Agachamento Livre'), findsWidgets);
       expect(find.text('+2,5 kg'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Resumo enviado para o WhatsApp quando sincronizado'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(
         find.text('Resumo enviado para o WhatsApp quando sincronizado'),
         findsOneWidget,
@@ -879,6 +884,11 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Treino concluído'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Sincronizado com o WhatsApp'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('Sincronizado com o WhatsApp'), findsOneWidget);
     });
   });

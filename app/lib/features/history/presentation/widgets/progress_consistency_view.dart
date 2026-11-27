@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
+import 'package:personal_fitness_os/core/extensions/date_extensions.dart';
 import 'package:personal_fitness_os/core/providers/clock_provider.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
@@ -174,7 +174,7 @@ class _ProgressConsistencyViewState
                             lastMonth = weekDate.month;
                             if (lastLabelWeek == null ||
                                 w - lastLabelWeek >= 2) {
-                              final rawMonth = DateFormat('MMM', 'pt_BR')
+                              final rawMonth = ptBrDateFormat('MMM')
                                   .format(weekDate)
                                   .replaceAll('.', '');
                               final label = rawMonth.isNotEmpty
@@ -275,7 +275,7 @@ class _ProgressConsistencyViewState
                                             ),
                                             child: Semantics(
                                               label:
-                                                  '${DateFormat('d MMM', 'pt_BR').format(cellDate)}, ${pluralize(daySessions.length, 'treino', 'treinos')}',
+                                                  '${ptBrDateFormat('d MMM').format(cellDate)}, ${pluralize(daySessions.length, 'treino', 'treinos')}',
                                               button: true,
                                               selected: isSelected,
                                               child: GestureDetector(
@@ -371,7 +371,7 @@ class _ProgressConsistencyViewState
                 child: Row(
                   children: [
                     Text(
-                      DateFormat("d 'de' MMM", 'pt_BR').format(selectedDay),
+                      ptBrDateFormat("d 'de' MMM").format(selectedDay),
                       style: context.textTheme.labelMedium?.copyWith(
                         color: colors.textSecondary,
                         fontFeatures: AppTypography.tabularFeatures,
@@ -405,7 +405,7 @@ class _ProgressConsistencyViewState
                         spacing: 8,
                         children: [
                           Text(
-                            DateFormat("d 'de' MMM", 'pt_BR')
+                            ptBrDateFormat("d 'de' MMM")
                                 .format(selectedDay),
                             style: context.textTheme.labelMedium?.copyWith(
                               color: colors.textSecondary,

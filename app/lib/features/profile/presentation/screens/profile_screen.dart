@@ -612,6 +612,9 @@ class _ProfileAvatarCircle extends StatelessWidget {
       return _fallback(context);
     }
 
+    final cachePx =
+        (size * MediaQuery.devicePixelRatioOf(context)).round().clamp(64, 512);
+
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return ClipOval(
         child: Container(
@@ -625,6 +628,8 @@ class _ProfileAvatarCircle extends StatelessWidget {
                 : url,
             width: size,
             height: size,
+            memCacheWidth: cachePx,
+            memCacheHeight: cachePx,
             fit: BoxFit.cover,
             placeholder: (_, _) => _fallback(context),
             errorWidget: (_, _, _) => _fallback(context),
@@ -634,18 +639,17 @@ class _ProfileAvatarCircle extends StatelessWidget {
     }
 
     final file = File(url);
-    if (file.existsSync()) {
-      return ClipOval(
-        child: Image.file(
-          file,
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-        ),
-      );
-    }
-
-    return _fallback(context);
+    return ClipOval(
+      child: Image.file(
+        file,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        cacheWidth: cachePx,
+        cacheHeight: cachePx,
+        errorBuilder: (_, _, _) => _fallback(context),
+      ),
+    );
   }
 }
 

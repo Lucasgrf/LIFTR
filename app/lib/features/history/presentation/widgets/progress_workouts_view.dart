@@ -68,14 +68,20 @@ class ProgressWorkoutsView extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 10),
-            ...sessions.map(
-              (session) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: HistoryWorkoutCard(
-                  session: session,
-                  onTap: () => context.push('/session/${session.id}/summary'),
-                ),
-              ),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: sessions.length,
+              itemBuilder: (context, index) {
+                final session = sessions[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: HistoryWorkoutCard(
+                    session: session,
+                    onTap: () => context.push('/session/${session.id}/summary'),
+                  ),
+                );
+              },
             ),
           ],
         );

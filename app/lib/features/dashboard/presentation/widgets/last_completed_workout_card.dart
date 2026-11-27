@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
+import 'package:personal_fitness_os/core/extensions/date_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
@@ -32,10 +33,10 @@ class LastCompletedWorkoutCard extends StatelessWidget {
     final today = DateTime(now.year, now.month, now.day);
     final date = DateTime(dt.year, dt.month, dt.day);
     final diff = today.difference(date).inDays;
-    final hm = DateFormat('HH:mm', 'pt_BR').format(dt);
+    final hm = ptBrDateFormat('HH:mm').format(dt);
     if (diff == 0) return 'Hoje · $hm';
     if (diff == 1) return 'Ontem · $hm';
-    return DateFormat("d 'de' MMM · HH:mm", 'pt_BR').format(dt);
+    return ptBrDateFormat("d 'de' MMM · HH:mm").format(dt);
   }
 
   @override

@@ -90,87 +90,88 @@ class ExerciseHistoryModal extends ConsumerWidget {
                   ? records.map((r) => r.topWeightKg).reduce(math.max)
                   : null;
 
-              return ListView(
-                children: [
-                  ExerciseLoadProgressionChart(
-                    series: mapExerciseHistoryToLoadSeries(
-                      records,
-                      loadColor: colors.primary,
-                      e1rmColor: colors.info,
-                    ),
-                    referenceValue: prWeight,
-                    referenceLabel: prWeight != null
-                        ? 'PR ${formatPtBrDecimal(prWeight)} kg'
-                        : null,
-                  ),
-                  const SizedBox(height: 18),
-                  Text(
-                    'Últimas sessões',
-                    style: context.textTheme.labelMedium?.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  ...records.map(
-                    (rec) => Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: AppCard(
-                        padding: const EdgeInsets.all(14),
-                        backgroundColor: colors.surfaceSubtle,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    rec.sessionName,
-                                    style: context.textTheme.titleSmall,
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    '${pluralize(rec.setsCount, 'série', 'séries')} · Melhor: ${formatWeightKgPtBr(rec.topWeightKg)} × ${pluralize(rec.topReps, 'rep', 'reps')}',
-                                    style: context.textTheme.bodySmall
-                                        ?.copyWith(
-                                      color: colors.textSecondary,
-                                      fontFeatures:
-                                          AppTypography.tabularFeatures,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
+              return ListView.builder(
+                itemCount: records.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ExerciseLoadProgressionChart(
+                          series: mapExerciseHistoryToLoadSeries(
+                            records,
+                            loadColor: colors.primary,
+                            e1rmColor: colors.info,
+                          ),
+                          referenceValue: prWeight,
+                          referenceLabel: prWeight != null
+                              ? 'PR ${formatPtBrDecimal(prWeight)} kg'
+                              : null,
+                        ),
+                        const SizedBox(height: 18),
+                        Text(
+                          'Últimas sessões',
+                          style: context.textTheme.labelMedium?.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                    );
+                  }
+                  final rec = records[index - 1];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: AppCard(
+                      padding: const EdgeInsets.all(14),
+                      backgroundColor: colors.surfaceSubtle,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  '1RM ${formatWeightKgPtBr(rec.bestEstimated1Rm)}',
-                                  style: context.textTheme.labelSmall
-                                      ?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: fitnessColors.progressUp,
-                                    fontFeatures:
-                                        AppTypography.tabularFeatures,
-                                  ),
+                                  rec.sessionName,
+                                  style: context.textTheme.titleSmall,
                                 ),
                                 const SizedBox(height: 3),
                                 Text(
-                                  rec.date.formatShort(),
-                                  style: context.textTheme.labelSmall
-                                      ?.copyWith(
-                                    color: colors.textTertiary,
-                                    fontFeatures:
-                                        AppTypography.tabularFeatures,
+                                  '${pluralize(rec.setsCount, 'série', 'séries')} · Melhor: ${formatWeightKgPtBr(rec.topWeightKg)} × ${pluralize(rec.topReps, 'rep', 'reps')}',
+                                  style: context.textTheme.bodySmall?.copyWith(
+                                    color: colors.textSecondary,
+                                    fontFeatures: AppTypography.tabularFeatures,
                                   ),
                                 ),
                               ],
                             ),
-                          ],
-                        ),
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                '1RM ${formatWeightKgPtBr(rec.bestEstimated1Rm)}',
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: fitnessColors.progressUp,
+                                  fontFeatures: AppTypography.tabularFeatures,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                rec.date.formatShort(),
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: colors.textTertiary,
+                                  fontFeatures: AppTypography.tabularFeatures,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
+                  );
+                },
               );
             },
           ),

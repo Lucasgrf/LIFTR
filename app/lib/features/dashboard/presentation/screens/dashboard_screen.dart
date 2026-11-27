@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
+import 'package:personal_fitness_os/core/extensions/date_extensions.dart';
 import 'package:personal_fitness_os/core/providers/clock_provider.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
@@ -197,7 +197,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     ref.watch(workoutQueueProvider);
 
     final now = ref.watch(appClockProvider)();
-    final formattedDate = DateFormat("EEEE, d 'de' MMM", 'pt_BR').format(now);
+    final formattedDate = ptBrDateFormat("EEEE, d 'de' MMM").format(now);
     final capitalizedDate =
         formattedDate[0].toUpperCase() + formattedDate.substring(1);
 
@@ -493,6 +493,15 @@ class _HeaderAvatarThumb extends StatelessWidget {
     final colors = context.appColors;
     final url = avatarUrl?.trim() ?? '';
 
+    final cachePx =
+        (48 * MediaQuery.devicePixelRatioOf(context)).round().clamp(64, 256);
+
+    Widget fallbackIcon() => Icon(
+          Icons.person_outline_rounded,
+          color: colors.textSecondary,
+          size: 22,
+        );
+
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return ClipOval(
         child: CachedNetworkImage(
@@ -500,30 +509,28 @@ class _HeaderAvatarThumb extends StatelessWidget {
           cacheKey: (storagePath != null && storagePath!.isNotEmpty)
               ? storagePath
               : url,
+          memCacheWidth: cachePx,
+          memCacheHeight: cachePx,
           fit: BoxFit.cover,
-          errorWidget: (_, __, ___) => Icon(
-            Icons.person_outline_rounded,
-            color: colors.textSecondary,
-            size: 22,
-          ),
+          errorWidget: (_, _, _) => fallbackIcon(),
         ),
       );
     }
 
     if (url.isNotEmpty) {
       final file = File(url);
-      if (file.existsSync()) {
-        return ClipOval(
-          child: Image.file(file, fit: BoxFit.cover),
-        );
-      }
+      return ClipOval(
+        child: Image.file(
+          file,
+          fit: BoxFit.cover,
+          cacheWidth: cachePx,
+          cacheHeight: cachePx,
+          errorBuilder: (_, _, _) => fallbackIcon(),
+        ),
+      );
     }
 
-    return Icon(
-      Icons.person_outline_rounded,
-      color: colors.textSecondary,
-      size: 22,
-    );
+    return fallbackIcon();
   }
 }
 
