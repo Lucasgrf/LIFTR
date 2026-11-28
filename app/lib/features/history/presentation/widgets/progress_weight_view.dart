@@ -168,7 +168,7 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
                 color: colors.surfaceSubtle,
                 borderRadius: BorderRadius.circular(20),
               ),
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              padding: const EdgeInsets.fromLTRB(16, 15, 16, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
