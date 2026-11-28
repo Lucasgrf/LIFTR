@@ -58,7 +58,8 @@ void _assertInkWellsHaveMaterialAncestor(WidgetTester tester) {
     expect(
       materialAncestor,
       isNotNull,
-      reason: 'Every InkWell must have a Material ancestor so ripples paint visibly',
+      reason:
+          'Every InkWell must have a Material ancestor so ripples paint visibly',
     );
   }
 }
@@ -72,6 +73,17 @@ class _TestExerciseListNotifier extends ExerciseListNotifier {
   Future<void> loadExercises() async {}
 }
 
+class _TestTrainingPlansNotifier extends TrainingPlansNotifier {
+  _TestTrainingPlansNotifier(Ref ref, this.plans) : super(ref);
+
+  final List<TrainingPlan> plans;
+
+  @override
+  Future<void> loadPlans() async {
+    state = AsyncValue.data(plans);
+  }
+}
+
 void main() {
   final fixedNow = DateTime(2026, 5, 14, 18, 30);
 
@@ -80,30 +92,32 @@ void main() {
   });
 
   group('Phase 4 — Shared Components', () {
-    test('showModalBottomSheet is only called inside core/widgets/liftr_sheet.dart',
-        () {
-      final libDir = Directory('lib');
-      final dartFiles = libDir
-          .listSync(recursive: true)
-          .whereType<File>()
-          .where((f) => f.path.endsWith('.dart'))
-          .toList();
-      expect(dartFiles, isNotEmpty);
+    test(
+      'showModalBottomSheet is only called inside core/widgets/liftr_sheet.dart',
+      () {
+        final libDir = Directory('lib');
+        final dartFiles = libDir
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.dart'))
+            .toList();
+        expect(dartFiles, isNotEmpty);
 
-      for (final file in dartFiles) {
-        final content = file.readAsStringSync();
-        if (file.path.endsWith('core/widgets/liftr_sheet.dart')) {
-          expect(content.contains('showModalBottomSheet'), isTrue);
-        } else {
-          expect(
-            content.contains('showModalBottomSheet'),
-            isFalse,
-            reason:
-                '${file.path} must use showLiftrSheet() instead of showModalBottomSheet',
-          );
+        for (final file in dartFiles) {
+          final content = file.readAsStringSync();
+          if (file.path.endsWith('core/widgets/liftr_sheet.dart')) {
+            expect(content.contains('showModalBottomSheet'), isTrue);
+          } else {
+            expect(
+              content.contains('showModalBottomSheet'),
+              isFalse,
+              reason:
+                  '${file.path} must use showLiftrSheet() instead of showModalBottomSheet',
+            );
+          }
         }
-      }
-    });
+      },
+    );
 
     testWidgets(
       'showLiftrSheet renders LiftrSheetHeader (36x4 xs handle), tablet maxWidth, keyboard bottom padding, and returns typed value',
@@ -160,9 +174,9 @@ void main() {
         });
         expect(handleBox, findsOneWidget);
 
-        final sheetWidth = tester.getSize(
-          find.byType(SingleChildScrollView),
-        ).width;
+        final sheetWidth = tester
+            .getSize(find.byType(SingleChildScrollView))
+            .width;
         expect(sheetWidth, lessThanOrEqualTo(560.0));
 
         await tester.tap(find.text('Selecionar'));
@@ -282,15 +296,18 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Pular / Trocar'));
+        await tester.drag(find.byType(ListView).first, const Offset(0, -200));
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('Trocar treino'));
+        await tester.tap(find.text('Trocar treino'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Escolher treino de hoje'), findsOneWidget);
-        expect(find.text('Pular treino atual'), findsOneWidget);
+        expect(find.text('Escolher a ficha de hoje'), findsOneWidget);
+        expect(find.text('Pular Treino Rotativo Número 1'), findsOneWidget);
         expect(find.byType(LiftrSheetHeader), findsOneWidget);
         expect(tester.takeException(), isNull);
 
-        await tester.tap(find.text('Pular treino atual'));
+        await tester.tap(find.text('Pular Treino Rotativo Número 1'));
         await tester.pumpAndSettle();
 
         // First workout rotated to end -> Workout 2 is now displayed as today's workout
@@ -343,7 +360,9 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byType(AlertDialog), findsOneWidget);
         expect(tester.takeException(), isNull);
-        await tester.tap(find.text('Cancelar'));
+        final cancelButton = find.widgetWithText(TextButton, 'Cancelar');
+        await tester.ensureVisible(cancelButton);
+        await tester.tap(cancelButton);
         await tester.pumpAndSettle();
         expect(lastResult, isFalse);
 
@@ -435,7 +454,10 @@ void main() {
 
         final bars = find.byType(LiftrProgressBar);
         expect(tester.getSemantics(bars.at(0)).value, '65%');
-        expect(tester.getSemantics(bars.at(0)).label, 'Progresso da atualização');
+        expect(
+          tester.getSemantics(bars.at(0)).label,
+          'Progresso da atualização',
+        );
         expect(tester.getSemantics(bars.at(1)).value, '0%');
         expect(tester.getSemantics(bars.at(2)).value, '100%');
         handle.dispose();
@@ -637,8 +659,13 @@ void main() {
             key: UniqueKey(),
             overrides: [
               sharedPreferencesProvider.overrideWithValue(prefs),
-              workoutDetailProvider((planId: 'plan-1', workoutId: 'w-1'))
-                  .overrideWith((_) async => tWorkout),
+              workoutDetailProvider((
+                planId: 'plan-1',
+                workoutId: 'w-1',
+              )).overrideWith((_) async => tWorkout),
+              trainingPlansStateProvider.overrideWith(
+                (ref) => _TestTrainingPlansNotifier(ref, const []),
+              ),
             ],
             child: MaterialApp(
               theme: AppTheme.dark(),
@@ -651,11 +678,18 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+        await tester.tap(find.text('Editar'));
         await tester.pumpAndSettle();
-        expect(find.text('Remover Exercício'), findsOneWidget);
+        await tester.tap(find.text('Reordenar exercícios'));
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.byTooltip('Opções para Supino Reto'));
+        await tester.tap(find.byTooltip('Opções para Supino Reto'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Remover'));
+        await tester.pumpAndSettle();
+        expect(find.text('Remover exercício?'), findsOneWidget);
         expect(
-          find.text('Deseja remover "Supino Reto" deste treino?'),
+          find.text('“Supino Reto” será removido desta ficha.'),
           findsOneWidget,
         );
         await tester.tap(find.text('Cancelar'));
@@ -739,8 +773,9 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final initialSimulatedOffline =
-            container.read(simulatedOfflineProvider);
+        final initialSimulatedOffline = container.read(
+          simulatedOfflineProvider,
+        );
         await tester.tap(find.text('Simular modo offline'));
         await tester.pumpAndSettle();
         expect(
@@ -833,7 +868,11 @@ void main() {
         await tester.pumpAndSettle();
         _assertInkWellsHaveMaterialAncestor(tester);
         await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
-        expect(tester.takeException(), isNull, reason: 'LastCompletedWorkoutCard');
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'LastCompletedWorkoutCard',
+        );
 
         // 1b. WeeklySummaryCard
         await tester.pumpWidget(
@@ -886,7 +925,11 @@ void main() {
         await tester.pumpAndSettle();
         _assertInkWellsHaveMaterialAncestor(tester);
         await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
-        expect(tester.takeException(), isNull, reason: 'ProgressSegmentedControl');
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'ProgressSegmentedControl',
+        );
 
         // 2. LogCardioModal
         await tester.pumpWidget(
@@ -928,9 +971,7 @@ void main() {
               ),
               child: MaterialApp(
                 theme: AppTheme.dark(),
-                home: const Scaffold(
-                  body: SwitchProgramSheet(plans: [tPlan]),
-                ),
+                home: const Scaffold(body: SwitchProgramSheet(plans: [tPlan])),
               ),
             ),
           ),

@@ -20,6 +20,7 @@ import 'package:personal_fitness_os/features/training/domain/entities/set_templa
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout_exercise.dart';
+import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/logged_set.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/session_exercise.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
@@ -28,10 +29,19 @@ import 'package:personal_fitness_os/features/workout_session/presentation/screen
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/rest_timer_widget.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/session_exercise_card.dart';
 
+class _TestTrainingPlansNotifier extends TrainingPlansNotifier {
+  _TestTrainingPlansNotifier(super.ref) {
+    state = const AsyncValue.data([]);
+  }
+
+  @override
+  Future<void> loadPlans() async {}
+}
+
 class _StubProgressionRepository implements ProgressionRepository {
   @override
   Future<Result<ExercisePerformanceHistory?, Failure>>
-      getLastExercisePerformance(String exerciseId) async {
+  getLastExercisePerformance(String exerciseId) async {
     return Success(
       ExercisePerformanceHistory(
         exerciseId: exerciseId,
@@ -54,10 +64,7 @@ class _StubProgressionRepository implements ProgressionRepository {
 
   @override
   Future<Result<List<ExercisePerformanceHistory>, Failure>>
-      getRecentExercisePerformances(
-    String exerciseId, {
-    int limit = 2,
-  }) async {
+  getRecentExercisePerformances(String exerciseId, {int limit = 2}) async {
     return Success([
       ExercisePerformanceHistory(
         exerciseId: exerciseId,
@@ -147,11 +154,7 @@ void main() {
     isActive: true,
     workouts: [
       sampleWorkout,
-      const Workout(
-        id: 'wk-2',
-        trainingPlanId: 'plan-1',
-        name: 'Lower A',
-      ),
+      const Workout(id: 'wk-2', trainingPlanId: 'plan-1', name: 'Lower A'),
     ],
   );
 
@@ -187,96 +190,106 @@ void main() {
   }
 
   group('Fase 3 — 5-State RestTimer lifecycle & widget', () {
-    testWidgets('supports idle -> running -> paused -> resumed -> completed -> dismissed',
-        (tester) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+    testWidgets(
+      'supports idle -> running -> paused -> resumed -> completed -> dismissed',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: AppTheme.dark(),
-            home: const Scaffold(
-              body: Align(
-                alignment: Alignment.bottomCenter,
-                child: RestTimerWidget(stepSeconds: 15),
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: AppTheme.dark(),
+              home: const Scaffold(
+                body: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: RestTimerWidget(stepSeconds: 15),
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      // 1. Idle -> hidden
-      final semantics = tester.ensureSemantics();
-      try {
-        expect(container.read(restTimerNotifierProvider).status,
-            RestTimerStatus.idle);
-        expect(find.text('DESCANSO'), findsNothing);
+        // 1. Idle -> hidden
+        final semantics = tester.ensureSemantics();
+        try {
+          expect(
+            container.read(restTimerNotifierProvider).status,
+            RestTimerStatus.idle,
+          );
+          expect(find.text('Descanso'), findsNothing);
 
-        // 2. Running
-        container.read(restTimerNotifierProvider.notifier).start(
-              3,
-              exerciseName: 'Supino Reto',
-              setNumber: 1,
-            );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 250));
-        expect(container.read(restTimerNotifierProvider).status,
-            RestTimerStatus.running);
-        expect(find.text('DESCANSO'), findsOneWidget);
-        expect(find.text('00:03'), findsOneWidget);
-        expect(find.text('-15s'), findsOneWidget);
-        expect(find.text('+15s'), findsOneWidget);
-        expect(find.text('Pular'), findsOneWidget);
+          // 2. Running
+          container
+              .read(restTimerNotifierProvider.notifier)
+              .start(3, exerciseName: 'Supino Reto', setNumber: 1);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 250));
+          expect(
+            container.read(restTimerNotifierProvider).status,
+            RestTimerStatus.running,
+          );
+          expect(find.text('Descanso'), findsOneWidget);
+          expect(find.text('00:03'), findsOneWidget);
+          expect(find.text('-15s'), findsOneWidget);
+          expect(find.text('+15s'), findsOneWidget);
+          expect(find.text('Pular'), findsOneWidget);
 
-        // 3. Paused & adjustment while paused
-        await tester.tap(find.bySemanticsLabel('Pausar descanso'));
-        await tester.pump();
-        expect(container.read(restTimerNotifierProvider).status,
-            RestTimerStatus.paused);
-        expect(find.text('PAUSADO'), findsOneWidget);
+          // 3. Paused & adjustment while paused
+          await tester.tap(find.bySemanticsLabel('Pausar descanso'));
+          await tester.pump();
+          expect(
+            container.read(restTimerNotifierProvider).status,
+            RestTimerStatus.paused,
+          );
+          expect(find.text('Pausado'), findsOneWidget);
 
-        await tester.tap(find.text('+15s'));
-        await tester.pump();
-        expect(find.text('00:18'), findsOneWidget);
+          await tester.tap(find.text('+15s'));
+          await tester.pump();
+          expect(find.text('00:18'), findsOneWidget);
 
-        // Advance 2s while paused -> stays frozen at 00:18
-        await tester.pump(const Duration(seconds: 2));
-        expect(find.text('00:18'), findsOneWidget);
+          // Advance 2s while paused -> stays frozen at 00:18
+          await tester.pump(const Duration(seconds: 2));
+          expect(find.text('00:18'), findsOneWidget);
 
-        // 4. Resume -> counts down
-        await tester.tap(find.bySemanticsLabel('Retomar descanso'));
-        await tester.pump();
-        expect(container.read(restTimerNotifierProvider).status,
-            RestTimerStatus.running);
+          // 4. Resume -> counts down
+          await tester.tap(find.bySemanticsLabel('Retomar descanso'));
+          await tester.pump();
+          expect(
+            container.read(restTimerNotifierProvider).status,
+            RestTimerStatus.running,
+          );
 
-        // Restart cleanly at 2s to test completed transition quickly
-        container.read(restTimerNotifierProvider.notifier).start(
-              2,
-              exerciseName: 'Supino Reto',
-              setNumber: 2,
-            );
-        await tester.pump();
-        await tester.pump(const Duration(seconds: 2));
+          // Restart cleanly at 2s to test completed transition quickly
+          container
+              .read(restTimerNotifierProvider.notifier)
+              .start(2, exerciseName: 'Supino Reto', setNumber: 2);
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 2));
 
-        // 5. Completed -> shows feedback and OK button
-        expect(container.read(restTimerNotifierProvider).status,
-            RestTimerStatus.completed);
-        expect(find.text('DESCANSO CONCLUÍDO'), findsOneWidget);
-        expect(find.text('00:00'), findsOneWidget);
-        expect(find.text('OK'), findsOneWidget);
+          // 5. Completed -> shows feedback and OK button
+          expect(
+            container.read(restTimerNotifierProvider).status,
+            RestTimerStatus.completed,
+          );
+          expect(find.text('Descanso concluído'), findsOneWidget);
+          expect(find.text('00:00'), findsOneWidget);
+          expect(find.text('OK'), findsOneWidget);
 
-        // 6. Dismissed on OK tap
-        await tester.tap(find.text('OK'));
-        await tester.pump();
-        expect(container.read(restTimerNotifierProvider).status,
-            RestTimerStatus.dismissed);
-        expect(find.text('DESCANSO CONCLUÍDO'), findsNothing);
-      } finally {
-        semantics.dispose();
-      }
-    });
+          // 6. Dismissed on OK tap
+          await tester.tap(find.text('OK'));
+          await tester.pump();
+          expect(
+            container.read(restTimerNotifierProvider).status,
+            RestTimerStatus.dismissed,
+          );
+          expect(find.text('Descanso concluído'), findsNothing);
+        } finally {
+          semantics.dispose();
+        }
+      },
+    );
   });
 
   group('Fase 3 — Multi-viewport & 1.3x scale overflow checks', () {
@@ -287,131 +300,131 @@ void main() {
       (name: '768x1024', size: Size(768, 1024), scale: 1.0),
     ]) {
       testWidgets(
-          'Dashboard + SessionExerciseCard + RestTimer render without overflow at ${viewport.name} (scale ${viewport.scale})',
-          (tester) async {
-        final semantics = tester.ensureSemantics();
-        await tester.binding.setSurfaceSize(viewport.size);
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        'Dashboard + SessionExerciseCard + RestTimer render without overflow at ${viewport.name} (scale ${viewport.scale})',
+        (tester) async {
+          final semantics = tester.ensureSemantics();
+          await tester.binding.setSurfaceSize(viewport.size);
+          addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        try {
-          await tester.pumpWidget(
-            wrapResponsive(
-              size: viewport.size,
-              textScale: viewport.scale,
+          try {
+            await tester.pumpWidget(
+              wrapResponsive(
+                size: viewport.size,
+                textScale: viewport.scale,
+                overrides: [
+                  dashboardDataProvider.overrideWith(
+                    (_) async => DashboardData(
+                      activePlan: samplePlan,
+                      todayWorkout: sampleWorkout,
+                      lastCompletedSession: sampleSession,
+                    ),
+                  ),
+                  fitnessInsightsProvider.overrideWith((_) async => const []),
+                  progressionRepositoryProvider.overrideWithValue(
+                    _StubProgressionRepository(),
+                  ),
+                ],
+                child: const DashboardScreen(),
+              ),
+            );
+            await tester.pumpAndSettle();
+
+            expect(find.byType(LiftrWordmark), findsNothing);
+            expect(find.text('Hoje'), findsNothing);
+            expect(find.text('Upper Push A'), findsWidgets);
+            expect(tester.takeException(), isNull);
+
+            // Now verify SessionExerciseCard + RestTimer together
+            final container = ProviderContainer(
               overrides: [
-                dashboardDataProvider.overrideWith(
-                  (_) async => DashboardData(
-                    activePlan: samplePlan,
-                    todayWorkout: sampleWorkout,
-                    lastCompletedSession: sampleSession,
-                  ),
+                progressionRepositoryProvider.overrideWithValue(
+                  _StubProgressionRepository(),
                 ),
-                fitnessInsightsProvider.overrideWith((_) async => const []),
-                progressionRepositoryProvider
-                    .overrideWithValue(_StubProgressionRepository()),
               ],
-              child: const DashboardScreen(),
-            ),
-          );
-          await tester.pumpAndSettle();
+            );
+            addTearDown(container.dispose);
+            container
+                .read(restTimerNotifierProvider.notifier)
+                .start(180, exerciseName: exBench.name, setNumber: 1);
 
-          expect(find.byType(LiftrWordmark), findsOneWidget);
-          expect(find.text('Hoje'), findsOneWidget);
-          expect(find.text('Upper Push A'), findsWidgets);
-          expect(tester.takeException(), isNull);
-
-          // Now verify SessionExerciseCard + RestTimer together
-          final container = ProviderContainer(
-            overrides: [
-              progressionRepositoryProvider
-                  .overrideWithValue(_StubProgressionRepository()),
-            ],
-          );
-          addTearDown(container.dispose);
-          container.read(restTimerNotifierProvider.notifier).start(
-                180,
-                exerciseName: exBench.name,
-                setNumber: 1,
-              );
-
-          await tester.pumpWidget(
-            UncontrolledProviderScope(
-              container: container,
-              child: MaterialApp(
-                theme: AppTheme.dark(),
-                home: MediaQuery(
-                  data: MediaQueryData(
-                    size: viewport.size,
-                    textScaler: TextScaler.linear(viewport.scale),
-                  ),
-                  child: Scaffold(
-                    body: Column(
-                      children: [
-                        Expanded(
-                          child: ListView(
-                            children: [
-                              SessionExerciseCard(
-                                sessionExercise: seBench,
-                                exerciseIndex: 0,
-                                totalExercises: 1,
-                                onSwapExercise: () {},
-                                onLogSet: ({
-                                  required sessionExerciseId,
-                                  required setNumber,
-                                  required setType,
-                                  required weightKg,
-                                  required repsCompleted,
-                                  durationSeconds,
-                                  rirActual,
-                                  restSeconds = 180,
-                                  dropSets = const [],
-                                  existingSetId,
-                                }) async {},
-                              ),
-                            ],
+            await tester.pumpWidget(
+              UncontrolledProviderScope(
+                container: container,
+                child: MaterialApp(
+                  theme: AppTheme.dark(),
+                  home: MediaQuery(
+                    data: MediaQueryData(
+                      size: viewport.size,
+                      textScaler: TextScaler.linear(viewport.scale),
+                    ),
+                    child: Scaffold(
+                      body: Column(
+                        children: [
+                          Expanded(
+                            child: ListView(
+                              children: [
+                                SessionExerciseCard(
+                                  sessionExercise: seBench,
+                                  exerciseIndex: 0,
+                                  totalExercises: 1,
+                                  onSwapExercise: () {},
+                                  onLogSet:
+                                      ({
+                                        required sessionExerciseId,
+                                        required setNumber,
+                                        required setType,
+                                        required weightKg,
+                                        required repsCompleted,
+                                        durationSeconds,
+                                        rirActual,
+                                        restSeconds = 180,
+                                        dropSets = const [],
+                                        existingSetId,
+                                      }) async {},
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        const RestTimerWidget(stepSeconds: 15),
-                      ],
+                          const RestTimerWidget(stepSeconds: 15),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          );
-          await tester.pumpAndSettle();
+            );
+            await tester.pumpAndSettle();
 
-          expect(find.text('03:00'), findsOneWidget);
-          expect(find.textContaining('Última:'), findsOneWidget);
-          expect(tester.takeException(), isNull);
+            expect(find.text('03:00'), findsOneWidget);
+            expect(find.textContaining('Última:'), findsOneWidget);
+            expect(tester.takeException(), isNull);
 
-          // Verify 48dp touch target on Trocar, Adicionar série and Drop-set
-          expect(
-            tester.getSize(find.bySemanticsLabel('Trocar exercício')).height,
-            greaterThanOrEqualTo(48),
-          );
-          expect(
-            tester.getSize(find.text('Adicionar série').first).height,
-            greaterThan(0),
-          );
-          final dropButton = find.ancestor(
-            of: find.text('Drop-set'),
-            matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
-          );
-          expect(
-            tester.getSize(dropButton).height,
-            greaterThanOrEqualTo(48),
-          );
+            // Verify 48dp touch target on Trocar, Adicionar série and Drop-set
+            expect(
+              tester.getSize(find.bySemanticsLabel('Trocar exercício')).height,
+              greaterThanOrEqualTo(48),
+            );
+            expect(
+              tester.getSize(find.text('Adicionar série').first).height,
+              greaterThan(0),
+            );
+            final dropButton = find.ancestor(
+              of: find.text('Drop-set'),
+              matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
+            );
+            expect(tester.getSize(dropButton).height, greaterThanOrEqualTo(48));
 
-          container.read(restTimerNotifierProvider.notifier).stop();
-        } finally {
-          semantics.dispose();
-        }
-      });
+            container.read(restTimerNotifierProvider.notifier).stop();
+          } finally {
+            semantics.dispose();
+          }
+        },
+      );
     }
 
-    testWidgets('SessionSummaryScreen renders matte header at 320x640 1.3x',
-        (tester) async {
+    testWidgets('SessionSummaryScreen renders matte header at 320x640 1.3x', (
+      tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(320, 640));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -420,8 +433,12 @@ void main() {
           size: const Size(320, 640),
           textScale: 1.3,
           overrides: [
-            liveSessionDetailProvider('sess-1')
-                .overrideWith((_) async => sampleSession),
+            trainingPlansStateProvider.overrideWith(
+              _TestTrainingPlansNotifier.new,
+            ),
+            liveSessionDetailProvider(
+              'sess-1',
+            ).overrideWith((_) async => sampleSession),
             isOnlineStreamProvider.overrideWith((_) => Stream.value(true)),
             pendingSyncCountProvider.overrideWith((_) => 0),
           ],
@@ -430,7 +447,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Treino concluído'), findsOneWidget);
+      expect(find.text('Upper Push A'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

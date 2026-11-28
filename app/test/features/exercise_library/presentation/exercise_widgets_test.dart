@@ -27,16 +27,15 @@ void main() {
   }
 
   group('ExerciseCard Widget Test', () {
-    testWidgets('should display exercise name, muscle badge and equipment', (tester) async {
+    testWidgets('should display exercise name, muscle badge and equipment', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        createWidgetUnderTest(
-          const ExerciseCard(exercise: tExercise),
-        ),
+        createWidgetUnderTest(const ExerciseCard(exercise: tExercise)),
       );
 
       expect(find.text('Supino Reto com Barra'), findsOneWidget);
-      expect(find.text('Peito'), findsOneWidget);
-      expect(find.text('Barra'), findsOneWidget);
+      expect(find.text('Peito · Barra'), findsOneWidget);
     });
 
     testWidgets('should call onTap callback when tapped', (tester) async {
@@ -44,10 +43,7 @@ void main() {
 
       await tester.pumpWidget(
         createWidgetUnderTest(
-          ExerciseCard(
-            exercise: tExercise,
-            onTap: () => tapped = true,
-          ),
+          ExerciseCard(exercise: tExercise, onTap: () => tapped = true),
         ),
       );
 
@@ -60,11 +56,7 @@ void main() {
 
   group('MuscleFilterChips Widget Test', () {
     testWidgets('should render muscle option chips', (tester) async {
-      await tester.pumpWidget(
-        createWidgetUnderTest(
-          const MuscleFilterChips(),
-        ),
-      );
+      await tester.pumpWidget(createWidgetUnderTest(const MuscleFilterChips()));
 
       expect(find.text('Todos'), findsOneWidget);
       expect(find.text('Peito'), findsOneWidget);

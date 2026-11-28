@@ -8,6 +8,7 @@ import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/providers/clock_provider.dart';
 import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
 import 'package:personal_fitness_os/core/theme/app_theme.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_icon.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/body/domain/entities/weight_entry.dart';
@@ -182,19 +183,10 @@ void main() {
       cardioDurationSeconds: 1800,
     ),
     currentWeekDailyCardio: [
-      DailyCardioBreakdown(
-        day: DateTime(2026, 5, 11),
-        standaloneSeconds: 900,
-      ),
-      DailyCardioBreakdown(
-        day: DateTime(2026, 5, 12),
-        inSessionSeconds: 600,
-      ),
+      DailyCardioBreakdown(day: DateTime(2026, 5, 11), standaloneSeconds: 900),
+      DailyCardioBreakdown(day: DateTime(2026, 5, 12), inSessionSeconds: 600),
       DailyCardioBreakdown(day: DateTime(2026, 5, 13)),
-      DailyCardioBreakdown(
-        day: DateTime(2026, 5, 14),
-        standaloneSeconds: 1200,
-      ),
+      DailyCardioBreakdown(day: DateTime(2026, 5, 14), standaloneSeconds: 1200),
       DailyCardioBreakdown(day: DateTime(2026, 5, 15)),
       DailyCardioBreakdown(day: DateTime(2026, 5, 16)),
       DailyCardioBreakdown(day: DateTime(2026, 5, 17)),
@@ -238,10 +230,7 @@ void main() {
             size: Size(320, 640),
             textScaler: TextScaler.linear(2.0),
           ),
-          child: MaterialApp(
-            theme: AppTheme.dark(),
-            home: child,
-          ),
+          child: MaterialApp(theme: AppTheme.dark(), home: child),
         ),
       ),
     );
@@ -339,7 +328,9 @@ void main() {
                 lastCompletedSession: sampleSession,
               ),
             ),
-            currentWeekSummaryProvider.overrideWith((_) async => sampleWeekData),
+            currentWeekSummaryProvider.overrideWith(
+              (_) async => sampleWeekData,
+            ),
           ],
         );
         expect(tester.takeException(), isNull, reason: 'DashboardScreen');
@@ -362,7 +353,9 @@ void main() {
           child: const HistoryScreen(),
           overrides: [
             historyListProvider.overrideWith((_) async => [sampleSession]),
-            currentWeekSummaryProvider.overrideWith((_) async => sampleWeekData),
+            currentWeekSummaryProvider.overrideWith(
+              (_) async => sampleWeekData,
+            ),
             weightHistoryProvider.overrideWith(
               (_) async => [
                 WeightEntry(id: 'w-1', weightKg: 78.4, measuredAt: fixedNow),
@@ -386,7 +379,11 @@ void main() {
             ),
           ),
         );
-        expect(tester.takeException(), isNull, reason: 'HistoryWorkoutCard & WorkoutCard');
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'HistoryWorkoutCard & WorkoutCard',
+        );
 
         // 5. ProfileScreen + BodyDataSheet
         await pumpAt320_2x(tester, child: const ProfileScreen());
@@ -395,7 +392,11 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text('Dados corporais'));
         await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull, reason: 'ProfileScreen._BodyDataSheet');
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'ProfileScreen._BodyDataSheet',
+        );
 
         // 6. SettingsScreen
         await pumpAt320_2x(tester, child: const SettingsScreen());
@@ -409,13 +410,17 @@ void main() {
             weeklyComparisonProvider.overrideWith((_) async => sampleWeekData),
           ],
         );
-        expect(tester.takeException(), isNull, reason: 'WeeklyComparisonScreen');
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'WeeklyComparisonScreen',
+        );
         expect(
           find.descendant(
             of: find.byType(WeeklyComparisonScreen),
-            matching: find.byType(FittedBox),
+            matching: find.byType(LiftrIcon),
           ),
-          findsNothing,
+          findsOneWidget,
         );
         expect(
           find.bySemanticsLabel('Segunda-feira: 15 minutos de cardio'),
@@ -428,10 +433,10 @@ void main() {
           child: const ExerciseListScreen(),
           overrides: [
             exerciseListStateProvider.overrideWith(
-              (ref) => _TestExerciseListNotifier(
-                ref,
-                const [sampleExercise, sampleExerciseAlt],
-              ),
+              (ref) => _TestExerciseListNotifier(ref, const [
+                sampleExercise,
+                sampleExerciseAlt,
+              ]),
             ),
           ],
         );
@@ -439,7 +444,11 @@ void main() {
 
         // 9. OnboardingScreen (step 0)
         await pumpAt320_2x(tester, child: const OnboardingScreen());
-        expect(tester.takeException(), isNull, reason: 'OnboardingScreen step 0');
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'OnboardingScreen step 0',
+        );
 
         // 10. ConfigureSetsScreen
         await pumpAt320_2x(
@@ -450,8 +459,10 @@ void main() {
             workoutExerciseId: 'we-1',
           ),
           overrides: [
-            workoutDetailProvider((planId: 'plan-1', workoutId: 'w-1'))
-                .overrideWith((_) async => sampleWorkoutA),
+            workoutDetailProvider((
+              planId: 'plan-1',
+              workoutId: 'w-1',
+            )).overrideWith((_) async => sampleWorkoutA),
           ],
         );
         expect(tester.takeException(), isNull, reason: 'ConfigureSetsScreen');
@@ -487,10 +498,10 @@ void main() {
           label: 'SwapExerciseSheet',
           overrides: [
             exerciseListStateProvider.overrideWith(
-              (ref) => _TestExerciseListNotifier(
-                ref,
-                const [sampleExercise, sampleExerciseAlt],
-              ),
+              (ref) => _TestExerciseListNotifier(ref, const [
+                sampleExercise,
+                sampleExerciseAlt,
+              ]),
             ),
             historyListProvider.overrideWith((_) async => [sampleSession]),
           ],
@@ -504,8 +515,9 @@ void main() {
         await openSheetAt320_2x(
           label: 'FinishWorkoutModal',
           overrides: [
-            sessionPreviousWeightsProvider(sampleSession.id)
-                .overrideWith((_) async => const {'ex-1': 30.0}),
+            sessionPreviousWeightsProvider(
+              sampleSession.id,
+            ).overrideWith((_) async => const {'ex-1': 30.0}),
           ],
           onOpen: (ctx) => showLiftrSheet<void>(
             context: ctx,
@@ -525,10 +537,8 @@ void main() {
 
         await openSheetAt320_2x(
           label: 'SwitchProgramSheet',
-          onOpen: (ctx) => SwitchProgramSheet.show(
-            ctx,
-            plans: const [samplePlan],
-          ),
+          onOpen: (ctx) =>
+              SwitchProgramSheet.show(ctx, plans: const [samplePlan]),
         );
 
         await openSheetAt320_2x(
@@ -571,11 +581,19 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull, reason: 'Onboarding step 0 @ 375');
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'Onboarding step 0 @ 375',
+        );
 
         await tester.tap(find.text('Continuar'));
         await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull, reason: 'Onboarding step 1 @ 375');
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'Onboarding step 1 @ 375',
+        );
 
         await tester.pumpWidget(
           ProviderScope(
@@ -583,8 +601,10 @@ void main() {
             overrides: [
               sharedPreferencesProvider.overrideWithValue(prefs),
               appClockProvider.overrideWithValue(() => fixedNow),
-              workoutDetailProvider((planId: 'plan-1', workoutId: 'w-1'))
-                  .overrideWith((_) async => sampleWorkoutA),
+              workoutDetailProvider((
+                planId: 'plan-1',
+                workoutId: 'w-1',
+              )).overrideWith((_) async => sampleWorkoutA),
             ],
             child: MediaQuery(
               data: const MediaQueryData(
@@ -603,7 +623,11 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull, reason: 'ConfigureSetsScreen @ 375');
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'ConfigureSetsScreen @ 375',
+        );
       },
     );
   });
@@ -641,7 +665,7 @@ void main() {
     );
 
     testWidgets(
-      'Share actions use Icons.adaptive.share instead of Icons.ios_share_rounded',
+      'Training views use the HTML share mark and avoid the legacy iOS icon',
       (tester) async {
         SharedPreferences.setMockInitialValues({});
         final prefs = await SharedPreferences.getInstance();
@@ -653,8 +677,9 @@ void main() {
               trainingPlansStateProvider.overrideWith(
                 (ref) => _TestTrainingPlansNotifier(ref, [samplePlan]),
               ),
-              trainingPlanDetailProvider('plan-1')
-                  .overrideWith((_) async => samplePlan),
+              trainingPlanDetailProvider(
+                'plan-1',
+              ).overrideWith((_) async => samplePlan),
             ],
             child: MaterialApp(
               theme: AppTheme.dark(),
@@ -664,10 +689,16 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.ensureVisible(find.text('Compartilhar programa'));
+        await tester.ensureVisible(find.text('Compartilhar'));
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.adaptive.share), findsOneWidget);
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is LiftrIcon && widget.name == LiftrIconName.share,
+          ),
+          findsOneWidget,
+        );
         expect(find.byIcon(Icons.ios_share_rounded), findsNothing);
 
         await tester.pumpWidget(
@@ -675,8 +706,9 @@ void main() {
             key: UniqueKey(),
             overrides: [
               sharedPreferencesProvider.overrideWithValue(prefs),
-              trainingPlanDetailProvider('plan-1')
-                  .overrideWith((_) async => samplePlan),
+              trainingPlanDetailProvider(
+                'plan-1',
+              ).overrideWith((_) async => samplePlan),
             ],
             child: MaterialApp(
               theme: AppTheme.dark(),
@@ -686,27 +718,13 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.adaptive.share), findsOneWidget);
-        expect(find.byIcon(Icons.ios_share_rounded), findsNothing);
-
-        await tester.pumpWidget(
-          ProviderScope(
-            key: UniqueKey(),
-            overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-            child: MaterialApp(
-              theme: AppTheme.dark(),
-              home: const Scaffold(
-                body: SwitchProgramSheet(plans: [samplePlan]),
-              ),
-            ),
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is LiftrIcon && widget.name == LiftrIconName.share,
           ),
+          findsOneWidget,
         );
-        await tester.pumpAndSettle();
-
-        await tester.ensureVisible(find.byIcon(Icons.adaptive.share).first);
-        await tester.pumpAndSettle();
-
-        expect(find.byIcon(Icons.adaptive.share), findsOneWidget);
         expect(find.byIcon(Icons.ios_share_rounded), findsNothing);
       },
     );
@@ -735,9 +753,9 @@ void main() {
         expect(
           find.descendant(
             of: find.byType(ExerciseListScreen),
-            matching: find.byWidgetPredicate((w) => w is SafeArea && !w.top),
+            matching: find.byWidgetPredicate((w) => w is SafeArea && w.top),
           ),
-          findsOneWidget,
+          findsAtLeastNWidgets(1),
         );
 
         await tester.pumpWidget(
@@ -745,9 +763,12 @@ void main() {
             key: UniqueKey(),
             overrides: [
               sharedPreferencesProvider.overrideWithValue(prefs),
-              exerciseDetailProvider('ex-1')
-                  .overrideWith((_) async => sampleExercise),
-              exerciseHistoryProvider('ex-1').overrideWith((_) async => const []),
+              exerciseDetailProvider(
+                'ex-1',
+              ).overrideWith((_) async => sampleExercise),
+              exerciseHistoryProvider(
+                'ex-1',
+              ).overrideWith((_) async => const []),
             ],
             child: MaterialApp(
               theme: AppTheme.dark(),
@@ -759,7 +780,7 @@ void main() {
         expect(
           find.descendant(
             of: find.byType(ExerciseDetailScreen),
-            matching: find.byWidgetPredicate((w) => w is SafeArea && !w.top),
+            matching: find.byWidgetPredicate((w) => w is SafeArea && w.top),
           ),
           findsOneWidget,
         );
@@ -778,7 +799,7 @@ void main() {
         expect(
           find.descendant(
             of: find.byType(CreateCustomExerciseScreen),
-            matching: find.byWidgetPredicate((w) => w is SafeArea && !w.top),
+            matching: find.byWidgetPredicate((w) => w is SafeArea && w.top),
           ),
           findsOneWidget,
         );

@@ -248,72 +248,69 @@ void main() {
       },
     );
 
-    test(
-      'AppTypography defines complete monotonic scale, tabular bodyLarge, and 14sp labelLarge',
-      () {
-        for (final theme in [AppTheme.dark(), AppTheme.light()]) {
-          final tt = theme.textTheme;
-          expect(tt.displaySmall?.fontSize, 28);
-          expect(tt.displaySmall?.fontFeatures, isNotEmpty);
-          expect(tt.headlineSmall?.fontSize, 20);
-          expect(tt.headlineSmall?.fontFeatures, isNotEmpty);
-          expect(tt.bodyLarge?.fontSize, 16);
-          expect(tt.bodyLarge?.fontFeatures, isNotEmpty);
-          expect(tt.labelLarge?.fontSize, 14);
-          expect(tt.labelSmall?.fontSize, greaterThanOrEqualTo(11));
+    test('AppTypography follows the HTML scale and uses tabular figures', () {
+      for (final theme in [AppTheme.dark(), AppTheme.light()]) {
+        final tt = theme.textTheme;
+        expect(tt.displaySmall?.fontSize, 28);
+        expect(tt.displaySmall?.fontFeatures, isNotEmpty);
+        expect(tt.headlineSmall?.fontSize, 20);
+        expect(tt.headlineSmall?.fontFeatures, isNotEmpty);
+        expect(tt.bodyLarge?.fontSize, 17);
+        expect(tt.bodyLarge?.fontFeatures, isNotEmpty);
+        expect(tt.labelLarge?.fontSize, 17);
+        expect(tt.labelSmall?.fontSize, greaterThanOrEqualTo(11));
 
-          // Monotonic type scale: display >= headline >= title, body, label.
-          expect(
-            tt.displayLarge!.fontSize,
-            greaterThanOrEqualTo(tt.displayMedium!.fontSize!),
-          );
-          expect(
-            tt.displayMedium!.fontSize,
-            greaterThanOrEqualTo(tt.displaySmall!.fontSize!),
-          );
-          expect(
-            tt.displaySmall!.fontSize,
-            greaterThanOrEqualTo(tt.headlineLarge!.fontSize!),
-          );
-          expect(
-            tt.headlineLarge!.fontSize,
-            greaterThanOrEqualTo(tt.headlineMedium!.fontSize!),
-          );
-          expect(
-            tt.headlineMedium!.fontSize,
-            greaterThanOrEqualTo(tt.headlineSmall!.fontSize!),
-          );
-          expect(
-            tt.headlineSmall!.fontSize,
-            greaterThanOrEqualTo(tt.titleLarge!.fontSize!),
-          );
-          expect(
-            tt.titleLarge!.fontSize,
-            greaterThanOrEqualTo(tt.titleMedium!.fontSize!),
-          );
-          expect(
-            tt.titleMedium!.fontSize,
-            greaterThanOrEqualTo(tt.titleSmall!.fontSize!),
-          );
-          expect(
-            tt.bodyLarge!.fontSize,
-            greaterThanOrEqualTo(tt.bodyMedium!.fontSize!),
-          );
-          expect(
-            tt.bodyMedium!.fontSize,
-            greaterThanOrEqualTo(tt.bodySmall!.fontSize!),
-          );
-          expect(
-            tt.labelLarge!.fontSize,
-            greaterThanOrEqualTo(tt.labelMedium!.fontSize!),
-          );
-          expect(
-            tt.labelMedium!.fontSize,
-            greaterThanOrEqualTo(tt.labelSmall!.fontSize!),
-          );
-        }
-      },
-    );
+        // Monotonic type scale: display >= headline >= title, body, label.
+        expect(
+          tt.displayLarge!.fontSize,
+          greaterThanOrEqualTo(tt.displayMedium!.fontSize!),
+        );
+        expect(
+          tt.displayMedium!.fontSize,
+          greaterThanOrEqualTo(tt.displaySmall!.fontSize!),
+        );
+        expect(
+          tt.displaySmall!.fontSize,
+          greaterThanOrEqualTo(tt.headlineLarge!.fontSize!),
+        );
+        expect(
+          tt.headlineLarge!.fontSize,
+          greaterThanOrEqualTo(tt.headlineMedium!.fontSize!),
+        );
+        expect(
+          tt.headlineMedium!.fontSize,
+          greaterThanOrEqualTo(tt.headlineSmall!.fontSize!),
+        );
+        expect(
+          tt.headlineSmall!.fontSize,
+          greaterThanOrEqualTo(tt.titleLarge!.fontSize!),
+        );
+        expect(
+          tt.titleLarge!.fontSize,
+          greaterThanOrEqualTo(tt.titleMedium!.fontSize!),
+        );
+        expect(
+          tt.titleMedium!.fontSize,
+          greaterThanOrEqualTo(tt.titleSmall!.fontSize!),
+        );
+        expect(
+          tt.bodyLarge!.fontSize,
+          greaterThanOrEqualTo(tt.bodyMedium!.fontSize!),
+        );
+        expect(
+          tt.bodyMedium!.fontSize,
+          greaterThanOrEqualTo(tt.bodySmall!.fontSize!),
+        );
+        expect(
+          tt.labelLarge!.fontSize,
+          greaterThanOrEqualTo(tt.labelMedium!.fontSize!),
+        );
+        expect(
+          tt.labelMedium!.fontSize,
+          greaterThanOrEqualTo(tt.labelSmall!.fontSize!),
+        );
+      }
+    });
 
     testWidgets('AppMotion.resolve honors MediaQuery disableAnimations', (
       tester,

@@ -299,7 +299,6 @@ void main() {
         (tester) async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
-
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -328,25 +327,33 @@ void main() {
         (tester) async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
+      late ProviderContainer container;
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
+            activeUserIdProvider.overrideWith((ref) => null),
             isOfflineModeProvider.overrideWithValue(true),
             exerciseRemoteDataSourceProvider
                 .overrideWithValue(_NoopExerciseRemoteDataSource()),
             exerciseLocalDataSourceProvider
                 .overrideWithValue(_ThrowingExerciseLocalDataSource(prefs)),
           ],
-          child: MaterialApp(
-            theme: AppTheme.dark(),
-            home: const ExerciseListScreen(),
+          child: Builder(
+            builder: (context) {
+              container = ProviderScope.containerOf(context, listen: false);
+              return MaterialApp(
+                theme: AppTheme.dark(),
+                home: const ExerciseListScreen(),
+              );
+            },
           ),
         ),
       );
       await tester.pumpAndSettle();
 
+      expect(container.read(exerciseListStateProvider).hasError, isTrue);
       expect(find.byType(ErrorStateWidget), findsOneWidget);
       expect(find.textContaining('dados locais neste aparelho'), findsOneWidget);
       expect(find.text(kOfflineDataSafetyNote), findsNothing);
@@ -407,13 +414,20 @@ void main() {
       await tester.tap(find.text('Supino Reto'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Prescrever Séries'), findsOneWidget);
+      expect(find.text('Prescrever séries'), findsOneWidget);
       expect(find.byType(DropdownButton<int>), findsAtLeastNWidgets(1));
     });
 
     testWidgets(
         'ConfigureSetsScreen shows 100s (personalizado) and preserves 100s when saved untouched',
         (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       final recorder = _RecordingConfigureSetTemplatesUseCase();
       const workout = Workout(
         id: 'w-1',
@@ -508,7 +522,14 @@ void main() {
       await tester.tap(incRirMin);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Salvar Configuração de Séries'));
+      final saveButton = find.text('Salvar Configuração de Séries');
+      await tester.scrollUntilVisible(
+        saveButton,
+        160,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.ensureVisible(saveButton);
+      await tester.tap(saveButton);
       await tester.pumpAndSettle();
 
       expect(recorder.savedTemplates, hasLength(1));

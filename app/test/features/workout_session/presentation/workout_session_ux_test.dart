@@ -29,18 +29,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 class _NoopProgressionRepository implements ProgressionRepository {
   @override
   Future<Result<ExercisePerformanceHistory?, Failure>>
-      getLastExercisePerformance(String exerciseId) async =>
-          const Success(null);
+  getLastExercisePerformance(String exerciseId) async => const Success(null);
 
   @override
   Future<Result<List<ExercisePerformanceHistory>, Failure>>
-      getRecentExercisePerformances(String exerciseId, {int limit = 2}) async =>
-          const Success([]);
+  getRecentExercisePerformances(String exerciseId, {int limit = 2}) async =>
+      const Success([]);
 }
 
 class _RecordingSessionRepository implements SessionRepository {
   final List<({String sessionId, String exerciseId, int sortOrder})>
-      addedExercises = [];
+  addedExercises = [];
 
   @override
   Future<Result<void, Failure>> abandonSession(String sessionId) async =>
@@ -88,8 +87,7 @@ class _RecordingSessionRepository implements SessionRepository {
     int? executionScore,
     Mood? mood,
     String? notes,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<Result<WorkoutSession?, Failure>> getActiveSession() async =>
@@ -115,24 +113,21 @@ class _RecordingSessionRepository implements SessionRepository {
     String? notes,
     List<DropSetEntry> dropSets = const [],
     String? existingSetId,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<Result<WorkoutSession, Failure>> startSession({
     String? workoutId,
     String? workoutName,
     List<SessionExercise>? initialExercises,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<Result<SessionExercise, Failure>> swapSessionExercise({
     required String sessionExerciseId,
     required String newExerciseId,
     String? replacedExerciseId,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 }
 
 class _FakeExerciseListNotifier extends ExerciseListNotifier {
@@ -183,13 +178,16 @@ void main() {
         sharedPreferencesProvider.overrideWithValue(prefs),
         appClockProvider.overrideWithValue(() => fixedNow),
         isOnlineStreamProvider.overrideWith((_) => Stream.value(true)),
-        liveSessionDetailProvider(session.id)
-            .overrideWith((_) async => session),
-        progressionRepositoryProvider
-            .overrideWithValue(_NoopProgressionRepository()),
+        liveSessionDetailProvider(
+          session.id,
+        ).overrideWith((_) async => session),
+        progressionRepositoryProvider.overrideWithValue(
+          _NoopProgressionRepository(),
+        ),
         sessionRepositoryProvider.overrideWithValue(sessionRepo),
-        exerciseListStateProvider
-            .overrideWith((ref) => _FakeExerciseListNotifier(ref)),
+        exerciseListStateProvider.overrideWith(
+          (ref) => _FakeExerciseListNotifier(ref),
+        ),
         historyListProvider.overrideWith((_) async => const []),
       ],
       child: MediaQuery(
@@ -210,110 +208,114 @@ void main() {
 
   group('UX-01 Empty session inline exercise picker', () {
     testWidgets(
-        'tapping Adicionar Exercício opens SwapExerciseSheet and adds chosen exercise to session',
-        (tester) async {
-      final repo = _RecordingSessionRepository();
-      final emptySession = WorkoutSession(
-        id: 'sess-empty',
-        userId: 'u-1',
-        workoutId: 'w-1',
-        workoutName: 'Treino Livre',
-        startedAt: startedAt,
-        exercises: const [],
-      );
+      'tapping Adicionar Exercício opens SwapExerciseSheet and adds chosen exercise to session',
+      (tester) async {
+        final repo = _RecordingSessionRepository();
+        final emptySession = WorkoutSession(
+          id: 'sess-empty',
+          userId: 'u-1',
+          workoutId: 'w-1',
+          workoutName: 'Treino Livre',
+          startedAt: startedAt,
+          exercises: const [],
+        );
 
-      await tester.pumpWidget(
-        wrapScreen(session: emptySession, sessionRepo: repo),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+        await tester.pumpWidget(
+          wrapScreen(session: emptySession, sessionRepo: repo),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
 
-      final addButton = find.text('Adicionar Exercício');
-      expect(addButton, findsOneWidget);
+        final addButton = find.text('Adicionar Exercício');
+        expect(addButton, findsOneWidget);
 
-      await tester.tap(addButton);
-      await tester.pumpAndSettle();
+        await tester.tap(addButton);
+        await tester.pumpAndSettle();
 
-      expect(find.byType(SwapExerciseSheet), findsOneWidget);
-      expect(find.text('Adicionar exercício'), findsOneWidget);
-      expect(find.text('Catálogo de exercícios'), findsOneWidget);
-      expect(find.text('CATÁLOGO'), findsNothing);
+        expect(find.byType(SwapExerciseSheet), findsOneWidget);
+        expect(find.text('Adicionar exercício'), findsOneWidget);
+        expect(find.text('Catálogo de exercícios'), findsOneWidget);
+        expect(find.text('CATÁLOGO'), findsNothing);
 
-      await tester.tap(find.text('Supino Reto'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Supino Reto'));
+        await tester.pumpAndSettle();
 
-      expect(repo.addedExercises, hasLength(1));
-      expect(repo.addedExercises.single.sessionId, 'sess-empty');
-      expect(repo.addedExercises.single.exerciseId, 'ex-supino');
-      expect(repo.addedExercises.single.sortOrder, 0);
+        expect(repo.addedExercises, hasLength(1));
+        expect(repo.addedExercises.single.sessionId, 'sess-empty');
+        expect(repo.addedExercises.single.exerciseId, 'ex-supino');
+        expect(repo.addedExercises.single.sortOrder, 0);
 
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
   });
 
   group('UX-03 PopScope active session notice on back navigation', () {
     testWidgets(
-        'popping back from WorkoutSessionScreen shows active-session SnackBar',
-        (tester) async {
-      final repo = _RecordingSessionRepository();
-      final activeSession = WorkoutSession(
-        id: 'sess-active',
-        userId: 'u-1',
-        workoutId: 'w-1',
-        workoutName: 'Treino A',
-        startedAt: startedAt,
-        exercises: const [
-          SessionExercise(
-            id: 'se-1',
-            sessionId: 'sess-active',
-            exerciseId: 'ex-supino',
-            exercise: benchPress,
-            targetSetsCount: 1,
-          ),
-        ],
-      );
+      'popping back from WorkoutSessionScreen shows active-session SnackBar',
+      (tester) async {
+        final repo = _RecordingSessionRepository();
+        final activeSession = WorkoutSession(
+          id: 'sess-active',
+          userId: 'u-1',
+          workoutId: 'w-1',
+          workoutName: 'Treino A',
+          startedAt: startedAt,
+          exercises: const [
+            SessionExercise(
+              id: 'se-1',
+              sessionId: 'sess-active',
+              exerciseId: 'ex-supino',
+              exercise: benchPress,
+              targetSetsCount: 1,
+            ),
+          ],
+        );
 
-      await tester.pumpWidget(
-        wrapScreen(
-          session: activeSession,
-          sessionRepo: repo,
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) =>
-                          WorkoutSessionScreen(sessionId: activeSession.id),
-                    ),
-                  );
-                },
-                child: const Text('Ir para sessão'),
+        await tester.pumpWidget(
+          wrapScreen(
+            session: activeSession,
+            sessionRepo: repo,
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) =>
+                            WorkoutSessionScreen(sessionId: activeSession.id),
+                      ),
+                    );
+                  },
+                  child: const Text('Ir para sessão'),
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.text('Ir para sessão'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
-      await tester.pump(const Duration(milliseconds: 350));
+        await tester.tap(find.text('Ir para sessão'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump(const Duration(milliseconds: 350));
 
-      expect(find.byType(WorkoutSessionScreen), findsOneWidget);
+        expect(find.byType(WorkoutSessionScreen), findsOneWidget);
 
-      final sessionElement = tester.element(find.byType(WorkoutSessionScreen));
-      await Navigator.of(sessionElement).maybePop();
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+        final sessionElement = tester.element(
+          find.byType(WorkoutSessionScreen),
+        );
+        await Navigator.of(sessionElement).maybePop();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-      expect(
-        find.text('Treino continua ativo. Você pode retomá-lo em "Hoje".'),
-        findsOneWidget,
-      );
+        expect(
+          find.text('Treino continua ativo. Você pode retomá-lo em "Hoje".'),
+          findsOneWidget,
+        );
 
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
   });
 
   group('UX-06 Contextual bottom Finalizar treino CTA', () {
@@ -349,131 +351,146 @@ void main() {
 
     for (final textScale in [1.0, 1.3, 2.0]) {
       testWidgets(
-          'shows accessible bottom CTA when allCompleted == true at 320dp (${textScale}x) and opens FinishWorkoutModal',
-          (tester) async {
-        await tester.binding.setSurfaceSize(const Size(320, 812));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        'shows accessible bottom CTA when allCompleted == true at 320dp (${textScale}x) and opens FinishWorkoutModal',
+        (tester) async {
+          await tester.binding.setSurfaceSize(const Size(320, 812));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        final handle = tester.ensureSemantics();
-        try {
-          final repo = _RecordingSessionRepository();
-          final completedSession = WorkoutSession(
-            id: 'sess-done',
-            userId: 'u-1',
-            workoutId: 'w-1',
-            workoutName: 'Treino A',
-            startedAt: startedAt,
-            exercises: const [
-              SessionExercise(
-                id: 'se-1',
-                sessionId: 'sess-done',
-                exerciseId: 'ex-supino',
-                exercise: benchPress,
-                targetSetsCount: 1,
-                sets: [
-                  LoggedSet(
-                    id: 'ls-1',
-                    sessionExerciseId: 'se-1',
-                    setNumber: 1,
-                    weightKg: 80,
-                    repsCompleted: 10,
-                  ),
-                ],
+          final handle = tester.ensureSemantics();
+          try {
+            final repo = _RecordingSessionRepository();
+            final completedSession = WorkoutSession(
+              id: 'sess-done',
+              userId: 'u-1',
+              workoutId: 'w-1',
+              workoutName: 'Treino A',
+              startedAt: startedAt,
+              exercises: const [
+                SessionExercise(
+                  id: 'se-1',
+                  sessionId: 'sess-done',
+                  exerciseId: 'ex-supino',
+                  exercise: benchPress,
+                  targetSetsCount: 1,
+                  sets: [
+                    LoggedSet(
+                      id: 'ls-1',
+                      sessionExerciseId: 'se-1',
+                      setNumber: 1,
+                      weightKg: 80,
+                      repsCompleted: 10,
+                    ),
+                  ],
+                ),
+              ],
+            );
+
+            await tester.pumpWidget(
+              wrapScreen(
+                session: completedSession,
+                sessionRepo: repo,
+                width: 320,
+                textScale: textScale,
               ),
-            ],
-          );
+            );
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 100));
 
-          await tester.pumpWidget(
-            wrapScreen(
-              session: completedSession,
-              sessionRepo: repo,
-              width: 320,
-              textScale: textScale,
-            ),
-          );
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 100));
-
-          final ctaFinder = find.widgetWithText(AppButton, 'Finalizar treino');
-          expect(ctaFinder, findsOneWidget);
-          expect(find.text('Finalizar'), findsOneWidget);
-          expect(tester.getSize(ctaFinder).height, greaterThanOrEqualTo(48.0));
+            final ctaFinder = find.widgetWithText(
+              AppButton,
+              'Finalizar treino',
+            );
+            expect(ctaFinder, findsOneWidget);
+            if (textScale >= 2.0) {
+              expect(
+                find.bySemanticsLabel('Finalizar treino'),
+                findsAtLeastNWidgets(1),
+              );
+            } else {
+              expect(find.text('Finalizar'), findsOneWidget);
+            }
+            expect(
+              tester.getSize(ctaFinder).height,
+              greaterThanOrEqualTo(48.0),
+            );
           expect(tester.takeException(), isNull);
 
-          if (textScale == 1.0) {
-            await expectLater(
-              tester,
-              meetsGuideline(androidTapTargetGuideline),
-            );
-            await expectLater(
-              tester,
-              meetsGuideline(labeledTapTargetGuideline),
-            );
+            if (textScale == 1.0) {
+              await expectLater(
+                tester,
+                meetsGuideline(androidTapTargetGuideline),
+              );
+              await expectLater(
+                tester,
+                meetsGuideline(labeledTapTargetGuideline),
+              );
 
-            await tester.tap(ctaFinder);
-            await tester.pumpAndSettle();
+              await tester.tap(ctaFinder);
+              await tester.pumpAndSettle();
 
-            expect(find.byType(FinishWorkoutModal), findsOneWidget);
+              expect(find.byType(FinishWorkoutModal), findsOneWidget);
+            }
+          } finally {
+            handle.dispose();
           }
-        } finally {
-          handle.dispose();
-        }
 
-        await tester.pumpWidget(const SizedBox.shrink());
-      });
+          await tester.pumpWidget(const SizedBox.shrink());
+        },
+      );
     }
 
     testWidgets(
-        'respects bottom viewPadding of 34dp via SafeArea on Finalizar treino bar',
-        (tester) async {
-      await tester.binding.setSurfaceSize(const Size(375, 812));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      'respects bottom viewPadding of 34dp via SafeArea on Finalizar treino bar',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(375, 812));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      final repo = _RecordingSessionRepository();
-      final completedSession = WorkoutSession(
-        id: 'sess-done-safe',
-        userId: 'u-1',
-        workoutId: 'w-1',
-        workoutName: 'Treino A',
-        startedAt: startedAt,
-        exercises: const [
-          SessionExercise(
-            id: 'se-1',
-            sessionId: 'sess-done-safe',
-            exerciseId: 'ex-supino',
-            exercise: benchPress,
-            targetSetsCount: 1,
-            sets: [
-              LoggedSet(
-                id: 'ls-1',
-                sessionExerciseId: 'se-1',
-                setNumber: 1,
-                weightKg: 80,
-                repsCompleted: 10,
-              ),
-            ],
+        final repo = _RecordingSessionRepository();
+        final completedSession = WorkoutSession(
+          id: 'sess-done-safe',
+          userId: 'u-1',
+          workoutId: 'w-1',
+          workoutName: 'Treino A',
+          startedAt: startedAt,
+          exercises: const [
+            SessionExercise(
+              id: 'se-1',
+              sessionId: 'sess-done-safe',
+              exerciseId: 'ex-supino',
+              exercise: benchPress,
+              targetSetsCount: 1,
+              sets: [
+                LoggedSet(
+                  id: 'ls-1',
+                  sessionExerciseId: 'se-1',
+                  setNumber: 1,
+                  weightKg: 80,
+                  repsCompleted: 10,
+                ),
+              ],
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          wrapScreen(
+            session: completedSession,
+            sessionRepo: repo,
+            width: 375,
+            viewPadding: const EdgeInsets.only(bottom: 34),
           ),
-        ],
-      );
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-      await tester.pumpWidget(
-        wrapScreen(
-          session: completedSession,
-          sessionRepo: repo,
-          width: 375,
-          viewPadding: const EdgeInsets.only(bottom: 34),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+        final ctaFinder = find.widgetWithText(AppButton, 'Finalizar treino');
+        expect(ctaFinder, findsOneWidget);
+        final ctaRect = tester.getRect(ctaFinder);
+        expect(ctaRect.bottom, lessThanOrEqualTo(812.0 - 34.0 - 12.0));
+        expect(tester.takeException(), isNull);
 
-      final ctaFinder = find.widgetWithText(AppButton, 'Finalizar treino');
-      expect(ctaFinder, findsOneWidget);
-      final ctaRect = tester.getRect(ctaFinder);
-      expect(ctaRect.bottom, lessThanOrEqualTo(812.0 - 34.0 - 12.0));
-      expect(tester.takeException(), isNull);
-
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
   });
 }

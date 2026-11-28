@@ -65,8 +65,7 @@ class _FakeWeeklyRepo implements WeeklyComparisonRepository {
   Future<Result<WeeklyComparisonData, Failure>> getWeeklyComparison({
     DateTime? referenceDate,
     int historyWeeks = 8,
-  }) async =>
-      Success(data);
+  }) async => Success(data);
 
   @override
   Future<Result<CardioLog, Failure>> logStandaloneCardio({
@@ -74,8 +73,7 @@ class _FakeWeeklyRepo implements WeeklyComparisonRepository {
     required int durationSeconds,
     DateTime? performedAt,
     String? notes,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<Result<void, Failure>> deleteStandaloneCardio(String id) async {
@@ -86,8 +84,7 @@ class _FakeWeeklyRepo implements WeeklyComparisonRepository {
   @override
   Future<Result<WeeklySnapshot, Failure>> syncWeekSnapshot(
     DateTime referenceDate,
-  ) async =>
-      throw UnimplementedError();
+  ) async => throw UnimplementedError();
 }
 
 class _FakeProfileRemote implements ProfileRemoteDataSource {
@@ -122,8 +119,7 @@ class _FakeProfileRemote implements ProfileRemoteDataSource {
   Future<({String avatarUrl, String storagePath})> uploadAvatar(
     String filePath, {
     String? previousStoragePath,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 }
 
 class _FakeTrainingRepo implements TrainingRepository {
@@ -222,29 +218,25 @@ class _FakeTrainingRepo implements TrainingRepository {
     int sortOrder = 0,
     String? notes,
     List<SetTemplate>? initialSetTemplates,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<Result<List<SetTemplate>, Failure>> configureSetTemplates({
     required String workoutExerciseId,
     required List<SetTemplate> setTemplates,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<Result<void, Failure>> reorderWorkoutExercises({
     required String workoutId,
     required List<String> orderedWorkoutExerciseIds,
-  }) async =>
-      const Success(null);
+  }) async => const Success(null);
 
   @override
   Future<Result<void, Failure>> reorderPlanWorkouts({
     required String trainingPlanId,
     required List<String> orderedWorkoutIds,
-  }) async =>
-      const Success(null);
+  }) async => const Success(null);
 
   @override
   Future<Result<void, Failure>> deleteTrainingPlan(String planId) async {
@@ -263,8 +255,7 @@ class _FakeTrainingRepo implements TrainingRepository {
   @override
   Future<Result<void, Failure>> deleteWorkoutExercise(
     String workoutExerciseId,
-  ) async =>
-      const Success(null);
+  ) async => const Success(null);
 }
 
 class _MutableTrainingPlansNotifier extends TrainingPlansNotifier {
@@ -283,16 +274,12 @@ class _MutableTrainingPlansNotifier extends TrainingPlansNotifier {
     refreshCalls++;
     if (value.hasError && state.hasValue) {
       final err = value.error;
-      return err is Failure
-          ? err
-          : UnexpectedFailure('$err', value.stackTrace);
+      return err is Failure ? err : UnexpectedFailure('$err', value.stackTrace);
     }
     state = value;
     if (value.hasError) {
       final err = value.error;
-      return err is Failure
-          ? err
-          : UnexpectedFailure('$err', value.stackTrace);
+      return err is Failure ? err : UnexpectedFailure('$err', value.stackTrace);
     }
     return null;
   }
@@ -314,16 +301,12 @@ class _MutableExerciseListNotifier extends ExerciseListNotifier {
     refreshCalls++;
     if (value.hasError && state.hasValue) {
       final err = value.error;
-      return err is Failure
-          ? err
-          : UnexpectedFailure('$err', value.stackTrace);
+      return err is Failure ? err : UnexpectedFailure('$err', value.stackTrace);
     }
     state = value;
     if (value.hasError) {
       final err = value.error;
-      return err is Failure
-          ? err
-          : UnexpectedFailure('$err', value.stackTrace);
+      return err is Failure ? err : UnexpectedFailure('$err', value.stackTrace);
     }
     return null;
   }
@@ -354,10 +337,7 @@ void main() {
       cardioDurationSeconds: 1500,
     ),
     currentWeekDailyCardio: [
-      DailyCardioBreakdown(
-        day: DateTime(2026, 5, 14),
-        standaloneSeconds: 1500,
-      ),
+      DailyCardioBreakdown(day: DateTime(2026, 5, 14), standaloneSeconds: 1500),
     ],
     currentWeekStandaloneCardio: [cardioLog],
   );
@@ -423,13 +403,24 @@ void main() {
         );
         await tester.pumpAndSettle();
 
+        void requestDelete() {
+          final deleteIcon = find.byIcon(Icons.delete_outline_rounded);
+          tester
+              .widget<IconButton>(
+                find
+                    .ancestor(of: deleteIcon, matching: find.byType(IconButton))
+                    .first,
+              )
+              .onPressed!
+              .call();
+        }
+
         // Bottom CTA replaces AppBar action
         expect(find.text('Registrar cardio'), findsOneWidget);
         expect(find.text('Cardio'), findsNothing);
 
         // Cancel confirmation skips repository call
-        await tester.ensureVisible(find.byIcon(Icons.delete_outline_rounded));
-        await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+        requestDelete();
         await tester.pumpAndSettle();
         expect(find.text('Remover cardio?'), findsOneWidget);
         await tester.tap(find.text('Cancelar'));
@@ -437,7 +428,7 @@ void main() {
         expect(repo.deletedIds, isEmpty);
 
         // Confirm with Err shows error SnackBar and NOT success message
-        await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+        requestDelete();
         await tester.pumpAndSettle();
         await tester.tap(find.text('Remover'));
         await tester.pumpAndSettle();
@@ -447,7 +438,7 @@ void main() {
 
         // Confirm with Success shows success SnackBar
         repo.deleteResult = const Success(null);
-        await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+        requestDelete();
         await tester.pumpAndSettle();
         await tester.tap(find.text('Remover'));
         await tester.pumpAndSettle();
@@ -476,7 +467,9 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        container.read(userSettingsProvider.notifier).updateProfileIdentity(
+        container
+            .read(userSettingsProvider.notifier)
+            .updateProfileIdentity(
               avatarUrl: 'local/avatar.png',
               avatarStoragePath: 'u-1/avatar.png',
             );
@@ -505,14 +498,20 @@ void main() {
         await tester.tap(find.text('Cancelar'));
         await tester.pumpAndSettle();
         expect(remote.removeCalls, 0);
-        expect(container.read(userSettingsProvider).avatarUrl, 'local/avatar.png');
+        expect(
+          container.read(userSettingsProvider).avatarUrl,
+          'local/avatar.png',
+        );
 
         // Failure rolls back avatar and never shows success copy
         await openRemoveMenu();
         await tester.tap(find.text('Remover'));
         await tester.pumpAndSettle();
         expect(remote.removeCalls, 1);
-        expect(container.read(userSettingsProvider).avatarUrl, 'local/avatar.png');
+        expect(
+          container.read(userSettingsProvider).avatarUrl,
+          'local/avatar.png',
+        );
         expect(find.text('Foto removida.'), findsNothing);
         expect(find.byType(SnackBar), findsOneWidget);
 
@@ -610,8 +609,9 @@ void main() {
 
         // Even with stale mirror values still present, UI source returns null.
         expect(userProfilesMirror['avatar_url'], isNotNull);
-        final resolved =
-            SupabaseProfileRemoteDataSource.resolveAvatarMetadata(authMeta);
+        final resolved = SupabaseProfileRemoteDataSource.resolveAvatarMetadata(
+          authMeta,
+        );
         expect(resolved.avatarUrl, isNull);
         expect(resolved.storagePath, isNull);
       },
@@ -623,11 +623,8 @@ void main() {
         final previousLogger = appErrorLogger;
         addTearDown(() => appErrorLogger = previousLogger);
 
-        final logged = <({
-          Object error,
-          StackTrace? stackTrace,
-          String? context,
-        })>[];
+        final logged =
+            <({Object error, StackTrace? stackTrace, String? context})>[];
         appErrorLogger = (error, {stackTrace, context}) {
           logged.add((error: error, stackTrace: stackTrace, context: context));
         };
@@ -635,9 +632,8 @@ void main() {
         var authUpdated = false;
         await SupabaseProfileRemoteDataSource.saveProfileOrdered(
           updateAuthDisplayName: () async => authUpdated = true,
-          upsertProfileRow: () async => throw Exception(
-            'PGRST204: Could not find the height_cm column',
-          ),
+          upsertProfileRow: () async =>
+              throw Exception('PGRST204: Could not find the height_cm column'),
         );
 
         expect(authUpdated, isTrue);
@@ -671,34 +667,36 @@ void main() {
 
         final fullPayload =
             SupabaseProfileRemoteDataSource.buildSaveProfilePayload(
-          userId: 'user-123',
-          displayName: 'Lucas',
-          biologicalSex: 'male',
-          age: 28,
-          heightCm: 178,
-          weightKg: 78.4,
-          bodyFatPercent: 14.5,
-          goal: 'bulking',
-          experience: 'intermediate',
-          activityLevel: 'moderatelyActive',
-          updatedAt: fixedTime,
-        );
+              userId: 'user-123',
+              displayName: 'Lucas',
+              biologicalSex: 'male',
+              age: 28,
+              heightCm: 178,
+              weightKg: 78.4,
+              bodyFatPercent: 14.5,
+              goal: 'bulking',
+              experience: 'intermediate',
+              activityLevel: 'moderatelyActive',
+              updatedAt: fixedTime,
+            );
         expect(fullPayload.keys.toSet(), expectedProductionColumns);
         expect(fullPayload['height_cm'], 178);
         expect(fullPayload['updated_at'], fixedTime.toIso8601String());
 
         final partialPayload =
             SupabaseProfileRemoteDataSource.buildSaveProfilePayload(
-          userId: 'user-123',
-          heightCm: 178,
-          weightKg: 78.4,
-          updatedAt: fixedTime,
-        );
+              userId: 'user-123',
+              heightCm: 178,
+              weightKg: 78.4,
+              updatedAt: fixedTime,
+            );
         expect(partialPayload.containsKey('display_name'), isFalse);
-        expect(
-          partialPayload.keys.toSet(),
-          {'id', 'height_cm', 'weight_kg', 'updated_at'},
-        );
+        expect(partialPayload.keys.toSet(), {
+          'id',
+          'height_cm',
+          'weight_kg',
+          'updated_at',
+        });
       },
     );
 
@@ -712,8 +710,10 @@ void main() {
           ProviderScope(
             overrides: [
               sharedPreferencesProvider.overrideWithValue(prefs),
-              workoutDetailProvider((planId: 'plan-1', workoutId: 'w-1'))
-                  .overrideWith((_) async => sampleWorkout),
+              workoutDetailProvider((
+                planId: 'plan-1',
+                workoutId: 'w-1',
+              )).overrideWith((_) async => sampleWorkout),
             ],
             child: MaterialApp(
               theme: AppTheme.dark(),
@@ -959,14 +959,20 @@ void main() {
             overrides: [
               sharedPreferencesProvider.overrideWithValue(prefs),
               appClockProvider.overrideWithValue(() => fixedNow),
-              currentWeekSummaryProvider.overrideWith((_) async => populatedWeek),
+              currentWeekSummaryProvider.overrideWith(
+                (_) async => populatedWeek,
+              ),
               historyListProvider.overrideWith((_) {
                 fetchCount++;
                 if (fetchCount == 1) return Future.value(const []);
                 return secondFetch.future;
               }),
-              weightHistoryProvider.overrideWith((_) async => const <WeightEntry>[]),
-              weightStatsProvider.overrideWith((_) async => const WeightStats()),
+              weightHistoryProvider.overrideWith(
+                (_) async => const <WeightEntry>[],
+              ),
+              weightStatsProvider.overrideWith(
+                (_) async => const WeightStats(),
+              ),
             ],
             child: MaterialApp(
               theme: AppTheme.dark(),
@@ -976,8 +982,9 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final refreshState =
-            tester.state<RefreshIndicatorState>(find.byType(RefreshIndicator));
+        final refreshState = tester.state<RefreshIndicatorState>(
+          find.byType(RefreshIndicator),
+        );
         var refreshDone = false;
         unawaited(refreshState.show().then((_) => refreshDone = true));
         for (var i = 0; i < 6; i++) {
@@ -997,9 +1004,12 @@ void main() {
             key: UniqueKey(),
             overrides: [
               sharedPreferencesProvider.overrideWithValue(prefs),
-              currentWeekSummaryProvider.overrideWith((_) async => populatedWeek),
-              dashboardDataProvider
-                  .overrideWith((_) => Future<DashboardData>.error(Exception('fail'))),
+              currentWeekSummaryProvider.overrideWith(
+                (_) async => populatedWeek,
+              ),
+              dashboardDataProvider.overrideWith(
+                (_) => Future<DashboardData>.error(Exception('fail')),
+              ),
             ],
             child: MaterialApp(
               theme: AppTheme.dark(),
@@ -1042,7 +1052,10 @@ void main() {
           isA<AlwaysScrollableScrollPhysics>(),
         );
 
-        plansNotifier.state = AsyncValue.error(Exception('fail'), StackTrace.current);
+        plansNotifier.state = AsyncValue.error(
+          Exception('fail'),
+          StackTrace.current,
+        );
         await tester.pumpAndSettle();
         expect(find.byType(RefreshIndicator), findsOneWidget);
 
@@ -1089,7 +1102,10 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byType(RefreshIndicator), findsOneWidget);
 
-        exNotifier.state = AsyncValue.error(Exception('fail'), StackTrace.current);
+        exNotifier.state = AsyncValue.error(
+          Exception('fail'),
+          StackTrace.current,
+        );
         await tester.pumpAndSettle();
         expect(find.byType(RefreshIndicator), findsOneWidget);
       },
@@ -1130,20 +1146,25 @@ void main() {
           primaryMuscleGroup: 'quadriceps',
         );
 
-        final ombrosOption = MuscleFilterChips.muscleOptions
-            .firstWhere((o) => o['label'] == 'Ombros');
+        final ombrosOption = MuscleFilterChips.muscleOptions.firstWhere(
+          (o) => o['label'] == 'Ombros',
+        );
         expect(ombrosOption['key'], 'shoulders');
 
-        final shoulderMatched = filterExercises(
-          const [shoulderMain, antDelt, latDelt, postDelt, secondaryDelt, legs],
-          selectedMuscle: 'shoulders',
-        );
+        final shoulderMatched = filterExercises(const [
+          shoulderMain,
+          antDelt,
+          latDelt,
+          postDelt,
+          secondaryDelt,
+          legs,
+        ], selectedMuscle: 'shoulders');
         expect(shoulderMatched.map((e) => e.id).toList(), ['1', '2', '3', '4']);
 
-        final tricepsMatched = filterExercises(
-          const [secondaryDelt, legs],
-          selectedMuscle: 'triceps',
-        );
+        final tricepsMatched = filterExercises(const [
+          secondaryDelt,
+          legs,
+        ], selectedMuscle: 'triceps');
         expect(tricepsMatched, isEmpty);
       },
     );
@@ -1155,11 +1176,7 @@ void main() {
         final prefs = await SharedPreferences.getInstance();
 
         const exercises = [
-          Exercise(
-            id: 'e1',
-            name: 'Supino Reto',
-            primaryMuscleGroup: 'chest',
-          ),
+          Exercise(id: 'e1', name: 'Supino Reto', primaryMuscleGroup: 'chest'),
           Exercise(
             id: 'e2',
             name: 'Elevação Lateral',
@@ -1243,8 +1260,20 @@ void main() {
 
         await tester.enterText(find.byType(TextField), 'inexistente');
         await tester.pumpAndSettle();
-        expect(find.text('Limpar busca'), findsOneWidget);
-        await tester.tap(find.text('Limpar busca'));
+        expect(find.byTooltip('Limpar busca'), findsOneWidget);
+        tester.testTextInput.hide();
+        await tester.pumpAndSettle();
+        tester
+            .widget<IconButton>(
+              find
+                  .ancestor(
+                    of: find.byIcon(Icons.clear_rounded),
+                    matching: find.byType(IconButton),
+                  )
+                  .first,
+            )
+            .onPressed!
+            .call();
         await tester.pumpAndSettle();
         expect(find.text('Supino Reto'), findsOneWidget);
 
@@ -1297,7 +1326,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Elevação Lateral'), findsOneWidget);
 
-        // 3. ProgressExercisesView Limpar busca
+        // 3. ProgressExercisesView uses status filters instead of text search
         await tester.pumpWidget(
           UncontrolledProviderScope(
             container: container,
@@ -1310,11 +1339,9 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        await tester.enterText(find.byType(TextField), 'inexistente');
-        await tester.pumpAndSettle();
-        expect(find.text('Limpar busca'), findsOneWidget);
-        await tester.tap(find.text('Limpar busca'));
-        await tester.pumpAndSettle();
+        expect(find.byType(TextField), findsNothing);
+        expect(find.text('Todos'), findsOneWidget);
+        expect(find.textContaining('Subindo'), findsOneWidget);
         expect(find.text('Supino Reto'), findsOneWidget);
       },
     );
@@ -1346,7 +1373,9 @@ void main() {
               sharedPreferencesProvider.overrideWithValue(prefs),
               appClockProvider.overrideWithValue(() => fixedNow),
               isOnlineStreamProvider.overrideWith((_) => Stream.value(true)),
-              currentWeekSummaryProvider.overrideWith((_) async => populatedWeek),
+              currentWeekSummaryProvider.overrideWith(
+                (_) async => populatedWeek,
+              ),
               fitnessInsightsProvider.overrideWith((_) async => const []),
               dashboardDataProvider.overrideWith((_) async {
                 fetchCount++;
@@ -1510,9 +1539,7 @@ void main() {
           MaterialApp(
             theme: AppTheme.dark(),
             home: Scaffold(
-              body: OfflineBannerWidget(
-                onDismiss: () => dismissed = true,
-              ),
+              body: OfflineBannerWidget(onDismiss: () => dismissed = true),
             ),
           ),
         );

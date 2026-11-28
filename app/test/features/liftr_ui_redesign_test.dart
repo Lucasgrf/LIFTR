@@ -24,8 +24,6 @@ import 'package:personal_fitness_os/features/exercise_library/domain/entities/ex
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
 import 'package:personal_fitness_os/features/history/presentation/providers/history_providers.dart';
 import 'package:personal_fitness_os/features/history/presentation/screens/history_screen.dart';
-import 'package:personal_fitness_os/features/insights/domain/entities/fitness_insight.dart';
-import 'package:personal_fitness_os/features/insights/presentation/providers/insight_providers.dart';
 import 'package:personal_fitness_os/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:personal_fitness_os/features/profile/presentation/screens/profile_screen.dart';
 import 'package:personal_fitness_os/features/progression/domain/entities/exercise_performance_history.dart';
@@ -532,37 +530,17 @@ void main() {
 
   group('DashboardScreen (Hoje)', () {
     testWidgets(
-      'renders Hero Card, today exercises, max 1 insight, and excludes nutrition/goals',
+      'renders the current ficha, queue controls, and no legacy insight',
       (tester) async {
         final dashboardData = DashboardData(
           activePlan: tPlan,
           todayWorkout: tLowerA,
         );
-        final insights = [
-          FitnessInsight(
-            id: 'in-1',
-            title: 'Agachamento pronto para subir',
-            description: 'Complete 3x12 hoje para liberar 62,5 kg.',
-            category: InsightCategory.consistency,
-            severity: InsightSeverity.success,
-            createdAt: DateTime(2026, 11, 20),
-          ),
-          FitnessInsight(
-            id: 'in-2',
-            title: 'Segundo insight oculto',
-            description: 'Não deve aparecer.',
-            category: InsightCategory.volume,
-            severity: InsightSeverity.info,
-            createdAt: DateTime(2026, 11, 20),
-          ),
-        ];
-
         await tester.pumpWidget(
           wrapApp(
             const DashboardScreen(),
             overrides: [
               dashboardDataProvider.overrideWith((_) async => dashboardData),
-              fitnessInsightsProvider.overrideWith((_) async => insights),
               progressionRepositoryProvider.overrideWithValue(
                 _FakeProgressionRepository(),
               ),
@@ -571,16 +549,16 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Hoje'), findsOneWidget);
+        expect(find.text('Hoje'), findsNothing);
         expect(find.text('Lower A'), findsOneWidget);
-        expect(find.text('FICHA 1 DE 2 · PRÓXIMA'), findsOneWidget);
-        expect(find.text('Pular / Trocar'), findsOneWidget);
+        expect(find.textContaining('Ficha 1 de 2'), findsOneWidget);
+        expect(find.text('próxima da fila'), findsOneWidget);
+        expect(find.text('Trocar treino'), findsOneWidget);
         expect(find.text('Começar Lower A'), findsOneWidget);
-        expect(find.text('Exercícios de hoje'), findsOneWidget);
         expect(find.text('Agachamento Livre'), findsOneWidget);
         expect(
           find.textContaining('Agachamento pronto para subir'),
-          findsOneWidget,
+          findsNothing,
         );
         expect(find.textContaining('Segundo insight oculto'), findsNothing);
 
@@ -589,9 +567,9 @@ void main() {
         expect(find.text('Consistência Semanal'), findsNothing);
 
         // Test skipping current workout in rotating queue
-        await tester.tap(find.text('Pular / Trocar'));
+        await tester.tap(find.text('Trocar treino'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Pular treino atual'));
+        await tester.tap(find.text('Pular Lower A'));
         await tester.pumpAndSettle();
         expect(find.text('Upper B'), findsOneWidget);
       },
@@ -676,14 +654,14 @@ void main() {
         // Tap check button to start Rest Timer (-15s, +15s, Pular)
         await tester.tap(find.byIcon(Icons.check_rounded).first);
         await tester.pump();
-        expect(find.text('DESCANSO'), findsOneWidget);
+        expect(find.text('Descanso'), findsOneWidget);
         expect(find.text('-15s'), findsOneWidget);
         expect(find.text('+15s'), findsOneWidget);
         expect(find.text('Pular'), findsOneWidget);
 
         await tester.tap(find.text('Pular'));
         await tester.pumpAndSettle();
-        expect(find.text('DESCANSO'), findsNothing);
+        expect(find.text('Descanso'), findsNothing);
       });
     }
   });
@@ -699,6 +677,9 @@ void main() {
             liveSessionDetailProvider(
               'sess-1',
             ).overrideWith((_) async => tActiveSession),
+            trainingPlansStateProvider.overrideWith(
+              (ref) => _FakeTrainingPlansNotifier(ref, [tPlan]),
+            ),
             progressionRepositoryProvider.overrideWithValue(
               _FakeProgressionRepository(),
             ),
@@ -708,30 +689,17 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Treino concluído'), findsOneWidget);
-      expect(find.text('Duração'), findsOneWidget);
-      expect(find.text('Séries'), findsOneWidget);
-      expect(find.text('Volume'), findsOneWidget);
-      expect(find.text('Subidas de carga desbloqueadas'), findsOneWidget);
+      expect(find.text('FEITO'), findsOneWidget);
+      expect(find.textContaining('séries.'), findsOneWidget);
+      expect(find.textContaining('kg no total.'), findsOneWidget);
       expect(find.text('Agachamento Livre'), findsWidgets);
-      expect(find.text('+2,5 kg'), findsOneWidget);
-      await tester.scrollUntilVisible(
-        find.text('Resumo enviado para o WhatsApp quando sincronizado'),
-        200,
-        scrollable: find.byType(Scrollable).first,
-      );
-      expect(
-        find.text('Resumo enviado para o WhatsApp quando sincronizado'),
-        findsOneWidget,
-      );
-      expect(find.text('Voltar para Hoje'), findsOneWidget);
+      expect(find.textContaining('Sem internet.'), findsOneWidget);
+      expect(find.text('Subidas de carga desbloqueadas'), findsNothing);
     });
   });
 
   group('TrainingListScreen (Treino)', () {
-    testWidgets('renders rotating queue, weekly muscle volume and switch sheet', (
-      tester,
-    ) async {
+    testWidgets('renders the editorial deck and switch sheet', (tester) async {
       await tester.pumpWidget(
         wrapApp(
           const TrainingListScreen(),
@@ -746,12 +714,11 @@ void main() {
 
       expect(find.text('Treino'), findsOneWidget);
       expect(find.text('Trocar programa'), findsOneWidget);
-      expect(find.text('Próximo'), findsOneWidget);
+      expect(find.text('O baralho'), findsOneWidget);
+      expect(find.textContaining('Próxima.'), findsOneWidget);
       expect(find.text('Lower A'), findsOneWidget);
       expect(find.text('Upper B'), findsOneWidget);
-      expect(find.text('Volume semanal'), findsOneWidget);
-      expect(find.text('Peito'), findsOneWidget);
-      expect(find.text('Pernas'), findsOneWidget);
+      expect(find.text('Volume semanal'), findsNothing);
 
       await tester.tap(find.text('Trocar programa'));
       await tester.pumpAndSettle();
@@ -791,6 +758,9 @@ void main() {
           const HistoryScreen(),
           overrides: [
             historyListProvider.overrideWith((_) async => [completedSession]),
+            trainingPlansStateProvider.overrideWith(
+              (ref) => _FakeTrainingPlansNotifier(ref, [tPlan]),
+            ),
             weightHistoryProvider.overrideWith((_) async => weights),
             weightStatsProvider.overrideWith(
               (_) async => const WeightStats(deltaVsPreviousWeekKg: 0.25),
@@ -805,18 +775,21 @@ void main() {
       expect(find.text('Peso'), findsOneWidget);
       expect(find.text('Consistência'), findsOneWidget);
       expect(find.text('Agachamento Livre'), findsOneWidget);
-      expect(find.text('Subindo'), findsOneWidget);
+      expect(find.textContaining('Subindo,'), findsOneWidget);
 
       await tester.tap(find.text('Peso'));
       await tester.pumpAndSettle();
-      expect(find.text('Tendência EMA atual'), findsOneWidget);
-      expect(find.text('30D'), findsOneWidget);
-      expect(find.text('90D'), findsOneWidget);
+      expect(find.text('Seu peso ao longo do tempo'), findsOneWidget);
+      expect(find.text('30 dias'), findsOneWidget);
+      expect(find.text('90 dias'), findsOneWidget);
 
       await tester.tap(find.text('Consistência'));
       await tester.pumpAndSettle();
       expect(find.textContaining('esta semana,'), findsOneWidget);
-      expect(find.textContaining(' em '), findsOneWidget);
+      expect(
+        find.textContaining('O baralho deu a volta completa'),
+        findsOneWidget,
+      );
     });
   });
 
@@ -890,18 +863,21 @@ void main() {
             liveSessionDetailProvider(
               'sess-1',
             ).overrideWith((_) async => tActiveSession),
+            trainingPlansStateProvider.overrideWith(
+              (ref) => _FakeTrainingPlansNotifier(ref, [tPlan]),
+            ),
             isOnlineStreamProvider.overrideWith((_) => Stream.value(true)),
           ],
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Treino concluído'), findsOneWidget);
+      expect(find.text('FEITO'), findsOneWidget);
       await tester.scrollUntilVisible(
-        find.text('Sincronizado com o WhatsApp'),
+        find.text('Sincronizado.'),
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      expect(find.text('Sincronizado com o WhatsApp'), findsOneWidget);
+      expect(find.text('Sincronizado.'), findsOneWidget);
     });
   });
 }

@@ -88,48 +88,47 @@ void main() {
       }
     });
 
-    testWidgets('LiftrListGroup header renders in sentence case (not 1.2 tracked eyebrow)',
-        (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.dark(),
-          home: const Scaffold(
-            body: LiftrListGroup(
-              header: 'Dados corporais e objetivo',
-              children: [
-                LiftrListRow(label: 'Peso', value: '80 kg'),
-              ],
+    testWidgets(
+      'LiftrListGroup header renders in sentence case (not 1.2 tracked eyebrow)',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.dark(),
+            home: const Scaffold(
+              body: LiftrListGroup(
+                header: 'Dados corporais e objetivo',
+                children: [LiftrListRow(label: 'Peso', value: '80 kg')],
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final headerFinder = find.text('Dados corporais e objetivo');
-      expect(headerFinder, findsOneWidget);
-      final textWidget = tester.widget<Text>(headerFinder);
-      expect(textWidget.style?.letterSpacing, isNot(1.2));
-    });
+        final headerFinder = find.text('Dados corporais e objetivo');
+        expect(headerFinder, findsOneWidget);
+        final textWidget = tester.widget<Text>(headerFinder);
+        expect(textWidget.style?.letterSpacing, isNot(1.2));
+      },
+    );
 
     testWidgets(
-        'LiftrEyebrow transforms sentence-case copy to tracked uppercase',
-        (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.dark(),
-          home: const Scaffold(
-            body: LiftrEyebrow('Compartilhar programa'),
+      'LiftrEyebrow preserves sentence-case copy and HTML type scale',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.dark(),
+            home: const Scaffold(body: LiftrEyebrow('Compartilhar programa')),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final rendered = find.text('COMPARTILHAR PROGRAMA');
-      expect(rendered, findsOneWidget);
-      final widget = tester.widget<Text>(rendered);
-      expect(widget.style?.fontSize, 11);
-      expect(widget.style?.letterSpacing, 1.2);
-    });
+        final rendered = find.text('Compartilhar programa');
+        expect(rendered, findsOneWidget);
+        final widget = tester.widget<Text>(rendered);
+        expect(widget.style?.fontSize, 13);
+        expect(widget.style?.letterSpacing, 0);
+      },
+    );
   });
 
   group('Phase 8 — COPY-01 PT-BR mappers, pluralization & vendor-free copy', () {
@@ -148,167 +147,189 @@ void main() {
       expect(formatWeightKgPtBr(12.25, decimals: 2), '12,25 kg');
     });
 
-    test('PT-BR enum mappers translate movement patterns, equipment and sex', () {
-      expect(
-        formatMovementPatternPtBr('horizontal_push'),
-        'Empurrar horizontal',
-      );
-      expect(formatMovementPatternPtBr('hinge'), 'Dobradiça de quadril');
-      expect(formatMovementPatternPtBr('vertical_pull'), 'Puxar vertical');
-      expect(formatMovementPatternPtBr(null), 'Não informado');
+    test(
+      'PT-BR enum mappers translate movement patterns, equipment and sex',
+      () {
+        expect(
+          formatMovementPatternPtBr('horizontal_push'),
+          'Empurrar horizontal',
+        );
+        expect(formatMovementPatternPtBr('hinge'), 'Dobradiça de quadril');
+        expect(formatMovementPatternPtBr('vertical_pull'), 'Puxar vertical');
+        expect(formatMovementPatternPtBr(null), 'Não informado');
 
-      expect(formatEquipmentPtBr('barbell'), 'Barra');
-      expect(formatEquipmentPtBr('dumbbell'), 'Halteres');
-      expect(formatEquipmentPtBr('cable'), 'Polia');
-      expect(formatEquipmentPtBr('bodyweight'), 'Peso corporal');
-      expect(formatEquipmentPtBr('ez_bar'), 'Barra W');
-      expect(formatEquipmentPtBr(null), '');
+        expect(formatEquipmentPtBr('barbell'), 'Barra');
+        expect(formatEquipmentPtBr('dumbbell'), 'Halteres');
+        expect(formatEquipmentPtBr('cable'), 'Polia');
+        expect(formatEquipmentPtBr('bodyweight'), 'Peso corporal');
+        expect(formatEquipmentPtBr('ez_bar'), 'Barra W');
+        expect(formatEquipmentPtBr(null), '');
 
-      expect(formatBiologicalSexPtBr('M'), 'Masculino');
-      expect(formatBiologicalSexPtBr('F'), 'Feminino');
-      expect(formatBiologicalSexPtBr(null), 'Não informado');
-    });
+        expect(formatBiologicalSexPtBr('M'), 'Masculino');
+        expect(formatBiologicalSexPtBr('F'), 'Feminino');
+        expect(formatBiologicalSexPtBr(null), 'Não informado');
+      },
+    );
 
-    test('forbids vendor names, mocked phone, and PT-BR typos in feature UI/datasource code', () {
-      final featuresDir = Directory('${_resolveLibDir().path}/features');
-      const forbiddenLiterals = <String>[
-        'Gemini',
-        'GitHub Releases',
-        'Deltóide',
-        'Clique ',
-        'CSV / JSON',
-        '+55 (11) 9****-4821',
-      ];
+    test(
+      'forbids vendor names, mocked phone, and PT-BR typos in feature UI/datasource code',
+      () {
+        final featuresDir = Directory('${_resolveLibDir().path}/features');
+        const forbiddenLiterals = <String>[
+          'Gemini',
+          'GitHub Releases',
+          'Deltóide',
+          'Clique ',
+          'CSV / JSON',
+          '+55 (11) 9****-4821',
+        ];
 
-      for (final file in _dartFilesIn(featuresDir)) {
-        final codeLines = file
-            .readAsLinesSync()
-            .where((line) => !line.trimLeft().startsWith('//'))
-            .join('\n');
-        for (final term in forbiddenLiterals) {
-          expect(
-            codeLines.contains(term),
-            isFalse,
-            reason: 'Found forbidden copy "$term" in ${file.path}',
-          );
+        for (final file in _dartFilesIn(featuresDir)) {
+          final codeLines = file
+              .readAsLinesSync()
+              .where((line) => !line.trimLeft().startsWith('//'))
+              .join('\n');
+          for (final term in forbiddenLiterals) {
+            expect(
+              codeLines.contains(term),
+              isFalse,
+              reason: 'Found forbidden copy "$term" in ${file.path}',
+            );
+          }
         }
-      }
-    });
+      },
+    );
   });
 
-  group('Phase 8 — PERF-02 Async images, cached DateFormat, and derived list state', () {
-    test('presentation files avoid existsSync() and inline DateFormat() in build', () {
-      final featuresDir = Directory('${_resolveLibDir().path}/features');
-      final presentationFiles = _dartFilesIn(featuresDir)
-          .where((f) => f.path.contains('${Platform.pathSeparator}presentation${Platform.pathSeparator}'))
-          .toList();
+  group(
+    'Phase 8 — PERF-02 Async images, cached DateFormat, and derived list state',
+    () {
+      test(
+        'presentation files avoid existsSync() and inline DateFormat() in build',
+        () {
+          final featuresDir = Directory('${_resolveLibDir().path}/features');
+          final presentationFiles = _dartFilesIn(featuresDir)
+              .where(
+                (f) => f.path.contains(
+                  '${Platform.pathSeparator}presentation${Platform.pathSeparator}',
+                ),
+              )
+              .toList();
 
-      expect(presentationFiles, isNotEmpty);
-      final inlineDateFormatRegex = RegExp(r'\bDateFormat\s*\(');
-      for (final file in presentationFiles) {
-        final content = file.readAsStringSync();
-        expect(
-          content.contains('existsSync('),
-          isFalse,
-          reason: 'Found synchronous existsSync() in ${file.path}',
-        );
-        expect(
-          inlineDateFormatRegex.hasMatch(content),
-          isFalse,
-          reason: 'Found inline DateFormat() in ${file.path}',
-        );
-      }
+          expect(presentationFiles, isNotEmpty);
+          final inlineDateFormatRegex = RegExp(r'\bDateFormat\s*\(');
+          for (final file in presentationFiles) {
+            final content = file.readAsStringSync();
+            expect(
+              content.contains('existsSync('),
+              isFalse,
+              reason: 'Found synchronous existsSync() in ${file.path}',
+            );
+            expect(
+              inlineDateFormatRegex.hasMatch(content),
+              isFalse,
+              reason: 'Found inline DateFormat() in ${file.path}',
+            );
+          }
 
-      for (final screenName in <String>[
-        'profile/presentation/screens/profile_screen.dart',
-        'dashboard/presentation/screens/dashboard_screen.dart',
-      ]) {
-        final avatarFile = File('${featuresDir.path}/$screenName');
-        final content = avatarFile.readAsStringSync();
-        expect(content, contains('memCacheWidth:'));
-        expect(content, contains('memCacheHeight:'));
-      }
-    });
+          for (final screenName in <String>[
+            'profile/presentation/screens/profile_screen.dart',
+            'dashboard/presentation/screens/dashboard_screen.dart',
+          ]) {
+            final avatarFile = File('${featuresDir.path}/$screenName');
+            final content = avatarFile.readAsStringSync();
+            expect(content, contains('memCacheWidth:'));
+            expect(content, contains('memCacheHeight:'));
+          }
+        },
+      );
 
-    test('ptBrDateFormat returns a single cached instance per pattern', () {
-      final first = ptBrDateFormat('dd/MM');
-      final second = ptBrDateFormat('dd/MM');
-      expect(identical(first, second), isTrue);
-      expect(first.format(DateTime(2026, 11, 20)), '20/11');
-    });
-
-    testWidgets(
-        'ProgressExercisesView filters via search without recomputing history/aggregation',
-        (tester) async {
-      final now = DateTime(2026, 11, 20, 10);
-      final exercises = List<SessionExercise>.generate(6, (idx) {
-        final name = idx == 0 ? 'Supino Reto' : 'Exercício Teste ${idx + 1}';
-        return SessionExercise(
-          id: 'se-$idx',
-          sessionId: 'sess-1',
-          exerciseId: 'ex-$idx',
-          sortOrder: idx,
-          exercise: Exercise(
-            id: 'ex-$idx',
-            name: name,
-            primaryMuscleGroup: 'chest',
-          ),
-          sets: [
-            LoggedSet(
-              id: 'set-$idx',
-              sessionExerciseId: 'se-$idx',
-              setNumber: 1,
-              setType: SetType.working,
-              weightKg: 60.0 + idx * 5,
-              repsCompleted: 10,
-              completedAt: now,
-            ),
-          ],
-        );
+      test('ptBrDateFormat returns a single cached instance per pattern', () {
+        final first = ptBrDateFormat('dd/MM');
+        final second = ptBrDateFormat('dd/MM');
+        expect(identical(first, second), isTrue);
+        expect(first.format(DateTime(2026, 11, 20)), '20/11');
       });
 
-      final session = WorkoutSession(
-        id: 'sess-1',
-        userId: 'u-1',
-        workoutName: 'Full Body',
-        startedAt: now.subtract(const Duration(hours: 1)),
-        completedAt: now,
-        durationSeconds: 3600,
-        status: SessionStatus.completed,
-        exercises: exercises,
-      );
+      testWidgets(
+        'ProgressExercisesView filters with the HTML chips without refetching history',
+        (tester) async {
+          final now = DateTime(2026, 11, 20, 10);
+          final exercises = List<SessionExercise>.generate(6, (idx) {
+            final name = idx == 0
+                ? 'Supino Reto'
+                : 'Exercício Teste ${idx + 1}';
+            return SessionExercise(
+              id: 'se-$idx',
+              sessionId: 'sess-1',
+              exerciseId: 'ex-$idx',
+              sortOrder: idx,
+              exercise: Exercise(
+                id: 'ex-$idx',
+                name: name,
+                primaryMuscleGroup: 'chest',
+              ),
+              sets: [
+                LoggedSet(
+                  id: 'set-$idx',
+                  sessionExerciseId: 'se-$idx',
+                  setNumber: 1,
+                  setType: SetType.working,
+                  weightKg: 60.0 + idx * 5,
+                  repsCompleted: 10,
+                  completedAt: now,
+                ),
+              ],
+            );
+          });
 
-      var historyFetches = 0;
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            historyListProvider.overrideWith((_) async {
-              historyFetches++;
-              return [session];
-            }),
-          ],
-          child: MaterialApp(
-            theme: AppTheme.dark(),
-            home: const Scaffold(
-              body: SingleChildScrollView(
-                child: ProgressExercisesView(),
+          final session = WorkoutSession(
+            id: 'sess-1',
+            userId: 'u-1',
+            workoutName: 'Full Body',
+            startedAt: now.subtract(const Duration(hours: 1)),
+            completedAt: now,
+            durationSeconds: 3600,
+            status: SessionStatus.completed,
+            exercises: exercises,
+          );
+
+          var historyFetches = 0;
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                historyListProvider.overrideWith((_) async {
+                  historyFetches++;
+                  return [session];
+                }),
+              ],
+              child: MaterialApp(
+                theme: AppTheme.dark(),
+                home: const Scaffold(
+                  body: SingleChildScrollView(child: ProgressExercisesView()),
+                ),
               ),
             ),
-          ),
-        ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(historyFetches, 1);
+          expect(find.text('Supino Reto'), findsOneWidget);
+          expect(find.text('Exercício Teste 2'), findsOneWidget);
+
+          await tester.tap(find.text('Travado, 0'));
+          await tester.pumpAndSettle();
+
+          expect(historyFetches, 1);
+          expect(find.text('Supino Reto'), findsNothing);
+          expect(find.text('Exercício Teste 2'), findsNothing);
+
+          await tester.tap(find.text('Todos'));
+          await tester.pumpAndSettle();
+          expect(historyFetches, 1);
+          expect(find.text('Supino Reto'), findsOneWidget);
+        },
       );
-      await tester.pumpAndSettle();
-
-      expect(historyFetches, 1);
-      expect(find.text('Supino Reto'), findsOneWidget);
-      expect(find.text('Exercício Teste 2'), findsOneWidget);
-
-      await tester.enterText(find.byType(TextField), 'Supino');
-      await tester.pumpAndSettle();
-
-      expect(historyFetches, 1);
-      expect(find.text('Supino Reto'), findsOneWidget);
-      expect(find.text('Exercício Teste 2'), findsNothing);
-    });
-  });
+    },
+  );
 }

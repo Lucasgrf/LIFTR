@@ -339,7 +339,7 @@ void main() {
       );
 
       expect(find.text('15–20 min'), findsOneWidget);
-      expect(find.text('Cardio por tempo · Meta 15–20 min'), findsOneWidget);
+      expect(find.textContaining('Meta 15–20 min'), findsNothing);
       expect(find.textContaining('1×'), findsNothing);
     });
   });
