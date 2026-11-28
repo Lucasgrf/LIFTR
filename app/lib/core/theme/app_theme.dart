@@ -24,7 +24,7 @@ class AppTheme {
             .copyWith(
               primary: colors.primary,
               onPrimary: colors.onPrimary,
-              secondary: colors.primaryLight,
+              secondary: colors.textSecondary,
               onSecondary: colors.background,
               surface: colors.surface,
               onSurface: colors.textPrimary,
@@ -41,6 +41,9 @@ class AppTheme {
             );
 
     final borderRadius = BorderRadius.circular(radius.medium);
+    final fieldBorder = UnderlineInputBorder(
+      borderSide: BorderSide(color: colors.border),
+    );
 
     return ThemeData(
       useMaterial3: true,
@@ -48,6 +51,14 @@ class AppTheme {
       fontFamily: AppTypography.fontFamily,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: colors.background,
+      cardTheme: CardThemeData(
+        color: colors.surfaceSubtle,
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radius.small),
+        ),
+      ),
       textTheme: textTheme,
       extensions: <ThemeExtension<dynamic>>[
         colors,
@@ -67,63 +78,62 @@ class AppTheme {
       ),
       chipTheme: ChipThemeData(
         backgroundColor: colors.surfaceVariant,
-        selectedColor: colors.primaryMuted,
-        checkmarkColor: colors.primaryLight,
+        selectedColor: colors.textPrimary,
+        checkmarkColor: colors.background,
         labelStyle: textTheme.labelMedium?.copyWith(color: colors.textPrimary),
         secondaryLabelStyle: textTheme.labelMedium?.copyWith(
-          color: colors.primaryLight,
+          color: colors.background,
         ),
-        side: BorderSide(color: colors.border),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(radius.small),
-        ),
+        side: BorderSide.none,
+        shape: const StadiumBorder(),
       ),
       inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: colors.background,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
+        filled: false,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
         hintStyle: textTheme.bodyMedium?.copyWith(color: colors.textTertiary),
         labelStyle: textTheme.labelMedium?.copyWith(
           color: colors.textSecondary,
         ),
-        border: OutlineInputBorder(
-          borderRadius: borderRadius,
-          borderSide: BorderSide(color: colors.borderInteractive),
+        border: fieldBorder,
+        enabledBorder: fieldBorder,
+        focusedBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: colors.borderFocus, width: 2),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: borderRadius,
-          borderSide: BorderSide(color: colors.borderInteractive),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: borderRadius,
-          borderSide: BorderSide(color: colors.borderFocus, width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: borderRadius,
+        errorBorder: UnderlineInputBorder(
           borderSide: BorderSide(color: colors.danger),
         ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: borderRadius,
-          borderSide: BorderSide(color: colors.danger, width: 1.5),
+        focusedErrorBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: colors.danger, width: 2),
         ),
       ),
       checkboxTheme: CheckboxThemeData(
         side: BorderSide(color: colors.borderInteractive, width: 1.5),
         fillColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return colors.primary;
+          if (states.contains(WidgetState.selected)) return colors.textPrimary;
           return Colors.transparent;
         }),
-        checkColor: WidgetStatePropertyAll(colors.onPrimary),
+        checkColor: WidgetStatePropertyAll(colors.background),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radius.xs),
         ),
       ),
+      radioTheme: RadioThemeData(
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return colors.textPrimary;
+          return colors.textTertiary;
+        }),
+      ),
+      switchTheme: SwitchThemeData(
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return colors.textPrimary;
+          return colors.surfaceVariant;
+        }),
+        thumbColor: WidgetStatePropertyAll(colors.background),
+        trackOutlineColor: WidgetStatePropertyAll(colors.border),
+      ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size(48, 48),
+          minimumSize: const Size(48, 56),
           backgroundColor: colors.textPrimary,
           foregroundColor: colors.background,
           shape: RoundedRectangleBorder(borderRadius: borderRadius),
@@ -133,7 +143,7 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          minimumSize: const Size(48, 48),
+          minimumSize: const Size(48, 56),
           backgroundColor: colors.textPrimary,
           foregroundColor: colors.background,
           shape: RoundedRectangleBorder(borderRadius: borderRadius),
@@ -143,9 +153,9 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size(48, 48),
+          minimumSize: const Size(48, 56),
           foregroundColor: colors.textPrimary,
-          side: BorderSide(color: colors.borderInteractive),
+          side: BorderSide(color: colors.textPrimary, width: 1.5),
           shape: RoundedRectangleBorder(borderRadius: borderRadius),
           textStyle: textTheme.labelLarge,
         ),
@@ -153,7 +163,7 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           minimumSize: const Size(48, 48),
-          foregroundColor: colors.primaryLight,
+          foregroundColor: colors.textPrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radius.small),
           ),
