@@ -14,16 +14,17 @@ Este arquivo orienta qualquer agente ou colaborador de IA que atue neste reposit
 ## 2. Mandato Obrigatório para Frontend (`app/lib/**`)
 
 **Antes de criar ou editar qualquer tela, widget, tema ou asset em `app/`**, leia obrigatoriamente:
-1. [`docs/design/brand-guide.md`](docs/design/brand-guide.md) — Identidade (*Technical Humanism*), paleta, tipografia, Monólito Dinâmico, tokens e arquitetura.
-2. [`docs/design/anti-ai-slop-playbook.md`](docs/design/anti-ai-slop-playbook.md) — As 5 skills anti-AI-slop calibradas para o LIFTR (Anti UI Slop, ThinkUI, Taste Skill, Emil Design Engineering, Vercel Guidelines).
-3. [`docs/design/design-qa-checklist.md`](docs/design/design-qa-checklist.md) — Checklist de Design Critique, 6 camadas de QA e Hard Finish Gate.
+1. [`docs/design.md`](docs/design.md) — direção visual vigente e plano tela a tela.
+2. [`docs/design/brand-guide.md`](docs/design/brand-guide.md) — marca, cores, tipografia, formas e componentes.
+3. [`docs/design/anti-ai-slop-playbook.md`](docs/design/anti-ai-slop-playbook.md) — práticas de composição, craft, acessibilidade e revisão.
+4. [`docs/design/design-qa-checklist.md`](docs/design/design-qa-checklist.md) — Design Critique, estados e Hard Finish Gate.
 
 ### Guardrails Inegociáveis de UI
-- **Cores:** Dark-first (`Carvão #0D0D0F`, `Grafite #1A1A1F`, `Titânio #8E8E98`, `Branco Osso #F2F2F0`, `Verde Botânico #72A987` com **`onPrimary = #0D0D0F`**). Tema claro usa **Verde Botânico Profundo `#315B43`** com `onPrimary = #F2F2F0`. **Proibido** roxo genérico (`#6C63FF`), texto branco sobre `#72A987`, cores hex hardcoded fora de `app/lib/core/theme/` e paletas arco-íris em métricas musculares.
-- **Superfícies & Geometria:** Superfícies foscas com hierarquia por luminância; **zero glow neon**, **zero gradiente decorativo central**, **zero ícones rotacionados gratuitamente**. Escala de raios contida (`0 / 4 / 8 / 12 / 16 / 999`).
-- **Tipografia:** Usar **Geist** com `FontFeature.tabularFigures()` em todos os números comparáveis/mutáveis. Não reintroduzir `Inter`.
+- **Cores:** Papel `#F4F5F0`, superfícies `#E7E9E2`, noite azul `#151A2E`/`#1F2640`, tintas grafite `#17191E`, caneta `#1C3FAA` e carimbo `#B8281F` (variantes noite documentadas em `docs/design.md`). Cartões coloridos identificam fichas e nunca status. Conferir contraste WCAG AA de cada combinação; não assumir que os valores da referência já passam.
+- **Superfícies & Geometria:** Fichas chapadas, pauta e divisores discretos; evitar cardite, textura literal de papel, sombra pesada, glow neon, gradiente decorativo e ícones rotacionados sem função. Raios de referência `6 / 12 / 20`.
+- **Tipografia:** Usar **Familjen Grotesk** conforme disponibilidade/licença do asset. Usar `FontFeature.tabularFigures()` em números comparáveis/mutáveis. Manter a marca `liftr` em minúsculas.
 - **Separação de Camadas:** Widgets em `app/lib/core/widgets/` nunca devem importar arquivos ou entidades de `app/lib/features/**`.
-- **Motion & Acessibilidade:** Toda animação explícita usa tokens de `AppMotion` (`Cubic(0.23, 1.0, 0.32, 1.0)`, `< 260ms`, sem bloqueio em ações de treino) e respeita `MediaQuery.disableAnimationsOf(context)`. Todo controle interativo deve ter alvo `>= 48x48dp`, `Semantics` explícito e suportar viewport `320px` + `textScaler 1.3x` sem overflow.
+- **Motion & Acessibilidade:** Toda animação respeita `MediaQuery.disableAnimationsOf(context)`. Registro de série/stepper é imediato. Todo controle interativo deve ter alvo `>= 48x48dp`, `Semantics` explícito e suportar viewport `320px` + `textScaler 1.3x` sem overflow.
 - **Resiliência:** Toda alteração de estado de rede ou persistência na sessão deve preservar o modo offline-first (`SessionLocalDataSource` / Drift / `OfflineBannerWidget`) e impedir duplo registro acidental.
 
 ---

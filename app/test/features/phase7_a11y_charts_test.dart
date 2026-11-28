@@ -85,8 +85,7 @@ void main() {
 
   group('Phase 7 — static guards', () {
     test('every IconButton in app/lib declares a tooltip', () {
-      final iconButtonPattern =
-          RegExp(r'\bIconButton\s*(?:\.\w+)?\s*\(');
+      final iconButtonPattern = RegExp(r'\bIconButton\s*(?:\.\w+)?\s*\(');
       final violations = <String>[];
 
       for (final entity in Directory('lib').listSync(recursive: true)) {
@@ -103,9 +102,8 @@ void main() {
           }
           final body = source.substring(match.end, i - 1);
           if (!body.contains('tooltip:')) {
-            final line = '\n'.allMatches(source.substring(0, match.start))
-                    .length +
-                1;
+            final line =
+                '\n'.allMatches(source.substring(0, match.start)).length + 1;
             violations.add('${entity.path}:$line');
           }
         }
@@ -116,8 +114,9 @@ void main() {
 
     test('app/lib/core/widgets never imports from features/', () {
       final violations = <String>[];
-      for (final entity
-          in Directory('lib/core/widgets').listSync(recursive: true)) {
+      for (final entity in Directory(
+        'lib/core/widgets',
+      ).listSync(recursive: true)) {
         if (entity is! File || !entity.path.endsWith('.dart')) continue;
         final source = entity.readAsStringSync();
         if (source.contains('package:personal_fitness_os/features/')) {
@@ -175,48 +174,48 @@ void main() {
         );
 
         TrainingPlan buildPlan({required int chestSets}) => TrainingPlan(
-              id: 'p1',
-              userId: 'u1',
-              name: 'Push Pull',
-              isActive: true,
-              workouts: [
-                Workout(
-                  id: 'w1',
-                  trainingPlanId: 'p1',
-                  name: 'Day 1',
-                  exercises: [
-                    WorkoutExercise(
-                      id: 'we1',
-                      workoutId: 'w1',
-                      exerciseId: 'e1',
-                      exercise: chestEx,
-                      setTemplates: List.generate(
-                        chestSets,
-                        (i) => SetTemplate(
-                          id: 'st-$i',
-                          workoutExerciseId: 'we1',
-                          setNumber: i + 1,
-                        ),
-                      ),
+          id: 'p1',
+          userId: 'u1',
+          name: 'Push Pull',
+          isActive: true,
+          workouts: [
+            Workout(
+              id: 'w1',
+              trainingPlanId: 'p1',
+              name: 'Day 1',
+              exercises: [
+                WorkoutExercise(
+                  id: 'we1',
+                  workoutId: 'w1',
+                  exerciseId: 'e1',
+                  exercise: chestEx,
+                  setTemplates: List.generate(
+                    chestSets,
+                    (i) => SetTemplate(
+                      id: 'st-$i',
+                      workoutExerciseId: 'we1',
+                      setNumber: i + 1,
                     ),
-                    WorkoutExercise(
-                      id: 'we2',
-                      workoutId: 'w1',
-                      exerciseId: 'e2',
-                      exercise: backEx,
-                      setTemplates: List.generate(
-                        4,
-                        (i) => SetTemplate(
-                          id: 'sb-$i',
-                          workoutExerciseId: 'we2',
-                          setNumber: i + 1,
-                        ),
-                      ),
+                  ),
+                ),
+                WorkoutExercise(
+                  id: 'we2',
+                  workoutId: 'w1',
+                  exerciseId: 'e2',
+                  exercise: backEx,
+                  setTemplates: List.generate(
+                    4,
+                    (i) => SetTemplate(
+                      id: 'sb-$i',
+                      workoutExerciseId: 'we2',
+                      setNumber: i + 1,
                     ),
-                  ],
+                  ),
                 ),
               ],
-            );
+            ),
+          ],
+        );
 
         final handle = tester.ensureSemantics();
         try {
@@ -260,7 +259,7 @@ void main() {
     );
 
     testWidgets(
-      'ProgressConsistencyView heatmap cell exposes selected state',
+      'ProgressConsistencyView calendar cell exposes selected state',
       (tester) async {
         final session = WorkoutSession(
           id: 's-1',
@@ -287,10 +286,12 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          final cellFinder = find.bySemanticsLabel(RegExp(r', 1 treino$'));
+          final cellFinder = find.bySemanticsLabel(RegExp('Push A'));
           expect(cellFinder, findsOneWidget);
+          await tester.tap(cellFinder.first);
+          await tester.pumpAndSettle();
           expect(
-            tester.getSemantics(cellFinder),
+            tester.getSemantics(cellFinder.first),
             isSemantics(isButton: true, isSelected: true),
           );
         } finally {
@@ -301,44 +302,52 @@ void main() {
   });
 
   group('Phase 7 — DS-01 chart decoupling', () {
-    test('mapExerciseHistoryToLoadSeries builds sorted load and dashed 1RM series',
-        () {
-      final records = [
-        ExerciseHistoryRecord(
-          sessionId: 's-2',
-          sessionName: 'B',
-          date: DateTime(2026, 5, 10),
-          setsCount: 3,
-          topWeightKg: 85,
-          topReps: 8,
-          bestEstimated1Rm: 107.6,
-        ),
-        ExerciseHistoryRecord(
-          sessionId: 's-1',
-          sessionName: 'A',
-          date: DateTime(2026, 5, 3),
-          setsCount: 3,
-          topWeightKg: 80,
-          topReps: 10,
-          bestEstimated1Rm: 106.7,
-        ),
-      ];
+    test(
+      'mapExerciseHistoryToLoadSeries builds sorted load and dashed 1RM series',
+      () {
+        final records = [
+          ExerciseHistoryRecord(
+            sessionId: 's-2',
+            sessionName: 'B',
+            date: DateTime(2026, 5, 10),
+            setsCount: 3,
+            topWeightKg: 85,
+            topReps: 8,
+            bestEstimated1Rm: 107.6,
+          ),
+          ExerciseHistoryRecord(
+            sessionId: 's-1',
+            sessionName: 'A',
+            date: DateTime(2026, 5, 3),
+            setsCount: 3,
+            topWeightKg: 80,
+            topReps: 10,
+            bestEstimated1Rm: 106.7,
+          ),
+        ];
 
-      final series = mapExerciseHistoryToLoadSeries(
-        records,
-        loadColor: Colors.green,
-        e1rmColor: Colors.blue,
-      );
+        final series = mapExerciseHistoryToLoadSeries(
+          records,
+          loadColor: Colors.green,
+          e1rmColor: Colors.blue,
+        );
 
-      expect(series.map((s) => s.label), ['Carga máx', '1RM est']);
-      expect(series[0].isDashed, isFalse);
-      expect(series[1].isDashed, isTrue);
-      expect(series[1].color, Colors.blue);
-      expect(series[0].points.map((p) => p.value), [80, 85]);
-      expect(series[1].points.map((p) => p.value), [106.7, 107.6]);
-      expect(mapExerciseHistoryToLoadSeries(const [],
-          loadColor: Colors.green, e1rmColor: Colors.blue), isEmpty);
-    });
+        expect(series.map((s) => s.label), ['Carga máx', '1RM est']);
+        expect(series[0].isDashed, isFalse);
+        expect(series[1].isDashed, isTrue);
+        expect(series[1].color, Colors.blue);
+        expect(series[0].points.map((p) => p.value), [80, 85]);
+        expect(series[1].points.map((p) => p.value), [106.7, 107.6]);
+        expect(
+          mapExerciseHistoryToLoadSeries(
+            const [],
+            loadColor: Colors.green,
+            e1rmColor: Colors.blue,
+          ),
+          isEmpty,
+        );
+      },
+    );
   });
 
   group('Phase 7 — VIS-01 ExerciseLoadProgressionChart', () {
@@ -409,42 +418,42 @@ void main() {
       },
     );
 
-    test('colors.info meets WCAG >= 3:1 graphical contrast against card surfaces in dark and light themes',
-        () {
-      double contrastRatio(Color fg, Color bg) {
-        final l1 = fg.computeLuminance();
-        final l2 = bg.computeLuminance();
-        final hi = math.max(l1, l2);
-        final lo = math.min(l1, l2);
-        return (hi + 0.05) / (lo + 0.05);
-      }
+    test(
+      'colors.info meets WCAG >= 3:1 graphical contrast against card surfaces in dark and light themes',
+      () {
+        double contrastRatio(Color fg, Color bg) {
+          final l1 = fg.computeLuminance();
+          final l2 = bg.computeLuminance();
+          final hi = math.max(l1, l2);
+          final lo = math.min(l1, l2);
+          return (hi + 0.05) / (lo + 0.05);
+        }
 
-      expect(
-        contrastRatio(AppColors.dark.info, AppColors.dark.surface),
-        greaterThanOrEqualTo(3.0),
-      );
-      expect(
-        contrastRatio(AppColors.dark.info, AppColors.dark.background),
-        greaterThanOrEqualTo(3.0),
-      );
-      expect(
-        contrastRatio(AppColors.light.info, AppColors.light.surface),
-        greaterThanOrEqualTo(3.0),
-      );
-      expect(
-        contrastRatio(AppColors.light.info, AppColors.light.background),
-        greaterThanOrEqualTo(3.0),
-      );
-    });
+        expect(
+          contrastRatio(AppColors.dark.info, AppColors.dark.surface),
+          greaterThanOrEqualTo(3.0),
+        );
+        expect(
+          contrastRatio(AppColors.dark.info, AppColors.dark.background),
+          greaterThanOrEqualTo(3.0),
+        );
+        expect(
+          contrastRatio(AppColors.light.info, AppColors.light.surface),
+          greaterThanOrEqualTo(3.0),
+        );
+        expect(
+          contrastRatio(AppColors.light.info, AppColors.light.background),
+          greaterThanOrEqualTo(3.0),
+        );
+      },
+    );
 
     testWidgets('renders without overflow at 320dp @ 1.3x', (tester) async {
       await useCompactViewport(tester);
       await tester.pumpWidget(
         scaled(
           ExerciseLoadProgressionChart(
-            series: buildSeries(
-              AppTheme.dark().extension<AppColors>()!.info,
-            ),
+            series: buildSeries(AppTheme.dark().extension<AppColors>()!.info),
           ),
           textScale: 1.3,
         ),
@@ -464,8 +473,9 @@ void main() {
             overrides: [
               sharedPreferencesProvider.overrideWithValue(prefs),
               weightHistoryProvider.overrideWith((_) async => const []),
-              weightStatsProvider
-                  .overrideWith((_) async => const WeightStats()),
+              weightStatsProvider.overrideWith(
+                (_) async => const WeightStats(),
+              ),
             ],
             child: scaled(const ProgressWeightView()),
           ),
@@ -525,9 +535,9 @@ void main() {
           final emaBar = chart.data.lineBarsData[1];
           final tooltipItems = chart.data.lineTouchData.touchTooltipData
               .getTooltipItems([
-            LineBarSpot(rawBar, 0, rawBar.spots[1]),
-            LineBarSpot(emaBar, 1, emaBar.spots[1]),
-          ]);
+                LineBarSpot(rawBar, 0, rawBar.spots[1]),
+                LineBarSpot(emaBar, 1, emaBar.spots[1]),
+              ]);
 
           expect(tooltipItems.whereType<LineTooltipItem>(), hasLength(1));
           final text = tooltipItems.whereType<LineTooltipItem>().single.text;
@@ -580,17 +590,26 @@ void main() {
 
         expect(tester.takeException(), isNull);
 
-        // Month labels (grid spans Feb–May 2026).
-        expect(find.text('Fev'), findsOneWidget);
-        expect(find.text('Mai'), findsOneWidget);
-
-        // Weekday initials S T Q Q S S D (Seg..Dom).
-        expect(find.text('D'), findsOneWidget);
-        expect(find.text('T'), findsOneWidget);
-        expect(find.text('Q'), findsNWidgets(2));
-        expect(find.text('S'), findsNWidgets(3));
+        expect(find.text('Maio'), findsOneWidget);
+        for (final weekday in [
+          'seg',
+          'ter',
+          'qua',
+          'qui',
+          'sex',
+          'sáb',
+          'dom',
+        ]) {
+          expect(find.text(weekday), findsOneWidget);
+        }
 
         // Both sessions of the selected day are listed.
+        final workoutDay = find.bySemanticsLabel(
+          RegExp(r'^12 de maio, 2 treinos:'),
+        );
+        expect(workoutDay, findsOneWidget);
+        await tester.tap(workoutDay);
+        await tester.pumpAndSettle();
         expect(find.textContaining('Push A'), findsOneWidget);
         expect(find.textContaining('Pull B'), findsOneWidget);
         expect(find.text('2 sessões'), findsOneWidget);
@@ -600,68 +619,74 @@ void main() {
 
   group('Phase 7 — VIS-01 TodayExercisePreviewCard progress', () {
     LoggedSet buildSet(int n, int reps) => LoggedSet(
-          id: 'ls-$n',
-          sessionExerciseId: 'se-1',
-          setNumber: n,
-          weightKg: 60,
-          repsCompleted: reps,
-        );
+      id: 'ls-$n',
+      sessionExerciseId: 'se-1',
+      setNumber: n,
+      weightKg: 60,
+      repsCompleted: reps,
+    );
 
-    test('computeDoubleProgressionRatio handles empty, partial and full ceiling',
-        () {
-      expect(
-        computeDoubleProgressionRatio(
-          previousWorkingSets: const [],
-          targetRepsMax: 12,
-        ),
-        isNull,
-      );
-      expect(
-        computeDoubleProgressionRatio(
-          previousWorkingSets: [buildSet(1, 12)],
-          targetRepsMax: 0,
-        ),
-        isNull,
-      );
-      expect(
-        computeDoubleProgressionRatio(
-          previousWorkingSets: [buildSet(1, 12), buildSet(2, 12), buildSet(3, 10)],
-          targetRepsMax: 12,
-        ),
-        closeTo(2 / 3, 0.0001),
-      );
-      expect(
-        computeDoubleProgressionRatio(
-          previousWorkingSets: [buildSet(1, 12), buildSet(2, 13)],
-          targetRepsMax: 12,
-        ),
-        1.0,
-      );
-      expect(
-        computeDoubleProgressionRatio(
-          previousWorkingSets: [buildSet(1, 8), buildSet(2, 9)],
-          targetRepsMax: 12,
-        ),
-        0.0,
-      );
-    });
+    test(
+      'computeDoubleProgressionRatio handles empty, partial and full ceiling',
+      () {
+        expect(
+          computeDoubleProgressionRatio(
+            previousWorkingSets: const [],
+            targetRepsMax: 12,
+          ),
+          isNull,
+        );
+        expect(
+          computeDoubleProgressionRatio(
+            previousWorkingSets: [buildSet(1, 12)],
+            targetRepsMax: 0,
+          ),
+          isNull,
+        );
+        expect(
+          computeDoubleProgressionRatio(
+            previousWorkingSets: [
+              buildSet(1, 12),
+              buildSet(2, 12),
+              buildSet(3, 10),
+            ],
+            targetRepsMax: 12,
+          ),
+          closeTo(2 / 3, 0.0001),
+        );
+        expect(
+          computeDoubleProgressionRatio(
+            previousWorkingSets: [buildSet(1, 12), buildSet(2, 13)],
+            targetRepsMax: 12,
+          ),
+          1.0,
+        );
+        expect(
+          computeDoubleProgressionRatio(
+            previousWorkingSets: [buildSet(1, 8), buildSet(2, 9)],
+            targetRepsMax: 12,
+          ),
+          0.0,
+        );
+      },
+    );
 
     WorkoutExercise buildExercise(Exercise exercise) => WorkoutExercise(
-          id: 'we-1',
-          workoutId: 'w-1',
-          exerciseId: exercise.id,
-          exercise: exercise,
-          setTemplates: const [
-            SetTemplate(
-              id: 'st-1',
-              workoutExerciseId: 'we-1',
-              setNumber: 1,
-              targetRepsMin: 8,
-              targetRepsMax: 12,
-              restSeconds: 90,
-            ),
-          ],
-        );
+      id: 'we-1',
+      workoutId: 'w-1',
+      exerciseId: exercise.id,
+      exercise: exercise,
+      setTemplates: const [
+        SetTemplate(
+          id: 'st-1',
+          workoutExerciseId: 'we-1',
+          setNumber: 1,
+          targetRepsMin: 8,
+          targetRepsMax: 12,
+          restSeconds: 90,
+        ),
+      ],
+    );
 
     Future<void> pumpCard(
       WidgetTester tester,
@@ -672,8 +697,9 @@ void main() {
         ProviderScope(
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
-            exerciseProgressionProvider
-                .overrideWith((ref, params) async => recommendation),
+            exerciseProgressionProvider.overrideWith(
+              (ref, params) async => recommendation,
+            ),
           ],
           child: MaterialApp(
             theme: AppTheme.dark(),
@@ -695,7 +721,9 @@ void main() {
       primaryMuscleGroup: 'quadriceps',
     );
 
-    testWidgets('renders real ceiling ratio when history exists', (tester) async {
+    testWidgets('renders real ceiling ratio when history exists', (
+      tester,
+    ) async {
       await pumpCard(
         tester,
         buildExercise(squat),
@@ -712,7 +740,9 @@ void main() {
         ),
       );
 
-      final bar = tester.widget<LiftrProgressBar>(find.byType(LiftrProgressBar));
+      final bar = tester.widget<LiftrProgressBar>(
+        find.byType(LiftrProgressBar),
+      );
       expect(bar.progress, closeTo(2 / 3, 0.0001));
     });
 
@@ -1048,28 +1078,29 @@ class _InMemoryWeightRepository implements WeightRepository {
     required double weightKg,
     required DateTime measuredAt,
     String? notes,
-  }) =>
-      upsertDailyWeight(weightKg: weightKg, measuredAt: measuredAt, notes: notes);
+  }) => upsertDailyWeight(
+    weightKg: weightKg,
+    measuredAt: measuredAt,
+    notes: notes,
+  );
 
   @override
   Future<Result<List<WeightEntry>, Failure>> getWeightHistory({
     int limit = 100,
     int offset = 0,
-  }) async =>
-      Success([...entries]);
+  }) async => Success([...entries]);
 
   @override
   Future<Result<List<WeightEntry>, Failure>> getWeightEntriesInRange({
     required DateTime start,
     required DateTime end,
-  }) async =>
-      Success(
-        entries
-            .where(
-              (e) => !e.measuredAt.isBefore(start) && !e.measuredAt.isAfter(end),
-            )
-            .toList(),
-      );
+  }) async => Success(
+    entries
+        .where(
+          (e) => !e.measuredAt.isBefore(start) && !e.measuredAt.isAfter(end),
+        )
+        .toList(),
+  );
 
   @override
   Future<Result<void, Failure>> deleteWeightEntry(String entryId) async {

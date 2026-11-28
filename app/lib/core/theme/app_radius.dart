@@ -55,9 +55,9 @@ class AppRadius extends ThemeExtension<AppRadius> {
   static const defaults = AppRadius(
     none: 0,
     xs: 4,
-    small: 8,
+    small: 6,
     medium: 12,
-    large: 16,
+    large: 20,
     full: 999,
   );
 }

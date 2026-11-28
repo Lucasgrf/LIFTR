@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 
 class AppTypography {
-  static const fontFamily = 'Geist';
+  static const fontFamily = 'Familjen Grotesk';
   static const tabularFeatures = <FontFeature>[FontFeature.tabularFigures()];
 
   static TextStyle eyebrow(BuildContext context) {
@@ -18,8 +18,9 @@ class AppTypography {
   }
 
   static TextTheme textTheme({bool isDark = true}) {
-    final textColor =
-        isDark ? AppColors.dark.textPrimary : AppColors.light.textPrimary;
+    final textColor = isDark
+        ? AppColors.dark.textPrimary
+        : AppColors.light.textPrimary;
 
     return TextTheme(
       displayLarge: TextStyle(

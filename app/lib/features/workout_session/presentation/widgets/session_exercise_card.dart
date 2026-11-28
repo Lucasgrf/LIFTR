@@ -60,7 +60,8 @@ class SessionExerciseCard extends ConsumerStatefulWidget {
     int restSeconds,
     List<DropSetEntry> dropSets,
     String? existingSetId,
-  }) onLogSet;
+  })
+  onLogSet;
   final Future<void> Function(String setId)? onDeleteSet;
   final VoidCallback? onAddExtraSet;
   final bool isExpanded;
@@ -92,9 +93,9 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
   final Map<int, LoggedSetRowGuard> _rowGuards = {};
 
   FocusNode _focusNodeForSet(int setNumber) => _rowFocusNodes.putIfAbsent(
-        setNumber,
-        () => FocusNode(debugLabel: 'set_row_$setNumber'),
-      );
+    setNumber,
+    () => FocusNode(debugLabel: 'set_row_$setNumber'),
+  );
 
   GlobalKey _rowKeyForSet(int setNumber) =>
       _rowKeys.putIfAbsent(setNumber, GlobalKey.new);
@@ -106,10 +107,10 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
   }
 
   SessionExerciseGuard _buildExerciseGuard() => (
-        hasInvalidUnsavedEdit: _hasInvalidUnsavedEdit,
-        focusInvalidEdit: _focusInvalidEdit,
-        discardInvalidEdits: _discardInvalidEdits,
-      );
+    hasInvalidUnsavedEdit: _hasInvalidUnsavedEdit,
+    focusInvalidEdit: _focusInvalidEdit,
+    discardInvalidEdits: _discardInvalidEdits,
+  );
 
   bool _hasInvalidUnsavedEdit() {
     if (widget.sessionExercise.isCardio) return false;
@@ -355,13 +356,13 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
         final targetWeight = rec.isIncrease && rec.suggestedWeightKg > 0
             ? rec.suggestedWeightKg
             : (sourceSet != null && sourceSet.weightKg > 0
-                ? sourceSet.weightKg
-                : rec.suggestedWeightKg);
+                  ? sourceSet.weightKg
+                  : rec.suggestedWeightKg);
         final targetReps = rec.isIncrease
             ? se.targetRepsMin
             : (sourceSet != null && sourceSet.repsCompleted > 0
-                ? sourceSet.repsCompleted
-                : se.targetRepsMin);
+                  ? sourceSet.repsCompleted
+                  : se.targetRepsMin);
         if (targetReps > 0) {
           _prefilledBySetNumber[n] = (weightKg: targetWeight, reps: targetReps);
           _draftBySetNumber.remove(n);
@@ -397,17 +398,17 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
     try {
       for (final n in pendingNumbers) {
         final idx = n - 1;
-        final setType = _extraRowTypes[n] ??
+        final setType =
+            _extraRowTypes[n] ??
             (idx < se.prescribedSetTypes.length
                 ? se.prescribedSetTypes[idx]
                 : SetType.working);
-        final resolved = _draftBySetNumber[n] ??
-            _resolveDefaultsForSet(
-              setNumber: n,
-              defaultWeight: defaultWeight,
-            );
-        final repsToLog =
-            resolved.reps > 0 ? resolved.reps : math.max(1, se.targetRepsMin);
+        final resolved =
+            _draftBySetNumber[n] ??
+            _resolveDefaultsForSet(setNumber: n, defaultWeight: defaultWeight);
+        final repsToLog = resolved.reps > 0
+            ? resolved.reps
+            : math.max(1, se.targetRepsMin);
         await widget.onLogSet(
           sessionExerciseId: se.id,
           setNumber: n,
@@ -439,26 +440,23 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
         : se.completedWorkingSetsCount >= se.targetSetsCount;
 
     if (!widget.isExpanded) {
-      final idxLabel = ((widget.exerciseIndex ?? 0) + 1)
-          .toString()
-          .padLeft(2, '0');
+      final idxLabel = ((widget.exerciseIndex ?? 0) + 1).toString().padLeft(
+        2,
+        '0',
+      );
       final collapsedSubtitle = isCardio
           ? (se.totalCardioDurationSeconds > 0
-              ? '${formatCardioSeconds(se.totalCardioDurationSeconds)} concluído'
-              : 'Meta ${se.targetRepsMin == se.targetRepsMax ? '${se.targetRepsMin}' : '${se.targetRepsMin}–${se.targetRepsMax}'} min')
+                ? '${formatCardioSeconds(se.totalCardioDurationSeconds)} concluído'
+                : 'Meta ${se.targetRepsMin == se.targetRepsMax ? '${se.targetRepsMin}' : '${se.targetRepsMin}–${se.targetRepsMax}'} min')
           : (isAllDone
-              ? '${se.completedWorkingSetsCount}/${se.targetSetsCount} concluídas'
-              : '${se.completedWorkingSetsCount}/${se.targetSetsCount} séries');
+                ? '${se.completedWorkingSetsCount}/${se.targetSetsCount} concluídas'
+                : '${se.completedWorkingSetsCount}/${se.targetSetsCount} séries');
 
       return Material(
-        color: colors.surface,
+        color: colors.surfaceSubtle,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radius.large),
-          side: BorderSide(
-            color: isAllDone
-                ? fitnessColors.progressUp.withValues(alpha: 0.35)
-                : colors.border,
-          ),
+          side: BorderSide(color: colors.divider),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -475,89 +473,86 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                 vertical: context.appSpacing.space12,
               ),
               child: Row(
-            children: [
-              SizedBox(
-                width: 28,
-                child: Text(
-                  idxLabel,
-                  style: context.textTheme.labelSmall?.copyWith(
-                    color: colors.textTertiary,
-                    fontWeight: FontWeight.w700,
-                    fontFeatures: AppTypography.tabularFeatures,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      exerciseName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.textTheme.titleSmall,
+                children: [
+                  SizedBox(
+                    width: 28,
+                    child: Text(
+                      idxLabel,
+                      style: context.textTheme.labelSmall?.copyWith(
+                        color: colors.textTertiary,
+                        fontWeight: FontWeight.w700,
+                        fontFeatures: AppTypography.tabularFeatures,
+                      ),
                     ),
-                    SizedBox(height: context.appSpacing.space4),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        if (isAllDone) ...[
-                          Icon(
-                            Icons.check_circle_rounded,
-                            size: 13,
-                            color: fitnessColors.progressUp,
-                          ),
-                          const SizedBox(width: 4),
-                        ],
-                        Flexible(
-                          child: Text(
-                            collapsedSubtitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.textTheme.labelSmall?.copyWith(
-                              color: isAllDone
-                                  ? fitnessColors.progressUp
-                                  : colors.textTertiary,
-                              fontFeatures: AppTypography.tabularFeatures,
+                        Text(
+                          exerciseName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.textTheme.titleSmall,
+                        ),
+                        SizedBox(height: context.appSpacing.space4),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (isAllDone) ...[
+                              Icon(
+                                Icons.check_circle_rounded,
+                                size: 13,
+                                color: fitnessColors.progressUp,
+                              ),
+                              const SizedBox(width: 4),
+                            ],
+                            Flexible(
+                              child: Text(
+                                collapsedSubtitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: isAllDone
+                                      ? fitnessColors.progressUp
+                                      : colors.textTertiary,
+                                  fontFeatures: AppTypography.tabularFeatures,
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  Icon(Icons.chevron_right_rounded, color: colors.textTertiary),
+                ],
               ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: colors.textTertiary,
-              ),
-            ],
+            ),
           ),
         ),
-      ),
-      ),
-    );
+      );
     }
 
     final settings = ref.watch(userSettingsProvider);
     final ProgressionRecommendation? rec = isCardio
         ? null
         : ref
-            .watch(
-              exerciseProgressionProvider(
-                ExerciseProgressionParams(
-                  exerciseId: se.exerciseId,
-                  targetRepsMin: se.targetRepsMin,
-                  targetRepsMax: se.targetRepsMax,
-                  targetRir: se.targetRir,
-                  equipment: se.exercise?.equipment,
+              .watch(
+                exerciseProgressionProvider(
+                  ExerciseProgressionParams(
+                    exerciseId: se.exerciseId,
+                    targetRepsMin: se.targetRepsMin,
+                    targetRepsMax: se.targetRepsMax,
+                    targetRir: se.targetRir,
+                    equipment: se.exercise?.equipment,
+                  ),
                 ),
-              ),
-            )
-            .asData
-            ?.value;
+              )
+              .asData
+              ?.value;
 
     final hasHistoryWeight = rec != null && rec.suggestedWeightKg > 0;
     final estimatedInitial = (!isCardio && !hasHistoryWeight)
@@ -576,9 +571,13 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
         ? rec.suggestedWeightKg
         : (estimatedInitial?.weightKg ?? 0.0);
     final bool isUsingInitialEstimate =
-        !isCardio && !hasHistoryWeight && (estimatedInitial?.isEstimated ?? false) && defaultWeight > 0;
-    final targetWeightText =
-        defaultWeight > 0 ? '${_formatWeight(defaultWeight)} kg · ' : '';
+        !isCardio &&
+        !hasHistoryWeight &&
+        (estimatedInitial?.isEstimated ?? false) &&
+        defaultWeight > 0;
+    final targetWeightText = defaultWeight > 0
+        ? '${_formatWeight(defaultWeight)} kg · '
+        : '';
 
     final totalTargetReps = se.targetSetsCount * se.targetRepsMax;
     final loggedWorkingReps = se.sets
@@ -593,18 +592,19 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
     final progressRatio = isCardio
         ? (cardioLoggedMin / cardioTargetMin).clamp(0.0, 1.0)
         : (totalTargetReps > 0
-            ? (loggedWorkingReps / totalTargetReps).clamp(0.0, 1.0)
-            : 0.0);
+              ? (loggedWorkingReps / totalTargetReps).clamp(0.0, 1.0)
+              : 0.0);
 
     final badgeLabel = isCardio
         ? (se.totalCardioDurationSeconds > 0
-            ? formatCardioSeconds(se.totalCardioDurationSeconds)
-            : 'Cardio')
+              ? formatCardioSeconds(se.totalCardioDurationSeconds)
+              : 'Cardio')
         : '${se.completedWorkingSetsCount}/${se.targetSetsCount} séries';
 
     final firstPending = isCardio ? null : _firstPendingSetNumber();
-    final expandedSetNumber =
-        isCardio ? null : (_manuallyExpandedSetNumber ?? firstPending);
+    final expandedSetNumber = isCardio
+        ? null
+        : (_manuallyExpandedSetNumber ?? firstPending);
     final hasCompactRow =
         !isCardio && (_totalRowsCount > 1 || expandedSetNumber == null);
 
@@ -615,130 +615,261 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
       child: Container(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
         decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: BorderRadius.circular(radius.xl),
-          border: Border.all(
-            color: colors.primary.withValues(alpha: 0.45),
-            width: 1,
-          ),
+          color: colors.surfaceSubtle,
+          borderRadius: BorderRadius.circular(radius.medium),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          // Header
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: InkWell(
-                    onTap: widget.onToggleExpand,
-                    borderRadius: BorderRadius.circular(radius.small),
-                    child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        crossAxisAlignment: WrapCrossAlignment.center,
+            // Header
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: InkWell(
+                      onTap: widget.onToggleExpand,
+                      borderRadius: BorderRadius.circular(radius.small),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (widget.exerciseIndex != null &&
-                              widget.totalExercises != null)
-                            LiftrEyebrow(
-                              'Exercício ${widget.exerciseIndex! + 1} de ${widget.totalExercises}',
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              if (widget.exerciseIndex != null &&
+                                  widget.totalExercises != null)
+                                LiftrEyebrow(
+                                  'Exercício ${widget.exerciseIndex! + 1} de ${widget.totalExercises}',
+                                ),
+                              if (muscle != null)
+                                LiftrBadge(
+                                  label: muscle.toUpperCase(),
+                                  tone: LiftrBadgeTone.neutral,
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            exerciseName,
+                            style: context.textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            isCardio
+                                ? 'Meta: $cardioRangeLabel · registro por tempo'
+                                : 'Alvo: $targetWeightText${se.targetRepsMin}–${se.targetRepsMax} reps · ${se.targetRestSeconds}s',
+                            style: context.textTheme.bodySmall?.copyWith(
+                              color: colors.textSecondary,
+                              fontFeatures: AppTypography.tabularFeatures,
                             ),
-                          if (muscle != null)
-                            LiftrBadge(
-                              label: muscle.toUpperCase(),
-                              tone: LiftrBadgeTone.neutral,
+                          ),
+                          if (!isCardio &&
+                              rec?.previousSummary != null &&
+                              rec!.previousSummary!.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              'Última: ${rec.previousSummary}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: colors.textTertiary,
+                                fontFeatures: AppTypography.tabularFeatures,
+                              ),
                             ),
+                          ] else if (isUsingInitialEstimate) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              'Carga inicial sugerida (${settings.experience.label}) · ajuste se necessário',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.textTheme.labelSmall?.copyWith(
+                                color: colors.primaryLight,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
-                      const SizedBox(height: 5),
-                      Text(
-                        exerciseName,
-                        style: context.textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        isCardio
-                            ? 'Meta: $cardioRangeLabel · registro por tempo'
-                            : 'Alvo: $targetWeightText${se.targetRepsMin}–${se.targetRepsMax} reps · ${se.targetRestSeconds}s',
-                        style: context.textTheme.bodySmall?.copyWith(
-                          color: colors.textSecondary,
-                          fontFeatures: AppTypography.tabularFeatures,
-                        ),
-                      ),
-                      if (!isCardio &&
-                          rec?.previousSummary != null &&
-                          rec!.previousSummary!.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          'Última: ${rec.previousSummary}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.textTheme.labelSmall?.copyWith(
-                            color: colors.textTertiary,
-                            fontFeatures: AppTypography.tabularFeatures,
-                          ),
-                        ),
-                      ] else if (isUsingInitialEstimate) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          'Carga inicial sugerida (${settings.experience.label}) · ajuste se necessário',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.textTheme.labelSmall?.copyWith(
-                            color: colors.primaryLight,
-                          ),
-                        ),
-                      ],
-                    ],
+                    ),
                   ),
                 ),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (widget.onSwapExercise != null)
+                      Semantics(
+                        container: true,
+                        label: 'Trocar exercício',
+                        button: true,
+                        child: Material(
+                          color: colors.primaryMuted,
+                          borderRadius: BorderRadius.circular(radius.medium),
+                          clipBehavior: Clip.antiAlias,
+                          child: InkWell(
+                            onTap: widget.onSwapExercise,
+                            borderRadius: BorderRadius.circular(radius.medium),
+                            child: ExcludeSemantics(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  minWidth: 48,
+                                  minHeight: 48,
+                                ),
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: context.appSpacing.space12,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.swap_horiz_rounded,
+                                        size: 17,
+                                        color: colors.primaryLight,
+                                      ),
+                                      AppSpacing.horizontalGap4,
+                                      Text(
+                                        'Trocar',
+                                        style: context.textTheme.labelMedium
+                                            ?.copyWith(
+                                              color: colors.primaryLight,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 6),
+                    LiftrBadge(
+                      label: badgeLabel,
+                      tone: isAllDone
+                          ? LiftrBadgeTone.success
+                          : LiftrBadgeTone.neutral,
+                    ),
+                    if (!isCardio && rec != null && rec.isIncrease) ...[
+                      const SizedBox(height: 6),
+                      LiftrBadge(
+                        label: 'SUBIR +${_formatWeight(rec.weightDeltaKg)} kg',
+                        tone: LiftrBadgeTone.success,
+                        icon: Icons.north_east_rounded,
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+
+            // Double progression or Cardio target bar
+            LiftrProgressBar(
+              progress: isCardio
+                  ? progressRatio
+                  : (progressRatio > 0
+                        ? progressRatio
+                        : (rec?.type == ProgressionType.increase ? 1.0 : 0.15)),
+              height: 5,
+              color:
+                  (isCardio
+                      ? isAllDone
+                      : (repsRemaining == 0 ||
+                            rec?.type == ProgressionType.increase))
+                  ? fitnessColors.progressUp
+                  : colors.primary,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              isCardio
+                  ? (cardioLoggedMin >= cardioTargetMin
+                        ? 'Meta de cardio concluída ($cardioLoggedMin min)!'
+                        : '$cardioLoggedMin/$cardioTargetMin min registrados')
+                  : (repsRemaining == 0
+                        ? ((rec?.consecutiveCeilingHits ?? 0) >= 1
+                              ? 'Topo consolidado (2/2) · subida de carga liberada!'
+                              : 'Topo da faixa batido (1/2) · repita na próxima sessão para subir carga')
+                        : (!isCardio &&
+                              rec != null &&
+                              rec.consecutiveCeilingHits == 1 &&
+                              !rec.isIncrease)
+                        ? 'Teto 1/2 · repita hoje para liberar +${_formatWeight(ProgressionEngine.defaultWeightIncrement(se.exercise?.equipment))} kg'
+                        : '$loggedWorkingReps/$totalTargetReps reps · faltam $repsRemaining para o topo da faixa'),
+              style: context.textTheme.labelSmall?.copyWith(
+                color:
+                    (isCardio
+                        ? isAllDone
+                        : (repsRemaining == 0 &&
+                              (rec?.consecutiveCeilingHits ?? 0) >= 1))
+                    ? fitnessColors.progressUp
+                    : (!isCardio &&
+                          ((rec?.consecutiveCeilingHits ?? 0) == 1 ||
+                              repsRemaining == 0))
+                    ? colors.primaryLight
+                    : colors.textTertiary,
+                fontFeatures: AppTypography.tabularFeatures,
               ),
-              ),
-              const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+            ),
+            if (!isCardio &&
+                [
+                  for (var n = 1; n <= _totalRowsCount; n++)
+                    if (_findLoggedSetForNumber(n) == null) n,
+                ].isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
                 children: [
-                  if (widget.onSwapExercise != null)
+                  if (rec != null && rec.previousWorkingSets.isNotEmpty)
                     Semantics(
-                      container: true,
-                      label: 'Trocar exercício',
+                      label: 'Repetir carga e repetições da última sessão',
                       button: true,
                       child: Material(
-                        color: colors.primaryMuted,
-                        borderRadius: BorderRadius.circular(radius.medium),
-                        clipBehavior: Clip.antiAlias,
+                        type: MaterialType.transparency,
                         child: InkWell(
-                          onTap: widget.onSwapExercise,
+                          onTap: () => _repeatLastSession(rec),
                           borderRadius: BorderRadius.circular(radius.medium),
-                          child: ExcludeSemantics(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                minWidth: 48,
-                                minHeight: 48,
-                              ),
-                              child: Padding(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              minWidth: 48,
+                              minHeight: 48,
+                            ),
+                            child: Center(
+                              widthFactor: 1,
+                              child: Ink(
                                 padding: EdgeInsets.symmetric(
                                   horizontal: context.appSpacing.space12,
+                                  vertical: context.appSpacing.space8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colors.surfaceElevated,
+                                  borderRadius: BorderRadius.circular(
+                                    radius.medium,
+                                  ),
+                                  border: Border.all(color: colors.border),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
-                                      Icons.swap_horiz_rounded,
-                                      size: 17,
+                                      Icons.replay_rounded,
+                                      size: 15,
                                       color: colors.primaryLight,
                                     ),
                                     AppSpacing.horizontalGap4,
-                                    Text(
-                                      'Trocar',
-                                      style: context.textTheme.labelMedium
-                                          ?.copyWith(
-                                        color: colors.primaryLight,
+                                    Flexible(
+                                      child: Text(
+                                        'Repetir última',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: context.textTheme.labelSmall
+                                            ?.copyWith(
+                                              color: colors.textPrimary,
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                       ),
                                     ),
                                   ],
@@ -749,239 +880,124 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                         ),
                       ),
                     ),
-                  const SizedBox(height: 6),
-                  LiftrBadge(
-                    label: badgeLabel,
-                    tone: isAllDone
-                        ? LiftrBadgeTone.success
-                        : LiftrBadgeTone.neutral,
-                  ),
-                  if (!isCardio && rec != null && rec.isIncrease) ...[
-                    const SizedBox(height: 6),
-                    LiftrBadge(
-                      label: 'SUBIR +${_formatWeight(rec.weightDeltaKg)} kg',
-                      tone: LiftrBadgeTone.success,
-                      icon: Icons.north_east_rounded,
+                  if (defaultWeight > 0 || se.sets.isNotEmpty)
+                    Semantics(
+                      label: 'Concluir séries restantes deste exercício',
+                      button: true,
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: InkWell(
+                          onTap: _isBulkCompleting
+                              ? null
+                              : () => _completeAllRemainingSets(
+                                  defaultWeight: defaultWeight,
+                                ),
+                          borderRadius: BorderRadius.circular(radius.medium),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              minWidth: 48,
+                              minHeight: 48,
+                            ),
+                            child: Center(
+                              widthFactor: 1,
+                              child: Ink(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: context.appSpacing.space12,
+                                  vertical: context.appSpacing.space8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colors.primaryMuted,
+                                  borderRadius: BorderRadius.circular(
+                                    radius.medium,
+                                  ),
+                                  border: Border.all(
+                                    color: colors.primary.withValues(
+                                      alpha: 0.35,
+                                    ),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (_isBulkCompleting)
+                                      SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: colors.primaryLight,
+                                        ),
+                                      )
+                                    else
+                                      Icon(
+                                        Icons.done_all_rounded,
+                                        size: 15,
+                                        color: colors.primaryLight,
+                                      ),
+                                    AppSpacing.horizontalGap4,
+                                    Flexible(
+                                      child: Text(
+                                        'Concluir restantes',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: context.textTheme.labelSmall
+                                            ?.copyWith(
+                                              color: colors.primaryLight,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                  ],
                 ],
               ),
             ],
-          ),
-          const SizedBox(height: 14),
+            const SizedBox(height: 8),
 
-          // Double progression or Cardio target bar
-          LiftrProgressBar(
-            progress: isCardio
-                ? progressRatio
-                : (progressRatio > 0
-                    ? progressRatio
-                    : (rec?.type == ProgressionType.increase ? 1.0 : 0.15)),
-            height: 5,
-            color: (isCardio
-                    ? isAllDone
-                    : (repsRemaining == 0 ||
-                        rec?.type == ProgressionType.increase))
-                ? fitnessColors.progressUp
-                : colors.primary,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            isCardio
-                ? (cardioLoggedMin >= cardioTargetMin
-                    ? 'Meta de cardio concluída ($cardioLoggedMin min)!'
-                    : '$cardioLoggedMin/$cardioTargetMin min registrados')
-                : (repsRemaining == 0
-                    ? ((rec?.consecutiveCeilingHits ?? 0) >= 1
-                        ? 'Topo consolidado (2/2) · subida de carga liberada!'
-                        : 'Topo da faixa batido (1/2) · repita na próxima sessão para subir carga')
-                    : (!isCardio &&
-                            rec != null &&
-                            rec.consecutiveCeilingHits == 1 &&
-                            !rec.isIncrease)
-                        ? 'Teto 1/2 · repita hoje para liberar +${_formatWeight(ProgressionEngine.defaultWeightIncrement(se.exercise?.equipment))} kg'
-                        : '$loggedWorkingReps/$totalTargetReps reps · faltam $repsRemaining para o topo da faixa'),
-            style: context.textTheme.labelSmall?.copyWith(
-              color: (isCardio
-                      ? isAllDone
-                      : (repsRemaining == 0 &&
-                          (rec?.consecutiveCeilingHits ?? 0) >= 1))
-                  ? fitnessColors.progressUp
-                  : (!isCardio &&
-                          ((rec?.consecutiveCeilingHits ?? 0) == 1 ||
-                              repsRemaining == 0))
-                      ? colors.primaryLight
-                      : colors.textTertiary,
-              fontFeatures: AppTypography.tabularFeatures,
-            ),
-          ),
-          if (!isCardio &&
-              [
-                for (var n = 1; n <= _totalRowsCount; n++)
-                  if (_findLoggedSetForNumber(n) == null) n,
-              ].isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: [
-                if (rec != null && rec.previousWorkingSets.isNotEmpty)
-                  Semantics(
-                    label: 'Repetir carga e repetições da última sessão',
-                    button: true,
-                    child: Material(
-                      type: MaterialType.transparency,
-                      child: InkWell(
-                        onTap: () => _repeatLastSession(rec),
-                        borderRadius: BorderRadius.circular(radius.medium),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(
-                            minWidth: 48,
-                            minHeight: 48,
-                          ),
-                          child: Center(
-                            widthFactor: 1,
-                            child: Ink(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: context.appSpacing.space12,
-                                vertical: context.appSpacing.space8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.surfaceElevated,
-                                borderRadius:
-                                    BorderRadius.circular(radius.medium),
-                                border: Border.all(color: colors.border),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.replay_rounded,
-                                    size: 15,
-                                    color: colors.primaryLight,
-                                  ),
-                                  AppSpacing.horizontalGap4,
-                                  Flexible(
-                                    child: Text(
-                                      'Repetir última',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: context.textTheme.labelSmall
-                                          ?.copyWith(
-                                        color: colors.textPrimary,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+            // Column Labels
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (!isCardio &&
+                    !hasCompactRow &&
+                    constraints.maxWidth < (widget.showRir ? 520.0 : 448.0)) {
+                  return const SizedBox.shrink();
+                }
+                return Padding(
+                  padding: EdgeInsets.only(
+                    left: context.appSpacing.space4,
+                    right: context.appSpacing.space4,
+                    bottom: context.appSpacing.space8,
                   ),
-                if (defaultWeight > 0 || se.sets.isNotEmpty)
-                  Semantics(
-                    label: 'Concluir séries restantes deste exercício',
-                    button: true,
-                    child: Material(
-                      type: MaterialType.transparency,
-                      child: InkWell(
-                        onTap: _isBulkCompleting
-                            ? null
-                            : () => _completeAllRemainingSets(
-                                  defaultWeight: defaultWeight,
-                                ),
-                        borderRadius: BorderRadius.circular(radius.medium),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(
-                            minWidth: 48,
-                            minHeight: 48,
-                          ),
-                          child: Center(
-                            widthFactor: 1,
-                            child: Ink(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: context.appSpacing.space12,
-                                vertical: context.appSpacing.space8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.primaryMuted,
-                                borderRadius:
-                                    BorderRadius.circular(radius.medium),
-                                border: Border.all(
-                                  color: colors.primary.withValues(alpha: 0.35),
+                  child: isCardio
+                      ? Row(
+                          children: [
+                            SizedBox(
+                              width: 34,
+                              child: Semantics(
+                                label: 'Bloco',
+                                excludeSemantics: true,
+                                child: Text(
+                                  'BL.',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                  style: context.textTheme.labelSmall?.copyWith(
+                                    color: colors.textTertiary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (_isBulkCompleting)
-                                    SizedBox(
-                                      width: 14,
-                                      height: 14,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: colors.primaryLight,
-                                      ),
-                                    )
-                                  else
-                                    Icon(
-                                      Icons.done_all_rounded,
-                                      size: 15,
-                                      color: colors.primaryLight,
-                                    ),
-                                  AppSpacing.horizontalGap4,
-                                  Flexible(
-                                    child: Text(
-                                      'Concluir restantes',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: context.textTheme.labelSmall
-                                          ?.copyWith(
-                                        color: colors.primaryLight,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
                             ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ],
-          const SizedBox(height: 8),
-
-          // Column Labels
-          LayoutBuilder(
-            builder: (context, constraints) {
-              if (!isCardio &&
-                  !hasCompactRow &&
-                  constraints.maxWidth < (widget.showRir ? 520.0 : 448.0)) {
-                return const SizedBox.shrink();
-              }
-              return Padding(
-                padding: EdgeInsets.only(
-                  left: context.appSpacing.space4,
-                  right: context.appSpacing.space4,
-                  bottom: context.appSpacing.space8,
-                ),
-                child: isCardio
-                    ? Row(
-                        children: [
-                          SizedBox(
-                            width: 34,
-                            child: Semantics(
-                              label: 'Bloco',
-                              excludeSemantics: true,
+                            AppSpacing.horizontalGap8,
+                            Expanded(
                               child: Text(
-                                'BL.',
+                                'TEMPO (MIN)',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.center,
@@ -991,89 +1007,11 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                                 ),
                               ),
                             ),
-                          ),
-                          AppSpacing.horizontalGap8,
-                          Expanded(
-                            child: Text(
-                              'TEMPO (MIN)',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                              style: context.textTheme.labelSmall?.copyWith(
-                                color: colors.textTertiary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          AppSpacing.horizontalGap8,
-                          SizedBox(
-                            width: 48,
-                            child: Text(
-                              'FEITO',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                              style: context.textTheme.labelSmall?.copyWith(
-                                color: colors.textTertiary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      )
-                    : Row(
-                        children: [
-                          SizedBox(
-                            width: 48,
-                            child: Semantics(
-                              label: 'Série',
-                              excludeSemantics: true,
-                              child: Text(
-                                'SÉR.',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                                style: context.textTheme.labelSmall?.copyWith(
-                                  color: colors.textTertiary,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ),
-                          AppSpacing.horizontalGap8,
-                          Expanded(
-                            flex: 12,
-                            child: Text(
-                              'KG',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                              style: context.textTheme.labelSmall?.copyWith(
-                                color: colors.textTertiary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          AppSpacing.horizontalGap8,
-                          Expanded(
-                            flex: 10,
-                            child: Text(
-                              'REPS',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                              style: context.textTheme.labelSmall?.copyWith(
-                                color: colors.textTertiary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          if (widget.showRir) ...[
                             AppSpacing.horizontalGap8,
                             SizedBox(
-                              width: 58,
+                              width: 48,
                               child: Text(
-                                'RIR',
+                                'FEITO',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.center,
@@ -1084,227 +1022,289 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                               ),
                             ),
                           ],
-                          AppSpacing.horizontalGap8,
-                          SizedBox(
-                            width: 48,
-                            child: Text(
-                              'FEITO',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                              style: context.textTheme.labelSmall?.copyWith(
-                                color: colors.textTertiary,
-                                fontWeight: FontWeight.w700,
+                        )
+                      : Row(
+                          children: [
+                            SizedBox(
+                              width: 48,
+                              child: Semantics(
+                                label: 'Série',
+                                excludeSemantics: true,
+                                child: Text(
+                                  'SÉR.',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                  style: context.textTheme.labelSmall?.copyWith(
+                                    color: colors.textTertiary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-              );
-            },
-          ),
+                            AppSpacing.horizontalGap8,
+                            Expanded(
+                              flex: 12,
+                              child: Text(
+                                'KG',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: colors.textTertiary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            AppSpacing.horizontalGap8,
+                            Expanded(
+                              flex: 10,
+                              child: Text(
+                                'REPS',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: colors.textTertiary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            if (widget.showRir) ...[
+                              AppSpacing.horizontalGap8,
+                              SizedBox(
+                                width: 58,
+                                child: Text(
+                                  'RIR',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                  style: context.textTheme.labelSmall?.copyWith(
+                                    color: colors.textTertiary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            AppSpacing.horizontalGap8,
+                            SizedBox(
+                              width: 48,
+                              child: Text(
+                                'FEITO',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: context.textTheme.labelSmall?.copyWith(
+                                  color: colors.textTertiary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                );
+              },
+            ),
 
-          // Set Rows
-          ...List.generate(_totalRowsCount, (idx) {
-            final setNumber = idx + 1;
-            final LoggedSet? logged = _findLoggedSetForNumber(setNumber);
+            // Set Rows
+            ...List.generate(_totalRowsCount, (idx) {
+              final setNumber = idx + 1;
+              final LoggedSet? logged = _findLoggedSetForNumber(setNumber);
 
-            final resolvedDefaults = _resolveDefaultsForSet(
-              setNumber: setNumber,
-              defaultWeight: defaultWeight,
-            );
-            final hasRemainingUnlogged = [
-              for (var n = setNumber + 1; n <= _totalRowsCount; n++)
-                if (_findLoggedSetForNumber(n) == null) n,
-            ].isNotEmpty;
-
-            final initialType = _extraRowTypes[setNumber] ??
-                (idx < se.prescribedSetTypes.length
-                    ? se.prescribedSetTypes[idx]
-                    : SetType.working);
-
-            return KeyedSubtree(
-              key: _rowKeyForSet(setNumber),
-              child: LoggedSetRow(
-                key: ValueKey('set_${se.id}_$setNumber'),
+              final resolvedDefaults = _resolveDefaultsForSet(
                 setNumber: setNumber,
-                initialType: initialType,
-                loggedSet: logged,
-                defaultWeight: resolvedDefaults.weightKg,
-                defaultReps: resolvedDefaults.reps,
-                defaultDurationMinutes:
-                    se.targetRepsMin > 0 ? se.targetRepsMin : 15,
-                defaultRir: se.targetRir,
-                weightIncrement: widget.weightIncrement,
-                showRir: widget.showRir,
-                isCardio: isCardio,
-                isExpanded: isCardio || expandedSetNumber == setNumber,
-                syncToken: _syncToken,
-                focusNode: isCardio ? null : _focusNodeForSet(setNumber),
-                onRequestExpand: isCardio ? null : () => _expandSet(setNumber),
-                onRegisterRowGuard: isCardio
-                    ? null
-                    : (guard) {
-                        if (guard == null) {
-                          _rowGuards.remove(setNumber);
-                        } else {
-                          _rowGuards[setNumber] = guard;
-                        }
-                      },
-                onDiscardEdits: isCardio
-                    ? null
-                    : () {
-                        if (_manuallyExpandedSetNumber == setNumber) {
-                          setState(() => _manuallyExpandedSetNumber = null);
-                        }
-                      },
-                onApplyToRemaining: (!isCardio && hasRemainingUnlogged)
-                    ? (w, r) => _applyToRemainingSets(setNumber, w, r)
-                    : null,
-                onDraftChanged: isCardio
-                    ? null
-                    : (w, r) {
-                        _draftBySetNumber[setNumber] =
-                            (weightKg: w, reps: r);
-                      },
-                onSave: ({
-                  required double weightKg,
-                  required int repsCompleted,
-                  int? durationSeconds,
-                  int? rirActual,
-                  required SetType setType,
-                  List<DropSetEntry> dropSets = const [],
-                  String? existingSetId,
-                }) {
-                  if (!isCardio && logged == null) {
-                    _pendingCompletedSetForAutoFocus = setNumber;
-                    if (_manuallyExpandedSetNumber == setNumber) {
-                      setState(() => _manuallyExpandedSetNumber = null);
-                    }
-                  }
-                  return widget.onLogSet(
-                    sessionExerciseId: se.id,
-                    setNumber: setNumber,
-                    setType: setType,
-                    weightKg: weightKg,
-                    repsCompleted: repsCompleted,
-                    durationSeconds: durationSeconds,
-                    rirActual: rirActual,
-                    restSeconds: isCardio ? 0 : se.targetRestSeconds,
-                    dropSets: dropSets,
-                    existingSetId: existingSetId,
-                  );
-                },
-                onDelete: logged != null && widget.onDeleteSet != null
-                    ? () => widget.onDeleteSet!(logged.id)
-                    : null,
-              ),
-            );
-          }),
+                defaultWeight: defaultWeight,
+              );
+              final hasRemainingUnlogged = [
+                for (var n = setNumber + 1; n <= _totalRowsCount; n++)
+                  if (_findLoggedSetForNumber(n) == null) n,
+              ].isNotEmpty;
 
-          const SizedBox(height: 6),
-          if (!isCardio) ...[
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                const LiftrBadge(
-                  label: 'AQ',
-                  tone: LiftrBadgeTone.warning,
-                ),
-                const LiftrBadge(
-                  label: 'DROP',
-                  tone: LiftrBadgeTone.dropSet,
-                ),
-                Text(
-                  'Toque no nº da série para alternar tipo',
-                  style: context.textTheme.labelSmall?.copyWith(
-                    color: colors.textTertiary,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-            AppSpacing.verticalGap8,
-            Row(
-              children: [
-                Expanded(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(minHeight: 48),
-                    child: TextButton.icon(
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        setState(() {
-                          _minRowCount = _totalRowsCount + 1;
-                        });
-                        widget.onAddExtraSet?.call();
+              final initialType =
+                  _extraRowTypes[setNumber] ??
+                  (idx < se.prescribedSetTypes.length
+                      ? se.prescribedSetTypes[idx]
+                      : SetType.working);
+
+              return KeyedSubtree(
+                key: _rowKeyForSet(setNumber),
+                child: LoggedSetRow(
+                  key: ValueKey('set_${se.id}_$setNumber'),
+                  setNumber: setNumber,
+                  initialType: initialType,
+                  loggedSet: logged,
+                  defaultWeight: resolvedDefaults.weightKg,
+                  defaultReps: resolvedDefaults.reps,
+                  defaultDurationMinutes: se.targetRepsMin > 0
+                      ? se.targetRepsMin
+                      : 15,
+                  defaultRir: se.targetRir,
+                  weightIncrement: widget.weightIncrement,
+                  showRir: widget.showRir,
+                  isCardio: isCardio,
+                  isExpanded: isCardio || expandedSetNumber == setNumber,
+                  syncToken: _syncToken,
+                  focusNode: isCardio ? null : _focusNodeForSet(setNumber),
+                  onRequestExpand: isCardio
+                      ? null
+                      : () => _expandSet(setNumber),
+                  onRegisterRowGuard: isCardio
+                      ? null
+                      : (guard) {
+                          if (guard == null) {
+                            _rowGuards.remove(setNumber);
+                          } else {
+                            _rowGuards[setNumber] = guard;
+                          }
+                        },
+                  onDiscardEdits: isCardio
+                      ? null
+                      : () {
+                          if (_manuallyExpandedSetNumber == setNumber) {
+                            setState(() => _manuallyExpandedSetNumber = null);
+                          }
+                        },
+                  onApplyToRemaining: (!isCardio && hasRemainingUnlogged)
+                      ? (w, r) => _applyToRemainingSets(setNumber, w, r)
+                      : null,
+                  onDraftChanged: isCardio
+                      ? null
+                      : (w, r) {
+                          _draftBySetNumber[setNumber] = (weightKg: w, reps: r);
+                        },
+                  onSave:
+                      ({
+                        required double weightKg,
+                        required int repsCompleted,
+                        int? durationSeconds,
+                        int? rirActual,
+                        required SetType setType,
+                        List<DropSetEntry> dropSets = const [],
+                        String? existingSetId,
+                      }) {
+                        if (!isCardio && logged == null) {
+                          _pendingCompletedSetForAutoFocus = setNumber;
+                          if (_manuallyExpandedSetNumber == setNumber) {
+                            setState(() => _manuallyExpandedSetNumber = null);
+                          }
+                        }
+                        return widget.onLogSet(
+                          sessionExerciseId: se.id,
+                          setNumber: setNumber,
+                          setType: setType,
+                          weightKg: weightKg,
+                          repsCompleted: repsCompleted,
+                          durationSeconds: durationSeconds,
+                          rirActual: rirActual,
+                          restSeconds: isCardio ? 0 : se.targetRestSeconds,
+                          dropSets: dropSets,
+                          existingSetId: existingSetId,
+                        );
                       },
-                      icon: const Icon(Icons.add_rounded, size: 18),
-                      label: const Text(
-                        'Adicionar série',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      style: TextButton.styleFrom(
-                        minimumSize: const Size(48, 48),
-                        foregroundColor: colors.primaryLight,
+                  onDelete: logged != null && widget.onDeleteSet != null
+                      ? () => widget.onDeleteSet!(logged.id)
+                      : null,
+                ),
+              );
+            }),
+
+            const SizedBox(height: 6),
+            if (!isCardio) ...[
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  const LiftrBadge(label: 'AQ', tone: LiftrBadgeTone.warning),
+                  const LiftrBadge(label: 'DROP', tone: LiftrBadgeTone.dropSet),
+                  Text(
+                    'Toque no nº da série para alternar tipo',
+                    style: context.textTheme.labelSmall?.copyWith(
+                      color: colors.textTertiary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+              AppSpacing.verticalGap8,
+              Row(
+                children: [
+                  Expanded(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 48),
+                      child: TextButton.icon(
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          setState(() {
+                            _minRowCount = _totalRowsCount + 1;
+                          });
+                          widget.onAddExtraSet?.call();
+                        },
+                        icon: const Icon(Icons.add_rounded, size: 18),
+                        label: const Text(
+                          'Adicionar série',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        style: TextButton.styleFrom(
+                          minimumSize: const Size(48, 48),
+                          foregroundColor: colors.primaryLight,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(minHeight: 48),
-                    child: TextButton.icon(
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        setState(() {
-                          final nextRow = _totalRowsCount + 1;
-                          _minRowCount = nextRow;
-                          _extraRowTypes[nextRow] = SetType.dropSet;
-                          _manuallyExpandedSetNumber = nextRow;
-                        });
-                        widget.onAddExtraSet?.call();
-                      },
-                      icon: const Icon(Icons.bolt_rounded, size: 17),
-                      label: const Text(
-                        'Drop-set',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      style: TextButton.styleFrom(
-                        minimumSize: const Size(48, 48),
-                        foregroundColor: fitnessColors.dropSetTag,
+                  Expanded(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 48),
+                      child: TextButton.icon(
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          setState(() {
+                            final nextRow = _totalRowsCount + 1;
+                            _minRowCount = nextRow;
+                            _extraRowTypes[nextRow] = SetType.dropSet;
+                            _manuallyExpandedSetNumber = nextRow;
+                          });
+                          widget.onAddExtraSet?.call();
+                        },
+                        icon: const Icon(Icons.bolt_rounded, size: 17),
+                        label: const Text(
+                          'Drop-set',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        style: TextButton.styleFrom(
+                          minimumSize: const Size(48, 48),
+                          foregroundColor: fitnessColors.dropSetTag,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ] else ...[
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: TextButton.icon(
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  setState(() {
-                    _minRowCount = _totalRowsCount + 1;
-                  });
-                  widget.onAddExtraSet?.call();
-                },
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('Adicionar bloco de cardio'),
-                style: TextButton.styleFrom(
-                  minimumSize: const Size(48, 48),
-                  foregroundColor: colors.primaryLight,
+                ],
+              ),
+            ] else ...[
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: TextButton.icon(
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    setState(() {
+                      _minRowCount = _totalRowsCount + 1;
+                    });
+                    widget.onAddExtraSet?.call();
+                  },
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: const Text('Adicionar bloco de cardio'),
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(48, 48),
+                    foregroundColor: colors.primaryLight,
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
-        ],
-      ),
+        ),
       ),
     );
   }

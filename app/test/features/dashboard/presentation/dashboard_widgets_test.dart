@@ -36,33 +36,42 @@ void main() {
   }
 
   group('TodayWorkoutBanner Widget Test', () {
-    testWidgets('should render active session banner when ongoing session exists', (tester) async {
-      await tester.pumpWidget(
-        createWidgetUnderTest(
-          TodayWorkoutBanner(
-            activeSession: tSession,
-            onStartWorkout: (_) async {},
+    testWidgets(
+      'should render active session banner when ongoing session exists',
+      (tester) async {
+        await tester.pumpWidget(
+          createWidgetUnderTest(
+            TodayWorkoutBanner(
+              activeSession: tSession,
+              onStartWorkout: (_) async {},
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('EM ANDAMENTO'), findsOneWidget);
-      expect(find.text('Treino A - Peito e Tríceps'), findsOneWidget);
-      expect(find.text('Continuar Treino'), findsOneWidget);
-    });
+        expect(find.text('EM ANDAMENTO'), findsOneWidget);
+        expect(find.text('Treino A - Peito e Tríceps'), findsOneWidget);
+        expect(
+          find.text('Continuar Treino A - Peito e Tríceps'),
+          findsOneWidget,
+        );
+      },
+    );
 
-    testWidgets('should render today workout banner when scheduled workout exists', (tester) async {
-      await tester.pumpWidget(
-        createWidgetUnderTest(
-          TodayWorkoutBanner(
-            todayWorkout: tWorkout,
-            onStartWorkout: (_) async {},
+    testWidgets(
+      'should render today workout banner when scheduled workout exists',
+      (tester) async {
+        await tester.pumpWidget(
+          createWidgetUnderTest(
+            TodayWorkoutBanner(
+              todayWorkout: tWorkout,
+              onStartWorkout: (_) async {},
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Treino A - Peito e Tríceps'), findsOneWidget);
-      expect(find.text('Iniciar Treino'), findsOneWidget);
-    });
+        expect(find.text('Treino A - Peito e Tríceps'), findsOneWidget);
+        expect(find.text('Começar Treino A - Peito e Tríceps'), findsOneWidget);
+      },
+    );
   });
 }

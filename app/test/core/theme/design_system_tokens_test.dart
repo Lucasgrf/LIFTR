@@ -34,124 +34,290 @@ double _contrastRatio(Color a, Color b) {
 }
 
 void main() {
-  group('Technical Humanism Tokens & WCAG Contrast', () {
-    test('Dark palette satisfies WCAG 2.1 AA/AAA and forbids legacy purple/Inter', () {
+  group('Paper and Ink Tokens & WCAG Contrast', () {
+    test('Dark palette satisfies WCAG 2.1 AA and uses Familjen Grotesk', () {
       const dark = AppColors.dark;
       const fitness = FitnessColors.dark;
       final theme = AppTheme.dark();
 
-      expect(dark.primary, const Color(0xFF72A987));
+      expect(dark.background, const Color(0xFF151A2E));
+      expect(dark.primary, const Color(0xFF8FA8FF));
       expect(dark.primary.toARGB32(), isNot(0xFF6C63FF));
-      expect(theme.textTheme.bodyLarge?.fontFamily, 'Geist');
-      expect(theme.textTheme.displayLarge?.fontFeatures, AppTypography.tabularFeatures);
+      expect(theme.textTheme.bodyLarge?.fontFamily, 'Familjen Grotesk');
+      expect(
+        theme.textTheme.displayLarge?.fontFeatures,
+        AppTypography.tabularFeatures,
+      );
 
-      expect(_contrastRatio(dark.textPrimary, dark.background), greaterThanOrEqualTo(7.0));
-      expect(_contrastRatio(dark.textPrimary, dark.surface), greaterThanOrEqualTo(7.0));
-      expect(_contrastRatio(dark.textSecondary, dark.surface), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(dark.textSecondary, dark.surfaceElevated), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(dark.textSecondary, dark.surfaceVariant), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(dark.textTertiary, dark.surface), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(dark.textTertiary, dark.surfaceElevated), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(dark.textTertiary, dark.surfaceVariant), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(dark.onPrimary, dark.primary), greaterThanOrEqualTo(7.0));
-      expect(_contrastRatio(dark.primaryLight, dark.primaryMuted), greaterThanOrEqualTo(7.0));
-      expect(_contrastRatio(dark.warning, dark.surface), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(dark.danger, dark.surface), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(dark.danger, dark.surfaceElevated), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(dark.onPrimary, dark.danger), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(dark.info, dark.surface), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(dark.borderInteractive, dark.surface), greaterThanOrEqualTo(3.0));
-      expect(_contrastRatio(dark.borderInteractive, dark.surfaceElevated), greaterThanOrEqualTo(3.0));
-      expect(_contrastRatio(fitness.dropSetTag, dark.surface), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(fitness.progressUp, dark.surface), greaterThanOrEqualTo(4.5));
+      expect(
+        _contrastRatio(dark.textPrimary, dark.background),
+        greaterThanOrEqualTo(7.0),
+      );
+      expect(
+        _contrastRatio(dark.textPrimary, dark.surface),
+        greaterThanOrEqualTo(7.0),
+      );
+      expect(
+        _contrastRatio(dark.textSecondary, dark.surface),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(dark.textSecondary, dark.surfaceElevated),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(dark.textSecondary, dark.surfaceVariant),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(dark.textTertiary, dark.surface),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(dark.textTertiary, dark.surfaceElevated),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(dark.textTertiary, dark.surfaceVariant),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(dark.onPrimary, dark.primary),
+        greaterThanOrEqualTo(7.0),
+      );
+      expect(
+        _contrastRatio(dark.primaryLight, dark.primaryMuted),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(dark.warning, dark.surface),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(dark.danger, dark.surface),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(dark.danger, dark.surfaceElevated),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(dark.onPrimary, dark.danger),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(dark.info, dark.surface),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(dark.borderInteractive, dark.surface),
+        greaterThanOrEqualTo(3.0),
+      );
+      expect(
+        _contrastRatio(dark.borderInteractive, dark.surfaceElevated),
+        greaterThanOrEqualTo(3.0),
+      );
+      expect(
+        _contrastRatio(fitness.dropSetTag, dark.surface),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(fitness.progressUp, dark.surface),
+        greaterThanOrEqualTo(4.5),
+      );
       expect(dark.primaryVariant, dark.primaryPressed);
-      expect(dark.success, dark.primary);
+      expect(dark.success, dark.danger);
     });
 
-    test('Light palette satisfies WCAG 2.1 AA/AAA with Deep Botanical primary', () {
+    test('Light palette satisfies WCAG 2.1 AA with Pen Blue primary', () {
       const light = AppColors.light;
       const fitness = FitnessColors.light;
       final theme = AppTheme.light();
 
-      expect(light.primary, const Color(0xFF315B43));
-      expect(light.onPrimary, const Color(0xFFF2F2F0));
-      expect(theme.textTheme.bodyLarge?.fontFamily, 'Geist');
+      expect(light.background, const Color(0xFFF4F5F0));
+      expect(light.primary, const Color(0xFF1C3FAA));
+      expect(light.onPrimary, const Color(0xFFF4F5F0));
+      expect(theme.textTheme.bodyLarge?.fontFamily, 'Familjen Grotesk');
       expect(light.surfaceSubtle, isNot(light.surface));
       expect(light.surface, isNot(light.surfaceElevated));
 
-      expect(_contrastRatio(light.textPrimary, light.background), greaterThanOrEqualTo(7.0));
-      expect(_contrastRatio(light.textSecondary, light.background), greaterThanOrEqualTo(7.0));
-      expect(_contrastRatio(light.textSecondary, light.surfaceElevated), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(light.textSecondary, light.surfaceVariant), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(light.textTertiary, light.surface), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(light.textTertiary, light.surfaceElevated), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(light.textTertiary, light.surfaceVariant), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(light.primary, light.background), greaterThanOrEqualTo(7.0));
-      expect(_contrastRatio(light.onPrimary, light.primary), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(light.warning, light.background), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(light.warning, light.surfaceSubtle), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(light.warning, light.surface), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(light.danger, light.surface), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(light.danger, light.surfaceElevated), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(light.onPrimary, light.danger), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(light.info, light.surface), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(light.borderInteractive, light.surface), greaterThanOrEqualTo(3.0));
-      expect(_contrastRatio(light.borderInteractive, light.surfaceElevated), greaterThanOrEqualTo(3.0));
-      expect(_contrastRatio(fitness.dropSetTag, light.surface), greaterThanOrEqualTo(4.5));
-      expect(_contrastRatio(fitness.progressUp, light.surface), greaterThanOrEqualTo(4.5));
+      expect(
+        _contrastRatio(light.textPrimary, light.background),
+        greaterThanOrEqualTo(7.0),
+      );
+      expect(
+        _contrastRatio(light.textSecondary, light.background),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(light.textSecondary, light.surfaceElevated),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(light.textSecondary, light.surfaceVariant),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(light.textTertiary, light.surface),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(light.textTertiary, light.surfaceElevated),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(light.textTertiary, light.surfaceVariant),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(light.primary, light.background),
+        greaterThanOrEqualTo(7.0),
+      );
+      expect(
+        _contrastRatio(light.onPrimary, light.primary),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(light.warning, light.background),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(light.warning, light.surfaceSubtle),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(light.warning, light.surface),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(light.danger, light.surface),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(light.danger, light.surfaceElevated),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(light.onPrimary, light.danger),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(light.info, light.surface),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(light.borderInteractive, light.surface),
+        greaterThanOrEqualTo(3.0),
+      );
+      expect(
+        _contrastRatio(light.borderInteractive, light.surfaceElevated),
+        greaterThanOrEqualTo(3.0),
+      );
+      expect(
+        _contrastRatio(fitness.dropSetTag, light.surface),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(fitness.progressUp, light.surface),
+        greaterThanOrEqualTo(4.5),
+      );
       expect(light.primaryVariant, light.primaryPressed);
-      expect(light.success, light.primary);
+      expect(light.success, light.danger);
     });
 
-    test('AppRadius and AppMotion expose restrained geometry and motion budgets', () {
-      final theme = AppTheme.dark();
-      final radius = theme.extension<AppRadius>()!;
-      final motion = theme.extension<AppMotion>()!;
+    test(
+      'AppRadius and AppMotion expose restrained geometry and motion budgets',
+      () {
+        final theme = AppTheme.dark();
+        final radius = theme.extension<AppRadius>()!;
+        final motion = theme.extension<AppMotion>()!;
 
-      expect(radius.none, 0);
-      expect(radius.xs, 4);
-      expect(radius.small, 8);
-      expect(radius.medium, 12);
-      expect(radius.large, 16);
-      expect(radius.xl, 16);
-      expect(radius.full, 999);
+        expect(radius.none, 0);
+        expect(radius.xs, 4);
+        expect(radius.small, 6);
+        expect(radius.medium, 12);
+        expect(radius.large, 20);
+        expect(radius.xl, 20);
+        expect(radius.full, 999);
 
-      expect(motion.instant, Duration.zero);
-      expect(motion.fast.inMilliseconds, 140);
-      expect(motion.standard.inMilliseconds, 220);
-      expect(motion.emphasis.inMilliseconds, lessThanOrEqualTo(260));
-      expect(motion.curveStandard, const Cubic(0.23, 1.0, 0.32, 1.0));
-    });
+        expect(motion.instant, Duration.zero);
+        expect(motion.fast.inMilliseconds, 140);
+        expect(motion.standard.inMilliseconds, 220);
+        expect(motion.emphasis.inMilliseconds, lessThanOrEqualTo(260));
+        expect(motion.curveStandard, const Cubic(0.23, 1.0, 0.32, 1.0));
+      },
+    );
 
-    test('AppTypography defines complete monotonic scale, tabular bodyLarge, and 14sp labelLarge', () {
-      for (final theme in [AppTheme.dark(), AppTheme.light()]) {
-        final tt = theme.textTheme;
-        expect(tt.displaySmall?.fontSize, 28);
-        expect(tt.displaySmall?.fontFeatures, isNotEmpty);
-        expect(tt.headlineSmall?.fontSize, 20);
-        expect(tt.headlineSmall?.fontFeatures, isNotEmpty);
-        expect(tt.bodyLarge?.fontSize, 16);
-        expect(tt.bodyLarge?.fontFeatures, isNotEmpty);
-        expect(tt.labelLarge?.fontSize, 14);
-        expect(tt.labelSmall?.fontSize, greaterThanOrEqualTo(11));
+    test(
+      'AppTypography defines complete monotonic scale, tabular bodyLarge, and 14sp labelLarge',
+      () {
+        for (final theme in [AppTheme.dark(), AppTheme.light()]) {
+          final tt = theme.textTheme;
+          expect(tt.displaySmall?.fontSize, 28);
+          expect(tt.displaySmall?.fontFeatures, isNotEmpty);
+          expect(tt.headlineSmall?.fontSize, 20);
+          expect(tt.headlineSmall?.fontFeatures, isNotEmpty);
+          expect(tt.bodyLarge?.fontSize, 16);
+          expect(tt.bodyLarge?.fontFeatures, isNotEmpty);
+          expect(tt.labelLarge?.fontSize, 14);
+          expect(tt.labelSmall?.fontSize, greaterThanOrEqualTo(11));
 
-        // Monotonic type scale: display >= headline >= title, body, label.
-        expect(tt.displayLarge!.fontSize, greaterThanOrEqualTo(tt.displayMedium!.fontSize!));
-        expect(tt.displayMedium!.fontSize, greaterThanOrEqualTo(tt.displaySmall!.fontSize!));
-        expect(tt.displaySmall!.fontSize, greaterThanOrEqualTo(tt.headlineLarge!.fontSize!));
-        expect(tt.headlineLarge!.fontSize, greaterThanOrEqualTo(tt.headlineMedium!.fontSize!));
-        expect(tt.headlineMedium!.fontSize, greaterThanOrEqualTo(tt.headlineSmall!.fontSize!));
-        expect(tt.headlineSmall!.fontSize, greaterThanOrEqualTo(tt.titleLarge!.fontSize!));
-        expect(tt.titleLarge!.fontSize, greaterThanOrEqualTo(tt.titleMedium!.fontSize!));
-        expect(tt.titleMedium!.fontSize, greaterThanOrEqualTo(tt.titleSmall!.fontSize!));
-        expect(tt.bodyLarge!.fontSize, greaterThanOrEqualTo(tt.bodyMedium!.fontSize!));
-        expect(tt.bodyMedium!.fontSize, greaterThanOrEqualTo(tt.bodySmall!.fontSize!));
-        expect(tt.labelLarge!.fontSize, greaterThanOrEqualTo(tt.labelMedium!.fontSize!));
-        expect(tt.labelMedium!.fontSize, greaterThanOrEqualTo(tt.labelSmall!.fontSize!));
-      }
-    });
+          // Monotonic type scale: display >= headline >= title, body, label.
+          expect(
+            tt.displayLarge!.fontSize,
+            greaterThanOrEqualTo(tt.displayMedium!.fontSize!),
+          );
+          expect(
+            tt.displayMedium!.fontSize,
+            greaterThanOrEqualTo(tt.displaySmall!.fontSize!),
+          );
+          expect(
+            tt.displaySmall!.fontSize,
+            greaterThanOrEqualTo(tt.headlineLarge!.fontSize!),
+          );
+          expect(
+            tt.headlineLarge!.fontSize,
+            greaterThanOrEqualTo(tt.headlineMedium!.fontSize!),
+          );
+          expect(
+            tt.headlineMedium!.fontSize,
+            greaterThanOrEqualTo(tt.headlineSmall!.fontSize!),
+          );
+          expect(
+            tt.headlineSmall!.fontSize,
+            greaterThanOrEqualTo(tt.titleLarge!.fontSize!),
+          );
+          expect(
+            tt.titleLarge!.fontSize,
+            greaterThanOrEqualTo(tt.titleMedium!.fontSize!),
+          );
+          expect(
+            tt.titleMedium!.fontSize,
+            greaterThanOrEqualTo(tt.titleSmall!.fontSize!),
+          );
+          expect(
+            tt.bodyLarge!.fontSize,
+            greaterThanOrEqualTo(tt.bodyMedium!.fontSize!),
+          );
+          expect(
+            tt.bodyMedium!.fontSize,
+            greaterThanOrEqualTo(tt.bodySmall!.fontSize!),
+          );
+          expect(
+            tt.labelLarge!.fontSize,
+            greaterThanOrEqualTo(tt.labelMedium!.fontSize!),
+          );
+          expect(
+            tt.labelMedium!.fontSize,
+            greaterThanOrEqualTo(tt.labelSmall!.fontSize!),
+          );
+        }
+      },
+    );
 
-    testWidgets('AppMotion.resolve honors MediaQuery disableAnimations', (tester) async {
+    testWidgets('AppMotion.resolve honors MediaQuery disableAnimations', (
+      tester,
+    ) async {
       late Duration resolvedNormal;
       late Duration resolvedReduced;
 
@@ -164,7 +330,10 @@ void main() {
                 data: const MediaQueryData(disableAnimations: false),
                 child: Builder(
                   builder: (ctx) {
-                    resolvedNormal = ctx.appMotion.resolve(ctx, ctx.appMotion.standard);
+                    resolvedNormal = ctx.appMotion.resolve(
+                      ctx,
+                      ctx.appMotion.standard,
+                    );
                     return const SizedBox.shrink();
                   },
                 ),
@@ -173,7 +342,10 @@ void main() {
                 data: const MediaQueryData(disableAnimations: true),
                 child: Builder(
                   builder: (ctx) {
-                    resolvedReduced = ctx.appMotion.resolve(ctx, ctx.appMotion.standard);
+                    resolvedReduced = ctx.appMotion.resolve(
+                      ctx,
+                      ctx.appMotion.standard,
+                    );
                     return const SizedBox.shrink();
                   },
                 ),
@@ -187,37 +359,49 @@ void main() {
       expect(resolvedReduced, Duration.zero);
     });
 
-    testWidgets('LiftrBrandMark and LiftrWordmark render SVG monolith in dark and light themes',
-        (tester) async {
-      for (final theme in [AppTheme.dark(), AppTheme.light()]) {
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: theme,
-            home: const Scaffold(
-              body: Column(
-                children: [
-                  LiftrBrandMark(size: 32),
-                  LiftrBrandMark(size: 16, variant: LiftrMarkVariant.monoLight),
-                  LiftrBrandMark(size: 16, variant: LiftrMarkVariant.monoDark),
-                  LiftrWordmark(),
-                ],
+    testWidgets(
+      'LiftrBrandMark and LiftrWordmark render the ramp and lockup in dark and light themes',
+      (tester) async {
+        for (final theme in [AppTheme.dark(), AppTheme.light()]) {
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: theme,
+              home: const Scaffold(
+                body: Column(
+                  children: [
+                    LiftrBrandMark(size: 32),
+                    LiftrBrandMark(
+                      size: 16,
+                      variant: LiftrMarkVariant.monoLight,
+                    ),
+                    LiftrBrandMark(
+                      size: 16,
+                      variant: LiftrMarkVariant.monoDark,
+                    ),
+                    LiftrWordmark(),
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-        await tester.pumpAndSettle();
+          );
+          await tester.pumpAndSettle();
 
-        expect(find.byType(SvgPicture), findsNWidgets(4));
-        expect(find.text('LIFTR'), findsOneWidget);
-        expect(tester.takeException(), isNull);
-      }
-    });
+          expect(find.byType(SvgPicture), findsNWidgets(4));
+          expect(find.bySemanticsLabel('liftr'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        }
+      },
+    );
 
-    test('A11Y-01 TextButtonThemeData enforces minimumSize 48x48 in dark and light themes', () {
-      for (final theme in [AppTheme.dark(), AppTheme.light()]) {
-        final resolvedSize = theme.textButtonTheme.style?.minimumSize?.resolve({});
-        expect(resolvedSize, const Size(48, 48));
-      }
-    });
+    test(
+      'A11Y-01 TextButtonThemeData enforces minimumSize 48x48 in dark and light themes',
+      () {
+        for (final theme in [AppTheme.dark(), AppTheme.light()]) {
+          final resolvedSize = theme.textButtonTheme.style?.minimumSize
+              ?.resolve({});
+          expect(resolvedSize, const Size(48, 48));
+        }
+      },
+    );
   });
 }

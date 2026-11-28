@@ -49,7 +49,7 @@ import 'package:personal_fitness_os/features/workout_session/presentation/screen
 class _FakeProgressionRepository implements ProgressionRepository {
   @override
   Future<Result<ExercisePerformanceHistory?, Failure>>
-      getLastExercisePerformance(String exerciseId) async {
+  getLastExercisePerformance(String exerciseId) async {
     return Success(
       ExercisePerformanceHistory(
         exerciseId: exerciseId,
@@ -80,10 +80,7 @@ class _FakeProgressionRepository implements ProgressionRepository {
 
   @override
   Future<Result<List<ExercisePerformanceHistory>, Failure>>
-      getRecentExercisePerformances(
-    String exerciseId, {
-    int limit = 2,
-  }) async {
+  getRecentExercisePerformances(String exerciseId, {int limit = 2}) async {
     return Success([
       ExercisePerformanceHistory(
         exerciseId: exerciseId,
@@ -190,11 +187,7 @@ class _FakeSessionRepository implements SessionRepository {
   @override
   Future<Result<WorkoutSession, Failure>> getSessionById(String id) async {
     return Success(
-      WorkoutSession(
-        id: id,
-        userId: 'u-1',
-        startedAt: DateTime(2026, 11, 20),
-      ),
+      WorkoutSession(id: id, userId: 'u-1', startedAt: DateTime(2026, 11, 20)),
     );
   }
 
@@ -443,155 +436,166 @@ void main() {
   }
 
   group('LIFTR Design System Tokens', () {
-    test('AppTheme dark and light expose required ThemeExtensions and tokens', () {
-      final dark = AppTheme.dark();
-      final light = AppTheme.light();
+    test(
+      'AppTheme dark and light expose required ThemeExtensions and tokens',
+      () {
+        final dark = AppTheme.dark();
+        final light = AppTheme.light();
 
-      final darkColors = dark.extension<AppColors>()!;
-      final darkFitness = dark.extension<FitnessColors>()!;
-      final darkRadius = dark.extension<AppRadius>()!;
-      final darkSpacing = dark.extension<AppSpacing>()!;
+        final darkColors = dark.extension<AppColors>()!;
+        final darkFitness = dark.extension<FitnessColors>()!;
+        final darkRadius = dark.extension<AppRadius>()!;
+        final darkSpacing = dark.extension<AppSpacing>()!;
 
-      expect(darkColors.background, const Color(0xFF0D0D0F));
-      expect(darkColors.surface, const Color(0xFF1A1A1F));
-      expect(darkColors.primary, const Color(0xFF72A987));
-      expect(darkColors.onPrimary, const Color(0xFF0D0D0F));
-      expect(darkColors.danger, const Color(0xFFE07575));
-      expect(darkFitness.progressUp, const Color(0xFF72A987));
-      expect(darkFitness.warmupTag, const Color(0xFF6E9EC7));
-      expect(darkRadius.xl, 16);
-      expect(darkSpacing.space16, 16);
-      expect(dark.colorScheme.primary, const Color(0xFF72A987));
-      expect(dark.colorScheme.primary == Colors.blue, isFalse);
+        expect(darkColors.background, const Color(0xFF151A2E));
+        expect(darkColors.surface, const Color(0xFF151A2E));
+        expect(darkColors.primary, const Color(0xFF8FA8FF));
+        expect(darkColors.onPrimary, const Color(0xFF151A2E));
+        expect(darkColors.danger, const Color(0xFFFF8A7A));
+        expect(darkFitness.progressUp, const Color(0xFF8FA8FF));
+        expect(darkFitness.warmupTag, const Color(0xFFA9B0C2));
+        expect(darkRadius.xl, 20);
+        expect(darkSpacing.space16, 16);
+        expect(dark.colorScheme.primary, const Color(0xFF8FA8FF));
+        expect(dark.colorScheme.primary == Colors.blue, isFalse);
 
-      final lightColors = light.extension<AppColors>()!;
-      expect(lightColors.background, const Color(0xFFF4F4F0));
-      expect(lightColors.primary, const Color(0xFF315B43));
-      expect(lightColors.onPrimary, const Color(0xFFF2F2F0));
-    });
+        final lightColors = light.extension<AppColors>()!;
+        expect(lightColors.background, const Color(0xFFF4F5F0));
+        expect(lightColors.primary, const Color(0xFF1C3FAA));
+        expect(lightColors.onPrimary, const Color(0xFFF4F5F0));
+      },
+    );
   });
 
   group('Auth & Onboarding Screens', () {
-    testWidgets('LoginScreen and RegisterScreen render LIFTR identity',
-        (tester) async {
+    testWidgets('LoginScreen and RegisterScreen render LIFTR identity', (
+      tester,
+    ) async {
       await tester.pumpWidget(wrapApp(const LoginScreen()));
-      expect(find.text('LIFTR'), findsOneWidget);
+      expect(find.bySemanticsLabel('liftr'), findsOneWidget);
       expect(
-        find.text('Treine hoje. O resto acontece no WhatsApp.'),
+        find.text('Seu próximo treino, sem calendário fixo.'),
         findsOneWidget,
       );
       expect(find.text('Entrar'), findsOneWidget);
 
       await tester.pumpWidget(wrapApp(const RegisterScreen()));
-      expect(find.text('LIFTR'), findsOneWidget);
+      expect(find.bySemanticsLabel('liftr'), findsOneWidget);
       expect(find.text('Criar conta'), findsOneWidget);
     });
 
-    testWidgets('OnboardingScreen advances 6 steps and updates split dynamically',
-        (tester) async {
-      await tester.pumpWidget(wrapApp(const OnboardingScreen()));
+    testWidgets(
+      'OnboardingScreen advances 6 steps and updates split dynamically',
+      (tester) async {
+        await tester.pumpWidget(wrapApp(const OnboardingScreen()));
 
-      expect(find.text('Passo 1 de 6'), findsOneWidget);
-      expect(find.text('Seus dados corporais'), findsOneWidget);
-      await tester.tap(find.text('Continuar'));
-      await tester.pumpAndSettle();
+        expect(find.text('Passo 1 de 6'), findsOneWidget);
+        expect(find.text('Seus dados corporais'), findsOneWidget);
+        await tester.tap(find.text('Continuar'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Passo 2 de 6'), findsOneWidget);
-      await tester.tap(find.text('Cutting'));
-      await tester.tap(find.text('Continuar'));
-      await tester.pumpAndSettle();
+        expect(find.text('Passo 2 de 6'), findsOneWidget);
+        await tester.tap(find.text('Cutting'));
+        await tester.tap(find.text('Continuar'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Passo 3 de 6'), findsOneWidget);
-      await tester.tap(find.text('Iniciante'));
-      await tester.tap(find.text('Continuar'));
-      await tester.pumpAndSettle();
+        expect(find.text('Passo 3 de 6'), findsOneWidget);
+        await tester.tap(find.text('Iniciante'));
+        await tester.tap(find.text('Continuar'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Passo 4 de 6'), findsOneWidget);
-      await tester.tap(find.text('Levemente ativo'));
-      await tester.tap(find.text('Continuar'));
-      await tester.pumpAndSettle();
+        expect(find.text('Passo 4 de 6'), findsOneWidget);
+        await tester.tap(find.text('Levemente ativo'));
+        await tester.tap(find.text('Continuar'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Passo 5 de 6'), findsOneWidget);
-      expect(find.text('4 dias → Upper / Lower'), findsOneWidget);
+        expect(find.text('Passo 5 de 6'), findsOneWidget);
+        expect(find.text('4 dias → Upper / Lower'), findsOneWidget);
 
-      await tester.tap(find.text('3'));
-      await tester.pump();
-      expect(find.text('3 dias → Full Body 3×'), findsOneWidget);
+        await tester.tap(find.text('3'));
+        await tester.pump();
+        expect(find.text('3 dias → Full Body 3×'), findsOneWidget);
 
-      await tester.tap(find.text('6'));
-      await tester.pump();
-      expect(find.text('6 dias → Push / Pull / Legs 2×'), findsOneWidget);
+        await tester.tap(find.text('6'));
+        await tester.pump();
+        expect(find.text('6 dias → Push / Pull / Legs 2×'), findsOneWidget);
 
-      await tester.tap(find.text('Confirmar programa'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Confirmar programa'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Passo 6 de 6'), findsOneWidget);
-      expect(find.text('Conectar WhatsApp'), findsOneWidget);
-      expect(find.text('Pular e fazer depois'), findsOneWidget);
-    });
+        expect(find.text('Passo 6 de 6'), findsOneWidget);
+        expect(find.text('Conectar WhatsApp'), findsOneWidget);
+        expect(find.text('Pular e fazer depois'), findsOneWidget);
+      },
+    );
   });
 
   group('DashboardScreen (Hoje)', () {
     testWidgets(
-        'renders Hero Card, today exercises, max 1 insight, and excludes nutrition/goals',
-        (tester) async {
-      final dashboardData = DashboardData(
-        activePlan: tPlan,
-        todayWorkout: tLowerA,
-      );
-      final insights = [
-        FitnessInsight(
-          id: 'in-1',
-          title: 'Agachamento pronto para subir',
-          description: 'Complete 3x12 hoje para liberar 62,5 kg.',
-          category: InsightCategory.consistency,
-          severity: InsightSeverity.success,
-          createdAt: DateTime(2026, 11, 20),
-        ),
-        FitnessInsight(
-          id: 'in-2',
-          title: 'Segundo insight oculto',
-          description: 'Não deve aparecer.',
-          category: InsightCategory.volume,
-          severity: InsightSeverity.info,
-          createdAt: DateTime(2026, 11, 20),
-        ),
-      ];
+      'renders Hero Card, today exercises, max 1 insight, and excludes nutrition/goals',
+      (tester) async {
+        final dashboardData = DashboardData(
+          activePlan: tPlan,
+          todayWorkout: tLowerA,
+        );
+        final insights = [
+          FitnessInsight(
+            id: 'in-1',
+            title: 'Agachamento pronto para subir',
+            description: 'Complete 3x12 hoje para liberar 62,5 kg.',
+            category: InsightCategory.consistency,
+            severity: InsightSeverity.success,
+            createdAt: DateTime(2026, 11, 20),
+          ),
+          FitnessInsight(
+            id: 'in-2',
+            title: 'Segundo insight oculto',
+            description: 'Não deve aparecer.',
+            category: InsightCategory.volume,
+            severity: InsightSeverity.info,
+            createdAt: DateTime(2026, 11, 20),
+          ),
+        ];
 
-      await tester.pumpWidget(
-        wrapApp(
-          const DashboardScreen(),
-          overrides: [
-            dashboardDataProvider.overrideWith((_) async => dashboardData),
-            fitnessInsightsProvider.overrideWith((_) async => insights),
-            progressionRepositoryProvider
-                .overrideWithValue(_FakeProgressionRepository()),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          wrapApp(
+            const DashboardScreen(),
+            overrides: [
+              dashboardDataProvider.overrideWith((_) async => dashboardData),
+              fitnessInsightsProvider.overrideWith((_) async => insights),
+              progressionRepositoryProvider.overrideWithValue(
+                _FakeProgressionRepository(),
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Hoje'), findsOneWidget);
-      expect(find.text('Lower A'), findsOneWidget);
-      expect(find.text('Treino 1 de 2 · Próximo'), findsOneWidget);
-      expect(find.text('Pular / Trocar'), findsOneWidget);
-      expect(find.text('Iniciar Treino'), findsOneWidget);
-      expect(find.text('Exercícios de hoje'), findsOneWidget);
-      expect(find.text('Agachamento Livre'), findsOneWidget);
-      expect(find.textContaining('Agachamento pronto para subir'), findsOneWidget);
-      expect(find.textContaining('Segundo insight oculto'), findsNothing);
+        expect(find.text('Hoje'), findsOneWidget);
+        expect(find.text('Lower A'), findsOneWidget);
+        expect(find.text('FICHA 1 DE 2 · PRÓXIMA'), findsOneWidget);
+        expect(find.text('Pular / Trocar'), findsOneWidget);
+        expect(find.text('Começar Lower A'), findsOneWidget);
+        expect(find.text('Exercícios de hoje'), findsOneWidget);
+        expect(find.text('Agachamento Livre'), findsOneWidget);
+        expect(
+          find.textContaining('Agachamento pronto para subir'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Segundo insight oculto'), findsNothing);
 
-      expect(find.text('NUTRIÇÃO HOJE'), findsNothing);
-      expect(find.text('METAS EM ANDAMENTO'), findsNothing);
-      expect(find.text('Consistência Semanal'), findsNothing);
+        expect(find.text('NUTRIÇÃO HOJE'), findsNothing);
+        expect(find.text('METAS EM ANDAMENTO'), findsNothing);
+        expect(find.text('Consistência Semanal'), findsNothing);
 
-      // Test skipping current workout in rotating queue
-      await tester.tap(find.text('Pular / Trocar'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Pular treino atual'));
-      await tester.pumpAndSettle();
-      expect(find.text('Upper B'), findsOneWidget);
-    });
+        // Test skipping current workout in rotating queue
+        await tester.tap(find.text('Pular / Trocar'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Pular treino atual'));
+        await tester.pumpAndSettle();
+        expect(find.text('Upper B'), findsOneWidget);
+      },
+    );
   });
 
   group('WorkoutSessionScreen & Viewports', () {
@@ -600,8 +604,9 @@ void main() {
       'large 428x926': const Size(428, 926),
       'tablet 768x1024': const Size(768, 1024),
     }.entries) {
-      testWidgets('renders cleanly without overflow on ${entry.key}',
-          (tester) async {
+      testWidgets('renders cleanly without overflow on ${entry.key}', (
+        tester,
+      ) async {
         tester.view.physicalSize = entry.value;
         tester.view.devicePixelRatio = 1.0;
         addTearDown(() {
@@ -614,14 +619,18 @@ void main() {
             const WorkoutSessionScreen(sessionId: 'sess-1'),
             viewport: entry.value,
             overrides: [
-              liveSessionDetailProvider('sess-1')
-                  .overrideWith((_) async => tActiveSession),
-              progressionRepositoryProvider
-                  .overrideWithValue(_FakeProgressionRepository()),
-              sessionRepositoryProvider
-                  .overrideWithValue(_FakeSessionRepository()),
+              liveSessionDetailProvider(
+                'sess-1',
+              ).overrideWith((_) async => tActiveSession),
+              progressionRepositoryProvider.overrideWithValue(
+                _FakeProgressionRepository(),
+              ),
+              sessionRepositoryProvider.overrideWithValue(
+                _FakeSessionRepository(),
+              ),
               exerciseListStateProvider.overrideWith(
-                (ref) => _FakeExerciseListNotifier(ref, [tSquat, tHack, tBench]),
+                (ref) =>
+                    _FakeExerciseListNotifier(ref, [tSquat, tHack, tBench]),
               ),
               historyListProvider.overrideWith((_) async => [tActiveSession]),
             ],
@@ -680,18 +689,20 @@ void main() {
   });
 
   group('SessionSummaryScreen', () {
-    testWidgets('renders celebration metrics, SUBIR block and WhatsApp note',
-        (tester) async {
+    testWidgets('renders celebration metrics, SUBIR block and WhatsApp note', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         wrapApp(
           const SessionSummaryScreen(sessionId: 'sess-1'),
           overrides: [
-            liveSessionDetailProvider('sess-1')
-                .overrideWith((_) async => tActiveSession),
-            progressionRepositoryProvider
-                .overrideWithValue(_FakeProgressionRepository()),
-            isOnlineStreamProvider
-                .overrideWith((_) => Stream.value(false)),
+            liveSessionDetailProvider(
+              'sess-1',
+            ).overrideWith((_) async => tActiveSession),
+            progressionRepositoryProvider.overrideWithValue(
+              _FakeProgressionRepository(),
+            ),
+            isOnlineStreamProvider.overrideWith((_) => Stream.value(false)),
           ],
         ),
       );
@@ -718,8 +729,9 @@ void main() {
   });
 
   group('TrainingListScreen (Treino)', () {
-    testWidgets('renders rotating queue, weekly muscle volume and switch sheet',
-        (tester) async {
+    testWidgets('renders rotating queue, weekly muscle volume and switch sheet', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         wrapApp(
           const TrainingListScreen(),
@@ -753,8 +765,9 @@ void main() {
   });
 
   group('HistoryScreen (Progresso)', () {
-    testWidgets('switches between Exercícios, Peso EMA and Consistência',
-        (tester) async {
+    testWidgets('switches between Exercícios, Peso EMA and Consistência', (
+      tester,
+    ) async {
       final completedSession = tActiveSession.copyWith(
         status: SessionStatus.completed,
         completedAt: DateTime.now().subtract(const Duration(days: 1)),
@@ -770,11 +783,7 @@ void main() {
           weightKg: 78.2,
           measuredAt: DateTime.now().subtract(const Duration(days: 5)),
         ),
-        WeightEntry(
-          id: 'w-3',
-          weightKg: 78.4,
-          measuredAt: DateTime.now(),
-        ),
+        WeightEntry(id: 'w-3', weightKg: 78.4, measuredAt: DateTime.now()),
       ];
 
       await tester.pumpWidget(
@@ -806,78 +815,81 @@ void main() {
 
       await tester.tap(find.text('Consistência'));
       await tester.pumpAndSettle();
-      expect(find.text('treinos esta semana'), findsOneWidget);
-      expect(find.text('treinos este mês'), findsOneWidget);
+      expect(find.textContaining('esta semana,'), findsOneWidget);
+      expect(find.textContaining(' em '), findsOneWidget);
     });
   });
 
   group('SettingsScreen & Reduced Motion', () {
-    testWidgets('renders 3 settings sections without unbacked WhatsApp section and toggles offline',
-        (tester) async {
-      tester.view.physicalSize = const Size(390, 844);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
+    testWidgets(
+      'renders 3 settings sections without unbacked WhatsApp section and toggles offline',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
 
-      late ProviderContainer container;
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            isOnlineStreamProvider.overrideWith((_) => Stream.value(true)),
-          ],
-          child: Consumer(
-            builder: (context, ref, _) {
-              container = ProviderScope.containerOf(context);
-              return MaterialApp(
-                theme: AppTheme.light(),
-                darkTheme: AppTheme.dark(),
-                themeMode: ref.watch(themeModeProvider),
-                home: const SettingsScreen(),
-              );
-            },
+        late ProviderContainer container;
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              isOnlineStreamProvider.overrideWith((_) => Stream.value(true)),
+            ],
+            child: Consumer(
+              builder: (context, ref, _) {
+                container = ProviderScope.containerOf(context);
+                return MaterialApp(
+                  theme: AppTheme.light(),
+                  darkTheme: AppTheme.dark(),
+                  themeMode: ref.watch(themeModeProvider),
+                  home: const SettingsScreen(),
+                );
+              },
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Configurações'), findsOneWidget);
-      expect(find.text('Treino e equipamentos'), findsOneWidget);
-      expect(find.text('WhatsApp'), findsNothing);
-      expect(find.text('Sincronização offline e dados'), findsOneWidget);
-      expect(find.text('Conta'), findsOneWidget);
-      expect(find.text('Online · Tudo sincronizado'), findsOneWidget);
+        expect(find.text('Configurações'), findsOneWidget);
+        expect(find.text('Treino e equipamentos'), findsOneWidget);
+        expect(find.text('WhatsApp'), findsNothing);
+        expect(find.text('Sincronização offline e dados'), findsOneWidget);
+        expect(find.text('Conta'), findsOneWidget);
+        expect(find.text('Online · Tudo sincronizado'), findsOneWidget);
 
-      await tester.scrollUntilVisible(
-        find.text('Simular modo offline'),
-        200,
-      );
-      await tester.ensureVisible(find.byType(Switch).last);
-      await tester.pumpAndSettle();
-      await tester.tap(find.byType(Switch).last);
-      await tester.pump();
-      expect(container.read(simulatedOfflineProvider), isTrue);
-      expect(find.text('Offline · Salvo localmente'), findsOneWidget);
-    });
+        await tester.scrollUntilVisible(find.text('Simular modo offline'), 200);
+        await tester.ensureVisible(find.byType(Switch).last);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byType(Switch).last);
+        await tester.pump();
+        expect(container.read(simulatedOfflineProvider), isTrue);
+        expect(find.text('Offline · Salvo localmente'), findsOneWidget);
+      },
+    );
 
-    testWidgets('ProfileScreen renders separated profile and body goal sections',
-        (tester) async {
-      await tester.pumpWidget(wrapApp(const ProfileScreen()));
-      await tester.pumpAndSettle();
-      expect(find.text('Perfil'), findsOneWidget);
-      expect(find.text('Dados corporais e objetivo'), findsOneWidget);
-    });
+    testWidgets(
+      'ProfileScreen renders separated profile and body goal sections',
+      (tester) async {
+        await tester.pumpWidget(wrapApp(const ProfileScreen()));
+        await tester.pumpAndSettle();
+        expect(find.text('Perfil'), findsOneWidget);
+        expect(find.text('Dados corporais e objetivo'), findsOneWidget);
+      },
+    );
 
-    testWidgets('respects MediaQuery disableAnimations without errors',
-        (tester) async {
+    testWidgets('respects MediaQuery disableAnimations without errors', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         wrapApp(
           const SessionSummaryScreen(sessionId: 'sess-1'),
           disableAnimations: true,
           overrides: [
-            liveSessionDetailProvider('sess-1')
-                .overrideWith((_) async => tActiveSession),
+            liveSessionDetailProvider(
+              'sess-1',
+            ).overrideWith((_) async => tActiveSession),
             isOnlineStreamProvider.overrideWith((_) => Stream.value(true)),
           ],
         ),

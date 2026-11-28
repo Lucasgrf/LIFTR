@@ -45,12 +45,12 @@ class AppCard extends StatelessWidget {
     switch (variant) {
       case AppCardVariant.raised:
       case AppCardVariant.accented:
-        defaultSurface = colors.surface;
-        defaultBorder = colors.border;
+        defaultSurface = colors.surfaceSubtle;
+        defaultBorder = Colors.transparent;
         break;
       case AppCardVariant.subtle:
-        defaultSurface = colors.surfaceSubtle;
-        defaultBorder = colors.borderSubtle;
+        defaultSurface = colors.surface;
+        defaultBorder = Colors.transparent;
         break;
       case AppCardVariant.flat:
         defaultSurface = colors.surface;
