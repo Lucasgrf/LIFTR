@@ -5,152 +5,135 @@ class AppTypography {
   static const fontFamily = 'Familjen Grotesk';
   static const tabularFeatures = <FontFeature>[FontFeature.tabularFigures()];
 
-  static TextStyle eyebrow(BuildContext context) {
-    final colors = context.appColors;
+  static TextStyle _style({
+    required double size,
+    required double lineHeight,
+    required FontWeight weight,
+    Color? color,
+    double letterSpacing = 0,
+  }) {
     return TextStyle(
       fontFamily: fontFamily,
-      fontSize: 11,
-      height: 1.35,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 1.2,
-      color: colors.textTertiary,
+      fontSize: size,
+      height: lineHeight,
+      fontWeight: weight,
+      letterSpacing: letterSpacing,
+      fontFeatures: tabularFeatures,
+      color: color,
     );
   }
 
+  static TextStyle eyebrow(BuildContext context) {
+    return _style(
+      size: 13,
+      lineHeight: 1.45,
+      weight: FontWeight.w600,
+      color: context.appColors.textTertiary,
+    );
+  }
+
+  /// Type scale and line heights mirror the `t13`–`t64` classes in the HTML.
   static TextTheme textTheme({bool isDark = true}) {
     final textColor = isDark
         ? AppColors.dark.textPrimary
         : AppColors.light.textPrimary;
 
     return TextTheme(
-      displayLarge: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 36,
-        height: 40 / 36,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -1.08,
-        fontFeatures: tabularFeatures,
+      displayLarge: _style(
+        size: 64,
+        lineHeight: .92,
+        weight: FontWeight.w700,
+        color: textColor,
+        letterSpacing: -2.56,
+      ),
+      displayMedium: _style(
+        size: 40,
+        lineHeight: 1,
+        weight: FontWeight.w700,
+        color: textColor,
+        letterSpacing: -1.2,
+      ),
+      displaySmall: _style(
+        size: 28,
+        lineHeight: 1.1,
+        weight: FontWeight.w700,
+        color: textColor,
+        letterSpacing: -.56,
+      ),
+      headlineLarge: _style(
+        size: 28,
+        lineHeight: 1.1,
+        weight: FontWeight.w700,
+        color: textColor,
+        letterSpacing: -.56,
+      ),
+      headlineMedium: _style(
+        size: 20,
+        lineHeight: 1.3,
+        weight: FontWeight.w600,
+        color: textColor,
+        letterSpacing: -.1,
+      ),
+      headlineSmall: _style(
+        size: 20,
+        lineHeight: 1.3,
+        weight: FontWeight.w600,
+        color: textColor,
+        letterSpacing: -.1,
+      ),
+      titleLarge: _style(
+        size: 20,
+        lineHeight: 1.3,
+        weight: FontWeight.w600,
+        color: textColor,
+        letterSpacing: -.1,
+      ),
+      titleMedium: _style(
+        size: 17,
+        lineHeight: 1.45,
+        weight: FontWeight.w600,
         color: textColor,
       ),
-      displayMedium: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 30,
-        height: 34 / 30,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.9,
-        fontFeatures: tabularFeatures,
+      titleSmall: _style(
+        size: 15,
+        lineHeight: 1.45,
+        weight: FontWeight.w600,
         color: textColor,
       ),
-      displaySmall: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 28,
-        height: 34 / 28,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.7,
-        fontFeatures: tabularFeatures,
+      bodyLarge: _style(
+        size: 17,
+        lineHeight: 1.45,
+        weight: FontWeight.w400,
         color: textColor,
       ),
-      headlineLarge: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 28,
-        height: 34 / 28,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.7,
+      bodyMedium: _style(
+        size: 15,
+        lineHeight: 1.45,
+        weight: FontWeight.w400,
         color: textColor,
       ),
-      headlineMedium: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 22,
-        height: 28 / 22,
-        fontWeight: FontWeight.w600,
-        letterSpacing: -0.44,
-        fontFeatures: tabularFeatures,
+      bodySmall: _style(
+        size: 13,
+        lineHeight: 1.45,
+        weight: FontWeight.w400,
         color: textColor,
       ),
-      headlineSmall: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 20,
-        height: 26 / 20,
-        fontWeight: FontWeight.w600,
-        letterSpacing: -0.3,
-        fontFeatures: tabularFeatures,
+      labelLarge: _style(
+        size: 17,
+        lineHeight: 1.45,
+        weight: FontWeight.w600,
         color: textColor,
       ),
-      titleLarge: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 18,
-        height: 24 / 18,
-        fontWeight: FontWeight.w600,
-        letterSpacing: -0.27,
-        fontFeatures: tabularFeatures,
+      labelMedium: _style(
+        size: 15,
+        lineHeight: 1.45,
+        weight: FontWeight.w600,
         color: textColor,
       ),
-      titleMedium: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 16,
-        height: 22 / 16,
-        fontWeight: FontWeight.w600,
-        letterSpacing: -0.16,
-        fontFeatures: tabularFeatures,
-        color: textColor,
-      ),
-      titleSmall: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 14,
-        height: 20 / 14,
-        fontWeight: FontWeight.w600,
-        letterSpacing: -0.1,
-        fontFeatures: tabularFeatures,
-        color: textColor,
-      ),
-      bodyLarge: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 16,
-        height: 24 / 16,
-        fontWeight: FontWeight.w400,
-        fontFeatures: tabularFeatures,
-        color: textColor,
-      ),
-      bodyMedium: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 14,
-        height: 20 / 14,
-        fontWeight: FontWeight.w500,
-        fontFeatures: tabularFeatures,
-        color: textColor,
-      ),
-      bodySmall: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 12,
-        height: 16 / 12,
-        fontWeight: FontWeight.w400,
-        fontFeatures: tabularFeatures,
-        color: textColor,
-      ),
-      labelLarge: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 14,
-        height: 20 / 14,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.15,
-        color: textColor,
-      ),
-      labelMedium: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 12,
-        height: 16 / 12,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.24,
-        fontFeatures: tabularFeatures,
-        color: textColor,
-      ),
-      labelSmall: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 11,
-        height: 14 / 11,
-        fontWeight: FontWeight.w500,
-        letterSpacing: 0.3,
-        fontFeatures: tabularFeatures,
+      labelSmall: _style(
+        size: 13,
+        lineHeight: 1.45,
+        weight: FontWeight.w500,
         color: textColor,
       ),
     );

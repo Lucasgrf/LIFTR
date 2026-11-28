@@ -116,7 +116,7 @@ void main() {
 
           expect(tester.takeException(), isNull);
 
-          for (final label in const ['30D', '90D', '6M', 'Tudo']) {
+          for (final label in const ['30 dias', '90 dias', '6 meses', 'Tudo']) {
             final pillFinder = find.ancestor(
               of: find.text(label),
               matching: find.byType(InkWell),

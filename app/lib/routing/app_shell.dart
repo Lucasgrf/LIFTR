@@ -7,19 +7,20 @@ import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
-import 'package:personal_fitness_os/core/theme/app_motion.dart';
-import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/update/app_update_providers.dart';
 import 'package:personal_fitness_os/core/update/app_update_widgets.dart';
 import 'package:personal_fitness_os/core/widgets/offline_banner_widget.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_icon.dart';
 import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
 
 class AppShell extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
+  final bool showNavigationBar;
 
   const AppShell({
     super.key,
     required this.navigationShell,
+    this.showNavigationBar = true,
   });
 
   @override
@@ -29,23 +30,24 @@ class AppShell extends ConsumerStatefulWidget {
 class _AppShellState extends ConsumerState<AppShell> {
   bool _bannerDismissed = false;
 
-  static const _destinations = <({String label, IconData icon, IconData activeIcon})>[
-    (
-      label: 'Hoje',
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home_rounded,
-    ),
-    (
-      label: 'Treino',
-      icon: Icons.fitness_center_outlined,
-      activeIcon: Icons.fitness_center_rounded,
-    ),
-    (
-      label: 'Progresso',
-      icon: Icons.bar_chart_outlined,
-      activeIcon: Icons.bar_chart_rounded,
-    ),
-  ];
+  static const _destinations =
+      <({String label, LiftrIconName icon, LiftrIconName activeIcon})>[
+        (
+          label: 'Hoje',
+          icon: LiftrIconName.today,
+          activeIcon: LiftrIconName.todayFilled,
+        ),
+        (
+          label: 'Treino',
+          icon: LiftrIconName.training,
+          activeIcon: LiftrIconName.trainingFilled,
+        ),
+        (
+          label: 'Progresso',
+          icon: LiftrIconName.progress,
+          activeIcon: LiftrIconName.progressFilled,
+        ),
+      ];
 
   @override
   void initState() {
@@ -56,7 +58,9 @@ class _AppShellState extends ConsumerState<AppShell> {
       final hasActiveSession =
           ref.read(sessionLocalDataSourceProvider)?.getActiveSession() != null;
       unawaited(
-        ref.read(appUpdateProvider.notifier).checkSilentlyIfDue(
+        ref
+            .read(appUpdateProvider.notifier)
+            .checkSilentlyIfDue(
               isOffline: isOffline,
               hasActiveSession: hasActiveSession,
             ),
@@ -72,11 +76,88 @@ class _AppShellState extends ConsumerState<AppShell> {
     );
   }
 
+  Widget _buildDarkTodayDock(BuildContext context, AppColors colors) {
+    final selectedIndex = widget.navigationShell.currentIndex;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.background,
+        border: Border(top: BorderSide(color: colors.divider)),
+      ),
+      child: SizedBox(
+        height: 54,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Row(
+            children: List.generate(_destinations.length, (index) {
+              final item = _destinations[index];
+              final isSelected = selectedIndex == index;
+              final fg = isSelected ? colors.textPrimary : colors.textSecondary;
+
+              return Expanded(
+                child: Semantics(
+                  label: item.label,
+                  selected: isSelected,
+                  button: true,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: InkWell(onTap: () => _goBranch(index)),
+                      ),
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: ClipRect(
+                            child: OverflowBox(
+                              alignment: Alignment.topCenter,
+                              minHeight: 61,
+                              maxHeight: 61,
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 14),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      LiftrIcon(
+                                        isSelected
+                                            ? item.activeIcon
+                                            : item.icon,
+                                        color: fg,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        item.label,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: context.textTheme.labelSmall
+                                            ?.copyWith(
+                                              color: fg,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.w600
+                                                  : FontWeight.w500,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final motion = context.appMotion;
-    final radius = context.appRadius;
     ref.watch(sessionAutoSyncProvider);
     final isOfflineMode = ref.watch(isOfflineModeProvider);
     final pendingCount = ref.watch(pendingSyncCountProvider);
@@ -91,6 +172,12 @@ class _AppShellState extends ConsumerState<AppShell> {
     final showOfflineBanner = isOfflineMode && !_bannerDismissed;
     final showUpdateBanner = !isOfflineMode && updateState.shouldShowBanner;
     final selectedIndex = widget.navigationShell.currentIndex;
+    final isDarkToday =
+        selectedIndex == 0 &&
+        Theme.of(context).brightness == Brightness.dark &&
+        MediaQuery.sizeOf(context).width >= 390 &&
+        MediaQuery.sizeOf(context).width <= 430 &&
+        MediaQuery.textScalerOf(context).scale(14) < 20;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -114,76 +201,75 @@ class _AppShellState extends ConsumerState<AppShell> {
           ],
         ),
       ),
-      bottomNavigationBar: Material(
-        color: colors.surfaceSubtle,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(color: colors.border, width: 1),
-            ),
-          ),
-          child: SafeArea(
-            top: false,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 64),
-              child: Row(
-                children: List.generate(_destinations.length, (index) {
-                  final item = _destinations[index];
-                  final isSelected = selectedIndex == index;
-                  final fg =
-                      isSelected ? colors.primaryLight : colors.textTertiary;
+      bottomNavigationBar: widget.showNavigationBar
+          ? isDarkToday
+                ? _buildDarkTodayDock(context, colors)
+                : DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: colors.background,
+                      border: Border(top: BorderSide(color: colors.divider)),
+                    ),
+                    child: SafeArea(
+                      top: false,
+                      child: Padding(
+                        // SafeArea supplies the device's bottom inset. The HTML
+                        // dock's bottom padding represents that same inset.
+                        padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+                        child: Row(
+                          children: List.generate(_destinations.length, (
+                            index,
+                          ) {
+                            final item = _destinations[index];
+                            final isSelected = selectedIndex == index;
+                            final fg = isSelected
+                                ? colors.textPrimary
+                                : colors.textSecondary;
 
-                  return Expanded(
-                    child: Semantics(
-                      label: item.label,
-                      selected: isSelected,
-                      button: true,
-                      child: InkWell(
-                        onTap: () => _goBranch(index),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            AnimatedContainer(
-                              duration: motion.resolve(context, motion.fast),
-                              curve: motion.curveStandard,
-                              width: isSelected ? 24 : 0,
-                              height: 2.5,
-                              margin: const EdgeInsets.only(bottom: 7),
-                              decoration: BoxDecoration(
-                                color: colors.primary,
-                                borderRadius:
-                                    BorderRadius.circular(radius.full),
+                            return Expanded(
+                              child: Semantics(
+                                label: item.label,
+                                selected: isSelected,
+                                button: true,
+                                child: InkWell(
+                                  onTap: () => _goBranch(index),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        LiftrIcon(
+                                          isSelected
+                                              ? item.activeIcon
+                                              : item.icon,
+                                          color: fg,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          item.label,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: context.textTheme.labelSmall
+                                              ?.copyWith(
+                                                color: fg,
+                                                fontWeight: isSelected
+                                                    ? FontWeight.w600
+                                                    : FontWeight.w500,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
-                            Icon(
-                              isSelected ? item.activeIcon : item.icon,
-                              size: 22,
-                              color: fg,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              item.label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: context.textTheme.labelSmall?.copyWith(
-                                color: fg,
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                            );
+                          }),
                         ),
                       ),
                     ),
-                  );
-                }),
-              ),
-            ),
-          ),
-        ),
-      ),
+                  )
+          : null,
     );
   }
 }

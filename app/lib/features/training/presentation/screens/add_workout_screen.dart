@@ -4,16 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
-import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_editorial_page_header.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
 
 class AddWorkoutScreen extends ConsumerStatefulWidget {
-  const AddWorkoutScreen({
-    required this.planId,
-    super.key,
-  });
+  const AddWorkoutScreen({required this.planId, super.key});
 
   final String planId;
 
@@ -69,7 +66,9 @@ class _AddWorkoutScreenState extends ConsumerState<AddWorkoutScreen> {
       name: _nameController.text.trim(),
       dayOfWeek: _selectedDayOfWeek,
       estimatedDurationMinutes: duration,
-      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      notes: _notesController.text.trim().isEmpty
+          ? null
+          : _notesController.text.trim(),
     );
 
     if (!mounted) return;
@@ -83,7 +82,10 @@ class _AddWorkoutScreenState extends ConsumerState<AddWorkoutScreen> {
         context.pop();
       },
       (failure) {
-        context.showSnackBar('Erro ao adicionar treino: ${failure.message}', isError: true);
+        context.showSnackBar(
+          'Erro ao adicionar treino: ${failure.message}',
+          isError: true,
+        );
       },
     );
   }
@@ -92,102 +94,112 @@ class _AddWorkoutScreenState extends ConsumerState<AddWorkoutScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.appColors.background,
-      appBar: AppBar(
-        title: const Text('Adicionar treino ao programa'),
-      ),
       body: SafeArea(
-        top: false,
         child: Form(
           key: _formKey,
           child: ListView(
-          padding: const EdgeInsets.fromLTRB(0, 16, 0, 40),
-          children: [
-            ResponsiveContainer(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-            AppInput(
-              label: 'Nome do Treino *',
-              hint: 'Ex: Treino A - Superior (Peito/Costas)',
-              controller: _nameController,
-              validator: (val) {
-                if (val == null || val.trim().isEmpty) {
-                  return 'Informe o nome do treino';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
+            padding: const EdgeInsets.fromLTRB(0, 8, 0, 40),
+            children: [
+              ResponsiveContainer(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    LiftrEditorialPageHeader(
+                      title: 'Nova ficha',
+                      onBack: () => context.pop(),
+                    ),
+                    AppInput(
+                      label: 'Nome do Treino *',
+                      hint: 'Ex: Treino A - Superior (Peito/Costas)',
+                      controller: _nameController,
+                      validator: (val) {
+                        if (val == null || val.trim().isEmpty) {
+                          return 'Informe o nome do treino';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
 
-            Text(
-              'Dia da Semana',
-              style: context.textTheme.bodyMedium?.copyWith(
-                color: context.appColors.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            AppCard(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<int?>(
-                  isExpanded: true,
-                  value: _selectedDayOfWeek,
-                  dropdownColor: context.appColors.surfaceElevated,
-                  items: daysOfWeek.map((d) {
-                    return DropdownMenuItem<int?>(
-                      value: d['day'] as int?,
-                      child: Text(
-                        d['label'] as String,
-                        style: context.textTheme.bodyMedium?.copyWith(
-                          color: context.appColors.textPrimary,
+                    Text(
+                      'Dia da Semana',
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        color: context.appColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 2,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: context.appColors.border),
                         ),
                       ),
-                    );
-                  }).toList(),
-                  onChanged: (val) => setState(() => _selectedDayOfWeek = val),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<int?>(
+                          isExpanded: true,
+                          value: _selectedDayOfWeek,
+                          dropdownColor: context.appColors.surfaceElevated,
+                          items: daysOfWeek.map((d) {
+                            return DropdownMenuItem<int?>(
+                              value: d['day'] as int?,
+                              child: Text(
+                                d['label'] as String,
+                                style: context.textTheme.bodyMedium?.copyWith(
+                                  color: context.appColors.textPrimary,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (val) =>
+                              setState(() => _selectedDayOfWeek = val),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    AppInput(
+                      label: 'Duração Estimada (minutos)',
+                      hint: '60',
+                      controller: _durationController,
+                      keyboardType: TextInputType.number,
+                      validator: (val) {
+                        if (val != null && val.trim().isNotEmpty) {
+                          final num = int.tryParse(val.trim());
+                          if (num == null || num <= 0) {
+                            return 'Informe uma duração válida em minutos';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    AppInput(
+                      label: 'Orientações Gerais (Opcional)',
+                      hint:
+                          'Ex: Foco em cadência controlada na fase excêntrica...',
+                      controller: _notesController,
+                      maxLines: 2,
+                      keyboardType: TextInputType.multiline,
+                    ),
+                    const SizedBox(height: 32),
+
+                    AppButton.primary(
+                      label: 'Adicionar Treino',
+                      icon: Icons.check_rounded,
+                      isLoading: _isLoading,
+                      onPressed: _submit,
+                    ),
+                  ],
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-
-            AppInput(
-              label: 'Duração Estimada (minutos)',
-              hint: '60',
-              controller: _durationController,
-              keyboardType: TextInputType.number,
-              validator: (val) {
-                if (val != null && val.trim().isNotEmpty) {
-                  final num = int.tryParse(val.trim());
-                  if (num == null || num <= 0) {
-                    return 'Informe uma duração válida em minutos';
-                  }
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-
-            AppInput(
-              label: 'Orientações Gerais (Opcional)',
-              hint: 'Ex: Foco em cadência controlada na fase excêntrica...',
-              controller: _notesController,
-              maxLines: 2,
-              keyboardType: TextInputType.multiline,
-            ),
-            const SizedBox(height: 32),
-
-            AppButton.primary(
-              label: 'Adicionar Treino',
-              icon: Icons.check_rounded,
-              isLoading: _isLoading,
-              onPressed: _submit,
-            ),
-                ],
-              ),
-            ),
-          ],
-        ),
+            ],
+          ),
         ),
       ),
     );

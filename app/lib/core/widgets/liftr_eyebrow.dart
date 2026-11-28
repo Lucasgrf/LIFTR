@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 
-/// Standardized tracked-uppercase eyebrow label whose uppercase transform is
-/// applied internally so callers supply readable sentence-case copy.
+/// Small sentence-case label used for secondary metadata and sheet eyebrows.
 class LiftrEyebrow extends StatelessWidget {
   const LiftrEyebrow(
     this.text, {
@@ -21,7 +20,7 @@ class LiftrEyebrow extends StatelessWidget {
   Widget build(BuildContext context) {
     final baseStyle = AppTypography.eyebrow(context);
     return Text(
-      text.toUpperCase(),
+      text,
       maxLines: maxLines,
       overflow: overflow,
       style: color != null ? baseStyle.copyWith(color: color) : baseStyle,

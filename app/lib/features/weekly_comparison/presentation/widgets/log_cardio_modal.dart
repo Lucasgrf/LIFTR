@@ -16,10 +16,7 @@ import 'package:personal_fitness_os/features/weekly_comparison/domain/entities/c
 import 'package:personal_fitness_os/features/weekly_comparison/presentation/providers/weekly_comparison_providers.dart';
 
 class LogCardioModal extends ConsumerStatefulWidget {
-  const LogCardioModal({
-    super.key,
-    this.embedded = false,
-  });
+  const LogCardioModal({super.key, this.embedded = false});
 
   final bool embedded;
 
@@ -134,9 +131,7 @@ class _LogCardioModalState extends ConsumerState<LogCardioModal> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const LiftrSheetHeader(
-          title: 'Registrar cardio',
-        ),
+        const LiftrSheetHeader(title: 'Registrar cardio'),
         const SizedBox(height: 16),
         Text(
           'Modalidade',
@@ -155,10 +150,10 @@ class _LogCardioModalState extends ConsumerState<LogCardioModal> {
               button: true,
               selected: selected,
               child: Material(
-                color: selected ? colors.primaryMuted : colors.surfaceElevated,
+                color: selected ? colors.textPrimary : colors.surfaceElevated,
                 shape: StadiumBorder(
                   side: BorderSide(
-                    color: selected ? colors.primary : colors.border,
+                    color: selected ? colors.textPrimary : colors.border,
                   ),
                 ),
                 clipBehavior: Clip.antiAlias,
@@ -181,10 +176,11 @@ class _LogCardioModalState extends ConsumerState<LogCardioModal> {
                       mod,
                       style: context.textTheme.labelMedium?.copyWith(
                         color: selected
-                            ? colors.primaryLight
+                            ? colors.background
                             : colors.textPrimary,
-                        fontWeight:
-                            selected ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                       ),
                     ),
                   ),
@@ -265,10 +261,7 @@ class _LogCardioModalState extends ConsumerState<LogCardioModal> {
                     child: SizedBox(
                       width: 48,
                       height: 48,
-                      child: Icon(
-                        Icons.add_rounded,
-                        color: colors.textPrimary,
-                      ),
+                      child: Icon(Icons.add_rounded, color: colors.textPrimary),
                     ),
                   ),
                 ),
@@ -287,11 +280,11 @@ class _LogCardioModalState extends ConsumerState<LogCardioModal> {
               button: true,
               selected: isSelected,
               child: Material(
-                color: isSelected ? colors.primary : colors.surfaceElevated,
+                color: isSelected ? colors.textPrimary : colors.surfaceElevated,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(radius.small),
                   side: BorderSide(
-                    color: isSelected ? colors.primary : colors.border,
+                    color: isSelected ? colors.textPrimary : colors.border,
                   ),
                 ),
                 clipBehavior: Clip.antiAlias,
@@ -314,7 +307,7 @@ class _LogCardioModalState extends ConsumerState<LogCardioModal> {
                       '${preset}m',
                       style: context.textTheme.labelMedium?.copyWith(
                         color: isSelected
-                            ? colors.onPrimary
+                            ? colors.background
                             : colors.textSecondary,
                         fontFeatures: AppTypography.tabularFeatures,
                       ),

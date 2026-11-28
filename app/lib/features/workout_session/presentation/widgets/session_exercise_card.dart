@@ -453,82 +453,84 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
                 : '${se.completedWorkingSetsCount}/${se.targetSetsCount} séries');
 
       return Material(
-        color: colors.surfaceSubtle,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(radius.large),
-          side: BorderSide(color: colors.divider),
-        ),
-        clipBehavior: Clip.antiAlias,
+        color: colors.background,
         child: InkWell(
           onTap: () {
             HapticFeedback.selectionClick();
             widget.onToggleExpand?.call();
           },
-          borderRadius: BorderRadius.circular(radius.large),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 68),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: context.appSpacing.space16,
-                vertical: context.appSpacing.space12,
-              ),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 28,
-                    child: Text(
-                      idxLabel,
-                      style: context.textTheme.labelSmall?.copyWith(
-                        color: colors.textTertiary,
-                        fontWeight: FontWeight.w700,
-                        fontFeatures: AppTypography.tabularFeatures,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: colors.divider)),
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 68),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: context.appSpacing.space16,
+                  vertical: context.appSpacing.space12,
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 28,
+                      child: Text(
+                        idxLabel,
+                        style: context.textTheme.labelSmall?.copyWith(
+                          color: colors.textTertiary,
+                          fontWeight: FontWeight.w700,
+                          fontFeatures: AppTypography.tabularFeatures,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          exerciseName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.textTheme.titleSmall,
-                        ),
-                        SizedBox(height: context.appSpacing.space4),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (isAllDone) ...[
-                              Icon(
-                                Icons.check_circle_rounded,
-                                size: 13,
-                                color: fitnessColors.progressUp,
-                              ),
-                              const SizedBox(width: 4),
-                            ],
-                            Flexible(
-                              child: Text(
-                                collapsedSubtitle,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: context.textTheme.labelSmall?.copyWith(
-                                  color: isAllDone
-                                      ? fitnessColors.progressUp
-                                      : colors.textTertiary,
-                                  fontFeatures: AppTypography.tabularFeatures,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            exerciseName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.textTheme.titleSmall,
+                          ),
+                          SizedBox(height: context.appSpacing.space4),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (isAllDone) ...[
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  size: 13,
+                                  color: fitnessColors.progressUp,
+                                ),
+                                const SizedBox(width: 4),
+                              ],
+                              Flexible(
+                                child: Text(
+                                  collapsedSubtitle,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: context.textTheme.labelSmall?.copyWith(
+                                    color: isAllDone
+                                        ? fitnessColors.progressUp
+                                        : colors.textTertiary,
+                                    fontFeatures: AppTypography.tabularFeatures,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  Icon(Icons.chevron_right_rounded, color: colors.textTertiary),
-                ],
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: colors.textTertiary,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -613,10 +615,9 @@ class _SessionExerciseCardState extends ConsumerState<SessionExerciseCard> {
       excludeFromSemantics: true,
       onTap: isCardio ? null : _clearManualExpandedSet,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+        padding: const EdgeInsets.fromLTRB(0, 12, 0, 10),
         decoration: BoxDecoration(
-          color: colors.surfaceSubtle,
-          borderRadius: BorderRadius.circular(radius.medium),
+          border: Border(bottom: BorderSide(color: colors.divider)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

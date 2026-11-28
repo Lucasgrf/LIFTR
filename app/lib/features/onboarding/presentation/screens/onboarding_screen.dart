@@ -29,8 +29,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 typedef OnboardingCompleteHook = Future<void> Function(WidgetRef ref);
 
-final onboardingCompleteHookProvider =
-    Provider<OnboardingCompleteHook?>((ref) => null);
+final onboardingCompleteHookProvider = Provider<OnboardingCompleteHook?>(
+  (ref) => null,
+);
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -72,8 +73,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final initial = ref.read(userSettingsProvider);
     _sex = initial.biologicalSex;
     _ageController = TextEditingController(text: initial.age.toString());
-    _heightController =
-        TextEditingController(text: initial.heightCm.toString());
+    _heightController = TextEditingController(
+      text: initial.heightCm.toString(),
+    );
     _weightController = TextEditingController(
       text: formatPtBrDecimal(initial.weightKg, decimalDigits: 1),
     );
@@ -268,17 +270,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ref.read(profileControllerProvider.notifier).syncSettingsToRemote(),
         );
         if (!mounted) return;
-        syncActiveAuthSession(
-          ref,
-          isLoggedIn: true,
-          overrideUserId: user.id,
-        );
+        syncActiveAuthSession(ref, isLoggedIn: true, overrideUserId: user.id);
         context.go(targetRoute);
         return;
       }
 
       if (!mounted) return;
-      context.showSnackBar('Perfil salvo! Entre na sua conta para sincronizar.');
+      context.showSnackBar(
+        'Perfil salvo! Entre na sua conta para sincronizar.',
+      );
       context.go('/login');
     } catch (e, st) {
       if (mounted) {
@@ -309,112 +309,112 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         if (!didPop) _goBack();
       },
       child: Scaffold(
-      backgroundColor: colors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Chrome top bar
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 18, 8),
-              child: Column(
-                children: [
-                  LayoutBuilder(
-                    builder: (context, constraints) => Row(
-                      children: [
-                        Semantics(
-                          label: 'Voltar',
-                          button: true,
-                          child: IconButton(
-                            tooltip: 'Voltar',
-                            onPressed: _goBack,
-                            constraints: const BoxConstraints(
-                              minWidth: 48,
-                              minHeight: 48,
-                            ),
-                            icon: Icon(
-                              Icons.arrow_back_rounded,
-                              color: colors.textPrimary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: LiftrProgressBar(
-                            progress: (_step + 1) / _totalSteps,
-                            height: 4,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxWidth: constraints.maxWidth * 0.42,
-                          ),
-                          child: Text(
-                            'Passo ${_step + 1} de $_totalSteps',
-                            maxLines: 2,
-                            style: context.textTheme.labelMedium?.copyWith(
-                              color: colors.textSecondary,
-                              fontFeatures: AppTypography.tabularFeatures,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Step content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: ResponsiveContainer(
-                  child: AnimatedSwitcher(
-                    duration: context.appMotion.resolve(
-                      context,
-                      context.appMotion.standard,
-                    ),
-                    switchInCurve: context.appMotion.curveStandard,
-                    switchOutCurve: context.appMotion.curveExit,
-                    transitionBuilder: (child, animation) {
-                      if (disableAnimations) return child;
-                      final offsetAnimation = Tween<Offset>(
-                        begin: Offset(0.05 * _direction, 0),
-                        end: Offset.zero,
-                      ).animate(animation);
-                      return FadeTransition(
-                        opacity: animation,
-                        child: SlideTransition(
-                          position: offsetAnimation,
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: KeyedSubtree(
-                      key: ValueKey(_step),
-                      child: _buildStepBody(context),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // Fixed Bottom CTA
-            if (_step < _totalSteps - 1)
+        backgroundColor: colors.background,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Chrome top bar
               Padding(
-                padding: const EdgeInsets.fromLTRB(18, 8, 18, 16),
-                child: ResponsiveContainer(
-                  padding: EdgeInsets.zero,
-                  child: AppButton.primary(
-                    label: _step == 4 ? 'Confirmar programa' : 'Continuar',
-                    onPressed: _isCurrentStepValid ? _nextStep : null,
+                padding: const EdgeInsets.fromLTRB(8, 8, 18, 8),
+                child: Column(
+                  children: [
+                    LayoutBuilder(
+                      builder: (context, constraints) => Row(
+                        children: [
+                          Semantics(
+                            label: 'Voltar',
+                            button: true,
+                            child: IconButton(
+                              tooltip: 'Voltar',
+                              onPressed: _goBack,
+                              constraints: const BoxConstraints(
+                                minWidth: 48,
+                                minHeight: 48,
+                              ),
+                              icon: Icon(
+                                Icons.arrow_back_rounded,
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: LiftrProgressBar(
+                              progress: (_step + 1) / _totalSteps,
+                              height: 4,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: constraints.maxWidth * 0.42,
+                            ),
+                            child: Text(
+                              'Passo ${_step + 1} de $_totalSteps',
+                              maxLines: 2,
+                              style: context.textTheme.labelMedium?.copyWith(
+                                color: colors.textSecondary,
+                                fontFeatures: AppTypography.tabularFeatures,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Step content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: ResponsiveContainer(
+                    child: AnimatedSwitcher(
+                      duration: context.appMotion.resolve(
+                        context,
+                        context.appMotion.standard,
+                      ),
+                      switchInCurve: context.appMotion.curveStandard,
+                      switchOutCurve: context.appMotion.curveExit,
+                      transitionBuilder: (child, animation) {
+                        if (disableAnimations) return child;
+                        final offsetAnimation = Tween<Offset>(
+                          begin: Offset(0.05 * _direction, 0),
+                          end: Offset.zero,
+                        ).animate(animation);
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(
+                            position: offsetAnimation,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: KeyedSubtree(
+                        key: ValueKey(_step),
+                        child: _buildStepBody(context),
+                      ),
+                    ),
                   ),
                 ),
               ),
-          ],
+
+              // Fixed Bottom CTA
+              if (_step < _totalSteps - 1)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 8, 18, 16),
+                  child: ResponsiveContainer(
+                    padding: EdgeInsets.zero,
+                    child: AppButton.primary(
+                      label: _step == 4 ? 'Confirmar programa' : 'Continuar',
+                      onPressed: _isCurrentStepValid ? _nextStep : null,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -468,11 +468,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (isNarrow) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          first,
-          const SizedBox(height: 12),
-          second,
-        ],
+        children: [first, const SizedBox(height: 12), second],
       );
     }
     return Row(
@@ -676,11 +672,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               selected: isSelected,
               button: true,
               child: Material(
-                color: isSelected ? colors.primary : colors.surfaceElevated,
+                color: isSelected ? colors.textPrimary : colors.surfaceElevated,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(radius.medium),
                   side: BorderSide(
-                    color: isSelected ? colors.primary : colors.border,
+                    color: isSelected ? colors.textPrimary : colors.border,
                     width: 1.5,
                   ),
                 ),
@@ -700,8 +696,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       child: Text(
                         '$days',
                         style: context.textTheme.titleLarge?.copyWith(
-                          color:
-                              isSelected ? colors.onPrimary : colors.textPrimary,
+                          color: isSelected
+                              ? colors.background
+                              : colors.textPrimary,
                           fontFeatures: AppTypography.tabularFeatures,
                         ),
                       ),
@@ -715,7 +712,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         const SizedBox(height: 24),
         AppCard(
           borderRadius: radius.xl,
-          borderColor: colors.primary.withValues(alpha: 0.45),
+          borderColor: colors.divider,
           padding: const EdgeInsets.all(18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -730,7 +727,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   children: [
                     const LiftrBadge(
                       label: 'Sugestão automática',
-                      tone: LiftrBadgeTone.brand,
+                      tone: LiftrBadgeTone.neutral,
                     ),
                     TextButton(
                       onPressed: () {
@@ -802,12 +799,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     button: true,
                     child: Material(
                       color: isSelected
-                          ? colors.primary
+                          ? colors.textPrimary
                           : colors.surfaceElevated,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(radius.medium),
                         side: BorderSide(
-                          color: isSelected ? colors.primary : colors.border,
+                          color: isSelected
+                              ? colors.textPrimary
+                              : colors.border,
                         ),
                       ),
                       clipBehavior: Clip.antiAlias,
@@ -827,7 +826,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             option.shortLabel,
                             style: context.textTheme.labelMedium?.copyWith(
                               color: isSelected
-                                  ? colors.onPrimary
+                                  ? colors.background
                                   : colors.textPrimary,
                             ),
                           ),
@@ -897,12 +896,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               SizedBox(height: 14),
               _BulletRow(
                 icon: Icons.monitor_weight_rounded,
-                text: 'Envie seu peso pela manhã para atualizar a tendência EMA',
+                text:
+                    'Envie seu peso pela manhã para atualizar a tendência EMA',
               ),
               SizedBox(height: 14),
               _BulletRow(
                 icon: Icons.summarize_rounded,
-                text: 'Receba resumo pós-treino e relatório semanal todo domingo',
+                text:
+                    'Receba resumo pós-treino e relatório semanal todo domingo',
               ),
             ],
           ),
@@ -922,10 +923,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           icon: Icons.auto_awesome_rounded,
           onPressed: _isSubmitting
               ? null
-              : () => _finish(
-                    whatsappConnected: false,
-                    openAiGenerator: true,
-                  ),
+              : () => _finish(whatsappConnected: false, openAiGenerator: true),
         ),
         const SizedBox(height: 10),
         AppButton.text(
@@ -964,59 +962,59 @@ class _SelectableOptionCard extends StatelessWidget {
       child: AppCard(
         onTap: onTap,
         backgroundColor: selected
-            ? colors.primary.withValues(alpha: 0.12)
+            ? colors.textPrimary.withValues(alpha: 0.1)
             : colors.surface,
-        borderColor: selected ? colors.primary : colors.border,
+        borderColor: selected ? colors.textPrimary : colors.border,
         borderWidth: selected ? 1.5 : 1,
         constraints: BoxConstraints(minHeight: minHeight),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    title,
+                    style: context.textTheme.titleMedium?.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 4),
                     Text(
-                      title,
-                      style: context.textTheme.titleMedium?.copyWith(
-                        color: colors.textPrimary,
+                      subtitle!,
+                      style: context.textTheme.bodySmall?.copyWith(
+                        color: colors.textSecondary,
                       ),
                     ),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle!,
-                        style: context.textTheme.bodySmall?.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                    ],
                   ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected ? colors.textPrimary : Colors.transparent,
+                border: Border.all(
+                  color: selected ? colors.textPrimary : colors.border,
+                  width: 1.5,
                 ),
               ),
-              const SizedBox(width: 12),
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: selected ? colors.primary : Colors.transparent,
-                  border: Border.all(
-                    color: selected ? colors.primary : colors.border,
-                    width: 1.5,
-                  ),
-                ),
-                child: selected
-                    ? Icon(
-                        Icons.check_rounded,
-                        size: 16,
-                        color: colors.onPrimary,
-                      )
-                    : null,
-              ),
-            ],
-          ),
+              child: selected
+                  ? Icon(
+                      Icons.check_rounded,
+                      size: 16,
+                      color: colors.background,
+                    )
+                  : null,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1062,10 +1060,7 @@ class _NumericStepInput extends StatelessWidget {
 }
 
 class _BulletRow extends StatelessWidget {
-  const _BulletRow({
-    required this.icon,
-    required this.text,
-  });
+  const _BulletRow({required this.icon, required this.text});
 
   final IconData icon;
   final String text;

@@ -12,6 +12,7 @@ import 'package:personal_fitness_os/features/history/presentation/widgets/progre
 import 'package:personal_fitness_os/features/training/domain/entities/set_template.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout_exercise.dart';
+import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
 import 'package:personal_fitness_os/features/training/presentation/widgets/workout_card.dart';
 import 'package:personal_fitness_os/features/weekly_comparison/domain/entities/weekly_comparison_data.dart';
 import 'package:personal_fitness_os/features/weekly_comparison/domain/entities/weekly_snapshot.dart';
@@ -118,9 +119,7 @@ void main() {
             setType: SetType.dropSet,
             weightKg: 80,
             repsCompleted: 12,
-            dropSets: [
-              DropSetEntry(weightKg: 60, repsCompleted: 10),
-            ],
+            dropSets: [DropSetEntry(weightKg: 60, repsCompleted: 10)],
           ),
         ],
       ),
@@ -198,7 +197,10 @@ void main() {
               width: v.width,
               scale: v.scale,
               overrides: [
-                historyListProvider.overrideWith((ref) async => [sampleSession]),
+                historyListProvider.overrideWith(
+                  (ref) async => [sampleSession],
+                ),
+                activeTrainingPlanProvider.overrideWith((ref) => null),
               ],
             ),
           );
@@ -207,29 +209,36 @@ void main() {
           expect(find.text('seg'), findsOneWidget);
           expect(find.byType(GridView), findsOneWidget);
           final err = tester.takeException();
-          expect(err, isNull, reason: err is FlutterError ? err.toStringDeep() : '$err');
-        },
-      );
-
-      testWidgets(
-        'WorkoutCard does not overflow at ${v.width}dp@${v.scale}x',
-        (tester) async {
-          await tester.binding.setSurfaceSize(Size(v.width, 800));
-          addTearDown(() => tester.binding.setSurfaceSize(null));
-
-          await tester.pumpWidget(
-            wrapForViewport(
-              WorkoutCard(workout: sampleWorkout, onTap: () {}),
-              width: v.width,
-              scale: v.scale,
-            ),
+          expect(
+            err,
+            isNull,
+            reason: err is FlutterError ? err.toStringDeep() : '$err',
           );
-          await tester.pumpAndSettle();
-
-          final err = tester.takeException();
-          expect(err, isNull, reason: err is FlutterError ? err.toStringDeep() : '$err');
         },
       );
+
+      testWidgets('WorkoutCard does not overflow at ${v.width}dp@${v.scale}x', (
+        tester,
+      ) async {
+        await tester.binding.setSurfaceSize(Size(v.width, 800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(
+          wrapForViewport(
+            WorkoutCard(workout: sampleWorkout, onTap: () {}),
+            width: v.width,
+            scale: v.scale,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final err = tester.takeException();
+        expect(
+          err,
+          isNull,
+          reason: err is FlutterError ? err.toStringDeep() : '$err',
+        );
+      });
 
       testWidgets(
         'WorkoutMoodChip compact does not overflow at ${v.width}dp@${v.scale}x',
@@ -254,7 +263,11 @@ void main() {
           await tester.pumpAndSettle();
 
           final err = tester.takeException();
-          expect(err, isNull, reason: err is FlutterError ? err.toStringDeep() : '$err');
+          expect(
+            err,
+            isNull,
+            reason: err is FlutterError ? err.toStringDeep() : '$err',
+          );
         },
       );
 
@@ -275,7 +288,11 @@ void main() {
 
           expect(find.text('RPE 8.5'), findsOneWidget);
           final err = tester.takeException();
-          expect(err, isNull, reason: err is FlutterError ? err.toStringDeep() : '$err');
+          expect(
+            err,
+            isNull,
+            reason: err is FlutterError ? err.toStringDeep() : '$err',
+          );
         },
       );
 
@@ -293,18 +310,19 @@ void main() {
                 showRir: false,
                 exerciseIndex: 0,
                 totalExercises: 1,
-                onLogSet: ({
-                  required sessionExerciseId,
-                  required setNumber,
-                  required setType,
-                  required weightKg,
-                  required repsCompleted,
-                  durationSeconds,
-                  rirActual,
-                  restSeconds = 90,
-                  dropSets = const [],
-                  existingSetId,
-                }) async {},
+                onLogSet:
+                    ({
+                      required sessionExerciseId,
+                      required setNumber,
+                      required setType,
+                      required weightKg,
+                      required repsCompleted,
+                      durationSeconds,
+                      rirActual,
+                      restSeconds = 90,
+                      dropSets = const [],
+                      existingSetId,
+                    }) async {},
               ),
               width: v.width,
               scale: v.scale,

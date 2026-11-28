@@ -3,260 +3,128 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
-import 'package:personal_fitness_os/core/widgets/app_card.dart';
-import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_icon.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 
-class _MuscleVolumeEntry {
-  const _MuscleVolumeEntry({
-    required this.label,
-    required this.sets,
-  });
-
-  final String label;
-  final int sets;
-}
-
 class WeeklyMuscleVolumeCard extends StatelessWidget {
-  const WeeklyMuscleVolumeCard({
-    super.key,
-    required this.plan,
-  });
+  const WeeklyMuscleVolumeCard({super.key, required this.plan});
 
   final TrainingPlan plan;
-
-  static const int _targetWeeklySets = 10;
 
   @override
   Widget build(BuildContext context) {
     final counts = <String, int>{
-      'chest': 0,
-      'back': 0,
-      'legs': 0,
-      'shoulders': 0,
-      'arms': 0,
-      'core': 0,
+      'Peito': 0,
+      'Costas': 0,
+      'Pernas': 0,
+      'Ombros': 0,
+      'Braços': 0,
+      'Core': 0,
     };
 
     for (final workout in plan.workouts) {
-      for (final we in workout.exercises) {
-        final rawGroup =
-            (we.exercise?.primaryMuscleGroup ?? '').toLowerCase().trim();
-        final sets = we.workingSetsCount > 0 ? we.workingSetsCount : 3;
-        final bucket = _mapMuscleBucket(rawGroup);
-        if (bucket != null) {
-          counts[bucket] = (counts[bucket] ?? 0) + sets;
+      for (final exercise in workout.exercises) {
+        final group = exercise.exercise?.primaryMuscleGroup ?? '';
+        final label = _labelFor(group);
+        if (label != null) {
+          counts[label] =
+              counts[label]! +
+              (exercise.workingSetsCount > 0 ? exercise.workingSetsCount : 3);
         }
       }
     }
 
-    final entries = [
-      _MuscleVolumeEntry(label: 'Peito', sets: counts['chest']!),
-      _MuscleVolumeEntry(label: 'Costas', sets: counts['back']!),
-      _MuscleVolumeEntry(label: 'Pernas', sets: counts['legs']!),
-      _MuscleVolumeEntry(label: 'Ombros', sets: counts['shoulders']!),
-      _MuscleVolumeEntry(label: 'Braços', sets: counts['arms']!),
-      _MuscleVolumeEntry(label: 'Core', sets: counts['core']!),
-    ];
-
-    final maxSets = entries.fold<int>(
-      16,
-      (prev, e) => e.sets > prev ? e.sets : prev,
-    );
-
     final colors = context.appColors;
-    return AppCard(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                flex: 3,
-                child: Text(
-                  'Volume semanal',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.textTheme.titleMedium,
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Volume semanal',
+                style: context.textTheme.titleLarge,
               ),
-              const SizedBox(width: 8),
-              Flexible(
-                flex: 2,
-                child: Text(
-                  'Séries válidas',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.end,
-                  style: context.textTheme.labelSmall?.copyWith(
-                    color: colors.textTertiary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          for (int row = 0; row < 3; row++) ...[
-            Row(
-              children: [
-                Expanded(
-                  child: _MuscleBarItem(
-                    entry: entries[row * 2],
-                    maxSets: maxSets,
-                    targetSets: _targetWeeklySets,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: _MuscleBarItem(
-                    entry: entries[row * 2 + 1],
-                    maxSets: maxSets,
-                    targetSets: _targetWeeklySets,
-                  ),
-                ),
-              ],
             ),
-            if (row < 2) const SizedBox(height: 14),
+            Text(
+              'Séries válidas',
+              style: context.textTheme.bodySmall?.copyWith(
+                color: colors.textSecondary,
+              ),
+            ),
           ],
-          const SizedBox(height: 14),
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 6,
-            runSpacing: 4,
-            children: [
-              Icon(
-                Icons.check_circle_rounded,
-                size: 14,
-                color: colors.primaryLight,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Meta: 10+ séries/semana',
+          style: context.textTheme.bodySmall?.copyWith(
+            color: colors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        for (final entry in counts.entries) ...[
+          if (entry.key != counts.keys.first)
+            Divider(height: 1, color: colors.divider),
+          Semantics(
+            container: true,
+            excludeSemantics: true,
+            label:
+                '${entry.key}: ${pluralize(entry.value, 'série válida', 'séries válidas')} na semana${entry.value >= 10 ? ' (meta atingida)' : ''}',
+            checked: entry.value >= 10,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(entry.key, style: context.textTheme.bodyMedium),
+                  ),
+                  Text(
+                    '${entry.value}',
+                    style: context.textTheme.bodyMedium?.copyWith(
+                      fontFeatures: AppTypography.tabularFeatures,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (entry.value >= 10) ...[
+                    const SizedBox(width: 8),
+                    LiftrIcon(
+                      LiftrIconName.check,
+                      size: 18,
+                      color: colors.textPrimary,
+                    ),
+                  ],
+                ],
               ),
-              Text(
-                'Meta: $_targetWeeklySets+ séries/semana',
-                style: context.textTheme.labelSmall?.copyWith(
-                  color: colors.textSecondary,
-                  fontFeatures: AppTypography.tabularFeatures,
-                ),
-              ),
-            ],
+            ),
           ),
         ],
-      ),
+      ],
     );
   }
 
-  String? _mapMuscleBucket(String raw) {
-    if (raw.contains('chest') || raw.contains('peito')) return 'chest';
-    if (raw.contains('back') || raw.contains('costa') || raw.contains('dorsal')) {
-      return 'back';
-    }
+  String? _labelFor(String group) {
+    final raw = group.toLowerCase().trim();
+    if (raw.contains('chest') || raw.contains('peito')) return 'Peito';
+    if (raw.contains('back') || raw.contains('costa') || raw.contains('dorsal'))
+      return 'Costas';
     if (raw.contains('leg') ||
         raw.contains('quad') ||
         raw.contains('ham') ||
         raw.contains('glute') ||
         raw.contains('calf') ||
-        raw.contains('calves') ||
-        raw.contains('perna')) {
-      return 'legs';
-    }
-    if (raw.contains('shoulder') || raw.contains('ombro') || raw.contains('delt')) {
-      return 'shoulders';
-    }
+        raw.contains('perna'))
+      return 'Pernas';
+    if (raw.contains('shoulder') ||
+        raw.contains('ombro') ||
+        raw.contains('delt'))
+      return 'Ombros';
     if (raw.contains('arm') ||
         raw.contains('bicep') ||
         raw.contains('tricep') ||
-        raw.contains('braço')) {
-      return 'arms';
-    }
-    if (raw.contains('core') || raw.contains('abs') || raw.contains('abdom')) {
-      return 'core';
-    }
+        raw.contains('braço'))
+      return 'Braços';
+    if (raw.contains('core') || raw.contains('abs') || raw.contains('abdom'))
+      return 'Core';
     return null;
-  }
-}
-
-class _MuscleBarItem extends StatelessWidget {
-  const _MuscleBarItem({
-    required this.entry,
-    required this.maxSets,
-    required this.targetSets,
-  });
-
-  final _MuscleVolumeEntry entry;
-  final int maxSets;
-  final int targetSets;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final reachedTarget = entry.sets >= targetSets;
-    final ratio = maxSets > 0 ? (entry.sets / maxSets).clamp(0.0, 1.0) : 0.0;
-    final barColor = reachedTarget
-        ? colors.primary
-        : entry.sets > 0
-            ? colors.textSecondary
-            : colors.textTertiary;
-
-    return Semantics(
-      container: true,
-      excludeSemantics: true,
-      label:
-          '${entry.label}: ${pluralize(entry.sets, 'série', 'séries')} ${entry.sets == 1 ? 'válida' : 'válidas'} na semana${reachedTarget ? ' (meta atingida)' : ''}',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: double.infinity,
-            child: Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 6,
-              runSpacing: 2,
-              children: [
-                Text(
-                  entry.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.textTheme.labelSmall?.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (reachedTarget) ...[
-                      Icon(
-                        Icons.check_circle_rounded,
-                        size: 12,
-                        color: colors.primaryLight,
-                      ),
-                      const SizedBox(width: 4),
-                    ],
-                    Flexible(
-                      child: Text(
-                        pluralize(entry.sets, 'série', 'séries'),
-                        style: context.textTheme.labelSmall?.copyWith(
-                          color: reachedTarget
-                              ? colors.primaryLight
-                              : colors.textTertiary,
-                          fontWeight: FontWeight.w600,
-                          fontFeatures: AppTypography.tabularFeatures,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 6),
-          LiftrProgressBar(
-            progress: ratio,
-            height: 5,
-            color: barColor,
-            trackColor: colors.surfaceElevated,
-          ),
-        ],
-      ),
-    );
   }
 }

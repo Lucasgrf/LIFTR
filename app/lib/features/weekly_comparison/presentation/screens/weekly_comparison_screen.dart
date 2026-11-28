@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
@@ -18,6 +19,7 @@ import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_confirm_dialog.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_editorial_page_header.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:personal_fitness_os/features/weekly_comparison/domain/entities/cardio_log.dart';
@@ -45,13 +47,15 @@ class WeeklyComparisonScreen extends ConsumerWidget {
       final hadData = ref.read(weeklyComparisonProvider).hasValue;
       Object? refreshError;
       StackTrace? refreshStack;
-      await ref.refresh(weeklyComparisonProvider.future).then<void>(
-        (_) {},
-        onError: (Object error, StackTrace st) {
-          refreshError = error;
-          refreshStack = st;
-        },
-      );
+      await ref
+          .refresh(weeklyComparisonProvider.future)
+          .then<void>(
+            (_) {},
+            onError: (Object error, StackTrace st) {
+              refreshError = error;
+              refreshStack = st;
+            },
+          );
       if (refreshError != null && hadData && context.mounted) {
         final msg = userFacingMessage(
           refreshError!,
@@ -64,332 +68,388 @@ class WeeklyComparisonScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: colors.background,
-      appBar: AppBar(
-        title: const Text('Comparação semanal'),
-      ),
-      body: comparisonAsync.when(
-        skipLoadingOnRefresh: true,
-        skipError: true,
-        loading: () => const SafeArea(child: LiftrScreenSkeleton()),
-        error: (err, st) => RefreshIndicator(
-          color: colors.primary,
-          onRefresh: refreshComparison,
-          child: LayoutBuilder(
-            builder: (context, constraints) => ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              children: [
-                ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: ErrorStateWidget(
-                    message: userFacingMessage(
-                      err,
-                      stackTrace: st,
-                      context: 'WeeklyComparisonScreen.build',
-                    ),
-                    safetyNote: offlineSafetyNoteFor(err),
-                    onRetry: () => ref.invalidate(weeklyComparisonProvider),
-                  ),
-                ),
-              ],
+      body: SafeArea(
+        child: Column(
+          children: [
+            ResponsiveContainer(
+              heightFactor: 1,
+              child: LiftrEditorialPageHeader(
+                title: 'Comparação semanal',
+                onBack: () {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/');
+                  }
+                },
+              ),
             ),
-          ),
-        ),
-        data: (data) {
-          final current = data.currentWeek;
-          final previous = data.previousWeek;
-          final volumeFormat = NumberFormat('#,##0', 'pt_BR');
-
-          return RefreshIndicator(
-            color: colors.primary,
-            onRefresh: refreshComparison,
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(0, 10, 0, 36),
-              children: [
-                ResponsiveContainer(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // 1. Week Navigator Strip
-                      AppCard(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 6,
-                        ),
-                        child: Row(
-                          children: [
-                            Semantics(
-                              label: 'Semana anterior',
-                              button: true,
-                              child: IconButton(
-                                tooltip: 'Semana anterior',
-                                onPressed: () {
-                                  HapticFeedback.selectionClick();
-                                  ref
-                                      .read(
-                                        weeklyComparisonOffsetProvider.notifier,
-                                      )
-                                      .state = offset - 1;
-                                },
-                                constraints: const BoxConstraints(
-                                  minWidth: 48,
-                                  minHeight: 48,
-                                ),
-                                icon: Icon(
-                                  Icons.chevron_left_rounded,
-                                  color: colors.textPrimary,
-                                ),
-                              ),
+            Expanded(
+              child: comparisonAsync.when(
+                skipLoadingOnRefresh: comparisonAsync.hasValue,
+                skipError: comparisonAsync.hasValue,
+                loading: () => const LiftrScreenSkeleton(),
+                error: (err, st) => RefreshIndicator(
+                  color: colors.primary,
+                  onRefresh: refreshComparison,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) => ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
+                          ),
+                          child: ErrorStateWidget(
+                            message: userFacingMessage(
+                              err,
+                              stackTrace: st,
+                              context: 'WeeklyComparisonScreen.build',
                             ),
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  Text(
-                                    _offsetTitle(offset),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: context.textTheme.titleSmall,
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    formatWeekRange(current.weekStart),
-                                    style: context.textTheme.labelSmall
-                                        ?.copyWith(
-                                      color: colors.textSecondary,
-                                      fontFeatures:
-                                          AppTypography.tabularFeatures,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Semantics(
-                              label: 'Próxima semana',
-                              button: true,
-                              child: IconButton(
-                                tooltip: 'Próxima semana',
-                                onPressed: offset < 0
-                                    ? () {
-                                        HapticFeedback.selectionClick();
-                                        ref
-                                            .read(
-                                              weeklyComparisonOffsetProvider
-                                                  .notifier,
-                                            )
-                                            .state = offset + 1;
-                                      }
-                                    : null,
-                                constraints: const BoxConstraints(
-                                  minWidth: 48,
-                                  minHeight: 48,
-                                ),
-                                icon: Icon(
-                                  Icons.chevron_right_rounded,
-                                  color: offset < 0
-                                      ? colors.textPrimary
-                                      : colors.textDisabled,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // 2. Hero Cardio Weekly Card + 7-day Breakdown
-                      _HeroCardioCard(
-                        data: data,
-                        onDeleteStandalone: (log) async {
-                          final confirmed = await showLiftrConfirmDialog(
-                            context,
-                            title: 'Remover cardio?',
-                            message:
-                                'Deseja remover "${log.modality}" (${formatCardioSeconds(log.durationSeconds)}) desta semana?',
-                            confirmLabel: 'Remover',
-                            icon: Icons.delete_outline_rounded,
-                            isDestructive: true,
-                          );
-                          if (!confirmed || !context.mounted) return;
-                          final repo =
-                              ref.read(weeklyComparisonRepositoryProvider);
-                          final result = await repo.deleteStandaloneCardio(log.id);
-                          if (!context.mounted) return;
-                          result.fold(
-                            (_) {
-                              ref.invalidate(weeklyComparisonProvider);
-                              ref.invalidate(currentWeekSummaryProvider);
-                              ref.invalidate(dashboardDataProvider);
-                              context.showSnackBar('Cardio removido.');
-                            },
-                            (failure) {
-                              context.showSnackBar(
-                                userFacingMessage(
-                                  failure,
-                                  context:
-                                      'WeeklyComparisonScreen.deleteStandaloneCardio',
-                                ),
-                                isError: true,
-                              );
-                            },
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // 3. Weekly Comparison Matrix
-                      AppCard(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  flex: 3,
-                                  child: Text(
-                                    'Comparação semanal',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: context.textTheme.titleMedium,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Flexible(
-                                  flex: 2,
-                                  child: Text(
-                                    previous != null
-                                        ? 'Atual vs anterior'
-                                        : 'Baseline inicial',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    textAlign: TextAlign.end,
-                                    style: context.textTheme.labelSmall
-                                        ?.copyWith(
-                                      color: colors.textTertiary,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (previous == null) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                'Primeira semana registrada neste período. Conforme você treinar nas próximas semanas, a comparação aparecerá aqui.',
-                                style: context.textTheme.bodySmall?.copyWith(
-                                  color: colors.textSecondary,
-                                ),
-                              ),
-                            ],
-                            const SizedBox(height: 14),
-                            _ComparisonRow(
-                              label: 'Treinos concluídos',
-                              currentValue: '${current.workoutsCompleted}',
-                              previousValue: previous != null
-                                  ? '${previous.workoutsCompleted}'
-                                  : '—',
-                              deltaBadge: _intDeltaBadge(data.workoutsDelta),
-                            ),
-                            Divider(height: 18, color: colors.borderSubtle),
-                            _ComparisonRow(
-                              label: 'Cardio total',
-                              currentValue: formatCardioSeconds(
-                                current.cardioDurationSeconds,
-                              ),
-                              previousValue: previous != null
-                                  ? formatCardioSeconds(
-                                      previous.cardioDurationSeconds,
-                                    )
-                                  : '—',
-                              deltaBadge:
-                                  _durationDeltaBadge(data.cardioDeltaSeconds),
-                            ),
-                            Divider(height: 18, color: colors.borderSubtle),
-                            _ComparisonRow(
-                              label: 'Tempo de treino',
-                              currentValue: formatCardioSeconds(
-                                current.trainingDurationSeconds,
-                              ),
-                              previousValue: previous != null
-                                  ? formatCardioSeconds(
-                                      previous.trainingDurationSeconds,
-                                    )
-                                  : '—',
-                              deltaBadge: _durationDeltaBadge(
-                                data.trainingDurationDeltaSeconds,
-                              ),
-                            ),
-                            Divider(height: 18, color: colors.borderSubtle),
-                            _ComparisonRow(
-                              label: 'Séries válidas',
-                              currentValue: '${current.workingSetsCount}',
-                              previousValue: previous != null
-                                  ? '${previous.workingSetsCount}'
-                                  : '—',
-                              deltaBadge:
-                                  _intDeltaBadge(data.workingSetsDelta),
-                            ),
-                            Divider(height: 18, color: colors.borderSubtle),
-                            _ComparisonRow(
-                              label: 'Volume total',
-                              currentValue:
-                                  '${volumeFormat.format(current.totalVolumeKg.round())} kg',
-                              previousValue: previous != null
-                                  ? '${volumeFormat.format(previous.totalVolumeKg.round())} kg'
-                                  : '—',
-                              deltaBadge: _volumeDeltaBadge(
-                                data.volumeDeltaKg,
-                                volumeFormat,
-                              ),
-                            ),
-                            Divider(height: 18, color: colors.borderSubtle),
-                            _ComparisonRow(
-                              label: 'RPE médio (auto)',
-                              currentValue: current.avgRpe != null
-                                  ? current.avgRpe!
-                                      .toStringAsFixed(1)
-                                      .replaceAll('.', ',')
-                                  : '—',
-                              previousValue: previous?.avgRpe != null
-                                  ? previous!.avgRpe!
-                                      .toStringAsFixed(1)
-                                      .replaceAll('.', ',')
-                                  : '—',
-                              deltaBadge: _doubleDeltaBadge(
-                                data.avgRpeDelta,
-                                neutralOnly: true,
-                              ),
-                            ),
-                            Divider(height: 18, color: colors.borderSubtle),
-                            _ComparisonRow(
-                              label: 'Score de execução',
-                              currentValue: current.avgExecutionScore != null
-                                  ? '${current.avgExecutionScore!.round()}%'
-                                  : '—',
-                              previousValue: previous?.avgExecutionScore != null
-                                  ? '${previous!.avgExecutionScore!.round()}%'
-                                  : '—',
-                              deltaBadge: _doubleDeltaBadge(
-                                data.avgExecutionScoreDelta,
-                                suffix: '%',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      if (data.recentWeeksHistory.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        _WeeklyHistorySection(
-                          snapshots: data.recentWeeksHistory,
+                            safetyNote: offlineSafetyNoteFor(err),
+                            onRetry: () =>
+                                ref.invalidate(weeklyComparisonProvider),
+                          ),
                         ),
                       ],
-                    ],
+                    ),
                   ),
                 ),
-              ],
+                data: (data) {
+                  final current = data.currentWeek;
+                  final previous = data.previousWeek;
+                  final volumeFormat = NumberFormat('#,##0', 'pt_BR');
+
+                  return RefreshIndicator(
+                    color: colors.primary,
+                    onRefresh: refreshComparison,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(0, 10, 0, 36),
+                      children: [
+                        ResponsiveContainer(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // 1. Week Navigator Strip
+                              AppCard(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 6,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Semantics(
+                                      label: 'Semana anterior',
+                                      button: true,
+                                      child: IconButton(
+                                        tooltip: 'Semana anterior',
+                                        onPressed: () {
+                                          HapticFeedback.selectionClick();
+                                          ref
+                                                  .read(
+                                                    weeklyComparisonOffsetProvider
+                                                        .notifier,
+                                                  )
+                                                  .state =
+                                              offset - 1;
+                                        },
+                                        constraints: const BoxConstraints(
+                                          minWidth: 48,
+                                          minHeight: 48,
+                                        ),
+                                        icon: Icon(
+                                          Icons.chevron_left_rounded,
+                                          color: colors.textPrimary,
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Column(
+                                        children: [
+                                          Text(
+                                            _offsetTitle(offset),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: context.textTheme.titleSmall,
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            formatWeekRange(current.weekStart),
+                                            style: context.textTheme.labelSmall
+                                                ?.copyWith(
+                                                  color: colors.textSecondary,
+                                                  fontFeatures: AppTypography
+                                                      .tabularFeatures,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Semantics(
+                                      label: 'Próxima semana',
+                                      button: true,
+                                      child: IconButton(
+                                        tooltip: 'Próxima semana',
+                                        onPressed: offset < 0
+                                            ? () {
+                                                HapticFeedback.selectionClick();
+                                                ref
+                                                        .read(
+                                                          weeklyComparisonOffsetProvider
+                                                              .notifier,
+                                                        )
+                                                        .state =
+                                                    offset + 1;
+                                              }
+                                            : null,
+                                        constraints: const BoxConstraints(
+                                          minWidth: 48,
+                                          minHeight: 48,
+                                        ),
+                                        icon: Icon(
+                                          Icons.chevron_right_rounded,
+                                          color: offset < 0
+                                              ? colors.textPrimary
+                                              : colors.textDisabled,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // 2. Hero Cardio Weekly Card + 7-day Breakdown
+                              _HeroCardioCard(
+                                data: data,
+                                onDeleteStandalone: (log) async {
+                                  final confirmed = await showLiftrConfirmDialog(
+                                    context,
+                                    title: 'Remover cardio?',
+                                    message:
+                                        'Deseja remover "${log.modality}" (${formatCardioSeconds(log.durationSeconds)}) desta semana?',
+                                    confirmLabel: 'Remover',
+                                    icon: Icons.delete_outline_rounded,
+                                    isDestructive: true,
+                                  );
+                                  if (!confirmed || !context.mounted) return;
+                                  final repo = ref.read(
+                                    weeklyComparisonRepositoryProvider,
+                                  );
+                                  final result = await repo
+                                      .deleteStandaloneCardio(log.id);
+                                  if (!context.mounted) return;
+                                  result.fold(
+                                    (_) {
+                                      ref.invalidate(weeklyComparisonProvider);
+                                      ref.invalidate(
+                                        currentWeekSummaryProvider,
+                                      );
+                                      ref.invalidate(dashboardDataProvider);
+                                      context.showSnackBar('Cardio removido.');
+                                    },
+                                    (failure) {
+                                      context.showSnackBar(
+                                        userFacingMessage(
+                                          failure,
+                                          context:
+                                              'WeeklyComparisonScreen.deleteStandaloneCardio',
+                                        ),
+                                        isError: true,
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 16),
+
+                              // 3. Weekly Comparison Matrix
+                              AppCard(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          flex: 3,
+                                          child: Text(
+                                            'Comparação semanal',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style:
+                                                context.textTheme.titleMedium,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Flexible(
+                                          flex: 2,
+                                          child: Text(
+                                            previous != null
+                                                ? 'Atual vs anterior'
+                                                : 'Baseline inicial',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            textAlign: TextAlign.end,
+                                            style: context.textTheme.labelSmall
+                                                ?.copyWith(
+                                                  color: colors.textTertiary,
+                                                ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    if (previous == null) ...[
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Primeira semana registrada neste período. Conforme você treinar nas próximas semanas, a comparação aparecerá aqui.',
+                                        style: context.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color: colors.textSecondary,
+                                            ),
+                                      ),
+                                    ],
+                                    const SizedBox(height: 14),
+                                    _ComparisonRow(
+                                      label: 'Treinos concluídos',
+                                      currentValue:
+                                          '${current.workoutsCompleted}',
+                                      previousValue: previous != null
+                                          ? '${previous.workoutsCompleted}'
+                                          : '—',
+                                      deltaBadge: _intDeltaBadge(
+                                        data.workoutsDelta,
+                                      ),
+                                    ),
+                                    Divider(
+                                      height: 18,
+                                      color: colors.borderSubtle,
+                                    ),
+                                    _ComparisonRow(
+                                      label: 'Cardio total',
+                                      currentValue: formatCardioSeconds(
+                                        current.cardioDurationSeconds,
+                                      ),
+                                      previousValue: previous != null
+                                          ? formatCardioSeconds(
+                                              previous.cardioDurationSeconds,
+                                            )
+                                          : '—',
+                                      deltaBadge: _durationDeltaBadge(
+                                        data.cardioDeltaSeconds,
+                                      ),
+                                    ),
+                                    Divider(
+                                      height: 18,
+                                      color: colors.borderSubtle,
+                                    ),
+                                    _ComparisonRow(
+                                      label: 'Tempo de treino',
+                                      currentValue: formatCardioSeconds(
+                                        current.trainingDurationSeconds,
+                                      ),
+                                      previousValue: previous != null
+                                          ? formatCardioSeconds(
+                                              previous.trainingDurationSeconds,
+                                            )
+                                          : '—',
+                                      deltaBadge: _durationDeltaBadge(
+                                        data.trainingDurationDeltaSeconds,
+                                      ),
+                                    ),
+                                    Divider(
+                                      height: 18,
+                                      color: colors.borderSubtle,
+                                    ),
+                                    _ComparisonRow(
+                                      label: 'Séries válidas',
+                                      currentValue:
+                                          '${current.workingSetsCount}',
+                                      previousValue: previous != null
+                                          ? '${previous.workingSetsCount}'
+                                          : '—',
+                                      deltaBadge: _intDeltaBadge(
+                                        data.workingSetsDelta,
+                                      ),
+                                    ),
+                                    Divider(
+                                      height: 18,
+                                      color: colors.borderSubtle,
+                                    ),
+                                    _ComparisonRow(
+                                      label: 'Volume total',
+                                      currentValue:
+                                          '${volumeFormat.format(current.totalVolumeKg.round())} kg',
+                                      previousValue: previous != null
+                                          ? '${volumeFormat.format(previous.totalVolumeKg.round())} kg'
+                                          : '—',
+                                      deltaBadge: _volumeDeltaBadge(
+                                        data.volumeDeltaKg,
+                                        volumeFormat,
+                                      ),
+                                    ),
+                                    Divider(
+                                      height: 18,
+                                      color: colors.borderSubtle,
+                                    ),
+                                    _ComparisonRow(
+                                      label: 'RPE médio (auto)',
+                                      currentValue: current.avgRpe != null
+                                          ? current.avgRpe!
+                                                .toStringAsFixed(1)
+                                                .replaceAll('.', ',')
+                                          : '—',
+                                      previousValue: previous?.avgRpe != null
+                                          ? previous!.avgRpe!
+                                                .toStringAsFixed(1)
+                                                .replaceAll('.', ',')
+                                          : '—',
+                                      deltaBadge: _doubleDeltaBadge(
+                                        data.avgRpeDelta,
+                                        neutralOnly: true,
+                                      ),
+                                    ),
+                                    Divider(
+                                      height: 18,
+                                      color: colors.borderSubtle,
+                                    ),
+                                    _ComparisonRow(
+                                      label: 'Score de execução',
+                                      currentValue:
+                                          current.avgExecutionScore != null
+                                          ? '${current.avgExecutionScore!.round()}%'
+                                          : '—',
+                                      previousValue:
+                                          previous?.avgExecutionScore != null
+                                          ? '${previous!.avgExecutionScore!.round()}%'
+                                          : '—',
+                                      deltaBadge: _doubleDeltaBadge(
+                                        data.avgExecutionScoreDelta,
+                                        suffix: '%',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              if (data.recentWeeksHistory.isNotEmpty) ...[
+                                const SizedBox(height: 16),
+                                _WeeklyHistorySection(
+                                  snapshots: data.recentWeeksHistory,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
-          );
-        },
+          ],
+        ),
       ),
       bottomNavigationBar: SafeArea(
         top: false,
@@ -445,10 +505,7 @@ class WeeklyComparisonScreen extends ConsumerWidget {
     return const LiftrBadge(label: 'Igual', tone: LiftrBadgeTone.neutral);
   }
 
-  static LiftrBadge? _volumeDeltaBadge(
-    double? deltaKg,
-    NumberFormat fmt,
-  ) {
+  static LiftrBadge? _volumeDeltaBadge(double? deltaKg, NumberFormat fmt) {
     if (deltaKg == null) return null;
     final rounded = deltaKg.round();
     if (rounded > 0) {
@@ -485,10 +542,7 @@ class WeeklyComparisonScreen extends ConsumerWidget {
 }
 
 class _HeroCardioCard extends StatelessWidget {
-  const _HeroCardioCard({
-    required this.data,
-    required this.onDeleteStandalone,
-  });
+  const _HeroCardioCard({required this.data, required this.onDeleteStandalone});
 
   final WeeklyComparisonData data;
   final Future<void> Function(CardioLog log) onDeleteStandalone;
@@ -646,7 +700,9 @@ class _HeroCardioCard extends StatelessWidget {
                                     color: mins > 0
                                         ? colors.primary
                                         : colors.surfaceElevated,
-                                    borderRadius: BorderRadius.circular(radius.xs),
+                                    borderRadius: BorderRadius.circular(
+                                      radius.xs,
+                                    ),
                                   ),
                                 ),
                                 SizedBox(height: context.appSpacing.space8),

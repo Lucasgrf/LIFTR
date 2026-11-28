@@ -20,6 +20,7 @@ import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_confirm_dialog.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_icon.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_list_group.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
@@ -48,14 +49,8 @@ class ProfileScreen extends ConsumerWidget {
           children: [
             // Sticky Top Header
             Container(
-              constraints: const BoxConstraints(minHeight: 64),
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                color: colors.background,
-                border: Border(
-                  bottom: BorderSide(color: colors.border, width: 1),
-                ),
-              ),
+              constraints: const BoxConstraints(minHeight: 48),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
                 children: [
                   Semantics(
@@ -74,19 +69,13 @@ class ProfileScreen extends ConsumerWidget {
                         minWidth: 48,
                         minHeight: 48,
                       ),
-                      icon: Icon(
-                        Icons.arrow_back_rounded,
+                      icon: LiftrIcon(
+                        LiftrIconName.back,
                         color: colors.textPrimary,
                       ),
                     ),
                   ),
-                  Expanded(
-                    child: Text(
-                      'Perfil',
-                      style: context.textTheme.titleLarge,
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
+                  const Spacer(),
                   Semantics(
                     label: 'Abrir configurações',
                     button: true,
@@ -97,8 +86,8 @@ class ProfileScreen extends ConsumerWidget {
                         minWidth: 48,
                         minHeight: 48,
                       ),
-                      icon: Icon(
-                        Icons.settings_rounded,
+                      icon: LiftrIcon(
+                        LiftrIconName.settings,
                         color: colors.textSecondary,
                       ),
                     ),
@@ -109,15 +98,19 @@ class ProfileScreen extends ConsumerWidget {
 
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 20),
+                padding: const EdgeInsets.only(top: 8, bottom: 36),
                 children: [
                   ResponsiveContainer(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        Text('Perfil', style: context.textTheme.displayMedium),
+                        const SizedBox(height: 24),
                         // Avatar & Identity Card
                         AppCard(
-                          borderRadius: radius.xl,
+                          variant: AppCardVariant.flat,
+                          backgroundColor: Colors.transparent,
+                          borderRadius: 0,
                           padding: const EdgeInsets.all(20),
                           child: Column(
                             children: [
@@ -129,11 +122,12 @@ class ProfileScreen extends ConsumerWidget {
                                   onTap: profileState.isUploadingAvatar
                                       ? null
                                       : () => _showAvatarSourceSheet(
-                                            context,
-                                            ref,
-                                            hasAvatar: settings.avatarUrl != null &&
-                                                settings.avatarUrl!.isNotEmpty,
-                                          ),
+                                          context,
+                                          ref,
+                                          hasAvatar:
+                                              settings.avatarUrl != null &&
+                                              settings.avatarUrl!.isNotEmpty,
+                                        ),
                                   borderRadius: BorderRadius.circular(999),
                                   child: ExcludeSemantics(
                                     child: Stack(
@@ -141,7 +135,8 @@ class ProfileScreen extends ConsumerWidget {
                                       children: [
                                         _ProfileAvatarCircle(
                                           avatarUrl: settings.avatarUrl,
-                                          storagePath: settings.avatarStoragePath,
+                                          storagePath:
+                                              settings.avatarStoragePath,
                                           displayName: displayName,
                                           size: 92,
                                         ),
@@ -159,8 +154,8 @@ class ProfileScreen extends ConsumerWidget {
                                                   height: 24,
                                                   child:
                                                       CircularProgressIndicator(
-                                                    strokeWidth: 2.5,
-                                                  ),
+                                                        strokeWidth: 2.5,
+                                                      ),
                                                 ),
                                               ),
                                             ),
@@ -172,7 +167,7 @@ class ProfileScreen extends ConsumerWidget {
                                             width: 32,
                                             height: 32,
                                             decoration: BoxDecoration(
-                                              color: colors.primary,
+                                              color: colors.textPrimary,
                                               shape: BoxShape.circle,
                                               border: Border.all(
                                                 color: colors.surface,
@@ -182,7 +177,7 @@ class ProfileScreen extends ConsumerWidget {
                                             child: Icon(
                                               Icons.camera_alt_rounded,
                                               size: 16,
-                                              color: colors.onPrimary,
+                                              color: colors.background,
                                             ),
                                           ),
                                         ),
@@ -201,11 +196,13 @@ class ProfileScreen extends ConsumerWidget {
                                     ref,
                                     displayName,
                                   ),
-                                  borderRadius:
-                                      BorderRadius.circular(radius.small),
+                                  borderRadius: BorderRadius.circular(
+                                    radius.small,
+                                  ),
                                   child: Container(
-                                    constraints:
-                                        const BoxConstraints(minHeight: 48),
+                                    constraints: const BoxConstraints(
+                                      minHeight: 48,
+                                    ),
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 10,
                                       vertical: 8,
@@ -222,10 +219,15 @@ class ProfileScreen extends ConsumerWidget {
                                           ),
                                         ),
                                         const SizedBox(width: 6),
-                                        Icon(
-                                          Icons.edit_rounded,
-                                          size: 16,
-                                          color: colors.textTertiary,
+                                        Text(
+                                          'Editar',
+                                          style: context.textTheme.labelMedium
+                                              ?.copyWith(
+                                                color: colors.textSecondary,
+                                                decoration:
+                                                    TextDecoration.underline,
+                                                decorationThickness: 1.5,
+                                              ),
                                         ),
                                       ],
                                     ),
@@ -246,7 +248,7 @@ class ProfileScreen extends ConsumerWidget {
                               LiftrBadge(
                                 label:
                                     '${settings.goal.label} · ${settings.experience.label}',
-                                tone: LiftrBadgeTone.brand,
+                                tone: LiftrBadgeTone.neutral,
                               ),
                             ],
                           ),
@@ -265,7 +267,8 @@ class ProfileScreen extends ConsumerWidget {
                                   : formatBiologicalSexPtBr(
                                       settings.biologicalSex,
                                     ),
-                              onTap: () => _showBodyDataSheet(context, settings),
+                              onTap: () =>
+                                  _showBodyDataSheet(context, settings),
                             ),
                             LiftrListRow(
                               label: 'Objetivo atual',
@@ -351,7 +354,7 @@ class ProfileScreen extends ConsumerWidget {
         children: [
           ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: Icon(Icons.camera_alt_rounded, color: colors.primary),
+            leading: Icon(Icons.camera_alt_outlined, color: colors.textPrimary),
             title: const Text('Tirar foto'),
             onTap: () async {
               Navigator.pop(ctx);
@@ -360,7 +363,10 @@ class ProfileScreen extends ConsumerWidget {
           ),
           ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: Icon(Icons.photo_library_rounded, color: colors.primary),
+            leading: Icon(
+              Icons.photo_library_outlined,
+              color: colors.textPrimary,
+            ),
             title: const Text('Escolher da galeria'),
             onTap: () async {
               Navigator.pop(ctx);
@@ -373,7 +379,9 @@ class ProfileScreen extends ConsumerWidget {
               leading: Icon(Icons.delete_outline_rounded, color: colors.danger),
               title: Text(
                 'Remover foto',
-                style: context.textTheme.bodyMedium?.copyWith(color: colors.danger),
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: colors.danger,
+                ),
               ),
               onTap: () async {
                 Navigator.pop(ctx);
@@ -425,10 +433,7 @@ class ProfileScreen extends ConsumerWidget {
     }
   }
 
-  void _showBodyDataSheet(
-    BuildContext context,
-    UserSettingsState settings,
-  ) {
+  void _showBodyDataSheet(BuildContext context, UserSettingsState settings) {
     showProfileBodyDataSheet(context, settings);
   }
 
@@ -457,7 +462,7 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
               trailing: selected
-                  ? Icon(Icons.check_rounded, color: colors.primary)
+                  ? Icon(Icons.check_rounded, color: colors.textPrimary)
                   : null,
               onTap: () {
                 ref.read(userSettingsProvider.notifier).setGoal(goal);
@@ -498,7 +503,7 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
               trailing: selected
-                  ? Icon(Icons.check_rounded, color: colors.primary)
+                  ? Icon(Icons.check_rounded, color: colors.textPrimary)
                   : null,
               onTap: () {
                 ref.read(userSettingsProvider.notifier).setExperience(exp);
@@ -539,12 +544,10 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
               trailing: selected
-                  ? Icon(Icons.check_rounded, color: colors.primary)
+                  ? Icon(Icons.check_rounded, color: colors.textPrimary)
                   : null,
               onTap: () {
-                ref
-                    .read(userSettingsProvider.notifier)
-                    .setActivityLevel(lvl);
+                ref.read(userSettingsProvider.notifier).setActivityLevel(lvl);
                 ref
                     .read(profileControllerProvider.notifier)
                     .syncSettingsToRemote();
@@ -586,18 +589,15 @@ class _ProfileAvatarCircle extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: colors.primaryMuted,
+        color: colors.surfaceSubtle,
         shape: BoxShape.circle,
-        border: Border.all(
-          color: colors.primary.withValues(alpha: 0.4),
-          width: 1.5,
-        ),
+        border: Border.all(color: colors.divider, width: 1.5),
       ),
       alignment: Alignment.center,
       child: Text(
         initials,
         style: context.textTheme.headlineMedium?.copyWith(
-          color: colors.primaryLight,
+          color: colors.textPrimary,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -612,8 +612,9 @@ class _ProfileAvatarCircle extends StatelessWidget {
       return _fallback(context);
     }
 
-    final cachePx =
-        (size * MediaQuery.devicePixelRatioOf(context)).round().clamp(64, 512);
+    final cachePx = (size * MediaQuery.devicePixelRatioOf(context))
+        .round()
+        .clamp(64, 512);
 
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return ClipOval(
@@ -779,7 +780,9 @@ class _BodyDataSheetState extends ConsumerState<_BodyDataSheet> {
 
       final weightChanged = w != null && w != widget.initialSettings.weightKg;
 
-      ref.read(userSettingsProvider.notifier).updateBodyData(
+      ref
+          .read(userSettingsProvider.notifier)
+          .updateBodyData(
             biologicalSex: _sex,
             weightKg: w,
             heightCm: h,
@@ -844,82 +847,75 @@ class _BodyDataSheetState extends ConsumerState<_BodyDataSheet> {
               ),
             ],
           ),
-              AppSpacing.verticalGap12,
-              AppInput(
-                label: 'Peso (kg)',
-                hint: 'Ex: 78,5',
-                controller: _weightCtrl,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                inputFormatters: [PtBrDecimalInputFormatter(maxDecimalDigits: 1)],
-                textInputAction: TextInputAction.next,
-                validator: (v) {
-                  final parsed = parsePtBrDouble(v);
-                  if (parsed == null || parsed < 20 || parsed > 400) {
-                    return 'Informe um peso entre 20 e 400 kg';
-                  }
-                  return null;
-                },
-              ),
-              AppSpacing.verticalGap12,
-              AppInput(
-                label: 'Altura (cm)',
-                hint: 'Ex: 178',
-                controller: _heightCtrl,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                textInputAction: TextInputAction.next,
-                validator: (v) {
-                  final parsed = int.tryParse(v?.trim() ?? '');
-                  if (parsed == null || parsed < 100 || parsed > 250) {
-                    return 'Informe uma altura entre 100 e 250 cm';
-                  }
-                  return null;
-                },
-              ),
-              AppSpacing.verticalGap12,
-              AppInput(
-                label: 'Idade (anos)',
-                hint: 'Ex: 27',
-                controller: _ageCtrl,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                textInputAction: TextInputAction.next,
-                validator: (v) {
-                  final parsed = int.tryParse(v?.trim() ?? '');
-                  if (parsed == null || parsed < 12 || parsed > 100) {
-                    return 'Informe uma idade entre 12 e 100 anos';
-                  }
-                  return null;
-                },
-              ),
-              AppSpacing.verticalGap12,
-              AppInput(
-                label: '% de gordura (opcional)',
-                hint: 'Ex: 15,0',
-                controller: _bodyFatCtrl,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                inputFormatters: [PtBrDecimalInputFormatter(maxDecimalDigits: 1)],
-                textInputAction: TextInputAction.done,
-                onFieldSubmitted: (_) => _submit(),
-                validator: (v) {
-                  final trimmed = v?.trim() ?? '';
-                  if (trimmed.isEmpty) return null;
-                  final parsed = parsePtBrDouble(trimmed);
-                  if (parsed == null || parsed < 3 || parsed > 60) {
-                    return 'Informe entre 3% e 60%';
-                  }
-                  return null;
-                },
-              ),
-              AppSpacing.verticalGap20,
-              AppButton.primary(
-                label: 'Salvar',
-                onPressed: _submit,
-              ),
+          AppSpacing.verticalGap12,
+          AppInput(
+            label: 'Peso (kg)',
+            hint: 'Ex: 78,5',
+            controller: _weightCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [PtBrDecimalInputFormatter(maxDecimalDigits: 1)],
+            textInputAction: TextInputAction.next,
+            validator: (v) {
+              final parsed = parsePtBrDouble(v);
+              if (parsed == null || parsed < 20 || parsed > 400) {
+                return 'Informe um peso entre 20 e 400 kg';
+              }
+              return null;
+            },
+          ),
+          AppSpacing.verticalGap12,
+          AppInput(
+            label: 'Altura (cm)',
+            hint: 'Ex: 178',
+            controller: _heightCtrl,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            textInputAction: TextInputAction.next,
+            validator: (v) {
+              final parsed = int.tryParse(v?.trim() ?? '');
+              if (parsed == null || parsed < 100 || parsed > 250) {
+                return 'Informe uma altura entre 100 e 250 cm';
+              }
+              return null;
+            },
+          ),
+          AppSpacing.verticalGap12,
+          AppInput(
+            label: 'Idade (anos)',
+            hint: 'Ex: 27',
+            controller: _ageCtrl,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            textInputAction: TextInputAction.next,
+            validator: (v) {
+              final parsed = int.tryParse(v?.trim() ?? '');
+              if (parsed == null || parsed < 12 || parsed > 100) {
+                return 'Informe uma idade entre 12 e 100 anos';
+              }
+              return null;
+            },
+          ),
+          AppSpacing.verticalGap12,
+          AppInput(
+            label: '% de gordura (opcional)',
+            hint: 'Ex: 15,0',
+            controller: _bodyFatCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [PtBrDecimalInputFormatter(maxDecimalDigits: 1)],
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => _submit(),
+            validator: (v) {
+              final trimmed = v?.trim() ?? '';
+              if (trimmed.isEmpty) return null;
+              final parsed = parsePtBrDouble(trimmed);
+              if (parsed == null || parsed < 3 || parsed > 60) {
+                return 'Informe entre 3% e 60%';
+              }
+              return null;
+            },
+          ),
+          AppSpacing.verticalGap20,
+          AppButton.primary(label: 'Salvar', onPressed: _submit),
         ],
       ),
     );

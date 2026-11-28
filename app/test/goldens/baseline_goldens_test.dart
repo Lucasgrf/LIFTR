@@ -704,6 +704,9 @@ void main() {
           overrides: [
             liveSessionDetailProvider('sess-active')
                 .overrideWith((_) async => tSummarySession),
+            trainingPlansStateProvider.overrideWith(
+              (ref) => _GoldenTrainingPlansNotifier(ref, [tPlan]),
+            ),
             progressionRepositoryProvider
                 .overrideWithValue(_GoldenProgressionRepository()),
             isOnlineStreamProvider.overrideWith((_) => Stream.value(true)),
@@ -744,6 +747,9 @@ void main() {
           child: const HistoryScreen(),
           overrides: [
             historyListProvider.overrideWith((_) async => [tCompletedSession]),
+            trainingPlansStateProvider.overrideWith(
+              (ref) => _GoldenTrainingPlansNotifier(ref, [tPlan]),
+            ),
             currentWeekSummaryProvider.overrideWith((_) async => tWeekSummary),
             weightHistoryProvider.overrideWith(
               (_) async => [

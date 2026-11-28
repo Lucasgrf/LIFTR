@@ -11,7 +11,6 @@ import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/network/network_info.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
-import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
@@ -138,7 +137,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final radius = context.appRadius;
     final spacing = context.appSpacing;
     final recoveryError = ref.watch(passwordRecoveryErrorProvider);
 
@@ -205,7 +203,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   child: Text(
                                     'Solicitar novo link',
                                     style: context.textTheme.labelLarge
-                                        ?.copyWith(color: colors.primaryLight),
+                                        ?.copyWith(color: colors.textPrimary),
                                   ),
                                 ),
                                 TextButton(
@@ -228,7 +226,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   child: Text(
                                     'Reenviar confirmação',
                                     style: context.textTheme.labelLarge
-                                        ?.copyWith(color: colors.primaryLight),
+                                        ?.copyWith(color: colors.textPrimary),
                                   ),
                                 ),
                               ],
@@ -299,7 +297,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         child: Text(
                           'Esqueci minha senha',
                           style: context.textTheme.labelMedium?.copyWith(
-                            color: colors.primaryLight,
+                            color: colors.textPrimary,
                           ),
                         ),
                       ),
@@ -324,7 +322,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               TextSpan(
                                 text: 'Criar conta',
                                 style: context.textTheme.bodyMedium?.copyWith(
-                                  color: colors.primaryLight,
+                                  color: colors.textPrimary,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -334,33 +332,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.surfaceSubtle,
-                        borderRadius: BorderRadius.circular(radius.medium),
-                        border: Border.all(color: colors.border),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.offline_bolt_rounded,
-                            size: 18,
-                            color: colors.primaryLight,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              '100% offline-first · Seus treinos ficam salvos localmente no aparelho.',
-                              style: context.textTheme.bodySmall?.copyWith(
-                                color: colors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ],
+                    Text(
+                      '100% offline-first · Seus treinos ficam salvos localmente no aparelho.',
+                      textAlign: TextAlign.center,
+                      style: context.textTheme.bodySmall?.copyWith(
+                        color: colors.textSecondary,
                       ),
                     ),
                   ],

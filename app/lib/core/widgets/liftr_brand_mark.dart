@@ -96,3 +96,26 @@ class LiftrWordmark extends StatelessWidget {
     );
   }
 }
+
+/// Lowercase LIFTR wordmark without the ramp symbol, used under the splash mark.
+class LiftrWordmarkOnly extends StatelessWidget {
+  const LiftrWordmarkOnly({super.key, this.height = 55});
+
+  final double height;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: 'liftr',
+    image: true,
+    child: SvgPicture.asset(
+      'assets/icons/liftr-wordmark.svg',
+      height: height,
+      width: height * 2.03,
+      fit: BoxFit.contain,
+      colorFilter: ColorFilter.mode(
+        context.appColors.textPrimary,
+        BlendMode.srcIn,
+      ),
+    ),
+  );
+}

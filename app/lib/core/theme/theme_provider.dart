@@ -13,6 +13,7 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
   static ThemeMode _load(SharedPreferences? prefs) {
     final raw = prefs?.getString(_storageKey);
     return switch (raw) {
+      'dark' => ThemeMode.dark,
       'light' => ThemeMode.light,
       'system' => ThemeMode.system,
       _ => ThemeMode.system,

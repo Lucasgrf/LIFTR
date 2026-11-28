@@ -48,12 +48,9 @@ void main() {
           ),
         );
 
-        expect(find.text('EM ANDAMENTO'), findsOneWidget);
+        expect(find.text('SESSÃO EM ANDAMENTO'), findsOneWidget);
         expect(find.text('Treino A - Peito e Tríceps'), findsOneWidget);
-        expect(
-          find.text('Continuar Treino A - Peito e Tríceps'),
-          findsOneWidget,
-        );
+        expect(find.text('0 séries registradas.'), findsOneWidget);
       },
     );
 
@@ -70,7 +67,7 @@ void main() {
         );
 
         expect(find.text('Treino A - Peito e Tríceps'), findsOneWidget);
-        expect(find.text('Começar Treino A - Peito e Tríceps'), findsOneWidget);
+        expect(find.text('0 exercícios, 0 séries.'), findsOneWidget);
       },
     );
   });

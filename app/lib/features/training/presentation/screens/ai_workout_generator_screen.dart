@@ -236,9 +236,7 @@ class _AiWorkoutGeneratorScreenState
         ref.read(trainingPlansStateProvider.notifier).refresh();
         ref.read(exerciseListStateProvider.notifier).refresh();
         ref.invalidate(dashboardDataProvider);
-        context.showSnackBar(
-          'Programa "${saved.name}" criado e ativado!',
-        );
+        context.showSnackBar('Programa "${saved.name}" criado e ativado!');
         context.go('/training');
       },
       (failure) {
@@ -257,7 +255,8 @@ class _AiWorkoutGeneratorScreenState
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final isOffline = ref.watch(isOfflineModeProvider);
-    final showWizard = !isOffline &&
+    final showWizard =
+        !isOffline &&
         !_isGenerating &&
         _errorMessage == null &&
         _generatedPlan == null;
@@ -305,12 +304,17 @@ class _AiWorkoutGeneratorScreenState
                           ),
                   ),
                   if (showWizard) ...[
-                    const SizedBox(width: 12),
-                    Text(
-                      'Passo ${_step + 1} de $_totalSteps',
-                      style: context.textTheme.labelMedium?.copyWith(
-                        color: colors.textSecondary,
-                        fontFeatures: AppTypography.tabularFeatures,
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'Passo ${_step + 1} de $_totalSteps',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: context.textTheme.labelMedium?.copyWith(
+                          color: colors.textSecondary,
+                          fontFeatures: AppTypography.tabularFeatures,
+                        ),
                       ),
                     ),
                   ],
@@ -373,7 +377,7 @@ class _AiWorkoutGeneratorScreenState
                             onPressed: _isApplying ? null : _generatePlan,
                             style: TextButton.styleFrom(
                               minimumSize: const Size(48, 44),
-                              foregroundColor: colors.primaryLight,
+                              foregroundColor: colors.textPrimary,
                             ),
                             icon: const Icon(Icons.refresh_rounded, size: 18),
                             label: const Text('Gerar outra opção'),
@@ -442,11 +446,7 @@ class _AiWorkoutGeneratorScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(
-            Icons.wifi_off_rounded,
-            size: 36,
-            color: colors.warning,
-          ),
+          Icon(Icons.wifi_off_rounded, size: 36, color: colors.warning),
           const SizedBox(height: 12),
           Text(
             'Você está sem conexão com a internet',
@@ -462,10 +462,7 @@ class _AiWorkoutGeneratorScreenState
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
-          AppButton.secondary(
-            label: 'Voltar',
-            onPressed: _handleBack,
-          ),
+          AppButton.secondary(label: 'Voltar', onPressed: _handleBack),
         ],
       ),
     );
@@ -613,11 +610,13 @@ class _AiWorkoutGeneratorScreenState
                   selected: isSelected,
                   button: true,
                   child: Material(
-                    color: isSelected ? colors.primary : colors.surfaceElevated,
+                    color: isSelected
+                        ? colors.textPrimary
+                        : colors.surfaceElevated,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(radius.medium),
                       side: BorderSide(
-                        color: isSelected ? colors.primary : colors.border,
+                        color: isSelected ? colors.textPrimary : colors.border,
                         width: 1.5,
                       ),
                     ),
@@ -637,7 +636,7 @@ class _AiWorkoutGeneratorScreenState
                             '$days',
                             style: context.textTheme.titleLarge?.copyWith(
                               color: isSelected
-                                  ? colors.onPrimary
+                                  ? colors.background
                                   : colors.textPrimary,
                               fontFeatures: AppTypography.tabularFeatures,
                             ),
@@ -799,7 +798,7 @@ class _AiWorkoutGeneratorScreenState
                           ),
                           Switch.adaptive(
                             value: _includeCardio,
-                            activeTrackColor: colors.primary,
+                            activeTrackColor: colors.textPrimary,
                             onChanged: (val) {
                               HapticFeedback.selectionClick();
                               setState(() => _includeCardio = val);
@@ -870,9 +869,7 @@ class _AiWorkoutGeneratorScreenState
           decoration: BoxDecoration(
             color: colors.surface,
             borderRadius: BorderRadius.circular(radius.large),
-            border: Border.all(
-              color: colors.primary.withValues(alpha: 0.4),
-            ),
+            border: Border.all(color: colors.divider),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -916,7 +913,8 @@ class _AiWorkoutGeneratorScreenState
 
   String _generatingStageLabel(int percent) {
     if (percent >= 100) return 'Treino pronto!';
-    if (percent > 70) return 'Calibrando séries, repetições, descanso e cardio...';
+    if (percent > 70)
+      return 'Calibrando séries, repetições, descanso e cardio...';
     if (percent > 30) return 'Selecionando exercícios do catálogo LIFTR...';
     return 'Analisando seu perfil, nível e divisão ideal...';
   }
@@ -963,9 +961,7 @@ class _AiWorkoutGeneratorScreenState
                   '$percent%',
                   key: const Key('ai_generating_percent_text'),
                   style: context.textTheme.displayMedium?.copyWith(
-                    color: percent >= 100
-                        ? fitnessColors.progressUp
-                        : colors.primaryLight,
+                    color: colors.textPrimary,
                     fontFeatures: AppTypography.tabularFeatures,
                   ),
                 ),
@@ -975,15 +971,10 @@ class _AiWorkoutGeneratorScreenState
             LiftrProgressBar(
               progress: percent / 100.0,
               height: 6,
-              color: percent >= 100
-                  ? fitnessColors.progressUp
-                  : colors.primary,
+              color: colors.textPrimary,
             ),
             const SizedBox(height: 16),
-            Text(
-              stageLabel,
-              style: context.textTheme.titleMedium,
-            ),
+            Text(stageLabel, style: context.textTheme.titleMedium),
             const SizedBox(height: 6),
             Text(
               'A IA está estruturando $_daysPerWeek sessões (${_goal.label}) para o seu nível.',
@@ -1083,10 +1074,7 @@ class _AiWorkoutGeneratorScreenState
     );
   }
 
-  Widget _buildPreviewState(
-    BuildContext context,
-    GeneratedTrainingPlan plan,
-  ) {
+  Widget _buildPreviewState(BuildContext context, GeneratedTrainingPlan plan) {
     final colors = context.appColors;
     final radius = context.appRadius;
 
@@ -1106,10 +1094,7 @@ class _AiWorkoutGeneratorScreenState
           spacing: 8,
           runSpacing: 8,
           children: [
-            LiftrBadge(
-              label: plan.splitType,
-              tone: LiftrBadgeTone.brand,
-            ),
+            LiftrBadge(label: plan.splitType, tone: LiftrBadgeTone.neutral),
             LiftrBadge(
               label: pluralize(plan.totalWorkoutsCount, 'sessão', 'sessões'),
               tone: LiftrBadgeTone.neutral,
@@ -1134,11 +1119,9 @@ class _AiWorkoutGeneratorScreenState
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: colors.primaryMuted,
+              color: colors.surfaceSubtle,
               borderRadius: BorderRadius.circular(radius.medium),
-              border: Border.all(
-                color: colors.primary.withValues(alpha: 0.3),
-              ),
+              border: Border.all(color: colors.divider),
             ),
             child: Text(
               plan.rationale!,
@@ -1158,7 +1141,7 @@ class _AiWorkoutGeneratorScreenState
               variant: index == 0
                   ? AppCardVariant.accented
                   : AppCardVariant.raised,
-              accentColor: colors.primary,
+              accentColor: colors.divider,
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1194,7 +1177,7 @@ class _AiWorkoutGeneratorScreenState
                                 : Icons.fitness_center_rounded,
                             size: 16,
                             color: ex.isCardio
-                                ? colors.primaryLight
+                                ? colors.textTertiary
                                 : colors.textTertiary,
                           ),
                           const SizedBox(width: 8),
@@ -1211,7 +1194,7 @@ class _AiWorkoutGeneratorScreenState
                             child: LiftrBadge(
                               label: ex.prescriptionSummary,
                               tone: ex.isCardio
-                                  ? LiftrBadgeTone.brand
+                                  ? LiftrBadgeTone.neutral
                                   : LiftrBadgeTone.neutral,
                             ),
                           ),
@@ -1253,10 +1236,8 @@ class _StudyOptionCard extends StatelessWidget {
       button: true,
       child: AppCard(
         onTap: onTap,
-        backgroundColor: selected
-            ? colors.primary.withValues(alpha: 0.12)
-            : colors.surface,
-        borderColor: selected ? colors.primary : colors.border,
+        backgroundColor: colors.surface,
+        borderColor: selected ? colors.textPrimary : colors.divider,
         borderWidth: selected ? 1.5 : 1,
         constraints: const BoxConstraints(minHeight: 58),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -1280,7 +1261,7 @@ class _StudyOptionCard extends StatelessWidget {
                       if (badgeLabel != null)
                         LiftrBadge(
                           label: badgeLabel!,
-                          tone: LiftrBadgeTone.brand,
+                          tone: LiftrBadgeTone.neutral,
                         ),
                     ],
                   ),
@@ -1302,9 +1283,9 @@ class _StudyOptionCard extends StatelessWidget {
               height: 24,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: selected ? colors.primary : Colors.transparent,
+                color: selected ? colors.textPrimary : Colors.transparent,
                 border: Border.all(
-                  color: selected ? colors.primary : colors.border,
+                  color: selected ? colors.textPrimary : colors.border,
                   width: 1.5,
                 ),
               ),
@@ -1312,7 +1293,7 @@ class _StudyOptionCard extends StatelessWidget {
                   ? Icon(
                       Icons.check_rounded,
                       size: 16,
-                      color: colors.onPrimary,
+                      color: colors.background,
                     )
                   : null,
             ),
@@ -1343,11 +1324,11 @@ class _SelectableChip extends StatelessWidget {
       selected: selected,
       button: true,
       child: Material(
-        color: selected ? colors.primary : colors.surfaceElevated,
+        color: selected ? colors.textPrimary : colors.surfaceElevated,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radius.medium),
           side: BorderSide(
-            color: selected ? colors.primary : colors.border,
+            color: selected ? colors.textPrimary : colors.border,
           ),
         ),
         clipBehavior: Clip.antiAlias,
@@ -1359,7 +1340,7 @@ class _SelectableChip extends StatelessWidget {
             child: Text(
               label,
               style: context.textTheme.labelMedium?.copyWith(
-                color: selected ? colors.onPrimary : colors.textPrimary,
+                color: selected ? colors.background : colors.textPrimary,
                 fontFeatures: AppTypography.tabularFeatures,
               ),
             ),
@@ -1371,10 +1352,7 @@ class _SelectableChip extends StatelessWidget {
 }
 
 class _SummaryRow extends StatelessWidget {
-  const _SummaryRow({
-    required this.label,
-    required this.value,
-  });
+  const _SummaryRow({required this.label, required this.value});
 
   final String label;
   final String value;

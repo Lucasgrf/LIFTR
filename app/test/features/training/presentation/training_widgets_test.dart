@@ -136,7 +136,7 @@ void main() {
       );
 
       expect(find.text('Treino A - Peito e Tríceps'), findsOneWidget);
-      expect(find.text('Segunda-feira'), findsOneWidget);
+      expect(find.textContaining('Segunda-feira'), findsOneWidget);
     });
   });
 }

@@ -69,6 +69,14 @@ class _AppButtonState extends State<AppButton> {
     setState(() => _isPressed = pressed);
   }
 
+  Widget _buttonLabel(BuildContext context, Color foreground) => Text(
+    widget.label,
+    textAlign: TextAlign.center,
+    style: Theme.of(context).textTheme.labelLarge?.copyWith(color: foreground),
+    maxLines: 2,
+    overflow: TextOverflow.ellipsis,
+  );
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -88,12 +96,13 @@ class _AppButtonState extends State<AppButton> {
         fgColor = isDisabled ? colors.textDisabled : colors.textPrimary;
         break;
       case AppButtonType.text:
-        fgColor = isDisabled ? colors.textDisabled : colors.primaryLight;
+        fgColor = isDisabled ? colors.textDisabled : colors.textPrimary;
         break;
     }
 
+    final isTextButton = widget._type == AppButtonType.text;
     final content = Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: isTextButton ? MainAxisSize.min : MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (widget.isLoading) ...[
@@ -110,17 +119,10 @@ class _AppButtonState extends State<AppButton> {
           Icon(widget.icon, size: 20, color: fgColor),
           AppSpacing.horizontalGap8,
         ],
-        Flexible(
-          child: Text(
-            widget.label,
-            textAlign: TextAlign.center,
-            style: Theme.of(
-              context,
-            ).textTheme.labelLarge?.copyWith(color: fgColor),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
+        if (isTextButton)
+          Flexible(child: _buttonLabel(context, fgColor))
+        else
+          Expanded(child: _buttonLabel(context, fgColor)),
       ],
     );
 
@@ -130,7 +132,7 @@ class _AppButtonState extends State<AppButton> {
         button = ConstrainedBox(
           constraints: const BoxConstraints(
             minWidth: double.infinity,
-            minHeight: 52,
+            minHeight: 56,
           ),
           child: ElevatedButton(
             autofocus: widget.autofocus,
@@ -158,7 +160,7 @@ class _AppButtonState extends State<AppButton> {
         button = ConstrainedBox(
           constraints: const BoxConstraints(
             minWidth: double.infinity,
-            minHeight: 52,
+            minHeight: 56,
           ),
           child: ElevatedButton(
             autofocus: widget.autofocus,
@@ -186,7 +188,7 @@ class _AppButtonState extends State<AppButton> {
         button = ConstrainedBox(
           constraints: const BoxConstraints(
             minWidth: double.infinity,
-            minHeight: 52,
+            minHeight: 56,
           ),
           child: OutlinedButton(
             autofocus: widget.autofocus,

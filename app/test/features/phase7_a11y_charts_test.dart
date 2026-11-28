@@ -15,10 +15,11 @@ import 'package:personal_fitness_os/core/providers/clock_provider.dart';
 import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_theme.dart';
+import 'package:personal_fitness_os/core/widgets/app_button.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_icon.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/charts/chart_models.dart';
 import 'package:personal_fitness_os/core/widgets/charts/exercise_load_progression_chart.dart';
-import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_progress_bar.dart';
 import 'package:personal_fitness_os/features/body/domain/entities/weight_entry.dart';
 import 'package:personal_fitness_os/features/body/domain/entities/weight_stats.dart';
@@ -32,6 +33,7 @@ import 'package:personal_fitness_os/features/history/presentation/providers/hist
 import 'package:personal_fitness_os/features/history/presentation/widgets/progress_consistency_view.dart';
 import 'package:personal_fitness_os/features/history/presentation/widgets/progress_segmented_control.dart';
 import 'package:personal_fitness_os/features/history/presentation/widgets/progress_weight_view.dart';
+import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
 import 'package:personal_fitness_os/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:personal_fitness_os/features/profile/presentation/screens/profile_screen.dart';
 import 'package:personal_fitness_os/features/progression/domain/entities/progression_recommendation.dart';
@@ -229,8 +231,8 @@ void main() {
           );
 
           expect(find.text('Meta: 10+ séries/semana'), findsOneWidget);
-          // Legend icon + one group (Peito) that reached the target.
-          expect(find.byIcon(Icons.check_circle_rounded), findsNWidgets(2));
+          // The reached target uses a custom mark in addition to its text.
+          expect(find.byType(LiftrIcon), findsOneWidget);
           expect(
             find.bySemanticsLabel(
               'Peito: 10 séries válidas na semana (meta atingida)',
@@ -250,8 +252,7 @@ void main() {
               ),
             ),
           );
-          // Only the legend icon remains when no group reaches the target.
-          expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+          expect(find.byType(LiftrIcon), findsNothing);
         } finally {
           handle.dispose();
         }
@@ -280,6 +281,7 @@ void main() {
                 sharedPreferencesProvider.overrideWithValue(prefs),
                 appClockProvider.overrideWithValue(() => fixedNow),
                 historyListProvider.overrideWith((_) async => [session]),
+                activeTrainingPlanProvider.overrideWithValue(null),
               ],
               child: scaled(const ProgressConsistencyView()),
             ),
@@ -464,29 +466,28 @@ void main() {
   });
 
   group('Phase 7 — VIS-01 ProgressWeightView', () {
-    testWidgets(
-      'shows EmptyStateWidget instead of the profile weight when there are no weigh-ins',
-      (tester) async {
-        await useCompactViewport(tester);
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              sharedPreferencesProvider.overrideWithValue(prefs),
-              weightHistoryProvider.overrideWith((_) async => const []),
-              weightStatsProvider.overrideWith(
-                (_) async => const WeightStats(),
-              ),
-            ],
-            child: scaled(const ProgressWeightView()),
-          ),
-        );
-        await tester.pumpAndSettle();
+    testWidgets('uses an editorial empty state without a decorative icon', (
+      tester,
+    ) async {
+      await useCompactViewport(tester);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            weightHistoryProvider.overrideWith((_) async => const []),
+            weightStatsProvider.overrideWith((_) async => const WeightStats()),
+          ],
+          child: scaled(const ProgressWeightView()),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        expect(find.byType(EmptyStateWidget), findsOneWidget);
-        expect(find.text('Nenhuma pesagem registrada'), findsOneWidget);
-        expect(find.text('Tendência EMA atual'), findsNothing);
-      },
-    );
+      expect(find.byType(AppButton), findsOneWidget);
+      expect(find.text('Nenhuma pesagem registrada'), findsOneWidget);
+      expect(find.text('Registrar peso'), findsOneWidget);
+      expect(find.byIcon(Icons.monitor_weight_outlined), findsNothing);
+      expect(find.text('Tendência EMA atual'), findsNothing);
+    });
 
     testWidgets(
       'renders legend, kg axis, trend semantics and combined raw + EMA tooltip',
@@ -522,27 +523,16 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          expect(find.text('Peso'), findsOneWidget);
-          expect(find.text('Média móvel (EMA)'), findsOneWidget);
+          expect(find.text('Seu peso ao longo do tempo'), findsOneWidget);
           expect(find.textContaining(' kg'), findsWidgets);
           expect(
-            find.bySemanticsLabel(RegExp('tendência de queda')),
+            find.bySemanticsLabel(
+              'Gráfico de peso, 2 pesagens, tendência de queda',
+            ),
             findsOneWidget,
           );
-
-          final chart = tester.widget<LineChart>(find.byType(LineChart));
-          final rawBar = chart.data.lineBarsData[0];
-          final emaBar = chart.data.lineBarsData[1];
-          final tooltipItems = chart.data.lineTouchData.touchTooltipData
-              .getTooltipItems([
-                LineBarSpot(rawBar, 0, rawBar.spots[1]),
-                LineBarSpot(emaBar, 1, emaBar.spots[1]),
-              ]);
-
-          expect(tooltipItems.whereType<LineTooltipItem>(), hasLength(1));
-          final text = tooltipItems.whereType<LineTooltipItem>().single.text;
-          expect(text, contains('Peso bruto: 80,0 kg'));
-          expect(text, contains('EMA:'));
+          expect(find.byType(CustomPaint), findsWidgets);
+          expect(find.byType(LineChart), findsNothing);
         } finally {
           handle.dispose();
         }
@@ -582,6 +572,7 @@ void main() {
               sharedPreferencesProvider.overrideWithValue(prefs),
               appClockProvider.overrideWithValue(() => fixedNow),
               historyListProvider.overrideWith((_) async => sessions),
+              activeTrainingPlanProvider.overrideWithValue(null),
             ],
             child: scaled(const ProgressConsistencyView(), textScale: 1.3),
           ),
@@ -605,14 +596,13 @@ void main() {
 
         // Both sessions of the selected day are listed.
         final workoutDay = find.bySemanticsLabel(
-          RegExp(r'^12 de maio, 2 treinos:'),
+          RegExp(r'^12 de maio, Push A, Pull B feito$'),
         );
         expect(workoutDay, findsOneWidget);
         await tester.tap(workoutDay);
         await tester.pumpAndSettle();
         expect(find.textContaining('Push A'), findsOneWidget);
         expect(find.textContaining('Pull B'), findsOneWidget);
-        expect(find.text('2 sessões'), findsOneWidget);
       },
     );
   });
@@ -721,7 +711,7 @@ void main() {
       primaryMuscleGroup: 'quadriceps',
     );
 
-    testWidgets('renders real ceiling ratio when history exists', (
+    testWidgets('shows previous logged reps without a generic progress bar', (
       tester,
     ) async {
       await pumpCard(
@@ -740,10 +730,8 @@ void main() {
         ),
       );
 
-      final bar = tester.widget<LiftrProgressBar>(
-        find.byType(LiftrProgressBar),
-      );
-      expect(bar.progress, closeTo(2 / 3, 0.0001));
+      expect(find.text('60 × 12, 12, 10'), findsOneWidget);
+      expect(find.byType(LiftrProgressBar), findsNothing);
     });
 
     testWidgets('hides progress bar when there is no history', (tester) async {
@@ -809,11 +797,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(
-          find.textContaining('Atualize seu peso em Perfil → Dados corporais'),
-          findsOneWidget,
-        );
-        await tester.tap(find.text('Atualizar peso'));
+        await tester.tap(find.text('Registrar peso'));
         await tester.pumpAndSettle();
 
         expect(find.text('Dados corporais'), findsOneWidget);
@@ -827,7 +811,10 @@ void main() {
 
         expect(fakeRepo.entries, hasLength(1));
         expect(fakeRepo.entries.single.weightKg, 81.5);
-        expect(find.text('Tendência EMA atual'), findsOneWidget);
+        expect(
+          find.text('Falta uma pesagem para desenhar a linha'),
+          findsOneWidget,
+        );
         expect(find.text('81,5 kg'), findsOneWidget);
 
         // Editing weight again on the same day updates the single entry instead of duplicating.

@@ -6,217 +6,146 @@ import 'package:intl/intl.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/extensions/date_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
-import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
-import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
-import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
-import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
-import 'package:personal_fitness_os/core/widgets/app_card.dart';
-import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
+import 'package:personal_fitness_os/core/theme/workout_card_palette.dart';
 import 'package:personal_fitness_os/features/workout_session/domain/entities/workout_session.dart';
-import 'package:personal_fitness_os/features/workout_session/presentation/widgets/workout_mood_icon.dart';
 
 class LastCompletedWorkoutCard extends StatelessWidget {
   const LastCompletedWorkoutCard({
     super.key,
     required this.session,
+    this.previousSession,
     this.referenceNow,
+    this.fichaColor,
     this.onTap,
   });
 
   final WorkoutSession session;
+  final WorkoutSession? previousSession;
   final DateTime? referenceNow;
+  final Color? fichaColor;
   final VoidCallback? onTap;
 
-  String _formatDateLabel(DateTime dt) {
+  String _formatDateLabel(DateTime date) {
     final now = referenceNow ?? DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final date = DateTime(dt.year, dt.month, dt.day);
-    final diff = today.difference(date).inDays;
-    final hm = ptBrDateFormat('HH:mm').format(dt);
-    if (diff == 0) return 'Hoje · $hm';
-    if (diff == 1) return 'Ontem · $hm';
-    return ptBrDateFormat("d 'de' MMM · HH:mm").format(dt);
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    final difference = today.difference(dateOnly).inDays;
+    final time = ptBrDateFormat('HH:mm').format(date);
+    if (difference == 0) return 'hoje, $time';
+    if (difference == 1) return 'ontem, $time';
+    return '${ptBrDateFormat("d 'de' MMM").format(date)}, $time';
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final radius = context.appRadius;
-    final fitnessColors = context.fitnessColors;
-
     final completedAt = session.completedAt ?? session.startedAt;
     final minutes = math.max(1, session.durationSeconds ~/ 60);
-    final volumeFormatted = NumberFormat('#,##0', 'pt_BR').format(
-      session.totalVolumeKg.round(),
-    );
+    final targetSets = session.exercises
+        .where((exercise) => !exercise.isCardio)
+        .fold<int>(0, (sum, exercise) => sum + exercise.targetSetsCount);
+    final setSummary = targetSets > 0
+        ? '${session.totalWorkingSetsCount} de $targetSets séries'
+        : '${session.totalWorkingSetsCount} séries';
+    final volume = NumberFormat(
+      '#,##0',
+      'pt_BR',
+    ).format(session.totalVolumeKg.round());
+    final previous = previousSession;
+    final comparison = previous == null
+        ? null
+        : session.totalVolumeKg - previous.totalVolumeKg > .5
+        ? 'Acima da ${session.workoutName} anterior.'
+        : previous.totalVolumeKg - session.totalVolumeKg > .5
+        ? 'Abaixo da ${session.workoutName} anterior.'
+        : 'Igual à ${session.workoutName} anterior.';
 
-    return AppCard(
-      onTap: onTap ?? () => context.push('/session/${session.id}/summary'),
-      padding: const EdgeInsets.all(15),
-      child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: fitnessColors.progressUp.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(radius.xs),
-                  ),
-                  child: Icon(
-                    Icons.check_rounded,
-                    size: 15,
-                    color: fitnessColors.progressUp,
-                  ),
+    return Semantics(
+      button: true,
+      label:
+          'Abrir registro de ${session.workoutName}, ${_formatDateLabel(completedAt)}',
+      child: InkWell(
+        onTap: onTap ?? () => context.push('/session/${session.id}/summary'),
+        child: Padding(
+          padding: EdgeInsets.zero,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 16,
+                height: 20,
+                margin: const EdgeInsets.only(top: 4),
+                decoration: BoxDecoration(
+                  color:
+                      fichaColor ??
+                      WorkoutCardPalette.forWorkout(session.workoutName),
+                  borderRadius: BorderRadius.circular(3),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 3,
-                  child: Text(
-                    'Último treino realizado',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.textTheme.labelMedium?.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  flex: 2,
-                  child: Text(
-                    _formatDateLabel(completedAt),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.end,
-                    style: context.textTheme.labelSmall?.copyWith(
-                      color: colors.textTertiary,
-                      fontFeatures: AppTypography.tabularFeatures,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  Text(
-                    session.workoutName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.textTheme.titleMedium,
-                  ),
-                  if (session.mood != null ||
-                      session.executionScore != null ||
-                      session.perceivedExertion != null)
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      crossAxisAlignment: WrapCrossAlignment.center,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
                       children: [
-                        if (session.mood != null)
-                          WorkoutMoodChip(mood: session.mood!, compact: true),
-                        if (session.executionScore != null)
-                          LiftrBadge(
-                            label: '${session.executionScore}%',
-                            tone: session.executionScore! >= 85
-                                ? LiftrBadgeTone.success
-                                : LiftrBadgeTone.neutral,
+                        Expanded(
+                          child: Text(
+                            session.workoutName,
+                            style: context.textTheme.titleMedium,
                           ),
-                        if (session.perceivedExertion != null)
-                          LiftrBadge(
-                            label:
-                                'RPE ${session.perceivedExertion!.toStringAsFixed(1)}',
-                            tone: LiftrBadgeTone.brand,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            _formatDateLabel(completedAt),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                            style: context.textTheme.bodyMedium?.copyWith(
+                              color: colors.textSecondary,
+                              fontFeatures: AppTypography.tabularFeatures,
+                            ),
                           ),
+                        ),
                       ],
                     ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 12,
-              runSpacing: 6,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                _MetricPill(
-                  icon: Icons.timer_rounded,
-                  label: '$minutes min',
-                  color: colors.textSecondary,
-                ),
-                _MetricPill(
-                  icon: Icons.format_list_numbered_rounded,
-                  label: pluralize(
-                    session.totalWorkingSetsCount,
-                    'série',
-                    'séries',
-                  ),
-                  color: colors.textSecondary,
-                ),
-                _MetricPill(
-                  icon: Icons.fitness_center_rounded,
-                  label: '$volumeFormatted kg',
-                  color: fitnessColors.progressUp,
-                ),
-                if (session.totalCardioDurationSeconds > 0)
-                  _MetricPill(
-                    icon: Icons.directions_run_rounded,
-                    label: formatCardioSeconds(
-                      session.totalCardioDurationSeconds,
+                    const SizedBox(height: 4),
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(text: '$setSummary em $minutes min, '),
+                          TextSpan(
+                            text: '$volume kg',
+                            style: TextStyle(
+                              color: colors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const TextSpan(text: '.'),
+                        ],
+                      ),
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        fontFeatures: AppTypography.tabularFeatures,
+                      ),
                     ),
-                    color: colors.primaryLight,
-                  ),
-                if (session.totalExercisesCount > 0)
-                  _MetricPill(
-                    icon: Icons.layers_rounded,
-                    label: '${session.totalExercisesCount} exerc.',
-                    color: colors.textTertiary,
-                  ),
-              ],
-            ),
-          ],
-        ),
-    );
-  }
-}
-
-class _MetricPill extends StatelessWidget {
-  const _MetricPill({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: color),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: context.textTheme.labelSmall?.copyWith(
-            color: color,
-            fontWeight: FontWeight.w600,
-            fontFeatures: AppTypography.tabularFeatures,
+                    if (comparison != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        comparison,
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }

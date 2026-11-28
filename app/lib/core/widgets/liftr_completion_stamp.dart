@@ -10,44 +10,52 @@ class LiftrCompletionStamp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = context.appColors.success;
+    final color = context.appColors.success.withValues(alpha: .9);
     final radius = context.appRadius;
     return Semantics(
       label: date == null ? 'Treino feito' : 'Treino feito em $date',
       child: Transform.rotate(
-        angle: -0.14,
+        angle: -0.139626,
         child: Container(
           decoration: BoxDecoration(
             border: Border.all(color: color, width: 3),
             borderRadius: BorderRadius.circular(radius.xs),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'FEITO',
-                style: TextStyle(
-                  color: color,
-                  fontSize: 22,
-                  height: 1,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.3,
-                ),
-              ),
-              if (date != null) ...[
-                const SizedBox(height: 3),
+          padding: const EdgeInsets.all(2),
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: color, width: 1),
+              borderRadius: BorderRadius.circular(radius.xs - 2),
+            ),
+            padding: const EdgeInsets.fromLTRB(9, 6, 9, 4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 Text(
-                  date!,
+                  'FEITO',
                   style: TextStyle(
                     color: color,
-                    fontSize: 11,
-                    height: 1.1,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 28,
+                    height: 1.05,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.68,
                   ),
                 ),
+                if (date != null) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    date!,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 13,
+                      height: 1.45,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.04,
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
