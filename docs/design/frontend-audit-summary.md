@@ -1,5 +1,7 @@
 # Auditoria e Remediação de Frontend — LIFTR (`feat/frontend-audit-fixes`)
 
+> **Registro histórico:** descreve a direção e as decisões vigentes na auditoria original. A referência visual atual está em [`docs/design.md`](../../docs/design.md); use este arquivo apenas para contexto das mudanças anteriores.
+
 Este documento consolida todas as entregas, decisões arquiteturais e de UI, itens N/A, bloqueadores de publicação, dívidas técnicas e o roteiro final de verificação em aparelho físico para a branch `feat/frontend-audit-fixes`.
 
 ---

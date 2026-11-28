@@ -1,5 +1,7 @@
 # PR: `feat/frontend-audit-fixes` → `main`
 
+> **Descrição histórica:** documenta o PR de auditoria original. A direção visual vigente foi atualizada em [`docs/design.md`](../../docs/design.md); as cores e fontes abaixo descrevem o estado entregue naquele PR.
+
 > **Título sugerido:** `feat(app): auditoria completa de UX/UI, acessibilidade, Auth PKCE e resiliência offline (Fases 0–8)`
 > **Estratégia de merge recomendada:** **Merge sem squash (Merge Commit padrão)**.
 > Os commits desta branch são atômicos por assunto e por fase (Fases 0 a 8 + ajustes finais), com atualizações de goldens pareadas às respectivas mudanças de UI. Preservar o histórico completo mantém a rastreabilidade de design/código, facilita `git bisect` e permite `git revert` pontual sem perder o contexto das fases.
