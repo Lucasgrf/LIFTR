@@ -3,8 +3,7 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
-import 'package:personal_fitness_os/core/widgets/app_card.dart';
-import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_icon.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/widgets/exercise_diagram.dart';
 
@@ -61,101 +60,72 @@ class ExerciseCard extends StatelessWidget {
     }
   }
 
-  static Color getMuscleColor(BuildContext context, String raw) {
-    return context.appColors.primary;
-  }
+  static Color getMuscleColor(BuildContext context, String raw) =>
+      context.appColors.textSecondary;
 
   static String getEquipmentLabel(String? raw) => formatEquipmentPtBr(raw);
 
   @override
   Widget build(BuildContext context) {
-    final muscleLabel = getMuscleLabel(exercise.primaryMuscleGroup);
-    final equipmentLabel = getEquipmentLabel(exercise.equipment);
-
     final spacing = context.appSpacing;
+    final subtitle = [
+      getMuscleLabel(exercise.primaryMuscleGroup),
+      getEquipmentLabel(exercise.equipment),
+      if (exercise.isCustom) 'Personalizado',
+    ].where((item) => item.isNotEmpty).join(' · ');
 
     return Padding(
-      padding: margin ??
-          EdgeInsets.symmetric(
-            horizontal: spacing.space16,
-            vertical: spacing.space8,
-          ),
-      child: AppCard(
-        onTap: onTap,
-        padding: EdgeInsets.all(spacing.space16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            ExerciseDiagram(exercise: exercise, size: 48),
-            SizedBox(width: spacing.space16),
-
-            // Main info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+      padding: margin ?? EdgeInsets.zero,
+      child: Column(
+        children: [
+          Semantics(
+            button: onTap != null,
+            label: '${exercise.name}, $subtitle',
+            child: InkWell(
+              onTap: onTap,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 72),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: spacing.space12),
+                  child: Row(
                     children: [
+                      ExerciseDiagram(exercise: exercise, size: 40),
+                      SizedBox(width: spacing.space12),
                       Expanded(
-                        child: Text(
-                          exercise.name,
-                          style: context.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: context.appColors.textPrimary,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              exercise.name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.textTheme.bodyLarge?.copyWith(
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            if (subtitle.isNotEmpty)
+                              Text(
+                                subtitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: context.textTheme.bodySmall?.copyWith(
+                                  color: context.appColors.textSecondary,
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                      if (exercise.isCustom) ...[
-                        SizedBox(width: spacing.space8),
-                        const LiftrBadge(
-                          label: 'Personalizado',
-                          tone: LiftrBadgeTone.brand,
-                        ),
-                      ],
+                      const SizedBox(width: 8),
+                      const LiftrIcon(LiftrIconName.chevron, size: 20),
                     ],
                   ),
-                  SizedBox(height: spacing.space8),
-
-                  // Muscle and Equipment tags
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      LiftrBadge(
-                        label: muscleLabel,
-                        tone: LiftrBadgeTone.neutral,
-                      ),
-                      if (equipmentLabel.isNotEmpty) ...[
-                        Text(
-                          '·',
-                          style: context.textTheme.bodySmall?.copyWith(
-                            color: context.appColors.textTertiary,
-                          ),
-                        ),
-                        Text(
-                          equipmentLabel,
-                          style: context.textTheme.bodySmall?.copyWith(
-                            color: context.appColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
+                ),
               ),
             ),
-
-            const SizedBox(width: 8),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: context.appColors.textTertiary,
-              size: 22,
-            ),
-          ],
-        ),
+          ),
+          Divider(height: 1, color: context.appColors.divider),
+        ],
       ),
     );
   }

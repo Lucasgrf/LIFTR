@@ -6,8 +6,8 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
-import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_editorial_page_header.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/widgets/exercise_card.dart';
@@ -103,7 +103,10 @@ class _CreateCustomExerciseScreenState
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedPrimaryMuscle == null) {
-      context.showSnackBar('Por favor, selecione o grupo muscular principal.', isError: true);
+      context.showSnackBar(
+        'Por favor, selecione o grupo muscular principal.',
+        isError: true,
+      );
       return;
     }
 
@@ -113,13 +116,23 @@ class _CreateCustomExerciseScreenState
     final result = await useCase.execute(
       name: _nameController.text.trim(),
       primaryMuscleGroup: _selectedPrimaryMuscle!,
-      secondaryMuscles: _selectedSecondaryMuscles.isEmpty ? null : _selectedSecondaryMuscles,
+      secondaryMuscles: _selectedSecondaryMuscles.isEmpty
+          ? null
+          : _selectedSecondaryMuscles,
       equipment: _selectedEquipment,
       movementPattern: _selectedMovementPattern,
-      instructions: _instructionsController.text.trim().isEmpty ? null : _instructionsController.text.trim(),
-      commonMistakes: _mistakesController.text.trim().isEmpty ? null : _mistakesController.text.trim(),
-      videoUrl: _videoUrlController.text.trim().isEmpty ? null : _videoUrlController.text.trim(),
-      personalNotes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      instructions: _instructionsController.text.trim().isEmpty
+          ? null
+          : _instructionsController.text.trim(),
+      commonMistakes: _mistakesController.text.trim().isEmpty
+          ? null
+          : _mistakesController.text.trim(),
+      videoUrl: _videoUrlController.text.trim().isEmpty
+          ? null
+          : _videoUrlController.text.trim(),
+      personalNotes: _notesController.text.trim().isEmpty
+          ? null
+          : _notesController.text.trim(),
     );
 
     if (!mounted) return;
@@ -128,11 +141,16 @@ class _CreateCustomExerciseScreenState
     result.fold(
       (created) {
         ref.read(exerciseListStateProvider.notifier).refresh();
-        context.showSnackBar('Exercício "${created.name}" cadastrado com sucesso!');
+        context.showSnackBar(
+          'Exercício "${created.name}" cadastrado com sucesso!',
+        );
         context.pop();
       },
       (failure) {
-        context.showSnackBar('Erro ao salvar exercício: ${failure.message}', isError: true);
+        context.showSnackBar(
+          'Erro ao salvar exercício: ${failure.message}',
+          isError: true,
+        );
       },
     );
   }
@@ -141,11 +159,7 @@ class _CreateCustomExerciseScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.appColors.background,
-      appBar: AppBar(
-        title: const Text('Novo Exercício'),
-      ),
       body: SafeArea(
-        top: false,
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
@@ -153,280 +167,322 @@ class _CreateCustomExerciseScreenState
             child: ResponsiveContainer(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Section: Basic Info
-              Text(
-                'Informações Principais',
-                style: context.textTheme.titleMedium?.copyWith(
-                  color: context.appColors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 12),
+                children: [
+                  LiftrEditorialPageHeader(
+                    title: 'Novo exercício',
+                    onBack: () => context.pop(),
+                  ),
+                  // Section: Basic Info
+                  Text(
+                    'Informações Principais',
+                    style: context.textTheme.titleMedium?.copyWith(
+                      color: context.appColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
 
-              AppInput(
-                label: 'Nome do Exercício *',
-                hint: 'Ex: Supino Reto com Halteres',
-                controller: _nameController,
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) {
-                    return 'Informe o nome do exercício';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+                  AppInput(
+                    label: 'Nome do Exercício *',
+                    hint: 'Ex: Supino Reto com Halteres',
+                    controller: _nameController,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return 'Informe o nome do exercício';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
 
-              // Primary Muscle Group Picker
-              Text(
-                'Grupo Muscular Principal *',
-                style: context.textTheme.bodyMedium?.copyWith(
-                  color: context.appColors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 8),
-              AppCard(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    isExpanded: true,
-                    value: _selectedPrimaryMuscle,
-                    hint: Text(
-                      'Selecione o músculo principal...',
-                      style: context.textTheme.bodyMedium?.copyWith(
-                        color: context.appColors.textTertiary,
+                  // Primary Muscle Group Picker
+                  Text(
+                    'Grupo Muscular Principal *',
+                    style: context.textTheme.bodyMedium?.copyWith(
+                      color: context.appColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 2,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: context.appColors.border),
                       ),
                     ),
-                    dropdownColor: context.appColors.surfaceElevated,
-                    items: primaryMuscles.map((m) {
-                      return DropdownMenuItem<String>(
-                        value: m['key'],
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 10,
-                              height: 10,
-                              decoration: BoxDecoration(
-                                color: ExerciseCard.getMuscleColor(context, m['key']!),
-                                shape: BoxShape.circle,
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: _selectedPrimaryMuscle,
+                        hint: Text(
+                          'Selecione o músculo principal...',
+                          style: context.textTheme.bodyMedium?.copyWith(
+                            color: context.appColors.textTertiary,
+                          ),
+                        ),
+                        dropdownColor: context.appColors.surfaceElevated,
+                        items: primaryMuscles.map((m) {
+                          return DropdownMenuItem<String>(
+                            value: m['key'],
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: BoxDecoration(
+                                    color: ExerciseCard.getMuscleColor(
+                                      context,
+                                      m['key']!,
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                AppSpacing.horizontalGap12,
+                                Text(
+                                  m['label']!,
+                                  style: context.textTheme.bodyMedium?.copyWith(
+                                    color: context.appColors.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          setState(() => _selectedPrimaryMuscle = val);
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Secondary Muscles
+                  Text(
+                    'Músculos Secundários (Opcional)',
+                    style: context.textTheme.bodyMedium?.copyWith(
+                      color: context.appColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: primaryMuscles
+                        .where((m) => m['key'] != _selectedPrimaryMuscle)
+                        .map((m) {
+                          final isSelected = _selectedSecondaryMuscles.contains(
+                            m['key'],
+                          );
+                          return FilterChip(
+                            label: Text(m['label']!),
+                            selected: isSelected,
+                            showCheckmark: false,
+                            labelStyle: context.textTheme.labelSmall?.copyWith(
+                              color: isSelected
+                                  ? context.appColors.onPrimary
+                                  : context.appColors.textSecondary,
+                            ),
+                            backgroundColor: context.appColors.surfaceVariant,
+                            selectedColor: context.appColors.primary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                context.appRadius.small,
+                              ),
+                              side: BorderSide(
+                                color: isSelected
+                                    ? context.appColors.primary
+                                    : context.appColors.border,
                               ),
                             ),
-                            AppSpacing.horizontalGap12,
-                            Text(
-                              m['label']!,
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  _selectedSecondaryMuscles.add(m['key']!);
+                                } else {
+                                  _selectedSecondaryMuscles.remove(m['key']);
+                                }
+                              });
+                            },
+                          );
+                        })
+                        .toList(),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Section: Biomechanics
+                  Text(
+                    'Biomecânica & Equipamento',
+                    style: context.textTheme.titleMedium?.copyWith(
+                      color: context.appColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Equipment Picker
+                  Text(
+                    'Equipamento',
+                    style: context.textTheme.bodyMedium?.copyWith(
+                      color: context.appColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 2,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: context.appColors.border),
+                      ),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: _selectedEquipment,
+                        hint: Text(
+                          'Selecione o equipamento (opcional)...',
+                          style: context.textTheme.bodyMedium?.copyWith(
+                            color: context.appColors.textTertiary,
+                          ),
+                        ),
+                        dropdownColor: context.appColors.surfaceElevated,
+                        items: equipments.map((e) {
+                          return DropdownMenuItem<String>(
+                            value: e['key'],
+                            child: Text(
+                              e['label']!,
                               style: context.textTheme.bodyMedium?.copyWith(
                                 color: context.appColors.textPrimary,
                               ),
                             ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      setState(() => _selectedPrimaryMuscle = val);
-                    },
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          setState(() => _selectedEquipment = val);
+                        },
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-              // Secondary Muscles
-              Text(
-                'Músculos Secundários (Opcional)',
-                style: context.textTheme.bodyMedium?.copyWith(
-                  color: context.appColors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: primaryMuscles
-                    .where((m) => m['key'] != _selectedPrimaryMuscle)
-                    .map((m) {
-                  final isSelected = _selectedSecondaryMuscles.contains(m['key']);
-                  return FilterChip(
-                    label: Text(m['label']!),
-                    selected: isSelected,
-                    showCheckmark: false,
-                    labelStyle: context.textTheme.labelSmall?.copyWith(
-                      color: isSelected
-                          ? context.appColors.onPrimary
-                          : context.appColors.textSecondary,
+                  // Movement Pattern Picker
+                  Text(
+                    'Padrão de Movimento',
+                    style: context.textTheme.bodyMedium?.copyWith(
+                      color: context.appColors.textSecondary,
+                      fontWeight: FontWeight.w500,
                     ),
-                    backgroundColor: context.appColors.surfaceVariant,
-                    selectedColor: context.appColors.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(context.appRadius.small),
-                      side: BorderSide(
-                        color: isSelected ? context.appColors.primary : context.appColors.border,
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 2,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: context.appColors.border),
                       ),
                     ),
-                    onSelected: (selected) {
-                      setState(() {
-                        if (selected) {
-                          _selectedSecondaryMuscles.add(m['key']!);
-                        } else {
-                          _selectedSecondaryMuscles.remove(m['key']);
-                        }
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 24),
-
-              // Section: Biomechanics
-              Text(
-                'Biomecânica & Equipamento',
-                style: context.textTheme.titleMedium?.copyWith(
-                  color: context.appColors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Equipment Picker
-              Text(
-                'Equipamento',
-                style: context.textTheme.bodyMedium?.copyWith(
-                  color: context.appColors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 8),
-              AppCard(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    isExpanded: true,
-                    value: _selectedEquipment,
-                    hint: Text(
-                      'Selecione o equipamento (opcional)...',
-                      style: context.textTheme.bodyMedium?.copyWith(
-                        color: context.appColors.textTertiary,
-                      ),
-                    ),
-                    dropdownColor: context.appColors.surfaceElevated,
-                    items: equipments.map((e) {
-                      return DropdownMenuItem<String>(
-                        value: e['key'],
-                        child: Text(
-                          e['label']!,
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: _selectedMovementPattern,
+                        hint: Text(
+                          'Selecione o padrão de movimento (opcional)...',
                           style: context.textTheme.bodyMedium?.copyWith(
-                            color: context.appColors.textPrimary,
+                            color: context.appColors.textTertiary,
                           ),
                         ),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      setState(() => _selectedEquipment = val);
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Movement Pattern Picker
-              Text(
-                'Padrão de Movimento',
-                style: context.textTheme.bodyMedium?.copyWith(
-                  color: context.appColors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 8),
-              AppCard(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    isExpanded: true,
-                    value: _selectedMovementPattern,
-                    hint: Text(
-                      'Selecione o padrão de movimento (opcional)...',
-                      style: context.textTheme.bodyMedium?.copyWith(
-                        color: context.appColors.textTertiary,
+                        dropdownColor: context.appColors.surfaceElevated,
+                        items: movementPatterns.map((p) {
+                          return DropdownMenuItem<String>(
+                            value: p['key'],
+                            child: Text(
+                              p['label']!,
+                              style: context.textTheme.bodyMedium?.copyWith(
+                                color: context.appColors.textPrimary,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          setState(() => _selectedMovementPattern = val);
+                        },
                       ),
                     ),
-                    dropdownColor: context.appColors.surfaceElevated,
-                    items: movementPatterns.map((p) {
-                      return DropdownMenuItem<String>(
-                        value: p['key'],
-                        child: Text(
-                          p['label']!,
-                          style: context.textTheme.bodyMedium?.copyWith(
-                            color: context.appColors.textPrimary,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      setState(() => _selectedMovementPattern = val);
-                    },
                   ),
-                ),
-              ),
-              const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-              // Section: Instructions & Notes
-              Text(
-                'Instruções & Vídeo',
-                style: context.textTheme.titleMedium?.copyWith(
-                  color: context.appColors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 12),
+                  // Section: Instructions & Notes
+                  Text(
+                    'Instruções & Vídeo',
+                    style: context.textTheme.titleMedium?.copyWith(
+                      color: context.appColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
 
-              AppInput(
-                label: 'Instruções de Execução',
-                hint: 'Passo a passo de como executar o movimento corretamente...',
-                controller: _instructionsController,
-                maxLines: 3,
-                keyboardType: TextInputType.multiline,
-              ),
-              const SizedBox(height: 16),
+                  AppInput(
+                    label: 'Instruções de Execução',
+                    hint:
+                        'Passo a passo de como executar o movimento corretamente...',
+                    controller: _instructionsController,
+                    maxLines: 3,
+                    keyboardType: TextInputType.multiline,
+                  ),
+                  const SizedBox(height: 16),
 
-              AppInput(
-                label: 'Erros Comuns',
-                hint: 'Ex: Projetar cotovelos para fora, arquear lombar...',
-                controller: _mistakesController,
-                maxLines: 2,
-                keyboardType: TextInputType.multiline,
-              ),
-              const SizedBox(height: 16),
+                  AppInput(
+                    label: 'Erros Comuns',
+                    hint: 'Ex: Projetar cotovelos para fora, arquear lombar...',
+                    controller: _mistakesController,
+                    maxLines: 2,
+                    keyboardType: TextInputType.multiline,
+                  ),
+                  const SizedBox(height: 16),
 
-              AppInput(
-                label: 'Link do Vídeo (YouTube / URL)',
-                hint: 'https://youtube.com/watch?v=...',
-                controller: _videoUrlController,
-                keyboardType: TextInputType.url,
-                prefix: Icon(Icons.link_rounded, color: context.appColors.textTertiary),
-              ),
-              const SizedBox(height: 16),
+                  AppInput(
+                    label: 'Link do Vídeo (YouTube / URL)',
+                    hint: 'https://youtube.com/watch?v=...',
+                    controller: _videoUrlController,
+                    keyboardType: TextInputType.url,
+                    prefix: Icon(
+                      Icons.link_rounded,
+                      color: context.appColors.textTertiary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
 
-              AppInput(
-                label: 'Minhas Anotações Iniciais',
-                hint: 'Ajustes pessoais ou observações...',
-                controller: _notesController,
-                maxLines: 2,
-                keyboardType: TextInputType.multiline,
-              ),
-              const SizedBox(height: 32),
+                  AppInput(
+                    label: 'Minhas Anotações Iniciais',
+                    hint: 'Ajustes pessoais ou observações...',
+                    controller: _notesController,
+                    maxLines: 2,
+                    keyboardType: TextInputType.multiline,
+                  ),
+                  const SizedBox(height: 32),
 
-              // Submit Button
-              AppButton.primary(
-                label: 'Salvar Exercício',
-                icon: Icons.check_rounded,
-                isLoading: _isLoading,
-                onPressed: _submit,
+                  // Submit Button
+                  AppButton.primary(
+                    label: 'Salvar Exercício',
+                    icon: Icons.check_rounded,
+                    isLoading: _isLoading,
+                    onPressed: _submit,
+                  ),
+                ],
               ),
-            ],
             ),
           ),
-        ),
         ),
       ),
     );

@@ -10,13 +10,13 @@ import 'package:personal_fitness_os/core/network/connectivity_providers.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
-import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/theme/theme_provider.dart';
 import 'package:personal_fitness_os/core/update/app_update_providers.dart';
 import 'package:personal_fitness_os/core/update/app_update_service.dart';
 import 'package:personal_fitness_os/core/update/app_update_widgets.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_confirm_dialog.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_icon.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_list_group.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
@@ -114,11 +114,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final fitnessColors = context.fitnessColors;
     final settings = ref.watch(userSettingsProvider);
     final themeMode = ref.watch(themeModeProvider);
-    final offlineSimulationEnabled =
-        ref.watch(offlineSimulationEnabledProvider);
+    final offlineSimulationEnabled = ref.watch(
+      offlineSimulationEnabledProvider,
+    );
     final simulatedOffline =
         offlineSimulationEnabled && ref.watch(simulatedOfflineProvider);
     final isOfflineState = ref.watch(isOfflineModeProvider);
@@ -130,61 +130,46 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Sticky Top Header
-            Container(
-              constraints: const BoxConstraints(minHeight: 64),
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                color: colors.background,
-                border: Border(
-                  bottom: BorderSide(color: colors.border, width: 1),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Semantics(
-                    label: 'Voltar',
-                    button: true,
-                    child: IconButton(
-                      tooltip: 'Voltar',
-                      onPressed: () {
-                        if (context.canPop()) {
-                          context.pop();
-                        } else {
-                          context.go('/');
-                        }
-                      },
-                      constraints: const BoxConstraints(
-                        minWidth: 48,
-                        minHeight: 48,
-                      ),
-                      icon: Icon(
-                        Icons.arrow_back_rounded,
-                        color: colors.textPrimary,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Configurações',
-                      style: context.textTheme.titleLarge,
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  const SizedBox(width: 48),
-                ],
-              ),
-            ),
-
             // Grouped Sections
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.only(top: 8, bottom: 36),
                 children: [
                   ResponsiveContainer(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Semantics(
+                            label: 'Voltar',
+                            button: true,
+                            child: IconButton(
+                              tooltip: 'Voltar',
+                              onPressed: () {
+                                if (context.canPop()) {
+                                  context.pop();
+                                } else {
+                                  context.go('/');
+                                }
+                              },
+                              constraints: const BoxConstraints(
+                                minWidth: 48,
+                                minHeight: 48,
+                              ),
+                              padding: EdgeInsets.zero,
+                              icon: LiftrIcon(
+                                LiftrIconName.back,
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Text(
+                          'Configurações',
+                          style: context.textTheme.displayMedium,
+                        ),
+                        const SizedBox(height: 24),
                         LiftrListGroup(
                           header: 'Treino e equipamentos',
                           children: [
@@ -250,22 +235,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 label: 'Simular modo offline',
                                 value: simulatedOffline,
                                 activeColor: colors.warning,
-                                onChanged: (val) => ref
-                                    .read(simulatedOfflineProvider.notifier)
-                                    .state = val,
+                                onChanged: (val) =>
+                                    ref
+                                            .read(
+                                              simulatedOfflineProvider.notifier,
+                                            )
+                                            .state =
+                                        val,
                               ),
                             LiftrListRow(
                               label: 'Status local',
                               value: isOfflineState
                                   ? (pendingCount > 0
-                                      ? 'Offline · $pendingCount ${pendingCount == 1 ? 'pendência' : 'pendências'}'
-                                      : 'Offline · Salvo localmente')
+                                        ? 'Offline · $pendingCount ${pendingCount == 1 ? 'pendência' : 'pendências'}'
+                                        : 'Offline · Salvo localmente')
                                   : (pendingCount > 0
-                                      ? 'Online · $pendingCount para sincronizar'
-                                      : 'Online · Tudo sincronizado'),
-                              valueColor: isOfflineState || pendingCount > 0
-                                  ? colors.warning
-                                  : fitnessColors.progressUp,
+                                        ? 'Online · $pendingCount para sincronizar'
+                                        : 'Online · Tudo sincronizado'),
+                              valueColor: colors.textSecondary,
                               showChevron: !isOfflineState && pendingCount > 0,
                               onTap: (!isOfflineState && pendingCount > 0)
                                   ? () async {
@@ -296,8 +283,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             LiftrListRow(
                               label: 'Exportar meus dados',
                               value: 'JSON',
-                              onTap: () =>
-                                  _showExportModal(context, settings),
+                              onTap: () => _showExportModal(context, settings),
                             ),
                           ],
                         ),
@@ -311,15 +297,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               value: 'Foto, dados e objetivo',
                               onTap: () => context.push('/profile'),
                             ),
-                            if (Theme.of(context).platform != TargetPlatform.iOS)
+                            if (Theme.of(context).platform !=
+                                TargetPlatform.iOS)
                               LiftrListRow(
                                 label: 'Atualizações do app',
                                 value: _updateRowValue(updateState),
                                 subtitle: _updateRowSubtitle(updateState),
-                                valueColor:
-                                    updateState.availableUpdate != null
-                                        ? colors.primaryLight
-                                        : null,
+                                valueColor: updateState.availableUpdate != null
+                                    ? colors.textPrimary
+                                    : null,
                                 onTap: () =>
                                     _handleUpdateCheck(context, updateState),
                               ),
@@ -355,7 +341,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _themeLabel(ThemeMode mode) {
     switch (mode) {
       case ThemeMode.dark:
-        return 'Escuro (Padrão)';
+        return 'Noite';
       case ThemeMode.light:
         return 'Claro';
       case ThemeMode.system:
@@ -382,7 +368,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             return ChoiceChip(
               label: Text(_formatRestDuration(val)),
               selected: selected,
-              selectedColor: colors.primaryMuted,
+              selectedColor: colors.textPrimary,
               onSelected: (_) {
                 ref
                     .read(userSettingsProvider.notifier)
@@ -418,7 +404,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 '+${val.toStringAsFixed(val % 1 == 0 ? 1 : 2).replaceAll('.', ',')} kg',
               ),
               selected: selected,
-              selectedColor: colors.primaryMuted,
+              selectedColor: colors.textPrimary,
               onSelected: (_) {
                 onSelect(val);
                 Navigator.pop(ctx);
@@ -445,15 +431,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             for (final mode in [
-              ThemeMode.dark,
               ThemeMode.light,
+              ThemeMode.dark,
               ThemeMode.system,
             ])
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(_themeLabel(mode)),
                 trailing: currentMode == mode
-                    ? Icon(Icons.check_rounded, color: colors.primary)
+                    ? Icon(Icons.check_rounded, color: colors.textPrimary)
                     : null,
                 onTap: () {
                   ref.read(themeModeProvider.notifier).setThemeMode(mode);
@@ -479,9 +465,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         'calories_target': settings.estimatedDailyCalories,
         'protein_target_g': settings.estimatedDailyProteinGrams,
       },
-      'training': {
-        'default_rest_seconds': settings.defaultRestSeconds,
-      },
+      'training': {'default_rest_seconds': settings.defaultRestSeconds},
       'increments': {
         'barbell_kg': settings.barbellIncrementKg,
         'dumbbell_kg': settings.dumbbellIncrementKg,
@@ -521,7 +505,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: payload));
                 Navigator.pop(ctx);
-                context.showSnackBar('Dados copiados para a área de transferência');
+                context.showSnackBar(
+                  'Dados copiados para a área de transferência',
+                );
               },
             ),
           ],

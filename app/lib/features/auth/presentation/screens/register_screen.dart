@@ -16,13 +16,18 @@ import 'package:personal_fitness_os/features/settings/presentation/providers/set
 import 'package:personal_fitness_os/routing/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-typedef SignUpResult = ({String? userId, bool hasSession, bool requiresEmailConfirmation});
-typedef SignUpAction = Future<SignUpResult> Function({
-  required String name,
-  required String email,
-  required String password,
-  required String emailRedirectTo,
+typedef SignUpResult = ({
+  String? userId,
+  bool hasSession,
+  bool requiresEmailConfirmation,
 });
+typedef SignUpAction =
+    Future<SignUpResult> Function({
+      required String name,
+      required String email,
+      required String password,
+      required String emailRedirectTo,
+    });
 
 final signUpActionProvider = Provider<SignUpAction>((ref) {
   return ({
@@ -99,9 +104,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         if (result.userId != null) {
           ref.read(activeUserIdProvider.notifier).state = result.userId;
         }
-        ref.read(userSettingsProvider.notifier).resetForAccount(
-              displayName: name,
-            );
+        ref
+            .read(userSettingsProvider.notifier)
+            .resetForAccount(displayName: name);
         TextInput.finishAutofillContext();
         setState(() => _pendingConfirmationEmail = email);
         return;
@@ -111,9 +116,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         isLoggedIn: result.hasSession,
         overrideUserId: result.userId,
       );
-      ref.read(userSettingsProvider.notifier).resetForAccount(
-            displayName: name,
-          );
+      ref
+          .read(userSettingsProvider.notifier)
+          .resetForAccount(displayName: name);
       TextInput.finishAutofillContext();
       context.go('/onboarding');
     } catch (e, st) {
@@ -175,115 +180,119 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ],
                     )
                   : Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: LiftrWordmark(),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Configure seu perfil em menos de 2 minutos.',
-                      style: context.textTheme.bodyLarge?.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    AutofillGroup(
+                      key: _formKey,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          AppInput(
-                            label: 'Nome',
-                            hint: 'Como você quer ser chamado',
-                            controller: _nameController,
-                            focusNode: _nameFocus,
-                            textInputAction: TextInputAction.next,
-                            textCapitalization: TextCapitalization.words,
-                            autofillHints: const [AutofillHints.name],
-                            onFieldSubmitted: (_) => _emailFocus.requestFocus(),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Informe seu nome';
-                              }
-                              return null;
-                            },
+                          const Align(
+                            alignment: Alignment.centerLeft,
+                            child: LiftrWordmark(),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Configure seu perfil em menos de 2 minutos.',
+                            style: context.textTheme.bodyLarge?.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                          AutofillGroup(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                AppInput(
+                                  label: 'Nome',
+                                  hint: 'Como você quer ser chamado',
+                                  controller: _nameController,
+                                  focusNode: _nameFocus,
+                                  textInputAction: TextInputAction.next,
+                                  textCapitalization: TextCapitalization.words,
+                                  autofillHints: const [AutofillHints.name],
+                                  onFieldSubmitted: (_) =>
+                                      _emailFocus.requestFocus(),
+                                  validator: (value) {
+                                    if (value == null || value.trim().isEmpty) {
+                                      return 'Informe seu nome';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                AppInput(
+                                  label: 'E-mail',
+                                  hint: 'voce@exemplo.com',
+                                  controller: _emailController,
+                                  focusNode: _emailFocus,
+                                  keyboardType: TextInputType.emailAddress,
+                                  textInputAction: TextInputAction.next,
+                                  autofillHints: const [AutofillHints.email],
+                                  onFieldSubmitted: (_) =>
+                                      _passwordFocus.requestFocus(),
+                                  validator: (value) {
+                                    if (value == null || value.trim().isEmpty) {
+                                      return 'Informe seu e-mail';
+                                    }
+                                    if (!value.contains('@')) {
+                                      return 'Informe um e-mail válido';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                AppInput(
+                                  label: 'Senha',
+                                  hint: 'Mínimo 6 caracteres',
+                                  controller: _passwordController,
+                                  focusNode: _passwordFocus,
+                                  obscureText: true,
+                                  textInputAction: TextInputAction.done,
+                                  autofillHints: const [
+                                    AutofillHints.newPassword,
+                                  ],
+                                  onFieldSubmitted: (_) => _submit(),
+                                  validator: (value) {
+                                    if (value == null || value.length < 6) {
+                                      return 'A senha deve ter ao menos 6 caracteres';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 28),
+                          AppButton.primary(
+                            label: 'Criar conta',
+                            isLoading: _isLoading,
+                            onPressed: _submit,
                           ),
                           const SizedBox(height: 16),
-                          AppInput(
-                            label: 'E-mail',
-                            hint: 'voce@exemplo.com',
-                            controller: _emailController,
-                            focusNode: _emailFocus,
-                            keyboardType: TextInputType.emailAddress,
-                            textInputAction: TextInputAction.next,
-                            autofillHints: const [AutofillHints.email],
-                            onFieldSubmitted: (_) =>
-                                _passwordFocus.requestFocus(),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Informe seu e-mail';
-                              }
-                              if (!value.contains('@')) {
-                                return 'Informe um e-mail válido';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          AppInput(
-                            label: 'Senha',
-                            hint: 'Mínimo 6 caracteres',
-                            controller: _passwordController,
-                            focusNode: _passwordFocus,
-                            obscureText: true,
-                            textInputAction: TextInputAction.done,
-                            autofillHints: const [AutofillHints.newPassword],
-                            onFieldSubmitted: (_) => _submit(),
-                            validator: (value) {
-                              if (value == null || value.length < 6) {
-                                return 'A senha deve ter ao menos 6 caracteres';
-                              }
-                              return null;
-                            },
+                          Center(
+                            child: TextButton(
+                              onPressed: () => context.go('/login'),
+                              child: Text.rich(
+                                TextSpan(
+                                  text: 'Já tem conta? ',
+                                  style: context.textTheme.bodyMedium?.copyWith(
+                                    color: colors.textSecondary,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text: 'Entrar',
+                                      style: context.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            color: colors.textPrimary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 28),
-                    AppButton.primary(
-                      label: 'Criar conta',
-                      isLoading: _isLoading,
-                      onPressed: _submit,
-                    ),
-                    const SizedBox(height: 16),
-                    Center(
-                      child: TextButton(
-                        onPressed: () => context.go('/login'),
-                        child: Text.rich(
-                          TextSpan(
-                            text: 'Já tem conta? ',
-                            style: context.textTheme.bodyMedium?.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                            children: [
-                              TextSpan(
-                                text: 'Entrar',
-                                style: context.textTheme.bodyMedium?.copyWith(
-                                  color: colors.primaryLight,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ),
           ),
         ),

@@ -66,17 +66,19 @@ class MuscleFilterChips extends ConsumerWidget {
                     materialTapTargetSize: MaterialTapTargetSize.padded,
                     label: Text(label),
                     labelStyle: context.textTheme.labelMedium?.copyWith(
-                      color:
-                          isSelected ? colors.onPrimary : colors.textSecondary,
-                      fontWeight:
-                          isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected
+                          ? colors.background
+                          : colors.textSecondary,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
                     ),
                     backgroundColor: colors.surfaceElevated,
-                    selectedColor: colors.primary,
+                    selectedColor: colors.textPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(radius.small),
                       side: BorderSide(
-                        color: isSelected ? colors.primary : colors.border,
+                        color: isSelected ? colors.textPrimary : colors.border,
                         width: 1,
                       ),
                     ),
@@ -91,8 +93,11 @@ class MuscleFilterChips extends ConsumerWidget {
                         onSelected!(nextValue);
                       } else {
                         ref
-                            .read(exerciseSelectedMuscleFilterProvider.notifier)
-                            .state = nextValue;
+                                .read(
+                                  exerciseSelectedMuscleFilterProvider.notifier,
+                                )
+                                .state =
+                            nextValue;
                       }
                     },
                   );
