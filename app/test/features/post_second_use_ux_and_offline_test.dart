@@ -923,7 +923,7 @@ void main() {
         expect(find.text('60 × 8'), findsOneWidget);
         expect(find.text('1 com drop para 45 kg'), findsOneWidget);
         expect(find.text('Ótima técnica no supino.'), findsOneWidget);
-        expect(find.text('Sincronizado.'), findsOneWidget);
+        expect(find.text('Sincronizado com o WhatsApp'), findsOneWidget);
       },
     );
 
@@ -1196,7 +1196,7 @@ void main() {
 
         expect(find.text('Supino Reto'), findsOneWidget);
         expect(find.textContaining('séries.'), findsOneWidget);
-        expect(find.text('Sincronizado.'), findsOneWidget);
+        expect(find.text('Sincronizado com o WhatsApp'), findsOneWidget);
         expect(find.text('CONSOLIDAÇÃO 1/2'), findsNothing);
         expect(find.text('SUBIR CARGA'), findsNothing);
 

@@ -415,6 +415,7 @@ void main() {
     List<Override> overrides = const [],
     Size viewport = const Size(390, 844),
     bool disableAnimations = false,
+    ThemeMode themeMode = ThemeMode.dark,
   }) {
     return ProviderScope(
       overrides: overrides,
@@ -426,7 +427,7 @@ void main() {
         child: MaterialApp(
           theme: AppTheme.light(),
           darkTheme: AppTheme.dark(),
-          themeMode: ThemeMode.dark,
+          themeMode: themeMode,
           home: child,
         ),
       ),
@@ -539,6 +540,7 @@ void main() {
         await tester.pumpWidget(
           wrapApp(
             const DashboardScreen(),
+            themeMode: ThemeMode.light,
             overrides: [
               dashboardDataProvider.overrideWith((_) async => dashboardData),
               progressionRepositoryProvider.overrideWithValue(
@@ -873,11 +875,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('FEITO'), findsOneWidget);
       await tester.scrollUntilVisible(
-        find.text('Sincronizado.'),
+        find.text('Sincronizado com o WhatsApp'),
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      expect(find.text('Sincronizado.'), findsOneWidget);
+      expect(find.text('Sincronizado com o WhatsApp'), findsOneWidget);
     });
   });
 }

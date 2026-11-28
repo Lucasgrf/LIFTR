@@ -939,6 +939,7 @@ void main() {
         await tester.pumpWidget(
           wrap(
             const DashboardScreen(),
+            viewport: const Size(440, 844),
             overrides: [
               dashboardDataProvider.overrideWith(
                 (_) async => DashboardData(

@@ -730,7 +730,7 @@ void main() {
         ),
       );
 
-      expect(find.text('60 kg × 12, 12, 10'), findsOneWidget);
+      expect(find.text('60 × 12, 12, 10'), findsOneWidget);
       expect(find.byType(LiftrProgressBar), findsNothing);
     });
 
