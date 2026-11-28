@@ -1,21 +1,16 @@
 import 'dart:math' as math;
-import 'package:fl_chart/fl_chart.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
-import 'package:personal_fitness_os/core/extensions/date_extensions.dart';
 import 'package:personal_fitness_os/core/providers/clock_provider.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
-import 'package:personal_fitness_os/core/theme/app_motion.dart';
-import 'package:personal_fitness_os/core/theme/app_radius.dart';
-import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
-import 'package:personal_fitness_os/core/widgets/app_card.dart';
-import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
+import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
-import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_icon.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/features/body/domain/entities/weight_entry.dart';
 import 'package:personal_fitness_os/features/body/presentation/providers/weight_providers.dart';
@@ -36,37 +31,30 @@ class WeightEmaPoint {
 
 List<WeightEmaPoint> computeWeightEmaSeries(
   List<WeightEntry> entries, {
-  double alpha = 0.25,
+  double alpha = .25,
 }) {
   if (entries.isEmpty) return const [];
   final sorted = [...entries]
-    ..sort((a, b) => a.measuredAt.compareTo(b.measuredAt));
-
+    ..sort((first, second) => first.measuredAt.compareTo(second.measuredAt));
   final points = <WeightEmaPoint>[];
   var ema = sorted.first.weightKg;
   for (final entry in sorted) {
-    ema = (alpha * entry.weightKg) + ((1.0 - alpha) * ema);
+    ema = alpha * entry.weightKg + (1 - alpha) * ema;
     points.add(
-      WeightEmaPoint(
-        date: entry.measuredAt,
-        rawKg: entry.weightKg,
-        emaKg: ema,
-      ),
+      WeightEmaPoint(date: entry.measuredAt, rawKg: entry.weightKg, emaKg: ema),
     );
   }
   return points;
 }
 
-/// Computes the EMA series across all historical [entries] first, then slices
-/// points on or after [cutoff] so windowed trends preserve prior EMA seed state.
 List<WeightEmaPoint> computeWindowedWeightEmaSeries(
   List<WeightEntry> entries, {
   required DateTime cutoff,
-  double alpha = 0.25,
-}) {
-  final fullSeries = computeWeightEmaSeries(entries, alpha: alpha);
-  return fullSeries.where((p) => !p.date.isBefore(cutoff)).toList();
-}
+  double alpha = .25,
+}) => computeWeightEmaSeries(
+  entries,
+  alpha: alpha,
+).where((point) => !point.date.isBefore(cutoff)).toList();
 
 class ProgressWeightView extends ConsumerStatefulWidget {
   const ProgressWeightView({super.key});
@@ -76,24 +64,23 @@ class ProgressWeightView extends ConsumerStatefulWidget {
 }
 
 class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
-  int _selectedDays = 30; // 30, 90, 180, 0 (All)
+  int _selectedDays = 30;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final radius = context.appRadius;
-    final historyAsync = ref.watch(weightHistoryProvider);
+    final entriesAsync = ref.watch(weightHistoryProvider);
     final statsAsync = ref.watch(weightStatsProvider);
     final settings = ref.watch(userSettingsProvider);
 
-    return historyAsync.when(
-      skipLoadingOnRefresh: true,
-      skipError: true,
+    return entriesAsync.when(
+      skipLoadingOnRefresh: entriesAsync.hasValue,
+      skipError: entriesAsync.hasValue,
       loading: () => const LiftrScreenSkeleton(showHero: false, itemCount: 2),
-      error: (err, st) => ErrorStateWidget(
+      error: (error, stack) => ErrorStateWidget(
         message: userFacingMessage(
-          err,
-          stackTrace: st,
+          error,
+          stackTrace: stack,
           context: 'ProgressWeightView.build',
         ),
         onRetry: () {
@@ -103,411 +90,291 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
       ),
       data: (entries) {
         if (entries.isEmpty) {
-          return EmptyStateWidget(
-            icon: Icons.monitor_weight_outlined,
-            title: 'Nenhuma pesagem registrada',
-            subtitle:
-                'Atualize seu peso em Perfil → Dados corporais para acompanhar sua curva de tendência.',
-            actionLabel: 'Atualizar peso',
-            onAction: () => showProfileBodyDataSheet(
-              context,
-              settings,
-              forceRecordWeight: true,
-            ),
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Nenhuma pesagem registrada',
+                style: context.textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Registre seu peso para acompanhar a tendência e a faixa da sua meta.',
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              AppButton.primary(
+                label: 'Registrar peso',
+                onPressed: () => showProfileBodyDataSheet(
+                  context,
+                  settings,
+                  forceRecordWeight: true,
+                ),
+              ),
+            ],
           );
         }
 
         final now = ref.watch(appClockProvider)();
-        final cutoff = _selectedDays > 0
-            ? now.subtract(Duration(days: _selectedDays))
-            : DateTime.fromMillisecondsSinceEpoch(0);
-        final allSeries = computeWeightEmaSeries(entries);
-        final series = _selectedDays > 0
-            ? allSeries.where((p) => !p.date.isBefore(cutoff)).toList()
-            : allSeries;
+        final allPoints = computeWeightEmaSeries(entries);
+        final cutoff = _selectedDays == 0
+            ? DateTime.fromMillisecondsSinceEpoch(0)
+            : now.subtract(Duration(days: _selectedDays));
+        final points = allPoints
+            .where((point) => !point.date.isBefore(cutoff))
+            .toList();
+        final latest = allPoints.last.rawKg;
+        final delta = statsAsync.asData?.value.deltaVsPreviousWeekKg ?? 0;
+        final trend = delta.abs() < .1
+            ? 'Estável.'
+            : delta > 0
+            ? 'Subindo ${delta.toStringAsFixed(2).replaceAll('.', ',')} kg nesta semana.'
+            : 'Descendo ${delta.abs().toStringAsFixed(2).replaceAll('.', ',')} kg nesta semana.';
+        final goalSentence = switch (settings.goal) {
+          UserGoal.bulking =>
+            'No bulking, o esperado é ganhar de 0,20 a 0,35 kg por semana.',
+          UserGoal.cutting =>
+            'No cutting, o esperado é perder de 0,35 a 0,50 kg por semana.',
+          UserGoal.maintenance =>
+            'Na manutenção, o esperado é variar de −0,10 a +0,10 kg por semana.',
+        };
 
-        final currentEma = allSeries.last.emaKg;
-        final deltaPerWeek = statsAsync.asData?.value.deltaVsPreviousWeekKg ?? 0.0;
-        final rateSign = deltaPerWeek >= 0 ? '+' : '';
-        final rateText =
-            'Ritmo: $rateSign${deltaPerWeek.toStringAsFixed(2).replaceAll('.', ',')} kg/sem';
-
-        return AppCard(
-          borderRadius: radius.xl,
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Tendência EMA atual',
-                style: context.textTheme.labelMedium?.copyWith(
-                  color: colors.textSecondary,
-                ),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 16),
+            Text(
+              '${latest.toStringAsFixed(1).replaceAll('.', ',')} kg',
+              style: context.textTheme.displayLarge?.copyWith(
+                color: colors.primary,
+                fontFeatures: AppTypography.tabularFeatures,
               ),
-              const SizedBox(height: 6),
-              Text.rich(
-                TextSpan(
-                  text: currentEma.toStringAsFixed(1).replaceAll('.', ','),
-                  style: context.textTheme.displayLarge,
-                  children: [
-                    TextSpan(
-                      text: ' kg',
-                      style: context.textTheme.titleLarge?.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
+            ),
+            const SizedBox(height: 12),
+            Text('$trend $goalSentence', style: context.textTheme.bodyLarge),
+            const SizedBox(height: 24),
+            _PeriodSelector(
+              selectedDays: _selectedDays,
+              onChanged: (days) {
+                HapticFeedback.selectionClick();
+                setState(() => _selectedDays = days);
+              },
+            ),
+            const SizedBox(height: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: colors.surfaceSubtle,
+                borderRadius: BorderRadius.circular(20),
               ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  LiftrBadge(
-                    label: rateText,
-                    tone: LiftrBadgeTone.brand,
-                  ),
-                  LiftrBadge(
-                    label:
-                        'Alvo (${settings.goal.label}): ${settings.goal.weeklyRateTargetLabel}',
-                    tone: LiftrBadgeTone.success,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Period pills
-              Wrap(
-                spacing: context.appSpacing.space8,
-                runSpacing: context.appSpacing.space8,
-                children: [
-                  for (final option in const [
-                    ('30D', 30),
-                    ('90D', 90),
-                    ('6M', 180),
-                    ('Tudo', 0),
-                  ])
-                    Semantics(
-                      label: 'Período ${option.$1}',
-                      button: true,
-                      selected: _selectedDays == option.$2,
-                      child: Material(
-                        type: MaterialType.transparency,
-                        child: InkWell(
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            setState(() => _selectedDays = option.$2);
-                          },
-                          borderRadius: BorderRadius.circular(radius.xs),
-                          child: Ink(
-                            decoration: BoxDecoration(
-                              color: _selectedDays == option.$2
-                                  ? colors.primary
-                                  : colors.surfaceElevated,
-                              borderRadius: BorderRadius.circular(radius.xs),
-                            ),
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                minWidth: 48,
-                                minHeight: 48,
-                              ),
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: context.appSpacing.space12,
-                                ),
-                                child: Center(
-                                  widthFactor: 1,
-                                  child: Text(
-                                    option.$1,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style:
-                                        context.textTheme.labelSmall?.copyWith(
-                                      color: _selectedDays == option.$2
-                                          ? colors.onPrimary
-                                          : colors.textSecondary,
-                                      fontWeight: FontWeight.w700,
-                                      fontFeatures:
-                                          AppTypography.tabularFeatures,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                  Text(
+                    points.length < 2
+                        ? 'Falta uma pesagem para desenhar a linha'
+                        : 'Seu peso ao longo do tempo',
+                    style: context.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
-                ],
-              ),
-              SizedBox(height: context.appSpacing.space16),
-
-              if (series.length < 2)
-                Container(
-                  height: 170,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: colors.surfaceSubtle,
-                    borderRadius: BorderRadius.circular(radius.medium),
                   ),
-                  padding: const EdgeInsets.all(20),
-                  child: Text(
-                    'Envie pelo menos 2 pesagens no período pelo WhatsApp para visualizar a curva EMA.',
-                    textAlign: TextAlign.center,
-                    style: context.textTheme.bodySmall?.copyWith(
+                  const SizedBox(height: 4),
+                  Text(
+                    'A faixa hachurada é onde você estaria seguindo a meta.',
+                    style: context.textTheme.bodyMedium?.copyWith(
                       color: colors.textSecondary,
                     ),
                   ),
-                )
-              else
-                SizedBox(
-                  height: 224,
-                  child: _WeightEmaChart(series: series),
-                ),
-
-              const SizedBox(height: 18),
-              const Divider(),
-              const SizedBox(height: 14),
-              Text(
-                'Envie seu peso pelo WhatsApp pela manhã para manter a tendência atualizada.',
-                style: context.textTheme.bodySmall?.copyWith(
-                  color: colors.textTertiary,
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 120,
+                    width: double.infinity,
+                    child: Semantics(
+                      label:
+                          'Gráfico de peso, ${points.length} pesagens, tendência ${delta > .1
+                              ? 'de alta'
+                              : delta < -.1
+                              ? 'de queda'
+                              : 'estável'}',
+                      child: CustomPaint(
+                        painter: _WeightGoalPainter(
+                          values: points.map((point) => point.rawKg).toList(),
+                          ink: colors.primary,
+                          line: colors.divider,
+                          hatch: colors.textPrimary.withValues(alpha: .28),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () => showProfileBodyDataSheet(
+                context,
+                settings,
+                forceRecordWeight: true,
+              ),
+              icon: const LiftrIcon(LiftrIconName.message, size: 20),
+              label: const Text('Mandar peso pelo WhatsApp'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(56),
+                foregroundColor: colors.textPrimary,
+                side: BorderSide(color: colors.textPrimary, width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         );
       },
     );
   }
 }
 
-class _WeightEmaChart extends StatelessWidget {
-  const _WeightEmaChart({required this.series});
+class _PeriodSelector extends StatelessWidget {
+  const _PeriodSelector({required this.selectedDays, required this.onChanged});
 
-  final List<WeightEmaPoint> series;
+  final int selectedDays;
+  final ValueChanged<int> onChanged;
+
+  static const _periods = <(String, int)>[
+    ('30 dias', 30),
+    ('90 dias', 90),
+    ('6 meses', 180),
+    ('Tudo', 0),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-
-    final rawSpots = <FlSpot>[];
-    final emaSpots = <FlSpot>[];
-    var minY = double.infinity;
-    var maxY = -double.infinity;
-
-    for (int i = 0; i < series.length; i++) {
-      final p = series[i];
-      rawSpots.add(FlSpot(i.toDouble(), p.rawKg));
-      emaSpots.add(FlSpot(i.toDouble(), p.emaKg));
-      minY = math.min(minY, math.min(p.rawKg, p.emaKg));
-      maxY = math.max(maxY, math.max(p.rawKg, p.emaKg));
-    }
-
-    final pad = math.max(0.8, (maxY - minY) * 0.25);
-    minY = (minY - pad).clamp(0.0, double.infinity);
-    maxY = maxY + pad;
-
-    final startEma = series.first.emaKg;
-    final endEma = series.last.emaKg;
-    final trendDirection = endEma > startEma
-        ? 'tendência de alta'
-        : endEma < startEma
-            ? 'tendência de queda'
-            : 'estável';
-    final semanticsLabel =
-        'Gráfico de tendência EMA de peso: média móvel de '
-        '${startEma.toStringAsFixed(1).replaceAll('.', ',')} kg para '
-        '${endEma.toStringAsFixed(1).replaceAll('.', ',')} kg, $trendDirection';
-
-    return Semantics(
-      container: true,
-      explicitChildNodes: true,
-      label: semanticsLabel,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Wrap(
-            spacing: 12,
-            runSpacing: 4,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: colors.textTertiary.withValues(alpha: 0.65),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      'Peso',
-                      style: context.textTheme.labelSmall?.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 12,
-                    height: 2.5,
-                    decoration: BoxDecoration(
-                      color: colors.primary,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      'Média móvel (EMA)',
-                      style: context.textTheme.labelSmall?.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
+    return Row(
+      children: [
+        for (var index = 0; index < _periods.length; index++) ...[
+          if (index > 0) const SizedBox(width: 8),
           Expanded(
-            child: LineChart(
-              duration:
-                  context.appMotion.resolve(context, context.appMotion.fast),
-              LineChartData(
-                minY: minY,
-                maxY: maxY,
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  getDrawingHorizontalLine: (_) => FlLine(
-                    color: colors.border.withValues(alpha: 0.5),
-                    strokeWidth: 1,
-                    dashArray: const [4, 4],
-                  ),
-                ),
-                borderData: FlBorderData(show: false),
-                lineTouchData: LineTouchData(
-                  handleBuiltInTouches: true,
-                  touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (_) => colors.surfaceElevated,
-                    getTooltipItems: (touchedSpots) {
-                      var emitted = false;
-                      return touchedSpots.map((spot) {
-                        if (emitted) return null;
-                        emitted = true;
-                        final idx = spot.x.toInt().clamp(0, series.length - 1);
-                        final point = series[idx];
-                        final rawStr = point.rawKg
-                            .toStringAsFixed(1)
-                            .replaceAll('.', ',');
-                        final emaStr = point.emaKg
-                            .toStringAsFixed(1)
-                            .replaceAll('.', ',');
-                        return LineTooltipItem(
-                          '${point.date.formatShort()}\n'
-                          'Peso bruto: $rawStr kg\n'
-                          'EMA: $emaStr kg',
-                          context.textTheme.labelSmall!.copyWith(
-                            color: colors.textPrimary,
-                            fontFeatures: AppTypography.tabularFeatures,
+            child: Semantics(
+              label: 'Período ${_periods[index].$1}',
+              button: true,
+              selected: selectedDays == _periods[index].$2,
+              child: Material(
+                type: MaterialType.transparency,
+                child: InkWell(
+                  onTap: () => onChanged(_periods[index].$2),
+                  borderRadius: BorderRadius.circular(999),
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      color: selectedDays == _periods[index].$2
+                          ? colors.textPrimary
+                          : colors.surfaceSubtle,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: SizedBox(
+                      height: 48,
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            _periods[index].$1,
+                            style: context.textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: selectedDays == _periods[index].$2
+                                  ? colors.background
+                                  : colors.textPrimary,
+                              fontFeatures: AppTypography.tabularFeatures,
+                            ),
                           ),
-                        );
-                      }).toList();
-                    },
-                  ),
-                ),
-                titlesData: FlTitlesData(
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 54,
-                      getTitlesWidget: (value, meta) => Text(
-                        '${value.toStringAsFixed(1).replaceAll('.', ',')} kg',
-                        style: context.textTheme.labelSmall?.copyWith(
-                          color: colors.textTertiary,
-                          fontFeatures: AppTypography.tabularFeatures,
                         ),
                       ),
                     ),
                   ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 22,
-                      interval: math.max(1.0, (series.length / 4).floorToDouble()),
-                      getTitlesWidget: (value, meta) {
-                        final idx = value.toInt();
-                        if (idx >= 0 && idx < series.length) {
-                          return Padding(
-                            padding:
-                                EdgeInsets.only(top: context.appSpacing.space8),
-                            child: Text(
-                              series[idx].date.formatShort(),
-                              style: context.textTheme.labelSmall?.copyWith(
-                                color: colors.textTertiary,
-                                fontFeatures: AppTypography.tabularFeatures,
-                              ),
-                            ),
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
-                  ),
                 ),
-                lineBarsData: [
-                  // Raw daily scatter dots
-                  LineChartBarData(
-                    spots: rawSpots,
-                    barWidth: 0,
-                    color: Colors.transparent,
-                    dotData: FlDotData(
-                      show: true,
-                      getDotPainter: (spot, percent, barData, index) =>
-                          FlDotCirclePainter(
-                        radius: 3,
-                        color: colors.textTertiary.withValues(alpha: 0.45),
-                        strokeWidth: 0,
-                      ),
-                    ),
-                  ),
-                  // Smooth EMA trend curve
-                  LineChartBarData(
-                    spots: emaSpots,
-                    isCurved: true,
-                    curveSmoothness: 0.35,
-                    color: colors.primary,
-                    barWidth: 2.5,
-                    isStrokeCapRound: true,
-                    dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      color: colors.primary.withValues(alpha: 0.08),
-                    ),
-                  ),
-                ],
               ),
             ),
           ),
         ],
-      ),
+      ],
     );
   }
+}
+
+class _WeightGoalPainter extends CustomPainter {
+  const _WeightGoalPainter({
+    required this.values,
+    required this.ink,
+    required this.line,
+    required this.hatch,
+  });
+
+  final List<double> values;
+  final Color ink;
+  final Color line;
+  final Color hatch;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final gridPaint = Paint()
+      ..color = line
+      ..strokeWidth = 1;
+    canvas.drawLine(Offset(0, 40), Offset(size.width, 40), gridPaint);
+    canvas.drawLine(Offset(0, 80), Offset(size.width, 80), gridPaint);
+
+    final target = Path()
+      ..moveTo(0, size.height * .77)
+      ..lineTo(size.width, size.height * .25)
+      ..lineTo(size.width, size.height * .5)
+      ..lineTo(0, size.height * .92)
+      ..close();
+    canvas.save();
+    canvas.clipPath(target);
+    final hatchPaint = Paint()
+      ..color = hatch
+      ..strokeWidth = 1.5;
+    for (var x = -size.height; x < size.width + size.height; x += 6) {
+      canvas.drawLine(
+        Offset(x, size.height),
+        Offset(x + size.height, 0),
+        hatchPaint,
+      );
+    }
+    canvas.restore();
+
+    final markerX = values.length < 2 ? size.width * .943 : size.width;
+    final all = values.isEmpty ? const <double>[0] : values;
+    final low = all.reduce(math.min);
+    final high = all.reduce(math.max);
+    final span = (high - low).abs() < .01 ? 1.0 : high - low;
+    final points = <Offset>[];
+    for (var i = 0; i < all.length; i++) {
+      final x = all.length < 2 ? markerX : size.width * i / (all.length - 1);
+      final normalized = (all[i] - low) / span;
+      final y = size.height * (.8 - normalized * .6);
+      points.add(Offset(x, y));
+    }
+    final trendPaint = Paint()
+      ..color = ink
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..style = PaintingStyle.stroke;
+    if (points.length > 1) {
+      final trend = Path()..moveTo(points.first.dx, points.first.dy);
+      for (final point in points.skip(1)) {
+        trend.lineTo(point.dx, point.dy);
+      }
+      canvas.drawPath(trend, trendPaint);
+    }
+    canvas.drawCircle(points.last, 6, Paint()..color = ink);
+  }
+
+  @override
+  bool shouldRepaint(covariant _WeightGoalPainter oldDelegate) =>
+      oldDelegate.values != values ||
+      oldDelegate.ink != ink ||
+      oldDelegate.line != line ||
+      oldDelegate.hatch != hatch;
 }
