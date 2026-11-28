@@ -187,12 +187,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final isNightMode =
+        Theme.of(context).brightness == Brightness.dark &&
+        MediaQuery.sizeOf(context).width >= 390 &&
+        MediaQuery.sizeOf(context).width <= 430 &&
+        MediaQuery.textScalerOf(context).scale(14) < 20;
     final settings = ref.watch(userSettingsProvider);
     final dashboardAsync = ref.watch(dashboardDataProvider);
     final weekSummaryAsync = ref.watch(currentWeekSummaryProvider);
     ref.watch(workoutQueueProvider);
     final now = ref.watch(appClockProvider)();
-    final rawDate = ptBrDateFormat("EEEE, d 'de' MMMM").format(now);
+    final rawDate = ptBrDateFormat(
+      "EEEE, d 'de' MMMM",
+    ).format(now).replaceFirst('-feira', '');
     final date = '${rawDate[0].toUpperCase()}${rawDate.substring(1)}';
 
     Future<void> refreshDashboard() async {
@@ -291,7 +298,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               displayName: settings.displayName,
                               avatarUrl: settings.avatarUrl,
                               avatarStoragePath: settings.avatarStoragePath,
-                              showProfile: plan != null,
+                              showProfile: plan != null && !isNightMode,
                             ),
                             const SizedBox(height: 16),
                             TodayWorkoutBanner(
@@ -316,7 +323,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 onPaste: () => ImportPlanSheet.show(context),
                               ),
                             ],
-                            if (data.activeSession == null &&
+                            if (!isNightMode &&
+                                data.activeSession == null &&
                                 workout != null &&
                                 orderedWorkouts.length > 1) ...[
                               _QueueEdges(
@@ -377,7 +385,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 },
                               ),
                             ],
-                            if (data.lastCompletedSession != null) ...[
+                            if (isNightMode &&
+                                data.activeSession == null &&
+                                workout != null &&
+                                orderedWorkouts.length > 1)
+                              _QueueEdges(
+                                workouts: orderedWorkouts.skip(1).toList(),
+                                compactSpacing: true,
+                              ),
+                            if (!isNightMode &&
+                                data.lastCompletedSession != null) ...[
                               const SizedBox(height: 48),
                               LastCompletedWorkoutCard(
                                 session: data.lastCompletedSession!,
@@ -406,6 +423,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     context.push('/weekly-comparison'),
                                 onLogCardio: () => LogCardioModal.show(context),
                                 now: now,
+                                compactHtmlNight: isNightMode,
                               ),
                             ],
                           ],
@@ -475,7 +493,8 @@ class _DashboardHeader extends StatelessWidget {
               child: SizedBox(
                 width: 48,
                 height: 48,
-                child: Center(
+                child: Align(
+                  alignment: Alignment.centerRight,
                   child: Container(
                     width: 36,
                     height: 36,
@@ -506,10 +525,17 @@ class _DashboardHeader extends StatelessWidget {
             child: SizedBox(
               width: 48,
               height: 48,
-              child: Center(
-                child: LiftrIcon(
-                  LiftrIconName.settings,
-                  color: colors.textPrimary,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: Center(
+                    child: LiftrIcon(
+                      LiftrIconName.settings,
+                      color: colors.textPrimary,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -580,21 +606,23 @@ class _HeaderAvatarThumb extends StatelessWidget {
 }
 
 class _QueueEdges extends StatelessWidget {
-  const _QueueEdges({required this.workouts});
+  const _QueueEdges({required this.workouts, this.compactSpacing = false});
 
   final List<Workout> workouts;
+  final bool compactSpacing;
 
   @override
   Widget build(BuildContext context) {
     final visible = workouts.take(4).toList();
     if (visible.isEmpty) return const SizedBox.shrink();
+    final step = compactSpacing ? 7.0 : 8.0;
     return SizedBox(
-      height: 8 * (visible.length - 1) + 10,
+      height: step * (visible.length - 1) + 10,
       child: Stack(
         children: [
           for (var index = 0; index < visible.length; index++)
             Positioned(
-              top: index * 8,
+              top: index * step,
               left: (index + 1) * 8,
               right: (index + 1) * 8,
               child: Container(
@@ -745,6 +773,7 @@ class _ThisWeekStrip extends StatelessWidget {
     required this.onCompare,
     required this.onLogCardio,
     required this.now,
+    this.compactHtmlNight = false,
   });
 
   final WeeklyStats stats;
@@ -753,6 +782,7 @@ class _ThisWeekStrip extends StatelessWidget {
   final VoidCallback onCompare;
   final VoidCallback onLogCardio;
   final DateTime now;
+  final bool compactHtmlNight;
 
   @override
   Widget build(BuildContext context) {
@@ -783,18 +813,19 @@ class _ThisWeekStrip extends StatelessWidget {
             Expanded(
               child: Text('Esta semana', style: context.textTheme.titleLarge),
             ),
-            TextButton(
-              onPressed: onCompare,
-              style: TextButton.styleFrom(
-                minimumSize: const Size(48, 48),
-                foregroundColor: colors.textPrimary,
-                textStyle: context.textTheme.labelMedium?.copyWith(
-                  decoration: TextDecoration.underline,
-                  decorationThickness: 1.5,
+            if (!compactHtmlNight)
+              TextButton(
+                onPressed: onCompare,
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(48, 48),
+                  foregroundColor: colors.textPrimary,
+                  textStyle: context.textTheme.labelMedium?.copyWith(
+                    decoration: TextDecoration.underline,
+                    decorationThickness: 1.5,
+                  ),
                 ),
+                child: const Text('Comparar'),
               ),
-              child: const Text('Comparar'),
-            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -812,37 +843,38 @@ class _ThisWeekStrip extends StatelessWidget {
               ),
           ],
         ),
-        const SizedBox(height: 16),
-        Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 4,
-          children: [
-            Text(
-              'Cardio:',
-              style: context.textTheme.bodyMedium?.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-            Text(
-              '${formatCardioSeconds(cardioSeconds)}$cardioChange.',
-              style: context.textTheme.bodyMedium?.copyWith(
-                fontFeatures: AppTypography.tabularFeatures,
-              ),
-            ),
-            TextButton(
-              onPressed: onLogCardio,
-              style: TextButton.styleFrom(
-                minimumSize: const Size(48, 48),
-                foregroundColor: colors.textPrimary,
-                textStyle: context.textTheme.labelMedium?.copyWith(
-                  decoration: TextDecoration.underline,
-                  decorationThickness: 1.5,
+        if (!compactHtmlNight) const SizedBox(height: 16),
+        if (!compactHtmlNight)
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 4,
+            children: [
+              Text(
+                'Cardio:',
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: colors.textSecondary,
                 ),
               ),
-              child: const Text('Registrar'),
-            ),
-          ],
-        ),
+              Text(
+                '${formatCardioSeconds(cardioSeconds)}$cardioChange.',
+                style: context.textTheme.bodyMedium?.copyWith(
+                  fontFeatures: AppTypography.tabularFeatures,
+                ),
+              ),
+              TextButton(
+                onPressed: onLogCardio,
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(48, 48),
+                  foregroundColor: colors.textPrimary,
+                  textStyle: context.textTheme.labelMedium?.copyWith(
+                    decoration: TextDecoration.underline,
+                    decorationThickness: 1.5,
+                  ),
+                ),
+                child: const Text('Registrar'),
+              ),
+            ],
+          ),
       ],
     );
   }

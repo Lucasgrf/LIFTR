@@ -229,7 +229,7 @@ class _ProgressExercisesViewState extends ConsumerState<ProgressExercisesView> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 5),
             for (var index = 0; index < filtered.length; index++) ...[
               if (index > 0)
                 Divider(height: 1, thickness: 1, color: colors.divider),
@@ -260,22 +260,29 @@ class _ProgressFilterChip extends StatelessWidget {
       label: label,
       selected: selected,
       button: true,
-      child: Material(
-        color: selected ? colors.textPrimary : colors.surfaceSubtle,
-        borderRadius: BorderRadius.circular(999),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(999),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 48),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: IntrinsicWidth(
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(999),
+            child: SizedBox(
+              height: 48,
               child: Center(
-                child: Text(
-                  label,
-                  style: context.textTheme.bodySmall?.copyWith(
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                    color: selected ? colors.background : colors.textPrimary,
+                child: Container(
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: selected ? colors.textPrimary : colors.surfaceSubtle,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    label,
+                    style: context.textTheme.bodyMedium?.copyWith(
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                      color: selected ? colors.background : colors.textPrimary,
+                    ),
                   ),
                 ),
               ),
@@ -299,13 +306,18 @@ class _ProgressExerciseRow extends StatelessWidget {
         ? item.latestWeightKg.toInt().toString()
         : item.latestWeightKg.toStringAsFixed(1).replaceAll('.', ',');
     final detail = '${item.setsCount} × ${item.repsMin}–${item.repsMax}';
-    final status = switch (item.status) {
-      ExerciseProgressStatus.rising => 'no topo, sobe no próximo',
-      ExerciseProgressStatus.steady =>
-        'faltam ${((1 - item.completionRatio).clamp(0, 1) * item.repsMax).round()} repetições',
-      ExerciseProgressStatus.stalled =>
-        'travada há ${item.stalledSessions} treinos',
-    };
+    final status = item.status == ExerciseProgressStatus.stalled
+        ? 'travada há ${item.stalledSessions} treinos'
+        : item.completionRatio >= .98
+        ? 'no topo, sobe no próximo'
+        : 'faltam ${((1 - item.completionRatio).clamp(0, 1) * item.repsMax).round()} repetições';
+    final rampProfile = item.status == ExerciseProgressStatus.stalled
+        ? 3
+        : item.completionRatio < .4
+        ? 2
+        : item.completionRatio < .98
+        ? 1
+        : 0;
 
     return Semantics(
       button: true,
@@ -317,7 +329,7 @@ class _ProgressExerciseRow extends StatelessWidget {
           exerciseName: item.name,
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: 15.5),
           child: Row(
             children: [
               Expanded(
@@ -375,7 +387,7 @@ class _ProgressExerciseRow extends StatelessWidget {
                   painter: _RampPainter(
                     ink: colors.primary,
                     line: colors.divider,
-                    isFlat: item.status == ExerciseProgressStatus.stalled,
+                    profile: rampProfile,
                   ),
                 ),
               ),
@@ -391,12 +403,12 @@ class _RampPainter extends CustomPainter {
   const _RampPainter({
     required this.ink,
     required this.line,
-    required this.isFlat,
+    required this.profile,
   });
 
   final Color ink;
   final Color line;
-  final bool isFlat;
+  final int profile;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -416,7 +428,7 @@ class _RampPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
     final path = Path();
-    if (isFlat) {
+    if (profile == 3) {
       path
         ..moveTo(4, 22)
         ..lineTo(18, 22)
@@ -424,6 +436,24 @@ class _RampPainter extends CustomPainter {
         ..lineTo(46, 22)
         ..lineTo(60, 22)
         ..lineTo(74, 22);
+    } else if (profile == 2) {
+      path
+        ..moveTo(4, 28)
+        ..lineTo(18, 25)
+        ..lineTo(32, 22)
+        ..lineTo(32, 18)
+        ..lineTo(46, 20)
+        ..lineTo(60, 18)
+        ..lineTo(74, 19);
+    } else if (profile == 1) {
+      path
+        ..moveTo(4, 30)
+        ..lineTo(18, 26)
+        ..lineTo(18, 20)
+        ..lineTo(32, 17)
+        ..lineTo(46, 14)
+        ..lineTo(60, 12)
+        ..lineTo(74, 10);
     } else {
       path
         ..moveTo(4, 34)
@@ -435,16 +465,18 @@ class _RampPainter extends CustomPainter {
         ..lineTo(52, 8)
         ..lineTo(64, 6);
     }
-    final baseline = Path()
-      ..moveTo(4, 34)
-      ..lineTo(16, 30)
-      ..lineTo(28, 26)
-      ..lineTo(28, 20)
-      ..lineTo(40, 16)
-      ..lineTo(52, 12)
-      ..lineTo(64, 12);
-    canvas.drawPath(baseline, basePaint);
-    if (isFlat) {
+    if (profile == 0) {
+      final baseline = Path()
+        ..moveTo(4, 34)
+        ..lineTo(16, 30)
+        ..lineTo(28, 26)
+        ..lineTo(28, 20)
+        ..lineTo(40, 16)
+        ..lineTo(52, 12)
+        ..lineTo(64, 12);
+      canvas.drawPath(baseline, basePaint);
+    }
+    if (profile == 3) {
       for (var x = 4.0; x <= 74; x += 7) {
         canvas.drawCircle(Offset(x, 22), 1, Paint()..color = ink);
       }
@@ -452,7 +484,16 @@ class _RampPainter extends CustomPainter {
       canvas.drawPath(path, inkPaint);
     }
     canvas.drawCircle(
-      Offset(isFlat ? 74 : 64, isFlat ? 22 : 6),
+      Offset(
+        profile == 0 ? 64 : 74,
+        profile == 0
+            ? 6
+            : profile == 3
+            ? 22
+            : profile == 1
+            ? 10
+            : 19,
+      ),
       3.5,
       Paint()..color = ink,
     );
@@ -463,5 +504,5 @@ class _RampPainter extends CustomPainter {
   bool shouldRepaint(covariant _RampPainter oldDelegate) =>
       oldDelegate.ink != ink ||
       oldDelegate.line != line ||
-      oldDelegate.isFlat != isFlat;
+      oldDelegate.profile != profile;
 }

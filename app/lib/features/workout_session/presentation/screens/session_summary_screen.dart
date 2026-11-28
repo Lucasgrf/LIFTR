@@ -57,7 +57,9 @@ class SessionSummaryScreen extends ConsumerWidget {
         ),
         data: (session) {
           final completedAt = session.completedAt ?? session.startedAt;
-          final date = ptBrDateFormat("EEEE, d 'de' MMMM").format(completedAt);
+          final date = ptBrDateFormat(
+            "EEEE, d 'de' MMMM",
+          ).format(completedAt).replaceFirst('-feira', '');
           final titleDate = date[0].toUpperCase() + date.substring(1);
           final minutes = math.max(1, session.durationSeconds ~/ 60);
           final targetSets = session.exercises
@@ -112,39 +114,48 @@ class SessionSummaryScreen extends ConsumerWidget {
               children: [
                 if (offline)
                   OfflineBannerWidget(pendingChangesCount: pendingCount),
-                ResponsiveContainer(
-                  child: Row(
-                    children: [
-                      Semantics(
-                        label: 'Voltar',
-                        button: true,
-                        child: InkWell(
-                          onTap: canPop
-                              ? () => context.pop()
-                              : () => context.go('/'),
-                          borderRadius: BorderRadius.circular(999),
-                          child: SizedBox(
-                            width: 48,
-                            height: 48,
-                            child: LiftrIcon(
-                              LiftrIconName.back,
-                              color: colors.textPrimary,
+                Padding(
+                  padding: const EdgeInsets.only(top: 32),
+                  child: ResponsiveContainer(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Row(
+                      children: [
+                        Semantics(
+                          label: 'Voltar',
+                          button: true,
+                          child: InkWell(
+                            onTap: canPop
+                                ? () => context.pop()
+                                : () => context.go('/'),
+                            borderRadius: BorderRadius.circular(999),
+                            child: SizedBox(
+                              width: 48,
+                              height: 48,
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 10),
+                                  child: LiftrIcon(
+                                    LiftrIconName.back,
+                                    color: colors.textPrimary,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          titleDate,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.textTheme.bodyMedium?.copyWith(
-                            color: colors.textSecondary,
+                        Expanded(
+                          child: Text(
+                            titleDate,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.textTheme.bodyMedium?.copyWith(
+                              color: colors.textSecondary,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 Expanded(
@@ -165,24 +176,19 @@ class SessionSummaryScreen extends ConsumerWidget {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.stretch,
                                     children: [
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                          right: 78,
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                orderLabel,
-                                                style: _metaStyle(context),
-                                              ),
-                                            ),
-                                            Text(
-                                              '$minutes min',
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              orderLabel,
                                               style: _metaStyle(context),
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                          Text(
+                                            '$minutes min',
+                                            style: _metaStyle(context),
+                                          ),
+                                        ],
                                       ),
                                       Padding(
                                         padding: const EdgeInsets.only(
@@ -271,17 +277,17 @@ class SessionSummaryScreen extends ConsumerWidget {
                                   ),
                                   Positioned(
                                     top: 0,
-                                    right: -2,
+                                    right: -4,
                                     child: LiftrCompletionStamp(
                                       date: ptBrDateFormat(
                                         'd MMM',
-                                      ).format(completedAt),
+                                      ).format(completedAt).toUpperCase(),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 23),
                             Text(
                               comparison,
                               style: context.textTheme.bodyLarge?.copyWith(
@@ -305,7 +311,7 @@ class SessionSummaryScreen extends ConsumerWidget {
                                 style: context.textTheme.bodyMedium,
                               ),
                             ],
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 12),
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -326,7 +332,7 @@ class SessionSummaryScreen extends ConsumerWidget {
                                     offline
                                         ? 'Sem internet. O treino fica salvo no celular e sincroniza quando a conexão voltar.'
                                         : pendingCount == 0
-                                        ? 'Sincronizado.'
+                                        ? 'Sincronizado com o WhatsApp'
                                         : 'Sincronizando $pendingCount alterações.',
                                     style: context.textTheme.bodySmall
                                         ?.copyWith(color: colors.textSecondary),
@@ -354,17 +360,14 @@ class SessionSummaryScreen extends ConsumerWidget {
     final difference = currentVolume - previousVolume;
     if (difference.abs() < 0.5) return 'Mesmo volume da ficha anterior.';
     final direction = difference > 0 ? 'Acima' : 'Abaixo';
-    final amount = NumberFormat(
-      '#,##0',
-      'pt_BR',
-    ).format(difference.abs().round());
-    return '$direction da ${current.workoutName} anterior em $amount kg.';
+    return '$direction da ${current.workoutName} anterior.';
   }
 }
 
 TextStyle? _metaStyle(BuildContext context) =>
     context.textTheme.bodySmall?.copyWith(
       color: WorkoutCardPalette.secondaryInk,
+      fontWeight: FontWeight.w600,
       fontFeatures: AppTypography.tabularFeatures,
     );
 
@@ -381,7 +384,7 @@ class _SessionExerciseLine extends StatelessWidget {
     final load = sets.isEmpty ? null : sets.first.weightKg;
     final total = exercise.totalVolumeKg.round();
     return Container(
-      padding: EdgeInsets.only(top: compact ? 10 : 16, bottom: 10),
+      padding: const EdgeInsets.only(top: 10, bottom: 10),
       decoration: BoxDecoration(
         border: Border(
           top: BorderSide(
@@ -419,15 +422,12 @@ class _SessionExerciseLine extends StatelessWidget {
             ],
           ),
           if (sets.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text(
-                '${_weight(load!)} × $reps',
-                style: context.textTheme.bodyMedium?.copyWith(
-                  color: WorkoutCardPalette.penInk,
-                  fontWeight: FontWeight.w600,
-                  fontFeatures: AppTypography.tabularFeatures,
-                ),
+            Text(
+              '${_weight(load!)} × $reps',
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: WorkoutCardPalette.penInk,
+                fontWeight: FontWeight.w600,
+                fontFeatures: AppTypography.tabularFeatures,
               ),
             ),
           if (exercise.sets.any(
@@ -436,13 +436,10 @@ class _SessionExerciseLine extends StatelessWidget {
                 set.hasDropSets ||
                 (set.notes?.trim().isNotEmpty ?? false),
           ))
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text(
-                _detailNotes(exercise),
-                style: context.textTheme.bodySmall?.copyWith(
-                  color: WorkoutCardPalette.secondaryInk,
-                ),
+            Text(
+              _detailNotes(exercise),
+              style: context.textTheme.bodySmall?.copyWith(
+                color: WorkoutCardPalette.secondaryInk,
               ),
             ),
         ],
@@ -498,8 +495,13 @@ class _MoreExercisesRow extends StatelessWidget {
         ],
       ),
     ),
-    child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: WorkoutCardPalette.ink.withValues(alpha: .22)),
+        ),
+      ),
       child: Row(
         children: [
           Expanded(
@@ -512,11 +514,10 @@ class _MoreExercisesRow extends StatelessWidget {
             ),
           ),
           Text(
-            'Ver',
+            '${NumberFormat('#,##0', 'pt_BR').format(exercises.fold<double>(0, (total, exercise) => total + exercise.totalVolumeKg).round())} kg',
             style: context.textTheme.bodyMedium?.copyWith(
               color: WorkoutCardPalette.ink,
               fontWeight: FontWeight.w600,
-              decoration: TextDecoration.underline,
             ),
           ),
         ],
@@ -532,7 +533,7 @@ class _NotDoneLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.only(top: 10),
+    padding: const EdgeInsets.only(top: 10, bottom: 6),
     decoration: BoxDecoration(
       border: Border(
         top: BorderSide(color: WorkoutCardPalette.ink.withValues(alpha: .22)),
@@ -553,7 +554,9 @@ class _NotDoneLine extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: Text(
-            exercises.map((item) => item.exercise?.name ?? 'cardio').join(', '),
+            exercises
+                .map((item) => item.exercise?.name.toLowerCase() ?? 'cardio')
+                .join(', '),
             textAlign: TextAlign.right,
             style: context.textTheme.bodyMedium?.copyWith(
               color: WorkoutCardPalette.ink,

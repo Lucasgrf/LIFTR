@@ -69,7 +69,7 @@ class TodayExercisePreviewCard extends ConsumerWidget {
     final previousSets = recommendation?.previousWorkingSets ?? const [];
     final previousSummary = previousSets.isEmpty
         ? null
-        : '${formatWeightKgPtBr(previousSets.map((set) => set.weightKg).reduce((a, b) => a > b ? a : b))} × ${previousSets.map((set) => '${set.repsCompleted}').join(', ')}';
+        : '${formatWeightKgPtBr(previousSets.map((set) => set.weightKg).reduce((a, b) => a > b ? a : b)).replaceFirst(RegExp(r'\s*kg$'), '')} × ${previousSets.map((set) => '${set.repsCompleted}').join(', ')}';
 
     return Container(
       decoration: BoxDecoration(
@@ -101,17 +101,15 @@ class TodayExercisePreviewCard extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  prescription,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.right,
-                  style: context.textTheme.bodyMedium?.copyWith(
-                    color: WorkoutCardPalette.ink,
-                    fontWeight: FontWeight.w600,
-                    fontFeatures: AppTypography.tabularFeatures,
-                  ),
+              Text(
+                prescription,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: WorkoutCardPalette.ink,
+                  fontWeight: FontWeight.w600,
+                  fontFeatures: AppTypography.tabularFeatures,
                 ),
               ),
             ],

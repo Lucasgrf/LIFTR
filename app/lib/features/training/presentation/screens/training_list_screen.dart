@@ -99,7 +99,7 @@ class TrainingListScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text('Treino', style: context.textTheme.displayMedium),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 4),
                       LayoutBuilder(
                         builder: (context, constraints) {
                           final planName = Text(
@@ -116,6 +116,7 @@ class TrainingListScreen extends ConsumerWidget {
                             style: TextButton.styleFrom(
                               minimumSize: const Size(48, 48),
                               foregroundColor: colors.textPrimary,
+                              padding: EdgeInsets.zero,
                               textStyle: context.textTheme.labelMedium
                                   ?.copyWith(
                                     decoration: TextDecoration.underline,
@@ -147,7 +148,7 @@ class TrainingListScreen extends ConsumerWidget {
                           );
                         },
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 22),
                       Row(
                         children: [
                           Expanded(
@@ -167,7 +168,7 @@ class TrainingListScreen extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 18),
                       if (orderedWorkouts.isEmpty)
                         _EmptyQueue(
                           onAdd: () => context.push(
@@ -193,7 +194,7 @@ class TrainingListScreen extends ConsumerWidget {
                       if (orderedWorkouts.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         Text(
-                          'Cada treino ganha uma cor de papel quando entra no programa. A cor identifica a ficha; o nome e a ordem continuam visíveis.',
+                          'Cada treino ganha uma cor de papel quando entra no programa. Você pode trocar a cor na própria ficha.',
                           style: context.textTheme.bodyMedium?.copyWith(
                             color: colors.textSecondary,
                           ),
@@ -365,10 +366,13 @@ class _WorkoutDeck extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const firstHeight = 96.0;
-    const cardHeight = 64.0;
-    const step = 56.0;
+    const lastHeight = 72.0;
+    const cardHeight = 70.0;
+    const step = 62.0;
     return SizedBox(
-      height: workouts.isEmpty ? 0 : firstHeight + step * (workouts.length - 1),
+      height: workouts.isEmpty
+          ? 0
+          : firstHeight + step * (workouts.length - 1) + 2,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -377,11 +381,16 @@ class _WorkoutDeck extends StatelessWidget {
               top: index == 0 ? 0 : 88 + step * (index - 1),
               left: 0,
               right: 0,
-              height: index == 0 ? firstHeight : cardHeight,
+              height: index == 0
+                  ? firstHeight
+                  : index == workouts.length - 1
+                  ? lastHeight
+                  : cardHeight,
               child: _WorkoutDeckCard(
                 index: index,
                 workout: workouts[index],
                 isFirst: index == 0,
+                isLast: index == workouts.length - 1,
                 onTap: () => context.push(
                   '/training/${plan.id}/workout/${workouts[index].id}',
                 ),
@@ -399,6 +408,7 @@ class _WorkoutDeckCard extends StatelessWidget {
     required this.index,
     required this.workout,
     required this.isFirst,
+    required this.isLast,
     required this.onTap,
     required this.onReorder,
   });
@@ -406,6 +416,7 @@ class _WorkoutDeckCard extends StatelessWidget {
   final int index;
   final Workout workout;
   final bool isFirst;
+  final bool isLast;
   final VoidCallback onTap;
   final void Function(int oldIndex, int newIndex) onReorder;
 
@@ -414,7 +425,11 @@ class _WorkoutDeckCard extends StatelessWidget {
     final color = WorkoutCardPalette.forIndex(workout.sortOrder);
     final width = MediaQuery.sizeOf(context).width - 40;
     final largeText = MediaQuery.textScalerOf(context).scale(14) >= 20;
-    final height = isFirst ? 96.0 : 64.0;
+    final height = isFirst
+        ? 96.0
+        : isLast
+        ? 72.0
+        : 70.0;
     final bottomPadding = largeText ? 7.0 : 8.0;
 
     return DragTarget<int>(

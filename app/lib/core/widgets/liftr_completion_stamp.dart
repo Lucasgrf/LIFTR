@@ -10,7 +10,7 @@ class LiftrCompletionStamp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = context.appColors.success;
+    final color = context.appColors.success.withValues(alpha: .9);
     final radius = context.appRadius;
     return Semantics(
       label: date == null ? 'Treino feito' : 'Treino feito em $date',
@@ -27,7 +27,7 @@ class LiftrCompletionStamp extends StatelessWidget {
               border: Border.all(color: color, width: 1),
               borderRadius: BorderRadius.circular(radius.xs - 2),
             ),
-            padding: const EdgeInsets.fromLTRB(10, 4, 10, 2),
+            padding: const EdgeInsets.fromLTRB(9, 6, 9, 4),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -48,8 +48,9 @@ class LiftrCompletionStamp extends StatelessWidget {
                     style: TextStyle(
                       color: color,
                       fontSize: 13,
-                      height: 1.1,
+                      height: 1.45,
                       fontWeight: FontWeight.w600,
+                      letterSpacing: 1.04,
                     ),
                   ),
                 ],

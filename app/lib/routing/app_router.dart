@@ -67,8 +67,9 @@ final activeUserIdProvider = StateProvider<String?>((ref) {
           context: 'AuthStateChange.authLink',
         );
         ref.read(passwordRecoveryPendingProvider.notifier).state = false;
-        ref.read(passwordRecoveryErrorProvider.notifier).state =
-            userFacingMessage(
+        ref
+            .read(passwordRecoveryErrorProvider.notifier)
+            .state = userFacingMessage(
           error,
           stackTrace: stackTrace,
           context: 'AuthStateChange.authLink',
@@ -98,8 +99,9 @@ void syncActiveAuthSession(
       resolvedUserId = null;
     }
   }
-  ref.read(activeUserIdProvider.notifier).state =
-      isLoggedIn ? resolvedUserId : null;
+  ref.read(activeUserIdProvider.notifier).state = isLoggedIn
+      ? resolvedUserId
+      : null;
   ref.read(authStateProvider.notifier).state = isLoggedIn;
 }
 
@@ -131,10 +133,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
@@ -157,7 +156,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
-          return AppShell(navigationShell: navigationShell);
+          final segments = state.uri.pathSegments;
+          final isWorkoutDetail =
+              segments.length == 4 &&
+              segments[0] == 'training' &&
+              segments[2] == 'workout';
+          return AppShell(
+            navigationShell: navigationShell,
+            showNavigationBar: !isWorkoutDetail,
+          );
         },
         branches: [
           StatefulShellBranch(

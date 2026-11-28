@@ -78,14 +78,14 @@ class HistoryScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text('Progresso', style: context.textTheme.displayMedium),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 21),
                   ProgressSegmentedControl(
                     selectedIndex: viewMode,
                     onChanged: (index) {
                       ref.read(historyViewModeProvider.notifier).state = index;
                     },
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   if (viewMode == 0)
                     const ProgressExercisesView()
                   else if (viewMode == 1)

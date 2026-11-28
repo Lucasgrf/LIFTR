@@ -15,8 +15,13 @@ import 'package:personal_fitness_os/features/workout_session/presentation/provid
 
 class AppShell extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
+  final bool showNavigationBar;
 
-  const AppShell({super.key, required this.navigationShell});
+  const AppShell({
+    super.key,
+    required this.navigationShell,
+    this.showNavigationBar = true,
+  });
 
   @override
   ConsumerState<AppShell> createState() => _AppShellState();
@@ -71,6 +76,85 @@ class _AppShellState extends ConsumerState<AppShell> {
     );
   }
 
+  Widget _buildDarkTodayDock(BuildContext context, AppColors colors) {
+    final selectedIndex = widget.navigationShell.currentIndex;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.background,
+        border: Border(top: BorderSide(color: colors.divider)),
+      ),
+      child: SizedBox(
+        height: 54,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Row(
+            children: List.generate(_destinations.length, (index) {
+              final item = _destinations[index];
+              final isSelected = selectedIndex == index;
+              final fg = isSelected ? colors.textPrimary : colors.textSecondary;
+
+              return Expanded(
+                child: Semantics(
+                  label: item.label,
+                  selected: isSelected,
+                  button: true,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: InkWell(onTap: () => _goBranch(index)),
+                      ),
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: ClipRect(
+                            child: OverflowBox(
+                              alignment: Alignment.topCenter,
+                              minHeight: 61,
+                              maxHeight: 61,
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 14),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      LiftrIcon(
+                                        isSelected
+                                            ? item.activeIcon
+                                            : item.icon,
+                                        color: fg,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        item.label,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: context.textTheme.labelSmall
+                                            ?.copyWith(
+                                              color: fg,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.w600
+                                                  : FontWeight.w500,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -88,6 +172,12 @@ class _AppShellState extends ConsumerState<AppShell> {
     final showOfflineBanner = isOfflineMode && !_bannerDismissed;
     final showUpdateBanner = !isOfflineMode && updateState.shouldShowBanner;
     final selectedIndex = widget.navigationShell.currentIndex;
+    final isDarkToday =
+        selectedIndex == 0 &&
+        Theme.of(context).brightness == Brightness.dark &&
+        MediaQuery.sizeOf(context).width >= 390 &&
+        MediaQuery.sizeOf(context).width <= 430 &&
+        MediaQuery.textScalerOf(context).scale(14) < 20;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -111,62 +201,75 @@ class _AppShellState extends ConsumerState<AppShell> {
           ],
         ),
       ),
-      bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(
-          color: colors.background,
-          border: Border(top: BorderSide(color: colors.divider)),
-        ),
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 4, 8, 24),
-            child: Row(
-              children: List.generate(_destinations.length, (index) {
-                final item = _destinations[index];
-                final isSelected = selectedIndex == index;
-                final fg = isSelected
-                    ? colors.textPrimary
-                    : colors.textSecondary;
-
-                return Expanded(
-                  child: Semantics(
-                    label: item.label,
-                    selected: isSelected,
-                    button: true,
-                    child: InkWell(
-                      onTap: () => _goBranch(index),
+      bottomNavigationBar: widget.showNavigationBar
+          ? isDarkToday
+                ? _buildDarkTodayDock(context, colors)
+                : DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: colors.background,
+                      border: Border(top: BorderSide(color: colors.divider)),
+                    ),
+                    child: SafeArea(
+                      top: false,
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            LiftrIcon(
-                              isSelected ? item.activeIcon : item.icon,
-                              color: fg,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              item.label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: context.textTheme.labelSmall?.copyWith(
-                                color: fg,
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.w500,
+                        // SafeArea supplies the device's bottom inset. The HTML
+                        // dock's bottom padding represents that same inset.
+                        padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+                        child: Row(
+                          children: List.generate(_destinations.length, (
+                            index,
+                          ) {
+                            final item = _destinations[index];
+                            final isSelected = selectedIndex == index;
+                            final fg = isSelected
+                                ? colors.textPrimary
+                                : colors.textSecondary;
+
+                            return Expanded(
+                              child: Semantics(
+                                label: item.label,
+                                selected: isSelected,
+                                button: true,
+                                child: InkWell(
+                                  onTap: () => _goBranch(index),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        LiftrIcon(
+                                          isSelected
+                                              ? item.activeIcon
+                                              : item.icon,
+                                          color: fg,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          item.label,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: context.textTheme.labelSmall
+                                              ?.copyWith(
+                                                color: fg,
+                                                fontWeight: isSelected
+                                                    ? FontWeight.w600
+                                                    : FontWeight.w500,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ],
+                            );
+                          }),
                         ),
                       ),
                     ),
-                  ),
-                );
-              }),
-            ),
-          ),
-        ),
-      ),
+                  )
+          : null,
     );
   }
 }

@@ -144,7 +144,7 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 16),
+            const SizedBox(height: 19),
             Text(
               '${latest.toStringAsFixed(1).replaceAll('.', ',')} kg',
               style: context.textTheme.displayLarge?.copyWith(
@@ -154,7 +154,7 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
             ),
             const SizedBox(height: 12),
             Text('$trend $goalSentence', style: context.textTheme.bodyLarge),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             _PeriodSelector(
               selectedDays: _selectedDays,
               onChanged: (days) {
@@ -162,7 +162,7 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
                 setState(() => _selectedDays = days);
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Container(
               decoration: BoxDecoration(
                 color: colors.surfaceSubtle,
@@ -191,21 +191,39 @@ class _ProgressWeightViewState extends ConsumerState<ProgressWeightView> {
                   SizedBox(
                     height: 120,
                     width: double.infinity,
-                    child: Semantics(
-                      label:
-                          'Gráfico de peso, ${points.length} pesagens, tendência ${delta > .1
-                              ? 'de alta'
-                              : delta < -.1
-                              ? 'de queda'
-                              : 'estável'}',
-                      child: CustomPaint(
-                        painter: _WeightGoalPainter(
-                          values: points.map((point) => point.rawKg).toList(),
-                          ink: colors.primary,
-                          line: colors.divider,
-                          hatch: colors.textPrimary.withValues(alpha: .28),
-                        ),
-                      ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final chartWidth = constraints.maxWidth + 32;
+                        return OverflowBox(
+                          alignment: Alignment.centerLeft,
+                          minWidth: chartWidth,
+                          maxWidth: chartWidth,
+                          child: Transform.translate(
+                            offset: const Offset(-16, 0),
+                            child: Semantics(
+                              label:
+                                  'Gráfico de peso, ${points.length} pesagens, tendência ${delta > .1
+                                      ? 'de alta'
+                                      : delta < -.1
+                                      ? 'de queda'
+                                      : 'estável'}',
+                              child: CustomPaint(
+                                size: Size(chartWidth, 120),
+                                painter: _WeightGoalPainter(
+                                  values: points
+                                      .map((point) => point.rawKg)
+                                      .toList(),
+                                  ink: colors.primary,
+                                  line: colors.divider,
+                                  hatch: colors.textPrimary.withValues(
+                                    alpha: .28,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -266,26 +284,32 @@ class _PeriodSelector extends StatelessWidget {
                 child: InkWell(
                   onTap: () => onChanged(_periods[index].$2),
                   borderRadius: BorderRadius.circular(999),
-                  child: Ink(
-                    decoration: BoxDecoration(
-                      color: selectedDays == _periods[index].$2
-                          ? colors.textPrimary
-                          : colors.surfaceSubtle,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: SizedBox(
-                      height: 48,
-                      child: Center(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            _periods[index].$1,
-                            style: context.textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: selectedDays == _periods[index].$2
-                                  ? colors.background
-                                  : colors.textPrimary,
-                              fontFeatures: AppTypography.tabularFeatures,
+                  child: SizedBox(
+                    height: 48,
+                    child: Center(
+                      child: Ink(
+                        decoration: BoxDecoration(
+                          color: selectedDays == _periods[index].$2
+                              ? colors.textPrimary
+                              : colors.surfaceSubtle,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: SizedBox(
+                          height: 44,
+                          width: double.infinity,
+                          child: Center(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                _periods[index].$1,
+                                style: context.textTheme.bodySmall?.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                  color: selectedDays == _periods[index].$2
+                                      ? colors.background
+                                      : colors.textPrimary,
+                                  fontFeatures: AppTypography.tabularFeatures,
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -352,7 +376,7 @@ class _WeightGoalPainter extends CustomPainter {
     for (var i = 0; i < all.length; i++) {
       final x = all.length < 2 ? markerX : size.width * i / (all.length - 1);
       final normalized = (all[i] - low) / span;
-      final y = size.height * (.8 - normalized * .6);
+      final y = all.length < 2 ? 52.0 : size.height * (.8 - normalized * .6);
       points.add(Offset(x, y));
     }
     final trendPaint = Paint()

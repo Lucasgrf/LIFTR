@@ -222,7 +222,7 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
             children: [
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
+                  padding: const EdgeInsets.fromLTRB(0, 32, 0, 24),
                   children: [
                     ResponsiveContainer(
                       child: Column(
@@ -240,6 +240,8 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                                 onPressed: _openEditor,
                                 style: TextButton.styleFrom(
                                   minimumSize: const Size(48, 48),
+                                  padding: EdgeInsets.zero,
+                                  alignment: Alignment.centerRight,
                                   foregroundColor:
                                       context.appColors.textPrimary,
                                   textStyle: context.textTheme.bodyMedium
@@ -253,9 +255,10 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                               ),
                             ],
                           ),
+                          const SizedBox(height: 8),
                           LiftrWorkoutCard(
                             color: cardColor,
-                            padding: const EdgeInsets.all(20),
+                            padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
@@ -309,6 +312,8 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                                     _ExercisePrescription(
                                       exercise: workout.exercises[index],
                                       index: index + 1,
+                                      isLast:
+                                          index == workout.exercises.length - 1,
                                       isReordering: _isReordering,
                                       onTap: () => context.push(
                                         '/training/${widget.planId}/workout/${widget.workoutId}/exercise/${workout.exercises[index].id}/configure-sets',
@@ -346,51 +351,46 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
                   ],
                 ),
               ),
-              SafeArea(
-                top: false,
-                child: ResponsiveContainer(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: FilledButton(
-                        onPressed: _isStartingWorkout
-                            ? null
-                            : () => _startWorkout(workout),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: WorkoutCardPalette.ink,
-                          foregroundColor: const Color(0xFFF4F5F0),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          textStyle: context.textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+              ResponsiveContainer(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 12, 0, 15),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: FilledButton(
+                      onPressed: _isStartingWorkout
+                          ? null
+                          : () => _startWorkout(workout),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: WorkoutCardPalette.ink,
+                        foregroundColor: const Color(0xFFF4F5F0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: _isStartingWorkout
-                            ? const SizedBox.square(
-                                dimension: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    width: 12,
-                                    height: 12,
-                                    decoration: BoxDecoration(
-                                      color: cardColor,
-                                      borderRadius: BorderRadius.circular(2),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Text('Começar ${workout.name}'),
-                                ],
-                              ),
+                        textStyle: context.textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
+                      child: _isStartingWorkout
+                          ? const SizedBox.square(
+                              dimension: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 14,
+                                  height: 14,
+                                  decoration: BoxDecoration(
+                                    color: cardColor,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Text('Começar ${workout.name}'),
+                              ],
+                            ),
                     ),
                   ),
                 ),
@@ -403,8 +403,11 @@ class _WorkoutDetailScreenState extends ConsumerState<WorkoutDetailScreen> {
   }
 }
 
-TextStyle? _metaStyle(BuildContext context) => context.textTheme.bodySmall
-    ?.copyWith(color: WorkoutCardPalette.secondaryInk);
+TextStyle? _metaStyle(BuildContext context) =>
+    context.textTheme.bodySmall?.copyWith(
+      color: WorkoutCardPalette.secondaryInk,
+      fontWeight: FontWeight.w600,
+    );
 TextStyle? _cardBodyStyle(BuildContext context) =>
     context.textTheme.bodyMedium?.copyWith(color: WorkoutCardPalette.ink);
 
@@ -466,6 +469,7 @@ class _ExercisePrescription extends StatelessWidget {
   const _ExercisePrescription({
     required this.exercise,
     required this.index,
+    required this.isLast,
     required this.isReordering,
     required this.onTap,
     required this.onDelete,
@@ -474,6 +478,7 @@ class _ExercisePrescription extends StatelessWidget {
 
   final WorkoutExercise exercise;
   final int index;
+  final bool isLast;
   final bool isReordering;
   final VoidCallback onTap;
   final VoidCallback onDelete;
@@ -527,7 +532,7 @@ class _ExercisePrescription extends StatelessWidget {
             Expanded(
               flex: 44,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(0, 10, 8, 10),
+                padding: EdgeInsets.fromLTRB(0, 10, 8, isLast ? 0 : 10),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -536,7 +541,8 @@ class _ExercisePrescription extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('$index. $exerciseName', style: nameStyle),
-                          if (exercise.setTemplates.isNotEmpty)
+                          if (exercise.setTemplates.isNotEmpty &&
+                              exercise.setTemplates.first.restSeconds > 0)
                             Padding(
                               padding: const EdgeInsets.only(top: 2),
                               child: Text(
@@ -575,7 +581,7 @@ class _ExercisePrescription extends StatelessWidget {
             Expanded(
               flex: 56,
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                padding: EdgeInsets.only(top: 10, bottom: isLast ? 0 : 10),
                 child: groups.isEmpty
                     ? _PrescriptionValuesRow(
                         series: '1 a ${exercise.totalSetsCount}',
@@ -590,7 +596,6 @@ class _ExercisePrescription extends StatelessWidget {
                             index < groups.length;
                             index++
                           ) ...[
-                            if (index > 0) const SizedBox(height: 6),
                             _PrescriptionValuesRow(
                               series: _seriesLabel(groups[index]),
                               reps: _repsLabel(groups[index].first),
@@ -614,10 +619,17 @@ class _ExercisePrescription extends StatelessWidget {
         type == SetType.mobility) {
       return 'aquec.';
     }
-    final first = group.first.setNumber;
-    final last = group.last.setNumber;
+    final first = group.first.setNumber - _nonWorkingSetsBefore(group.first);
+    final last = group.last.setNumber - _nonWorkingSetsBefore(group.last);
+    if (first == 1 && last == 2) return '1 e 2';
     return first == last ? '$first' : '$first a $last';
   }
+
+  int _nonWorkingSetsBefore(SetTemplate template) => exercise.setTemplates
+      .where(
+        (item) => item.setNumber < template.setNumber && !item.isWorkingSet,
+      )
+      .length;
 
   String _repsLabel(SetTemplate template) {
     final min = template.targetRepsMin;
@@ -691,7 +703,7 @@ class _PrescriptionValuesRow extends StatelessWidget {
   );
 
   TextStyle? _style(BuildContext context) =>
-      context.textTheme.bodySmall?.copyWith(
+      context.textTheme.bodyMedium?.copyWith(
         color: WorkoutCardPalette.ink,
         fontFeatures: AppTypography.tabularFeatures,
       );
@@ -718,7 +730,8 @@ class _IconButton extends StatelessWidget {
       child: SizedBox(
         width: 48,
         height: 48,
-        child: Center(
+        child: Align(
+          alignment: Alignment.centerLeft,
           child: LiftrIcon(icon, color: context.appColors.textPrimary),
         ),
       ),

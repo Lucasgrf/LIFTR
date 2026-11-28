@@ -290,6 +290,7 @@ class _ProgressConsistencyViewState
       value.isEmpty ? value : value[0].toUpperCase() + value.substring(1);
 
   String _initials(String name) {
+    if (name.trim().toLowerCase() == 'especialização') return 'EP';
     final words = name
         .trim()
         .split(RegExp(r'\s+'))

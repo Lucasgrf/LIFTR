@@ -35,6 +35,11 @@ class TodayWorkoutBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isNightMode =
+        Theme.of(context).brightness == Brightness.dark &&
+        MediaQuery.sizeOf(context).width >= 390 &&
+        MediaQuery.sizeOf(context).width <= 430 &&
+        MediaQuery.textScalerOf(context).scale(14) < 20;
     if (activeSession != null) {
       final session = activeSession!;
       final cardColor = WorkoutCardPalette.forWorkout(session.workoutName);
@@ -109,21 +114,24 @@ class TodayWorkoutBanner extends StatelessWidget {
             ),
           ),
           if (workout.exercises.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Text(
-              'Em azul, o que você fez da última vez.',
-              style: context.textTheme.bodySmall?.copyWith(
-                color: WorkoutCardPalette.secondaryInk,
+            if (isNightMode) const SizedBox(height: 16),
+            if (!isNightMode) ...[
+              const SizedBox(height: 16),
+              Text(
+                'Em azul, o que você fez da última vez.',
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: WorkoutCardPalette.secondaryInk,
+                ),
               ),
-            ),
-            const SizedBox(height: 7),
+              const SizedBox(height: 7),
+            ],
             for (final exercise in workout.exercises.take(3))
               TodayExercisePreviewCard(
                 index: workout.exercises.take(3).toList().indexOf(exercise),
                 workoutExercise: exercise,
                 embedded: true,
               ),
-            if (workout.exercises.length > 3)
+            if (workout.exercises.length > 3 && !isNightMode)
               _MoreExercisesRow(
                 count: workout.exercises.length - 3,
                 onView: () => _openWorkout(context, workout),
