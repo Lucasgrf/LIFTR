@@ -2,13 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 
-enum LiftrMarkVariant {
-  brand,
-  monoLight,
-  monoDark,
-}
+enum LiftrMarkVariant { brand, monoLight, monoDark }
 
-/// Progressive Monolith symbol built from clean vector geometry.
+/// LIFTR ramp mark: the step in the logo represents double progression.
 class LiftrBrandMark extends StatelessWidget {
   const LiftrBrandMark({
     super.key,
@@ -21,20 +17,22 @@ class LiftrBrandMark extends StatelessWidget {
   final LiftrMarkVariant variant;
   final String semanticLabel;
 
-  Color _resolveColor(AppColors colors) {
+  Color _resolveColor(BuildContext context, AppColors colors) {
     switch (variant) {
       case LiftrMarkVariant.brand:
         return colors.primary;
       case LiftrMarkVariant.monoLight:
-        return AppColors.dark.textPrimary;
+        return Theme.of(context).brightness == Brightness.dark
+            ? colors.textPrimary
+            : colors.background;
       case LiftrMarkVariant.monoDark:
-        return AppColors.light.textPrimary;
+        return colors.textPrimary;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final tint = _resolveColor(context.appColors);
+    final tint = _resolveColor(context, context.appColors);
 
     return Semantics(
       label: semanticLabel,
@@ -43,7 +41,7 @@ class LiftrBrandMark extends StatelessWidget {
         width: size,
         height: size,
         child: SvgPicture.asset(
-          'assets/icons/liftr_monolith.svg',
+          'assets/icons/liftr-simbolo.svg',
           width: size,
           height: size,
           fit: BoxFit.contain,
@@ -54,7 +52,7 @@ class LiftrBrandMark extends StatelessWidget {
   }
 }
 
-/// Controlled sporty horizontal lockup: Monolith symbol (4x) + LIFTR wordmark (14x).
+/// Official lowercase lockup, using the two-color SVG supplied in the design.
 class LiftrWordmark extends StatelessWidget {
   const LiftrWordmark({
     super.key,
@@ -65,57 +63,35 @@ class LiftrWordmark extends StatelessWidget {
   final double height;
   final LiftrMarkVariant variant;
 
-  // -tan(12 deg) aligns italic slant with the 12-degree Progressive Monolith.
-  static final Matrix4 _slantMatrix = Matrix4.skewX(-0.21255656);
-
-  Color _resolveWordmarkColor(AppColors colors) {
-    switch (variant) {
-      case LiftrMarkVariant.brand:
-        return colors.textPrimary;
-      case LiftrMarkVariant.monoLight:
-        return AppColors.dark.textPrimary;
-      case LiftrMarkVariant.monoDark:
-        return AppColors.light.textPrimary;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final markSize = height;
-    final gap = (height * 0.34).clamp(6.0, 14.0);
-    final fontSize = height * 0.92;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final asset = switch (variant) {
+      LiftrMarkVariant.brand =>
+        isDark
+            ? 'assets/icons/liftr-marca-noite.svg'
+            : 'assets/icons/liftr-marca.svg',
+      LiftrMarkVariant.monoLight => 'assets/icons/liftr-marca-noite.svg',
+      LiftrMarkVariant.monoDark => 'assets/icons/liftr-marca.svg',
+    };
+    final filterColor = switch (variant) {
+      LiftrMarkVariant.brand => null,
+      LiftrMarkVariant.monoLight =>
+        isDark ? context.appColors.textPrimary : context.appColors.background,
+      LiftrMarkVariant.monoDark => context.appColors.textPrimary,
+    };
 
     return Semantics(
-      label: 'LIFTR',
+      label: 'liftr',
       header: true,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          LiftrBrandMark(
-            size: markSize,
-            variant: variant,
-            semanticLabel: '',
-          ),
-          SizedBox(width: gap),
-          ExcludeSemantics(
-            child: Transform(
-              transform: _slantMatrix,
-              alignment: Alignment.bottomLeft,
-              child: Text(
-                'LIFTR',
-                style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                      fontSize: fontSize,
-                      height: 1.0,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: fontSize * 0.04,
-                      color: _resolveWordmarkColor(colors),
-                    ),
-              ),
-            ),
-          ),
-        ],
+      child: SvgPicture.asset(
+        asset,
+        height: height,
+        width: height * 2.99,
+        fit: BoxFit.contain,
+        colorFilter: filterColor == null
+            ? null
+            : ColorFilter.mode(filterColor, BlendMode.srcIn),
       ),
     );
   }

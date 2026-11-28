@@ -72,15 +72,15 @@ flutter:
   uses-material-design: true
 
   fonts:
-    - family: Geist
+    - family: Familjen Grotesk
       fonts:
-        - asset: assets/fonts/Geist-Regular.ttf
+        - asset: assets/fonts/FamiljenGrotesk-400.ttf
           weight: 400
-        - asset: assets/fonts/Geist-Medium.ttf
+        - asset: assets/fonts/FamiljenGrotesk-500.ttf
           weight: 500
-        - asset: assets/fonts/Geist-SemiBold.ttf
+        - asset: assets/fonts/FamiljenGrotesk-600.ttf
           weight: 600
-        - asset: assets/fonts/Geist-Bold.ttf
+        - asset: assets/fonts/FamiljenGrotesk-700.ttf
           weight: 700
 
   assets:
@@ -92,5 +92,5 @@ flutter_launcher_icons:
   android: true
   ios: false
   image_path: "assets/images/liftr_app_icon.png"
-  adaptive_icon_background: "#0D0D0F"
+  adaptive_icon_background: "#F3D55B"
   adaptive_icon_foreground: "assets/images/liftr_app_icon_foreground.png"

@@ -79,6 +79,8 @@ class _AppButtonState extends State<AppButton> {
     final Color fgColor;
     switch (widget._type) {
       case AppButtonType.primary:
+        fgColor = isDisabled ? colors.textDisabled : colors.background;
+        break;
       case AppButtonType.destructive:
         fgColor = isDisabled ? colors.textDisabled : colors.onPrimary;
         break;
@@ -112,9 +114,9 @@ class _AppButtonState extends State<AppButton> {
           child: Text(
             widget.label,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: fgColor,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(color: fgColor),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -126,7 +128,10 @@ class _AppButtonState extends State<AppButton> {
     switch (widget._type) {
       case AppButtonType.primary:
         button = ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 52),
+          constraints: const BoxConstraints(
+            minWidth: double.infinity,
+            minHeight: 52,
+          ),
           child: ElevatedButton(
             autofocus: widget.autofocus,
             onPressed: isDisabled ? null : _handleTap,
@@ -135,8 +140,8 @@ class _AppButtonState extends State<AppButton> {
                 horizontal: context.appSpacing.space16,
                 vertical: context.appSpacing.space12,
               ),
-              backgroundColor: colors.primary,
-              foregroundColor: colors.onPrimary,
+              backgroundColor: colors.textPrimary,
+              foregroundColor: colors.background,
               disabledBackgroundColor: colors.surfaceElevated,
               disabledForegroundColor: colors.textDisabled,
               shape: RoundedRectangleBorder(
@@ -151,7 +156,10 @@ class _AppButtonState extends State<AppButton> {
         break;
       case AppButtonType.destructive:
         button = ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 52),
+          constraints: const BoxConstraints(
+            minWidth: double.infinity,
+            minHeight: 52,
+          ),
           child: ElevatedButton(
             autofocus: widget.autofocus,
             onPressed: isDisabled ? null : _handleTap,
@@ -176,7 +184,10 @@ class _AppButtonState extends State<AppButton> {
         break;
       case AppButtonType.secondary:
         button = ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 52),
+          constraints: const BoxConstraints(
+            minWidth: double.infinity,
+            minHeight: 52,
+          ),
           child: OutlinedButton(
             autofocus: widget.autofocus,
             onPressed: isDisabled ? null : _handleTap,

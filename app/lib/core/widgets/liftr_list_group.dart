@@ -6,11 +6,7 @@ import 'package:personal_fitness_os/core/theme/app_typography.dart';
 
 /// Grouped surface container for settings and profile rows with hairline dividers.
 class LiftrListGroup extends StatelessWidget {
-  const LiftrListGroup({
-    super.key,
-    required this.children,
-    this.header,
-  });
+  const LiftrListGroup({super.key, required this.children, this.header});
 
   final List<Widget> children;
   final String? header;
@@ -23,9 +19,8 @@ class LiftrListGroup extends StatelessWidget {
 
     final group = Container(
       decoration: BoxDecoration(
-        color: colors.surface,
+        color: colors.surfaceSubtle,
         borderRadius: cardRadius,
-        border: Border.all(color: colors.border),
       ),
       child: ClipRRect(
         borderRadius: cardRadius,
@@ -109,10 +104,7 @@ class LiftrListRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          if (leading != null) ...[
-            leading!,
-            const SizedBox(width: 12),
-          ],
+          if (leading != null) ...[leading!, const SizedBox(width: 12)],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,10 +163,7 @@ class LiftrListRow extends StatelessWidget {
 
     return Semantics(
       button: true,
-      child: InkWell(
-        onTap: onTap,
-        child: rowContent,
-      ),
+      child: InkWell(onTap: onTap, child: rowContent),
     );
   }
 }

@@ -80,7 +80,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: colors.surfaceElevated,
+        fillColor: colors.background,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 16,
@@ -124,8 +124,8 @@ class AppTheme {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size(48, 48),
-          backgroundColor: colors.primary,
-          foregroundColor: colors.onPrimary,
+          backgroundColor: colors.textPrimary,
+          foregroundColor: colors.background,
           shape: RoundedRectangleBorder(borderRadius: borderRadius),
           textStyle: textTheme.labelLarge,
           elevation: 0,
@@ -134,8 +134,8 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           minimumSize: const Size(48, 48),
-          backgroundColor: colors.primary,
-          foregroundColor: colors.onPrimary,
+          backgroundColor: colors.textPrimary,
+          foregroundColor: colors.background,
           shape: RoundedRectangleBorder(borderRadius: borderRadius),
           textStyle: textTheme.labelLarge,
           elevation: 0,

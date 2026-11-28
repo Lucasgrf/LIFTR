@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_fitness_os/core/storage/shared_preferences_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Persists the active [ThemeMode] preference for LIFTR (Dark-first by default).
+/// Persists the active [ThemeMode] preference for LIFTR (system by default).
 class ThemeModeNotifier extends StateNotifier<ThemeMode> {
   ThemeModeNotifier(this._prefs) : super(_load(_prefs));
 
@@ -15,7 +15,7 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
     return switch (raw) {
       'light' => ThemeMode.light,
       'system' => ThemeMode.system,
-      _ => ThemeMode.dark,
+      _ => ThemeMode.system,
     };
   }
 
@@ -25,7 +25,7 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
   }
 }
 
-/// Active theme mode preference provider for LIFTR (Dark-first by default).
+/// Active theme mode preference provider for LIFTR (system by default).
 final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>((
   ref,
 ) {

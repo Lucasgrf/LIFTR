@@ -13,7 +13,7 @@ class FitnessColors extends ThemeExtension<FitnessColors> {
     required this.muscleArms,
     required this.muscleCore,
     this.progressSteady = const Color(0xFF9898A3),
-    this.onSuccess = const Color(0xFF0D0D0F),
+    this.onSuccess = const Color(0xFF151A2E),
   });
 
   final Color progressUp;
@@ -101,33 +101,33 @@ class FitnessColors extends ThemeExtension<FitnessColors> {
   }
 
   static const dark = FitnessColors(
-    progressUp: Color(0xFF72A987),
-    progressDown: Color(0xFFC98A5B),
-    progressMaintain: Color(0xFFD4A154),
-    progressNeutral: Color(0xFF6E9EC7),
-    progressSteady: Color(0xFF9898A3),
-    onSuccess: Color(0xFF0D0D0F),
-    muscleChest: Color(0xFF72A987),
-    muscleBack: Color(0xFF9898A3),
-    muscleLegs: Color(0xFF7C9286),
-    muscleShoulders: Color(0xFF9A9AA6),
-    muscleArms: Color(0xFF6E8C7D),
-    muscleCore: Color(0xFF7D8590),
+    progressUp: Color(0xFF8FA8FF),
+    progressDown: Color(0xFFA9B0C2),
+    progressMaintain: Color(0xFFA9B0C2),
+    progressNeutral: Color(0xFFA9B0C2),
+    progressSteady: Color(0xFFA9B0C2),
+    onSuccess: Color(0xFF151A2E),
+    muscleChest: Color(0xFF8FA8FF),
+    muscleBack: Color(0xFFA9B0C2),
+    muscleLegs: Color(0xFFA9B0C2),
+    muscleShoulders: Color(0xFFA9B0C2),
+    muscleArms: Color(0xFFA9B0C2),
+    muscleCore: Color(0xFFA9B0C2),
   );
 
   static const light = FitnessColors(
-    progressUp: Color(0xFF315B43),
-    progressDown: Color(0xFF9A5528),
-    progressMaintain: Color(0xFF805500),
-    progressNeutral: Color(0xFF2B5E8A),
-    progressSteady: Color(0xFF52525B),
-    onSuccess: Color(0xFFF2F2F0),
-    muscleChest: Color(0xFF315B43),
-    muscleBack: Color(0xFF52525B),
-    muscleLegs: Color(0xFF476354),
-    muscleShoulders: Color(0xFF5E5E68),
-    muscleArms: Color(0xFF3F5E4D),
-    muscleCore: Color(0xFF525C68),
+    progressUp: Color(0xFF1C3FAA),
+    progressDown: Color(0xFF4F545C),
+    progressMaintain: Color(0xFF4F545C),
+    progressNeutral: Color(0xFF4F545C),
+    progressSteady: Color(0xFF4F545C),
+    onSuccess: Color(0xFFF4F5F0),
+    muscleChest: Color(0xFF1C3FAA),
+    muscleBack: Color(0xFF4F545C),
+    muscleLegs: Color(0xFF4F545C),
+    muscleShoulders: Color(0xFF4F545C),
+    muscleArms: Color(0xFF4F545C),
+    muscleCore: Color(0xFF4F545C),
   );
 
   static const defaults = dark;
