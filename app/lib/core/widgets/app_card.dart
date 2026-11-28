@@ -38,7 +38,7 @@ class AppCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final radius = context.appRadius;
-    final effectiveRadius = borderRadius ?? radius.large;
+    final effectiveRadius = borderRadius ?? radius.small;
 
     final Color defaultSurface;
     final Color defaultBorder;
@@ -93,24 +93,7 @@ class AppCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(effectiveRadius),
-        child: variant == AppCardVariant.accented
-            ? Stack(
-                children: [
-                  inner,
-                  Positioned(
-                    top: 0,
-                    bottom: 0,
-                    left: 0,
-                    width: 3,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: accentColor ?? colors.primary,
-                      ),
-                    ),
-                  ),
-                ],
-              )
-            : inner,
+        child: inner,
       ),
     );
   }

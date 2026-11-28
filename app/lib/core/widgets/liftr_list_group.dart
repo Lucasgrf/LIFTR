@@ -3,6 +3,7 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_icon.dart';
 
 /// Grouped surface container for settings and profile rows with hairline dividers.
 class LiftrListGroup extends StatelessWidget {
@@ -49,7 +50,7 @@ class LiftrListGroup extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
           child: Text(
             header!,
-            style: context.textTheme.labelMedium?.copyWith(
+            style: context.textTheme.headlineSmall?.copyWith(
               color: colors.textSecondary,
             ),
           ),
@@ -147,9 +148,9 @@ class LiftrListRow extends StatelessWidget {
             trailing!,
           ] else if (showChevron) ...[
             const SizedBox(width: 6),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 18,
+            LiftrIcon(
+              LiftrIconName.chevron,
+              size: 20,
               color: colors.textTertiary,
             ),
           ],
@@ -221,7 +222,7 @@ class _LiftrToggleListRow extends LiftrListRow {
               ),
               Switch.adaptive(
                 value: toggleValue,
-                activeTrackColor: activeColor ?? colors.primary,
+                activeTrackColor: activeColor ?? colors.textPrimary,
                 onChanged: onChanged,
               ),
             ],

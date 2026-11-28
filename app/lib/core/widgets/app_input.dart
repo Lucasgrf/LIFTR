@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
-import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/utils/pt_br_number_utils.dart';
@@ -79,7 +78,8 @@ class _AppInputState extends State<AppInput> {
 
   @override
   Widget build(BuildContext context) {
-    final Widget? effectiveSuffix = widget.suffix ??
+    final Widget? effectiveSuffix =
+        widget.suffix ??
         (widget.obscureText
             ? IconButton(
                 onPressed: widget.enabled
@@ -105,8 +105,8 @@ class _AppInputState extends State<AppInput> {
           Text(
             widget.label!,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: context.appColors.textSecondary,
-                ),
+              color: context.appColors.textSecondary,
+            ),
           ),
           AppSpacing.verticalGap8,
         ],
@@ -181,7 +181,6 @@ class AppNumericInput extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final radius = context.appRadius;
     final formattedValue = value == value.toInt()
         ? value.toInt().toString()
         : formatPtBrDecimal(value, decimalDigits: 1, trimTrailingZero: false);
@@ -193,17 +192,15 @@ class AppNumericInput extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: colors.textSecondary,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.labelMedium?.copyWith(color: colors.textSecondary),
         ),
         AppSpacing.verticalGap8,
         Container(
           constraints: const BoxConstraints(minHeight: 48),
           decoration: BoxDecoration(
-            color: colors.surfaceVariant,
-            borderRadius: BorderRadius.circular(radius.small),
-            border: Border.all(color: colors.border),
+            border: Border(bottom: BorderSide(color: colors.divider)),
           ),
           child: Row(
             children: [
@@ -213,8 +210,11 @@ class AppNumericInput extends StatelessWidget {
                 child: IconButton(
                   tooltip: 'Diminuir $label',
                   onPressed: value - step >= min ? _decrement : null,
-                  constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                  icon: const Icon(Icons.remove_rounded, size: 20),
+                  constraints: const BoxConstraints(
+                    minWidth: 48,
+                    minHeight: 48,
+                  ),
+                  icon: const Icon(Icons.remove, size: 20),
                   color: colors.textPrimary,
                   disabledColor: colors.textDisabled,
                 ),
@@ -228,9 +228,9 @@ class AppNumericInput extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            fontFeatures: AppTypography.tabularFeatures,
-                          ),
+                        fontWeight: FontWeight.w600,
+                        fontFeatures: AppTypography.tabularFeatures,
+                      ),
                     ),
                   ),
                 ),
@@ -241,8 +241,11 @@ class AppNumericInput extends StatelessWidget {
                 child: IconButton(
                   tooltip: 'Aumentar $label',
                   onPressed: value + step <= max ? _increment : null,
-                  constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                  icon: const Icon(Icons.add_rounded, size: 20),
+                  constraints: const BoxConstraints(
+                    minWidth: 48,
+                    minHeight: 48,
+                  ),
+                  icon: const Icon(Icons.add, size: 20),
                   color: colors.textPrimary,
                   disabledColor: colors.textDisabled,
                 ),

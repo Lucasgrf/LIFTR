@@ -16,7 +16,9 @@ class OfflineBannerWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final pendingWord = pendingChangesCount == 1 ? 'alteração salva' : 'alterações salvas';
+    final pendingWord = pendingChangesCount == 1
+        ? 'alteração salva'
+        : 'alterações salvas';
     final text = pendingChangesCount > 0
         ? 'Modo Offline • $pendingChangesCount $pendingWord localmente'
         : 'Modo Offline • Alterações salvas localmente';
@@ -25,65 +27,44 @@ class OfflineBannerWidget extends StatelessWidget {
       liveRegion: true,
       explicitChildNodes: true,
       label: text,
-      child: Material(
-        color: colors.surfaceSubtle,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: colors.warning.withValues(alpha: 0.35),
-                width: 1,
+      child: Container(
+        width: double.infinity,
+        constraints: const BoxConstraints(minHeight: 48),
+        padding: EdgeInsets.only(left: 20, right: onDismiss != null ? 0 : 20),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: colors.divider)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: colors.textSecondary,
+                  fontFeatures: AppTypography.tabularFeatures,
+                ),
               ),
             ),
-          ),
-          child: Container(
-            width: double.infinity,
-            constraints: const BoxConstraints(minHeight: 48),
-            padding: EdgeInsets.only(
-              left: 12,
-              right: onDismiss != null ? 0 : 12,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.wifi_off_rounded,
-                  size: 16,
-                  color: colors.warning,
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    text,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.textTheme.labelSmall?.copyWith(
-                      color: colors.warning,
-                      fontWeight: FontWeight.w600,
-                      fontFeatures: AppTypography.tabularFeatures,
+            if (onDismiss != null)
+              Semantics(
+                label: 'Ocultar aviso offline',
+                button: true,
+                child: InkWell(
+                  onTap: onDismiss,
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 16,
+                      color: colors.textSecondary,
                     ),
                   ),
                 ),
-                if (onDismiss != null)
-                  Semantics(
-                    label: 'Ocultar aviso offline',
-                    button: true,
-                    child: InkWell(
-                      onTap: onDismiss,
-                      child: SizedBox(
-                        width: 48,
-                        height: 48,
-                        child: Icon(
-                          Icons.close_rounded,
-                          size: 16,
-                          color: colors.warning,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
+              ),
+          ],
         ),
       ),
     );
