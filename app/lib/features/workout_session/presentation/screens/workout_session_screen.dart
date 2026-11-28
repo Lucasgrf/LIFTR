@@ -11,7 +11,6 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_spacing.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
-import 'package:personal_fitness_os/core/theme/fitness_colors.dart';
 import 'package:personal_fitness_os/core/utils/duration_formatter.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
@@ -36,10 +35,7 @@ import 'package:personal_fitness_os/features/workout_session/presentation/widget
 import 'package:personal_fitness_os/features/workout_session/presentation/widgets/swap_exercise_sheet.dart';
 
 class WorkoutSessionScreen extends ConsumerStatefulWidget {
-  const WorkoutSessionScreen({
-    super.key,
-    required this.sessionId,
-  });
+  const WorkoutSessionScreen({super.key, required this.sessionId});
 
   final String sessionId;
 
@@ -62,9 +58,7 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
   void _showActiveSessionRemainingSnackBar() {
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(
       const SnackBar(
-        content: Text(
-          'Treino continua ativo. Você pode retomá-lo em "Hoje".',
-        ),
+        content: Text('Treino continua ativo. Você pode retomá-lo em "Hoje".'),
       ),
     );
   }
@@ -150,7 +144,9 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
       (_) {
         ref.invalidate(liveSessionDetailProvider(widget.sessionId));
         if (!isCardio && restSeconds > 0) {
-          ref.read(restTimerNotifierProvider.notifier).start(
+          ref
+              .read(restTimerNotifierProvider.notifier)
+              .start(
                 restSeconds,
                 exerciseName: exerciseName,
                 setNumber: setNumber,
@@ -339,7 +335,6 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final fitnessColors = context.fitnessColors;
     final radius = context.appRadius;
     final spacing = context.appSpacing;
     final settings = ref.watch(userSettingsProvider);
@@ -380,414 +375,501 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
         _handlePopWithInvalidEdits(exercises);
       },
       child: Scaffold(
-      backgroundColor: colors.background,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            if (isOffline)
-              OfflineBannerWidget(pendingChangesCount: pendingSyncCount),
-            Expanded(
-              child: sessionAsync.when(
-                loading: () => const LiftrScreenSkeleton(showHero: false),
-                error: (err, st) => ErrorStateWidget(
-                  message: userFacingMessage(
-                    err,
-                    stackTrace: st,
-                    context: 'WorkoutSessionScreen.build',
+        backgroundColor: colors.background,
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              if (isOffline)
+                OfflineBannerWidget(pendingChangesCount: pendingSyncCount),
+              Expanded(
+                child: sessionAsync.when(
+                  loading: () => const LiftrScreenSkeleton(showHero: false),
+                  error: (err, st) => ErrorStateWidget(
+                    message: userFacingMessage(
+                      err,
+                      stackTrace: st,
+                      context: 'WorkoutSessionScreen.build',
+                    ),
+                    safetyNote: offlineSafetyNoteFor(err),
+                    onRetry: () => ref.invalidate(
+                      liveSessionDetailProvider(widget.sessionId),
+                    ),
                   ),
-                  safetyNote: offlineSafetyNoteFor(err),
-                  onRetry: () =>
-                      ref.invalidate(liveSessionDetailProvider(widget.sessionId)),
-                ),
-                data: (session) {
-            final totalTargetSets = session.exercises
-                .where((e) => !e.isCardio)
-                .fold<int>(0, (sum, e) => sum + e.targetSetsCount);
-            final completedSets = session.totalWorkingSetsCount;
-            final cardioExercises =
-                session.exercises.where((e) => e.isCardio).toList();
-            final cardioCompleted = cardioExercises.where(
-              (e) => e.totalCardioDurationSeconds > 0,
-            ).length;
-            final totalProgressUnits =
-                totalTargetSets + cardioExercises.length;
-            final completedProgressUnits = completedSets + cardioCompleted;
-            final sessionProgress = totalProgressUnits > 0
-                ? (completedProgressUnits / totalProgressUnits).clamp(0.0, 1.0)
-                : 0.0;
-            final allCompleted = totalProgressUnits > 0 &&
-                completedProgressUnits >= totalProgressUnits;
-            final cardioSeconds = session.totalCardioDurationSeconds;
-            final metaParts = [
-              if (totalTargetSets > 0 || completedSets > 0)
-                '$completedSets/$totalTargetSets séries',
-              if (cardioSeconds > 0)
-                '${formatCardioSeconds(cardioSeconds)} cardio',
-            ];
-            final subtitleStyle = context.textTheme.labelSmall?.copyWith(
-              color: colors.textSecondary,
-              fontFeatures: AppTypography.tabularFeatures,
-            );
+                  data: (session) {
+                    final totalTargetSets = session.exercises
+                        .where((e) => !e.isCardio)
+                        .fold<int>(0, (sum, e) => sum + e.targetSetsCount);
+                    final completedSets = session.totalWorkingSetsCount;
+                    final cardioExercises = session.exercises
+                        .where((e) => e.isCardio)
+                        .toList();
+                    final cardioCompleted = cardioExercises
+                        .where((e) => e.totalCardioDurationSeconds > 0)
+                        .length;
+                    final totalProgressUnits =
+                        totalTargetSets + cardioExercises.length;
+                    final completedProgressUnits =
+                        completedSets + cardioCompleted;
+                    final sessionProgress = totalProgressUnits > 0
+                        ? (completedProgressUnits / totalProgressUnits).clamp(
+                            0.0,
+                            1.0,
+                          )
+                        : 0.0;
+                    final allCompleted =
+                        totalProgressUnits > 0 &&
+                        completedProgressUnits >= totalProgressUnits;
+                    final cardioSeconds = session.totalCardioDurationSeconds;
+                    final metaParts = [
+                      if (totalTargetSets > 0 || completedSets > 0)
+                        '$completedSets/$totalTargetSets séries',
+                      if (cardioSeconds > 0)
+                        '${formatCardioSeconds(cardioSeconds)} cardio',
+                    ];
+                    final subtitleStyle = context.textTheme.labelSmall
+                        ?.copyWith(
+                          color: colors.textSecondary,
+                          fontFeatures: AppTypography.tabularFeatures,
+                        );
+                    final compactHeaderAction =
+                        MediaQuery.textScalerOf(context).scale(16) >= 24;
 
-            return Column(
-              children: [
-                // Sticky Top Session Header
-                Container(
-                  color: colors.background,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          spacing.space4,
-                          spacing.space8,
-                          spacing.space12,
-                          spacing.space8,
-                        ),
-                        child: Row(
-                          children: [
-                            IconButton(
-                              onPressed: _confirmAbandonSession,
-                              tooltip: 'Descartar treino',
-                              constraints: const BoxConstraints(
-                                minWidth: 48,
-                                minHeight: 48,
-                              ),
-                              icon: Icon(
-                                Icons.close_rounded,
-                                color: colors.textSecondary,
-                              ),
-                            ),
-                            SizedBox(width: spacing.space4),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    session.workoutName,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: context.textTheme.titleLarge,
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Wrap(
-                                    children: [
-                                      SessionElapsedText(
-                                        startedAt: session.startedAt,
-                                        nowProvider: ref.watch(appClockProvider),
-                                        style: subtitleStyle,
-                                      ),
-                                      if (metaParts.isNotEmpty)
-                                        Text(
-                                          ' · ${metaParts.join(' · ')}',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: subtitleStyle,
-                                        ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            SizedBox(width: spacing.space8),
-                            Semantics(
-                              label: 'Finalizar treino',
-                              button: true,
-                              child: Material(
-                                color: allCompleted
-                                    ? fitnessColors.progressUp
-                                    : fitnessColors.progressUp
-                                        .withValues(alpha: 0.14),
-                                borderRadius:
-                                    BorderRadius.circular(radius.small),
-                                clipBehavior: Clip.antiAlias,
-                                child: InkWell(
-                                  onTap: () {
-                                    HapticFeedback.lightImpact();
-                                    _openFinishModal(session);
-                                  },
-                                  borderRadius:
-                                      BorderRadius.circular(radius.small),
-                                  child: ConstrainedBox(
-                                    constraints: const BoxConstraints(
-                                      minHeight: 48,
-                                      minWidth: 72,
-                                    ),
-                                    child: Padding(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: spacing.space12,
-                                      ),
-                                      child: Center(
-                                        widthFactor: 1,
-                                        child: Text(
-                                          'Finalizar',
-                                          style: context.textTheme.labelMedium
-                                              ?.copyWith(
-                                            color: allCompleted
-                                                ? fitnessColors.onSuccess
-                                                : fitnessColors.progressUp,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      LiftrProgressBar(
-                        progress: sessionProgress,
-                        height: 2,
-                        color: colors.primary,
-                        trackColor: colors.border,
-                        borderRadius: 0,
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Exercises + Docked Rest Timer
-                Expanded(
-                  child: session.exercises.isEmpty
-                      ? Column(
-                          children: [
-                            Expanded(
-                              child: EmptyStateWidget(
-                                icon: Icons.fitness_center_rounded,
-                                title: 'Nenhum exercício na sessão',
-                                subtitle:
-                                    'Adicione exercícios para começar seu treino.',
-                                actionLabel: 'Adicionar Exercício',
-                                onAction: () => SwapExerciseSheet.show(
-                                  context,
-                                  currentExercise: null,
-                                  title: 'Adicionar exercício',
-                                  subtitle: 'Catálogo de exercícios',
-                                  closeSemanticLabel:
-                                      'Fechar seleção de exercício',
-                                  onSelect: (chosen) =>
-                                      _handleAddExercise(session, chosen),
-                                ),
-                              ),
-                            ),
-                            SafeArea(
-                              top: false,
-                              bottom: restVisible,
-                              child: const RestTimerWidget(stepSeconds: 15),
-                            ),
-                          ],
-                        )
-                      : Stack(
-                          children: [
-                            NotificationListener<ScrollUpdateNotification>(
-                              onNotification: (notification) {
-                                final delta = notification.scrollDelta;
-                                if (delta != null && delta > 1.5) {
-                                  final timerState =
-                                      ref.read(restTimerNotifierProvider);
-                                  if (timerState.isVisible &&
-                                      !timerState.isMinimized) {
-                                    ref
-                                        .read(
-                                            restTimerNotifierProvider.notifier)
-                                        .minimize();
-                                  }
-                                }
-                                return false;
-                              },
-                              child: GestureDetector(
-                                behavior: HitTestBehavior.translucent,
-                                excludeFromSemantics: true,
-                                onTap: () => setState(() => _collapseManualSignal++),
-                                child: ListView.builder(
+                    return Column(
+                      children: [
+                        // Sticky Top Session Header
+                        Container(
+                          color: colors.background,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Padding(
                                 padding: EdgeInsets.fromLTRB(
-                                  0,
+                                  spacing.space4,
+                                  spacing.space8,
                                   spacing.space12,
-                                  0,
-                                  (!restVisible
-                                          ? 40.0
-                                          : (restMinimized ? 84.0 : 188.0)) +
-                                      (allCompleted ? 88.0 : 0.0),
+                                  spacing.space8,
                                 ),
-                                itemCount: session.exercises.length,
-                                itemBuilder: (context, index) {
-                                  final rawSe = session.exercises[index];
-                                  final swapped = _swappedExercises[rawSe.id];
-                                  final se = swapped != null
-                                      ? rawSe.copyWith(
-                                          exerciseId: swapped.id,
-                                          exercise: swapped,
-                                        )
-                                      : rawSe;
-
-                                  final increment =
-                                      settings.incrementForEquipment(
-                                    se.exercise?.equipment,
-                                  );
-
-                                  return ResponsiveContainer(
-                                    child: Padding(
-                                      padding:
-                                          const EdgeInsets.only(bottom: 10),
-                                      child: SessionExerciseCard(
-                                        sessionExercise: se,
-                                        isExpanded: _expandedIndex == index,
-                                        exerciseIndex: index,
-                                        totalExercises:
-                                            session.exercises.length,
-                                        weightIncrement: increment,
-                                        showRir: false,
-                                        collapseSignal: _collapseManualSignal,
-                                        onRegisterExerciseGuard: (guard) {
-                                          if (guard == null) {
-                                            _exerciseGuards.remove(se.id);
-                                          } else {
-                                            _exerciseGuards[se.id] = guard;
-                                          }
-                                        },
-                                        onToggleExpand: () => setState(() {
-                                          _expandedIndex =
-                                              _expandedIndex == index
-                                                  ? -1
-                                                  : index;
-                                        }),
-                                        onSwapExercise: () =>
-                                            SwapExerciseSheet.show(
-                                          context,
-                                          currentExercise: se.exercise,
-                                          onSelect: (chosen) =>
-                                              _handleSwapExercise(
-                                                  rawSe, chosen),
-                                        ),
-                                        onLogSet: ({
-                                          required sessionExerciseId,
-                                          required setNumber,
-                                          required setType,
-                                          required weightKg,
-                                          required repsCompleted,
-                                          durationSeconds,
-                                          rirActual,
-                                          restSeconds =
-                                              AppConstants.defaultRestSeconds,
-                                          dropSets = const [],
-                                          existingSetId,
-                                        }) {
-                                          final resolvedRest = se.isCardio
-                                              ? 0
-                                              : RestDurationResolver.resolve(
-                                                  targetRepsMin:
-                                                      se.targetRepsMin,
-                                                  targetRepsMax:
-                                                      se.targetRepsMax,
-                                                  movementPattern: se.exercise
-                                                      ?.movementPattern,
-                                                  primaryMuscleGroup: se
-                                                      .exercise
-                                                      ?.primaryMuscleGroup,
-                                                  equipment:
-                                                      se.exercise?.equipment,
-                                                  isCardio: se.isCardio,
-                                                  setType: setType,
-                                                  explicitTemplateRestSeconds:
-                                                      restSeconds > 0
-                                                          ? restSeconds
-                                                          : null,
-                                                );
-                                          return _handleLogSet(
-                                            sessionExerciseId:
-                                                sessionExerciseId,
-                                            setNumber: setNumber,
-                                            setType: setType,
-                                            weightKg: weightKg,
-                                            repsCompleted: repsCompleted,
-                                            durationSeconds: durationSeconds,
-                                            rirActual: rirActual,
-                                            restSeconds: resolvedRest,
-                                            dropSets: dropSets,
-                                            existingSetId: existingSetId,
-                                            exerciseName: se.exercise?.name,
-                                            isCardio: se.isCardio,
-                                          );
-                                        },
-                                        onDeleteSet: (setId) {
-                                          final matched = se.sets
-                                              .where((s) => s.id == setId)
-                                              .firstOrNull;
-                                          return _handleDeleteSet(
-                                            setId,
-                                            exerciseName: se.exercise?.name,
-                                            sessionExerciseId: se.id,
-                                            deletedSet: matched,
-                                            isCardio: se.isCardio,
-                                          );
-                                        },
+                                child: Row(
+                                  children: [
+                                    IconButton(
+                                      onPressed: _confirmAbandonSession,
+                                      tooltip: 'Descartar treino',
+                                      constraints: const BoxConstraints(
+                                        minWidth: 48,
+                                        minHeight: 48,
+                                      ),
+                                      icon: Icon(
+                                        Icons.close_rounded,
+                                        color: colors.textSecondary,
                                       ),
                                     ),
-                                  );
-                                },
-                              ),
-                            ),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              left: 0,
-                              right: 0,
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  SafeArea(
-                                    top: false,
-                                    bottom: restVisible && !allCompleted,
-                                    child: const RestTimerWidget(stepSeconds: 15),
-                                  ),
-                                  if (allCompleted)
-                                    Material(
-                                      color: colors.surface,
-                                      child: SafeArea(
-                                        top: false,
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            border: Border(
-                                              top: BorderSide(
-                                                color: colors.border,
+                                    SizedBox(width: spacing.space4),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            session.workoutName,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: context.textTheme.titleLarge,
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Wrap(
+                                            children: [
+                                              SessionElapsedText(
+                                                startedAt: session.startedAt,
+                                                nowProvider: ref.watch(
+                                                  appClockProvider,
+                                                ),
+                                                style: subtitleStyle,
+                                              ),
+                                              if (metaParts.isNotEmpty)
+                                                Text(
+                                                  ' · ${metaParts.join(' · ')}',
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: subtitleStyle,
+                                                ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(width: spacing.space8),
+                                    Semantics(
+                                      label: 'Finalizar treino',
+                                      button: true,
+                                      child: Material(
+                                        color: allCompleted
+                                            ? colors.textPrimary
+                                            : colors.surfaceSubtle,
+                                        borderRadius: BorderRadius.circular(
+                                          radius.small,
+                                        ),
+                                        clipBehavior: Clip.antiAlias,
+                                        child: InkWell(
+                                          onTap: () {
+                                            HapticFeedback.lightImpact();
+                                            _openFinishModal(session);
+                                          },
+                                          borderRadius: BorderRadius.circular(
+                                            radius.small,
+                                          ),
+                                          child: ConstrainedBox(
+                                            constraints: const BoxConstraints(
+                                              minHeight: 48,
+                                              minWidth: 48,
+                                            ),
+                                            child: Padding(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: compactHeaderAction
+                                                    ? 0
+                                                    : spacing.space12,
+                                              ),
+                                              child: Center(
+                                                widthFactor: 1,
+                                                child: compactHeaderAction
+                                                    ? Icon(
+                                                        Icons.check_rounded,
+                                                        color: allCompleted
+                                                            ? colors.background
+                                                            : colors
+                                                                  .textSecondary,
+                                                      )
+                                                    : Text(
+                                                        'Finalizar',
+                                                        style: context
+                                                            .textTheme
+                                                            .labelMedium
+                                                            ?.copyWith(
+                                                              color:
+                                                                  allCompleted
+                                                                  ? colors
+                                                                        .background
+                                                                  : colors
+                                                                        .textSecondary,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w700,
+                                                            ),
+                                                      ),
                                               ),
                                             ),
                                           ),
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: spacing.space16,
-                                            vertical: spacing.space12,
-                                          ),
-                                          child: ResponsiveContainer(
-                                            child: AppButton.primary(
-                                              label: 'Finalizar treino',
-                                              icon: Icons.check_circle_rounded,
-                                              onPressed: () {
-                                                HapticFeedback.lightImpact();
-                                                _openFinishModal(session);
-                                              },
-                                            ),
-                                          ),
                                         ),
                                       ),
                                     ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                              LiftrProgressBar(
+                                progress: sessionProgress,
+                                height: 2,
+                                color: colors.primary,
+                                trackColor: colors.border,
+                                borderRadius: 0,
+                              ),
+                            ],
+                          ),
                         ),
+
+                        // Exercises + Docked Rest Timer
+                        Expanded(
+                          child: session.exercises.isEmpty
+                              ? Column(
+                                  children: [
+                                    Expanded(
+                                      child: EmptyStateWidget(
+                                        icon: Icons.fitness_center_rounded,
+                                        title: 'Nenhum exercício na sessão',
+                                        subtitle:
+                                            'Adicione exercícios para começar seu treino.',
+                                        actionLabel: 'Adicionar Exercício',
+                                        onAction: () => SwapExerciseSheet.show(
+                                          context,
+                                          currentExercise: null,
+                                          title: 'Adicionar exercício',
+                                          subtitle: 'Catálogo de exercícios',
+                                          closeSemanticLabel:
+                                              'Fechar seleção de exercício',
+                                          onSelect: (chosen) =>
+                                              _handleAddExercise(
+                                                session,
+                                                chosen,
+                                              ),
+                                        ),
+                                      ),
+                                    ),
+                                    SafeArea(
+                                      top: false,
+                                      bottom: restVisible,
+                                      child: const RestTimerWidget(
+                                        stepSeconds: 15,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Stack(
+                                  children: [
+                                    NotificationListener<
+                                      ScrollUpdateNotification
+                                    >(
+                                      onNotification: (notification) {
+                                        final delta = notification.scrollDelta;
+                                        if (delta != null && delta > 1.5) {
+                                          final timerState = ref.read(
+                                            restTimerNotifierProvider,
+                                          );
+                                          if (timerState.isVisible &&
+                                              !timerState.isMinimized) {
+                                            ref
+                                                .read(
+                                                  restTimerNotifierProvider
+                                                      .notifier,
+                                                )
+                                                .minimize();
+                                          }
+                                        }
+                                        return false;
+                                      },
+                                      child: GestureDetector(
+                                        behavior: HitTestBehavior.translucent,
+                                        excludeFromSemantics: true,
+                                        onTap: () => setState(
+                                          () => _collapseManualSignal++,
+                                        ),
+                                        child: ListView.builder(
+                                          padding: EdgeInsets.fromLTRB(
+                                            0,
+                                            spacing.space12,
+                                            0,
+                                            (!restVisible
+                                                    ? 40.0
+                                                    : (restMinimized
+                                                          ? 84.0
+                                                          : 188.0)) +
+                                                (allCompleted ? 88.0 : 0.0),
+                                          ),
+                                          itemCount: session.exercises.length,
+                                          itemBuilder: (context, index) {
+                                            final rawSe =
+                                                session.exercises[index];
+                                            final swapped =
+                                                _swappedExercises[rawSe.id];
+                                            final se = swapped != null
+                                                ? rawSe.copyWith(
+                                                    exerciseId: swapped.id,
+                                                    exercise: swapped,
+                                                  )
+                                                : rawSe;
+
+                                            final increment = settings
+                                                .incrementForEquipment(
+                                                  se.exercise?.equipment,
+                                                );
+
+                                            return ResponsiveContainer(
+                                              child: Padding(
+                                                padding: const EdgeInsets.only(
+                                                  bottom: 10,
+                                                ),
+                                                child: SessionExerciseCard(
+                                                  sessionExercise: se,
+                                                  isExpanded:
+                                                      _expandedIndex == index,
+                                                  exerciseIndex: index,
+                                                  totalExercises:
+                                                      session.exercises.length,
+                                                  weightIncrement: increment,
+                                                  showRir: false,
+                                                  collapseSignal:
+                                                      _collapseManualSignal,
+                                                  onRegisterExerciseGuard:
+                                                      (guard) {
+                                                        if (guard == null) {
+                                                          _exerciseGuards
+                                                              .remove(se.id);
+                                                        } else {
+                                                          _exerciseGuards[se
+                                                                  .id] =
+                                                              guard;
+                                                        }
+                                                      },
+                                                  onToggleExpand: () =>
+                                                      setState(() {
+                                                        _expandedIndex =
+                                                            _expandedIndex ==
+                                                                index
+                                                            ? -1
+                                                            : index;
+                                                      }),
+                                                  onSwapExercise: () =>
+                                                      SwapExerciseSheet.show(
+                                                        context,
+                                                        currentExercise:
+                                                            se.exercise,
+                                                        onSelect: (chosen) =>
+                                                            _handleSwapExercise(
+                                                              rawSe,
+                                                              chosen,
+                                                            ),
+                                                      ),
+                                                  onLogSet:
+                                                      ({
+                                                        required sessionExerciseId,
+                                                        required setNumber,
+                                                        required setType,
+                                                        required weightKg,
+                                                        required repsCompleted,
+                                                        durationSeconds,
+                                                        rirActual,
+                                                        restSeconds = AppConstants
+                                                            .defaultRestSeconds,
+                                                        dropSets = const [],
+                                                        existingSetId,
+                                                      }) {
+                                                        final resolvedRest =
+                                                            se.isCardio
+                                                            ? 0
+                                                            : RestDurationResolver.resolve(
+                                                                targetRepsMin: se
+                                                                    .targetRepsMin,
+                                                                targetRepsMax: se
+                                                                    .targetRepsMax,
+                                                                movementPattern: se
+                                                                    .exercise
+                                                                    ?.movementPattern,
+                                                                primaryMuscleGroup: se
+                                                                    .exercise
+                                                                    ?.primaryMuscleGroup,
+                                                                equipment: se
+                                                                    .exercise
+                                                                    ?.equipment,
+                                                                isCardio:
+                                                                    se.isCardio,
+                                                                setType:
+                                                                    setType,
+                                                                explicitTemplateRestSeconds:
+                                                                    restSeconds >
+                                                                        0
+                                                                    ? restSeconds
+                                                                    : null,
+                                                              );
+                                                        return _handleLogSet(
+                                                          sessionExerciseId:
+                                                              sessionExerciseId,
+                                                          setNumber: setNumber,
+                                                          setType: setType,
+                                                          weightKg: weightKg,
+                                                          repsCompleted:
+                                                              repsCompleted,
+                                                          durationSeconds:
+                                                              durationSeconds,
+                                                          rirActual: rirActual,
+                                                          restSeconds:
+                                                              resolvedRest,
+                                                          dropSets: dropSets,
+                                                          existingSetId:
+                                                              existingSetId,
+                                                          exerciseName:
+                                                              se.exercise?.name,
+                                                          isCardio: se.isCardio,
+                                                        );
+                                                      },
+                                                  onDeleteSet: (setId) {
+                                                    final matched = se.sets
+                                                        .where(
+                                                          (s) => s.id == setId,
+                                                        )
+                                                        .firstOrNull;
+                                                    return _handleDeleteSet(
+                                                      setId,
+                                                      exerciseName:
+                                                          se.exercise?.name,
+                                                      sessionExerciseId: se.id,
+                                                      deletedSet: matched,
+                                                      isCardio: se.isCardio,
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: 0,
+                                      left: 0,
+                                      right: 0,
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          SafeArea(
+                                            top: false,
+                                            bottom:
+                                                restVisible && !allCompleted,
+                                            child: const RestTimerWidget(
+                                              stepSeconds: 15,
+                                            ),
+                                          ),
+                                          if (allCompleted)
+                                            Material(
+                                              color: colors.surface,
+                                              child: SafeArea(
+                                                top: false,
+                                                child: Container(
+                                                  decoration: BoxDecoration(
+                                                    border: Border(
+                                                      top: BorderSide(
+                                                        color: colors.border,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  padding: EdgeInsets.symmetric(
+                                                    horizontal: spacing.space16,
+                                                    vertical: spacing.space12,
+                                                  ),
+                                                  child: ResponsiveContainer(
+                                                    child: AppButton.primary(
+                                                      label: 'Finalizar treino',
+                                                      icon:
+                                                          MediaQuery.textScalerOf(
+                                                                context,
+                                                              ).scale(16) >=
+                                                              24
+                                                          ? null
+                                                          : Icons
+                                                                .check_circle_rounded,
+                                                      onPressed: () {
+                                                        HapticFeedback.lightImpact();
+                                                        _openFinishModal(
+                                                          session,
+                                                        );
+                                                      },
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
-              ],
-            );
-          },
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
