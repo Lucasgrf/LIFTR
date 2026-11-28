@@ -315,7 +315,7 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          expect(find.byType(LiftrBrandMark), findsOneWidget);
+          expect(find.byType(LiftrWordmark), findsOneWidget);
           expect(find.text('Hoje'), findsOneWidget);
           expect(find.text('Upper Push A'), findsWidgets);
           expect(tester.takeException(), isNull);

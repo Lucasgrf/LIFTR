@@ -52,12 +52,12 @@ Future<void> _loadMaterialIconsIfAvailable() async {
 
 Future<SharedPreferences> initializeGoldenTest() async {
   if (!_fontsLoaded) {
-    final geistLoader = FontLoader('Geist')
-      ..addFont(_loadFileBytes('assets/fonts/Geist-Regular.ttf'))
-      ..addFont(_loadFileBytes('assets/fonts/Geist-Medium.ttf'))
-      ..addFont(_loadFileBytes('assets/fonts/Geist-SemiBold.ttf'))
-      ..addFont(_loadFileBytes('assets/fonts/Geist-Bold.ttf'));
-    await geistLoader.load();
+    final familjenLoader = FontLoader('Familjen Grotesk')
+      ..addFont(_loadFileBytes('assets/fonts/FamiljenGrotesk-400.ttf'))
+      ..addFont(_loadFileBytes('assets/fonts/FamiljenGrotesk-500.ttf'))
+      ..addFont(_loadFileBytes('assets/fonts/FamiljenGrotesk-600.ttf'))
+      ..addFont(_loadFileBytes('assets/fonts/FamiljenGrotesk-700.ttf'));
+    await familjenLoader.load();
     await _loadMaterialIconsIfAvailable();
     _fontsLoaded = true;
   }

@@ -235,7 +235,7 @@ void main() {
       final container1 = ProviderContainer(
         overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       );
-      expect(container1.read(themeModeProvider), ThemeMode.dark);
+      expect(container1.read(themeModeProvider), ThemeMode.system);
       container1.read(themeModeProvider.notifier).setThemeMode(ThemeMode.light);
       expect(container1.read(themeModeProvider), ThemeMode.light);
       container1.dispose();

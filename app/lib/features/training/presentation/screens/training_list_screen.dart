@@ -5,14 +5,14 @@ import 'package:go_router/go_router.dart';
 import 'package:personal_fitness_os/core/errors/user_facing_message.dart';
 import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
-import 'package:personal_fitness_os/core/theme/app_radius.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
+import 'package:personal_fitness_os/core/theme/workout_card_palette.dart';
 import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
-import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_workout_card.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
@@ -79,8 +79,9 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
 
     Future<void> refreshPlans() async {
       final hadData = ref.read(trainingPlansStateProvider).hasValue;
-      final failure =
-          await ref.read(trainingPlansStateProvider.notifier).refresh();
+      final failure = await ref
+          .read(trainingPlansStateProvider.notifier)
+          .refresh();
       if (failure != null && hadData && context.mounted) {
         final msg = userFacingMessage(
           failure,
@@ -131,8 +132,10 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
                     children: [
                       ConstrainedBox(
                         constraints: BoxConstraints(
-                          minHeight: (constraints.maxHeight - 48)
-                              .clamp(0.0, double.infinity),
+                          minHeight: (constraints.maxHeight - 48).clamp(
+                            0.0,
+                            double.infinity,
+                          ),
                         ),
                         child: Center(
                           child: Column(
@@ -147,12 +150,15 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
                                 onAction: () => context.push('/training/new'),
                               ),
                               ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 280),
+                                constraints: const BoxConstraints(
+                                  maxWidth: 280,
+                                ),
                                 child: Column(
                                   children: [
                                     TextButton.icon(
-                                      onPressed: () =>
-                                          context.push('/training/ai-generator'),
+                                      onPressed: () => context.push(
+                                        '/training/ai-generator',
+                                      ),
                                       style: TextButton.styleFrom(
                                         minimumSize: const Size(48, 48),
                                         foregroundColor: colors.primaryLight,
@@ -216,8 +222,7 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
                           builder: (context) {
                             final isCompact =
                                 MediaQuery.sizeOf(context).width < 360 ||
-                                    MediaQuery.textScalerOf(context).scale(14) >
-                                        18;
+                                MediaQuery.textScalerOf(context).scale(14) > 18;
                             final titleBlock = Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -319,7 +324,9 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
                           },
                           onReorder: (oldIndex, newIndex) {
                             HapticFeedback.selectionClick();
-                            ref.read(workoutQueueProvider.notifier).reorder(
+                            ref
+                                .read(workoutQueueProvider.notifier)
+                                .reorder(
                                   activePlan.id,
                                   orderedWorkouts,
                                   oldIndex,
@@ -361,10 +368,8 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
                         runSpacing: 4,
                         children: [
                           TextButton.icon(
-                            onPressed: () => ExportPlanSheet.show(
-                              context,
-                              plan: activePlan,
-                            ),
+                            onPressed: () =>
+                                ExportPlanSheet.show(context, plan: activePlan),
                             style: TextButton.styleFrom(
                               minimumSize: const Size(48, 48),
                               foregroundColor: colors.textSecondary,
@@ -423,23 +428,20 @@ class _QueueWorkoutCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final radius = context.appRadius;
     final isNext = index == 0;
+    const ink = Color(0xFF17191E);
+    const secondaryInk = Color(0xFF3D4148);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 9),
-      child: AppCard(
-        variant: isNext ? AppCardVariant.accented : AppCardVariant.raised,
-        accentColor: colors.primary,
-        borderColor: isNext
-            ? colors.primary.withValues(alpha: 0.48)
-            : colors.border,
-        borderRadius: radius.large,
+      child: LiftrWorkoutCard(
+        color: WorkoutCardPalette.forKey(workout.id),
         onTap: onEdit,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final isCompact = constraints.maxWidth < 310 ||
+            final isCompact =
+                constraints.maxWidth < 310 ||
                 MediaQuery.textScalerOf(context).scale(14) > 18;
 
             final dragHandle = ReorderableDragStartListener(
@@ -447,11 +449,11 @@ class _QueueWorkoutCard extends StatelessWidget {
               child: Semantics(
                 label: 'Reordenar ${workout.name}',
                 child: SizedBox(
-                  width: 40,
+                  width: 48,
                   height: 48,
                   child: Icon(
                     Icons.drag_handle_rounded,
-                    color: colors.textTertiary,
+                    color: secondaryInk,
                     size: 20,
                   ),
                 ),
@@ -459,17 +461,14 @@ class _QueueWorkoutCard extends StatelessWidget {
             );
 
             final orderBadge = isNext
-                ? const LiftrBadge(
-                    label: 'Próximo',
-                    tone: LiftrBadgeTone.brand,
-                  )
+                ? const LiftrBadge(label: 'Próximo', tone: LiftrBadgeTone.brand)
                 : SizedBox(
                     width: 36,
                     child: Text(
                       '${index + 1}º',
                       textAlign: TextAlign.center,
                       style: context.textTheme.labelMedium?.copyWith(
-                        color: colors.textTertiary,
+                        color: secondaryInk,
                         fontFeatures: AppTypography.tabularFeatures,
                       ),
                     ),
@@ -483,13 +482,13 @@ class _QueueWorkoutCard extends StatelessWidget {
                   workout.name,
                   maxLines: isCompact ? 2 : 1,
                   overflow: TextOverflow.ellipsis,
-                  style: context.textTheme.titleSmall,
+                  style: context.textTheme.titleSmall?.copyWith(color: ink),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   '${workout.totalExercisesCount} exercícios · ${workout.totalWorkingSetsCount} séries',
                   style: context.textTheme.labelSmall?.copyWith(
-                    color: colors.textSecondary,
+                    color: secondaryInk,
                     fontFeatures: AppTypography.tabularFeatures,
                   ),
                 ),
@@ -503,10 +502,10 @@ class _QueueWorkoutCard extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(64, 48),
                   padding: const EdgeInsets.symmetric(horizontal: 14),
-                  backgroundColor: colors.primary,
-                  foregroundColor: colors.onPrimary,
+                  backgroundColor: ink,
+                  foregroundColor: const Color(0xFFF4F5F0),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(radius.small),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 child: const Text('Iniciar'),
@@ -514,10 +513,7 @@ class _QueueWorkoutCard extends StatelessWidget {
             );
 
             final menuButton = PopupMenuButton<String>(
-              icon: Icon(
-                Icons.more_vert_rounded,
-                color: colors.textSecondary,
-              ),
+              icon: Icon(Icons.more_vert_rounded, color: secondaryInk),
               color: colors.surfaceElevated,
               onSelected: (value) {
                 if (value == 'edit') {
@@ -541,7 +537,7 @@ class _QueueWorkoutCard extends StatelessWidget {
 
             final trailingChevron = Icon(
               Icons.chevron_right_rounded,
-              color: colors.textTertiary,
+              color: secondaryInk,
               size: 20,
             );
 
@@ -569,10 +565,7 @@ class _QueueWorkoutCard extends StatelessWidget {
                         if (isNext) menuButton else trailingChevron,
                       ],
                     ),
-                    if (isNext) ...[
-                      const SizedBox(height: 8),
-                      startButton,
-                    ],
+                    if (isNext) ...[const SizedBox(height: 8), startButton],
                   ],
                 ),
               );

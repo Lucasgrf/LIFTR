@@ -160,7 +160,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Treine hoje. O resto acontece no WhatsApp.',
+                      'Seu próximo treino, sem calendário fixo.',
                       style: context.textTheme.bodyLarge?.copyWith(
                         color: colors.textSecondary,
                       ),
@@ -188,9 +188,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 TextButton(
                                   onPressed: () {
                                     ref
-                                        .read(passwordRecoveryErrorProvider
-                                            .notifier)
-                                        .state = null;
+                                            .read(
+                                              passwordRecoveryErrorProvider
+                                                  .notifier,
+                                            )
+                                            .state =
+                                        null;
                                     _showForgotPasswordDialog();
                                   },
                                   style: TextButton.styleFrom(
@@ -201,18 +204,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ),
                                   child: Text(
                                     'Solicitar novo link',
-                                    style:
-                                        context.textTheme.labelLarge?.copyWith(
-                                      color: colors.primaryLight,
-                                    ),
+                                    style: context.textTheme.labelLarge
+                                        ?.copyWith(color: colors.primaryLight),
                                   ),
                                 ),
                                 TextButton(
                                   onPressed: () {
                                     ref
-                                        .read(passwordRecoveryErrorProvider
-                                            .notifier)
-                                        .state = null;
+                                            .read(
+                                              passwordRecoveryErrorProvider
+                                                  .notifier,
+                                            )
+                                            .state =
+                                        null;
                                     _showResendConfirmationDialog();
                                   },
                                   style: TextButton.styleFrom(
@@ -223,10 +227,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ),
                                   child: Text(
                                     'Reenviar confirmação',
-                                    style:
-                                        context.textTheme.labelLarge?.copyWith(
-                                      color: colors.primaryLight,
-                                    ),
+                                    style: context.textTheme.labelLarge
+                                        ?.copyWith(color: colors.primaryLight),
                                   ),
                                 ),
                               ],
@@ -287,8 +289,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed:
-                            _isLoading ? null : _showForgotPasswordDialog,
+                        onPressed: _isLoading
+                            ? null
+                            : _showForgotPasswordDialog,
                         style: TextButton.styleFrom(
                           minimumSize: const Size(48, 48),
                           padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -394,8 +397,9 @@ class _EmailLinkDialog extends StatefulWidget {
 
 class _EmailLinkDialogState extends State<_EmailLinkDialog> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _emailController =
-      TextEditingController(text: widget.initialEmail);
+  late final TextEditingController _emailController = TextEditingController(
+    text: widget.initialEmail,
+  );
   bool _isSubmitting = false;
   bool _sent = false;
   String? _errorMessage;
@@ -435,11 +439,7 @@ class _EmailLinkDialogState extends State<_EmailLinkDialog> {
         _sent = true;
       });
     } catch (e, st) {
-      appErrorLogger(
-        e,
-        stackTrace: st,
-        context: widget.logContext,
-      );
+      appErrorLogger(e, stackTrace: st, context: widget.logContext);
       if (!mounted) return;
       if (_isTransientDeliveryError(e)) {
         setState(() {
@@ -519,8 +519,9 @@ class _EmailLinkDialogState extends State<_EmailLinkDialog> {
             ]
           : [
               TextButton(
-                onPressed:
-                    _isSubmitting ? null : () => Navigator.of(context).pop(),
+                onPressed: _isSubmitting
+                    ? null
+                    : () => Navigator.of(context).pop(),
                 style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
                 child: const Text('Cancelar'),
               ),

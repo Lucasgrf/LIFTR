@@ -209,13 +209,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ref
             .refresh(currentWeekSummaryProvider.future)
             .then<void>((_) {}, onError: (Object _, StackTrace _) {}),
-        ref.refresh(dashboardDataProvider.future).then<void>(
-          (_) {},
-          onError: (Object error, StackTrace st) {
-            refreshError = error;
-            refreshStack = st;
-          },
-        ),
+        ref
+            .refresh(dashboardDataProvider.future)
+            .then<void>(
+              (_) {},
+              onError: (Object error, StackTrace st) {
+                refreshError = error;
+                refreshStack = st;
+              },
+            ),
       ]);
       if (refreshError != null && hadData && context.mounted) {
         final msg = userFacingMessage(
@@ -258,13 +260,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         data: (data) {
           final activePlan = data.activePlan;
-          final orderedWorkouts = activePlan != null &&
-                  activePlan.workouts.isNotEmpty
-              ? ref.read(workoutQueueProvider.notifier).orderedWorkouts(
-                    activePlan.id,
-                    activePlan.workouts,
-                    lastCompletedWorkoutId: data.lastCompletedSession?.workoutId,
-                  )
+          final orderedWorkouts =
+              activePlan != null && activePlan.workouts.isNotEmpty
+              ? ref
+                    .read(workoutQueueProvider.notifier)
+                    .orderedWorkouts(
+                      activePlan.id,
+                      activePlan.workouts,
+                      lastCompletedWorkoutId:
+                          data.lastCompletedSession?.workoutId,
+                    )
               : const <Workout>[];
           final todayWorkout = orderedWorkouts.isNotEmpty
               ? orderedWorkouts.first
@@ -272,8 +277,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
           final topInsight =
               insightsAsync.hasValue && insightsAsync.value!.isNotEmpty
-                  ? insightsAsync.value!.first
-                  : null;
+              ? insightsAsync.value!.first
+              : null;
 
           return RefreshIndicator(
             color: colors.primary,
@@ -295,18 +300,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const LiftrBrandMark(size: 16),
-                                  const SizedBox(height: 6),
+                                  const LiftrWordmark(height: 18),
+                                  const SizedBox(height: 10),
                                   Text(
                                     'Hoje',
-                                    style: context.textTheme.displayMedium,
+                                    style: context.textTheme.displayMedium
+                                        ?.copyWith(fontSize: 40),
                                   ),
                                   const SizedBox(height: 3),
                                   Text(
                                     capitalizedDate,
-                                    style: context.textTheme.bodySmall?.copyWith(
-                                      color: colors.textSecondary,
-                                    ),
+                                    style: context.textTheme.bodySmall
+                                        ?.copyWith(color: colors.textSecondary),
                                   ),
                                 ],
                               ),
@@ -340,8 +345,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               child: Material(
                                 color: colors.surface,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(radius.medium),
+                                  borderRadius: BorderRadius.circular(
+                                    radius.medium,
+                                  ),
                                   side: BorderSide(color: colors.border),
                                 ),
                                 clipBehavior: Clip.antiAlias,
@@ -374,13 +380,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         queueTotal: orderedWorkouts.isNotEmpty
                             ? orderedWorkouts.length
                             : null,
-                        onSkipOrSwap: (activePlan != null &&
-                                orderedWorkouts.length > 1)
+                        onSkipOrSwap:
+                            (activePlan != null && orderedWorkouts.length > 1)
                             ? () => _openSkipOrSwapSheet(
-                                  context,
-                                  activePlan,
-                                  orderedWorkouts,
-                                )
+                                context,
+                                activePlan,
+                                orderedWorkouts,
+                              )
                             : null,
                         onStartWorkout: _startWorkout,
                       ),
@@ -442,9 +448,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           padding: EdgeInsets.zero,
                           child: Column(
                             children: [
-                              for (var i = 0;
-                                  i < todayWorkout.exercises.length;
-                                  i++) ...[
+                              for (
+                                var i = 0;
+                                i < todayWorkout.exercises.length;
+                                i++
+                              ) ...[
                                 if (i > 0)
                                   Divider(
                                     height: 1,
@@ -493,14 +501,16 @@ class _HeaderAvatarThumb extends StatelessWidget {
     final colors = context.appColors;
     final url = avatarUrl?.trim() ?? '';
 
-    final cachePx =
-        (48 * MediaQuery.devicePixelRatioOf(context)).round().clamp(64, 256);
+    final cachePx = (48 * MediaQuery.devicePixelRatioOf(context)).round().clamp(
+      64,
+      256,
+    );
 
     Widget fallbackIcon() => Icon(
-          Icons.person_outline_rounded,
-          color: colors.textSecondary,
-          size: 22,
-        );
+      Icons.person_outline_rounded,
+      color: colors.textSecondary,
+      size: 22,
+    );
 
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return ClipOval(

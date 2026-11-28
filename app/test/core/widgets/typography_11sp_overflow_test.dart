@@ -204,8 +204,8 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          expect(find.text('Menos'), findsOneWidget);
-          expect(find.text('Mais'), findsOneWidget);
+          expect(find.text('seg'), findsOneWidget);
+          expect(find.byType(GridView), findsOneWidget);
           final err = tester.takeException();
           expect(err, isNull, reason: err is FlutterError ? err.toStringDeep() : '$err');
         },
