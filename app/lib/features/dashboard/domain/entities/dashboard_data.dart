@@ -13,6 +13,7 @@ class DashboardData {
     this.todayWorkout,
     this.lastCompletedSession,
     this.weeklyStats = const WeeklyStats.empty(),
+    this.weeklySessions = const [],
   });
 
   final TrainingPlan? activePlan;
@@ -20,6 +21,7 @@ class DashboardData {
   final Workout? todayWorkout;
   final WorkoutSession? lastCompletedSession;
   final WeeklyStats weeklyStats;
+  final List<WorkoutSession> weeklySessions;
 
   bool get hasActiveSession => activeSession != null;
   bool get hasActivePlan => activePlan != null;
@@ -32,6 +34,7 @@ class DashboardData {
     Workout? todayWorkout,
     WorkoutSession? lastCompletedSession,
     WeeklyStats? weeklyStats,
+    List<WorkoutSession>? weeklySessions,
   }) {
     return DashboardData(
       activePlan: activePlan ?? this.activePlan,
@@ -39,6 +42,7 @@ class DashboardData {
       todayWorkout: todayWorkout ?? this.todayWorkout,
       lastCompletedSession: lastCompletedSession ?? this.lastCompletedSession,
       weeklyStats: weeklyStats ?? this.weeklyStats,
+      weeklySessions: weeklySessions ?? this.weeklySessions,
     );
   }
 
@@ -50,15 +54,17 @@ class DashboardData {
         other.activeSession == activeSession &&
         other.todayWorkout == todayWorkout &&
         other.lastCompletedSession == lastCompletedSession &&
-        other.weeklyStats == weeklyStats;
+        other.weeklyStats == weeklyStats &&
+        listEquals(other.weeklySessions, weeklySessions);
   }
 
   @override
   int get hashCode => Object.hash(
-        activePlan,
-        activeSession,
-        todayWorkout,
-        lastCompletedSession,
-        weeklyStats,
-      );
+    activePlan,
+    activeSession,
+    todayWorkout,
+    lastCompletedSession,
+    weeklyStats,
+    Object.hashAll(weeklySessions),
+  );
 }

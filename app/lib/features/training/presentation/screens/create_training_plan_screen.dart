@@ -6,6 +6,7 @@ import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_list_group.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_editorial_page_header.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
 
@@ -63,7 +64,10 @@ class _CreateTrainingPlanScreenState
         context.pop();
       },
       (failure) {
-        context.showSnackBar('Erro ao criar programa: ${failure.message}', isError: true);
+        context.showSnackBar(
+          'Erro ao criar programa: ${failure.message}',
+          isError: true,
+        );
       },
     );
   }
@@ -72,66 +76,67 @@ class _CreateTrainingPlanScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.appColors.background,
-      appBar: AppBar(
-        title: const Text('Novo Programa de Treino'),
-      ),
       body: SafeArea(
-        top: false,
         child: Form(
           key: _formKey,
           child: ListView(
-          padding: const EdgeInsets.fromLTRB(0, 16, 0, 40),
-          children: [
-            ResponsiveContainer(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-            AppInput(
-              label: 'Nome do Programa *',
-              hint: 'Ex: Hipertrofia ABCD, Upper/Lower, PPL...',
-              controller: _nameController,
-              validator: (val) {
-                if (val == null || val.trim().isEmpty) {
-                  return 'Informe o nome do programa';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
+            padding: const EdgeInsets.fromLTRB(0, 8, 0, 40),
+            children: [
+              ResponsiveContainer(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    LiftrEditorialPageHeader(
+                      title: 'Novo programa',
+                      onBack: () => context.pop(),
+                    ),
+                    AppInput(
+                      label: 'Nome do Programa *',
+                      hint: 'Ex: Hipertrofia ABCD, Upper/Lower, PPL...',
+                      controller: _nameController,
+                      validator: (val) {
+                        if (val == null || val.trim().isEmpty) {
+                          return 'Informe o nome do programa';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
 
-            AppInput(
-              label: 'Descrição / Objetivo (Opcional)',
-              hint: 'Ex: Foco em peitoral e deltóide lateral, 4x por semana...',
-              controller: _descriptionController,
-              maxLines: 3,
-              keyboardType: TextInputType.multiline,
-            ),
-            const SizedBox(height: 20),
+                    AppInput(
+                      label: 'Descrição / Objetivo (Opcional)',
+                      hint:
+                          'Ex: Foco em peitoral e deltóide lateral, 4x por semana...',
+                      controller: _descriptionController,
+                      maxLines: 3,
+                      keyboardType: TextInputType.multiline,
+                    ),
+                    const SizedBox(height: 20),
 
-            LiftrListGroup(
-              children: [
-                LiftrListRow.toggle(
-                  label: 'Definir como programa ativo',
-                  subtitle:
-                      'Este programa se tornará o treino principal do seu dia a dia.',
-                  value: _isActive,
-                  onChanged: (val) => setState(() => _isActive = val),
+                    LiftrListGroup(
+                      children: [
+                        LiftrListRow.toggle(
+                          label: 'Definir como programa ativo',
+                          subtitle:
+                              'Este programa se tornará o treino principal do seu dia a dia.',
+                          value: _isActive,
+                          onChanged: (val) => setState(() => _isActive = val),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+
+                    AppButton.primary(
+                      label: 'Salvar Programa',
+                      icon: Icons.check_rounded,
+                      isLoading: _isLoading,
+                      onPressed: _submit,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 32),
-
-            AppButton.primary(
-              label: 'Salvar Programa',
-              icon: Icons.check_rounded,
-              isLoading: _isLoading,
-              onPressed: _submit,
-            ),
-                ],
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
         ),
       ),
     );

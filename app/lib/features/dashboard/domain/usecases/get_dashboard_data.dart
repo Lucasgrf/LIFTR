@@ -17,17 +17,19 @@ class GetDashboardDataUseCase {
     required SessionRepository sessionRepository,
     required HistoryRepository historyRepository,
     SessionLocalDataSource? localSessionDataSource,
-  })  : _trainingRepository = trainingRepository,
-        _sessionRepository = sessionRepository,
-        _historyRepository = historyRepository,
-        _localSessionDataSource = localSessionDataSource;
+  }) : _trainingRepository = trainingRepository,
+       _sessionRepository = sessionRepository,
+       _historyRepository = historyRepository,
+       _localSessionDataSource = localSessionDataSource;
 
   final TrainingRepository _trainingRepository;
   final SessionRepository _sessionRepository;
   final HistoryRepository _historyRepository;
   final SessionLocalDataSource? _localSessionDataSource;
 
-  Future<Result<DashboardData, Failure>> execute({DateTime? referenceDate}) async {
+  Future<Result<DashboardData, Failure>> execute({
+    DateTime? referenceDate,
+  }) async {
     final now = referenceDate ?? DateTime.now();
 
     // 1. Fetch Active Plan
@@ -42,22 +44,37 @@ class GetDashboardDataUseCase {
     if (sessionResult is Err<WorkoutSession?, Failure>) {
       return Err(sessionResult.failure);
     }
-    final activeSession = (sessionResult as Success<WorkoutSession?, Failure>).value;
+    final activeSession =
+        (sessionResult as Success<WorkoutSession?, Failure>).value;
 
     // 3. Determine Today's Workout
     Workout? todayWorkout;
     if (activePlan != null && activePlan.workouts.isNotEmpty) {
-      final currentDayOfWeek = now.weekday % 7; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-      todayWorkout = activePlan.workouts.where((w) => w.dayOfWeek == currentDayOfWeek).firstOrNull ??
+      final currentDayOfWeek =
+          now.weekday % 7; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      todayWorkout =
+          activePlan.workouts
+              .where((w) => w.dayOfWeek == currentDayOfWeek)
+              .firstOrNull ??
           activePlan.workouts.first;
     }
 
     // 4. Calculate Weekly Window (Sunday to Saturday)
     final currentWeekday = now.weekday % 7; // 0 for Sun ... 6 for Sat
-    final startOfWeek = DateTime(now.year, now.month, now.day)
-        .subtract(Duration(days: currentWeekday));
+    final startOfWeek = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: currentWeekday));
     final endOfWeek = startOfWeek.add(
-      const Duration(days: 6, hours: 23, minutes: 59, seconds: 59, milliseconds: 999, microseconds: 999),
+      const Duration(
+        days: 6,
+        hours: 23,
+        minutes: 59,
+        seconds: 59,
+        milliseconds: 999,
+        microseconds: 999,
+      ),
     );
 
     final historyResult = await _historyRepository.getSessionsInRange(
@@ -73,18 +90,22 @@ class GetDashboardDataUseCase {
           .getAllCachedSessions()
           .map((m) => m.toDomain())
           .where((s) {
-        if (!s.isCompleted) return false;
-        final d = s.completedAt ?? s.startedAt;
-        return !d.isBefore(startOfWeek) && !d.isAfter(endOfWeek);
-      }).toList();
+            if (!s.isCompleted) return false;
+            final d = s.completedAt ?? s.startedAt;
+            return !d.isBefore(startOfWeek) && !d.isAfter(endOfWeek);
+          })
+          .toList();
     } else {
-      weeklySessions = (historyResult as Success<List<WorkoutSession>, Failure>).value;
+      weeklySessions =
+          (historyResult as Success<List<WorkoutSession>, Failure>).value;
     }
 
     // 4b. Determine Last Completed Session (remote + offline local fallback)
     WorkoutSession? lastCompletedSession;
     try {
-      final latestResult = await _historyRepository.getCompletedSessions(limit: 1);
+      final latestResult = await _historyRepository.getCompletedSessions(
+        limit: 1,
+      );
       if (latestResult is Success<List<WorkoutSession>, Failure> &&
           latestResult.value.isNotEmpty) {
         lastCompletedSession = latestResult.value.first;
@@ -101,13 +122,15 @@ class GetDashboardDataUseCase {
       lastCompletedSession = sorted.first;
     }
 
-    final localCompleted =
-        _localSessionDataSource?.getLastCompletedSession()?.toDomain();
+    final localCompleted = _localSessionDataSource
+        ?.getLastCompletedSession()
+        ?.toDomain();
     if (localCompleted != null) {
       if (lastCompletedSession == null) {
         lastCompletedSession = localCompleted;
       } else {
-        final localDate = localCompleted.completedAt ?? localCompleted.startedAt;
+        final localDate =
+            localCompleted.completedAt ?? localCompleted.startedAt;
         final remoteDate =
             lastCompletedSession.completedAt ?? lastCompletedSession.startedAt;
         if (localDate.isAfter(remoteDate)) {
@@ -125,7 +148,8 @@ class GetDashboardDataUseCase {
             completedDate.month == dayDate.month &&
             completedDate.day == dayDate.day;
       });
-      final isToday = dayDate.year == now.year &&
+      final isToday =
+          dayDate.year == now.year &&
           dayDate.month == now.month &&
           dayDate.day == now.day;
 
@@ -137,10 +161,14 @@ class GetDashboardDataUseCase {
       );
     });
 
-    final totalVolume =
-        weeklySessions.fold(0.0, (sum, s) => sum + s.totalVolumeKg);
-    final totalDurationSeconds =
-        weeklySessions.fold(0, (sum, s) => sum + s.durationSeconds);
+    final totalVolume = weeklySessions.fold(
+      0.0,
+      (sum, s) => sum + s.totalVolumeKg,
+    );
+    final totalDurationSeconds = weeklySessions.fold(
+      0,
+      (sum, s) => sum + s.durationSeconds,
+    );
     final totalMinutes = totalDurationSeconds ~/ 60;
 
     final weeklyStats = WeeklyStats(
@@ -158,6 +186,7 @@ class GetDashboardDataUseCase {
         todayWorkout: todayWorkout,
         lastCompletedSession: lastCompletedSession,
         weeklyStats: weeklyStats,
+        weeklySessions: weeklySessions,
       ),
     );
   }

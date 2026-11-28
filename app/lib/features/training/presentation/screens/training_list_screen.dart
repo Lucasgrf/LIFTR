@@ -7,15 +7,12 @@ import 'package:personal_fitness_os/core/extensions/context_extensions.dart';
 import 'package:personal_fitness_os/core/theme/app_colors.dart';
 import 'package:personal_fitness_os/core/theme/app_typography.dart';
 import 'package:personal_fitness_os/core/theme/workout_card_palette.dart';
-import 'package:personal_fitness_os/core/utils/pt_br_copy_utils.dart';
-import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
-import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
-import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_blank_fiche.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_icon.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_workout_card.dart';
+import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
-import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
-import 'package:personal_fitness_os/features/settings/presentation/providers/settings_providers.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/training_plan.dart';
 import 'package:personal_fitness_os/features/training/domain/entities/workout.dart';
 import 'package:personal_fitness_os/features/training/presentation/providers/training_providers.dart';
@@ -23,59 +20,14 @@ import 'package:personal_fitness_os/features/training/presentation/providers/wor
 import 'package:personal_fitness_os/features/training/presentation/widgets/export_plan_sheet.dart';
 import 'package:personal_fitness_os/features/training/presentation/widgets/import_plan_sheet.dart';
 import 'package:personal_fitness_os/features/training/presentation/widgets/switch_program_sheet.dart';
-import 'package:personal_fitness_os/features/training/presentation/widgets/weekly_muscle_volume_card.dart';
-import 'package:personal_fitness_os/features/workout_session/domain/helpers/session_exercise_builder.dart';
-import 'package:personal_fitness_os/features/workout_session/presentation/providers/session_providers.dart';
 
-class TrainingListScreen extends ConsumerStatefulWidget {
+class TrainingListScreen extends ConsumerWidget {
   const TrainingListScreen({super.key});
 
   @override
-  ConsumerState<TrainingListScreen> createState() => _TrainingListScreenState();
-}
-
-class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
-  bool _isStartingWorkout = false;
-
-  Future<void> _startWorkout(Workout workout) async {
-    if (_isStartingWorkout) return;
-    setState(() => _isStartingWorkout = true);
-
-    try {
-      final useCase = ref.read(startWorkoutSessionUseCaseProvider);
-      final defaultRest = ref.read(userSettingsProvider).defaultRestSeconds;
-      final initialExercises = buildInitialSessionExercises(
-        workout,
-        defaultRestSeconds: defaultRest,
-      );
-
-      final result = await useCase.execute(
-        workoutId: workout.id,
-        workoutName: workout.name,
-        initialExercises: initialExercises.isNotEmpty ? initialExercises : null,
-      );
-
-      if (!mounted) return;
-      result.fold(
-        (session) {
-          ref.invalidate(dashboardDataProvider);
-          context.push('/session/${session.id}');
-        },
-        (failure) => context.showSnackBar(
-          'Erro ao iniciar treino: ${failure.message}',
-          isError: true,
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _isStartingWorkout = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.appColors;
     final plansAsync = ref.watch(trainingPlansStateProvider);
-    ref.watch(workoutQueueProvider);
 
     Future<void> refreshPlans() async {
       final hadData = ref.read(trainingPlansStateProvider).hasValue;
@@ -83,20 +35,20 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
           .read(trainingPlansStateProvider.notifier)
           .refresh();
       if (failure != null && hadData && context.mounted) {
-        final msg = userFacingMessage(
+        final message = userFacingMessage(
           failure,
           stackTrace: failure.stackTrace,
           context: 'TrainingListScreen.refreshPlans',
         );
-        context.showSnackBar('$msg Mostrando dados salvos.');
+        context.showSnackBar('$message Mostrando dados salvos.');
       }
     }
 
     return Scaffold(
       backgroundColor: colors.background,
       body: plansAsync.when(
-        loading: () => const SafeArea(child: LiftrScreenSkeleton()),
-        error: (error, st) => RefreshIndicator(
+        loading: () => const LiftrScreenSkeleton(),
+        error: (error, stack) => RefreshIndicator(
           color: colors.primary,
           onRefresh: refreshPlans,
           child: LayoutBuilder(
@@ -108,7 +60,7 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
                   child: ErrorStateWidget(
                     message: userFacingMessage(
                       error,
-                      stackTrace: st,
+                      stackTrace: stack,
                       context: 'TrainingListScreen.build',
                     ),
                     safetyNote: offlineSafetyNoteFor(error),
@@ -121,85 +73,16 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
         ),
         data: (plans) {
           if (plans.isEmpty) {
-            return SafeArea(
-              child: RefreshIndicator(
-                color: colors.primary,
-                onRefresh: refreshPlans,
-                child: LayoutBuilder(
-                  builder: (context, constraints) => ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(24),
-                    children: [
-                      ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight: (constraints.maxHeight - 48).clamp(
-                            0.0,
-                            double.infinity,
-                          ),
-                        ),
-                        child: Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              EmptyStateWidget(
-                                icon: Icons.fitness_center_rounded,
-                                title: 'Nenhum programa cadastrado',
-                                subtitle:
-                                    'Crie seu programa com IA, importe o treino de alguém ou monte manualmente.',
-                                actionLabel: 'Criar Programa',
-                                onAction: () => context.push('/training/new'),
-                              ),
-                              ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  maxWidth: 280,
-                                ),
-                                child: Column(
-                                  children: [
-                                    TextButton.icon(
-                                      onPressed: () => context.push(
-                                        '/training/ai-generator',
-                                      ),
-                                      style: TextButton.styleFrom(
-                                        minimumSize: const Size(48, 48),
-                                        foregroundColor: colors.primaryLight,
-                                      ),
-                                      icon: const Icon(
-                                        Icons.auto_awesome_rounded,
-                                        size: 18,
-                                      ),
-                                      label: const Text('Montar treino com IA'),
-                                    ),
-                                    TextButton.icon(
-                                      onPressed: () =>
-                                          ImportPlanSheet.show(context),
-                                      style: TextButton.styleFrom(
-                                        minimumSize: const Size(48, 48),
-                                        foregroundColor: colors.textSecondary,
-                                      ),
-                                      icon: const Icon(
-                                        Icons.qr_code_scanner_rounded,
-                                        size: 18,
-                                      ),
-                                      label: const Text(
-                                        'Importar treino por código',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            return _NoProgramState(
+              onCreate: () => context.push('/training/new'),
+              onImport: () => ImportPlanSheet.show(context),
+              onAi: () => context.push('/training/ai-generator'),
+              onRefresh: refreshPlans,
             );
           }
 
           final activePlan =
-              plans.where((p) => p.isActive).firstOrNull ?? plans.first;
+              plans.where((plan) => plan.isActive).firstOrNull ?? plans.first;
           final orderedWorkouts = ref
               .read(workoutQueueProvider.notifier)
               .orderedWorkouts(activePlan.id, activePlan.workouts);
@@ -209,119 +92,92 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
             onRefresh: refreshPlans,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(0, 12, 0, 36),
+              padding: const EdgeInsets.fromLTRB(0, 32, 0, 36),
               children: [
                 ResponsiveContainer(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Header
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Builder(
-                          builder: (context) {
-                            final isCompact =
-                                MediaQuery.sizeOf(context).width < 360 ||
-                                MediaQuery.textScalerOf(context).scale(14) > 18;
-                            final titleBlock = Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Treino',
-                                  style: context.textTheme.displayMedium,
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  '${activePlan.name} · ${pluralize(orderedWorkouts.length, 'sessão', 'sessões')}',
-                                  style: context.textTheme.bodySmall?.copyWith(
-                                    color: colors.textSecondary,
-                                    fontFeatures: AppTypography.tabularFeatures,
+                      Text('Treino', style: context.textTheme.displayMedium),
+                      const SizedBox(height: 8),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final planName = Text(
+                            activePlan.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.textTheme.bodyMedium?.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                          );
+                          final switchButton = TextButton(
+                            onPressed: () =>
+                                SwitchProgramSheet.show(context, plans: plans),
+                            style: TextButton.styleFrom(
+                              minimumSize: const Size(48, 48),
+                              foregroundColor: colors.textPrimary,
+                              textStyle: context.textTheme.labelMedium
+                                  ?.copyWith(
+                                    decoration: TextDecoration.underline,
+                                    decorationThickness: 1.5,
                                   ),
+                            ),
+                            child: const Text('Trocar programa'),
+                          );
+
+                          if (MediaQuery.textScalerOf(context).scale(14) >=
+                              20) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                planName,
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: switchButton,
                                 ),
                               ],
                             );
-                            final switchBtn = TextButton(
-                              onPressed: () => SwitchProgramSheet.show(
-                                context,
-                                plans: plans,
-                              ),
-                              style: TextButton.styleFrom(
-                                minimumSize: const Size(48, 48),
-                                foregroundColor: colors.primaryLight,
-                              ),
-                              child: const Text('Trocar programa'),
-                            );
+                          }
 
-                            if (isCompact) {
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  titleBlock,
-                                  const SizedBox(height: 4),
-                                  switchBtn,
-                                ],
-                              );
-                            }
-
-                            return Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Expanded(child: titleBlock),
-                                switchBtn,
-                              ],
-                            );
-                          },
-                        ),
+                          return Row(
+                            children: [
+                              Expanded(child: planName),
+                              switchButton,
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 32),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'O baralho',
+                              style: context.textTheme.titleLarge,
+                            ),
+                          ),
+                          Flexible(
+                            child: Text(
+                              'segure e arraste para reordenar',
+                              textAlign: TextAlign.right,
+                              style: context.textTheme.bodySmall?.copyWith(
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 12),
-
-                      // Rotating Queue Header
-                      SizedBox(
-                        width: double.infinity,
-                        child: Wrap(
-                          alignment: WrapAlignment.spaceBetween,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: [
-                            Text(
-                              'Fila rotativa',
-                              style: context.textTheme.titleMedium,
-                            ),
-                            Text(
-                              'Arraste para ordenar',
-                              style: context.textTheme.labelSmall?.copyWith(
-                                color: colors.textTertiary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-
                       if (orderedWorkouts.isEmpty)
-                        EmptyStateWidget(
-                          icon: Icons.queue_rounded,
-                          title: 'Nenhuma sessão na fila',
-                          subtitle:
-                              'Adicione as sessões deste programa (ex: Upper A, Lower A).',
-                          actionLabel: 'Adicionar Sessão',
-                          onAction: () => context.push(
+                        _EmptyQueue(
+                          onAdd: () => context.push(
                             '/training/${activePlan.id}/add-workout',
                           ),
                         )
                       else
-                        ReorderableListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          buildDefaultDragHandles: false,
-                          itemCount: orderedWorkouts.length,
-                          proxyDecorator: (child, index, animation) {
-                            return Material(
-                              color: Colors.transparent,
-                              child: child,
-                            );
-                          },
+                        _WorkoutDeck(
+                          plan: activePlan,
+                          workouts: orderedWorkouts,
                           onReorder: (oldIndex, newIndex) {
                             HapticFeedback.selectionClick();
                             ref
@@ -333,66 +189,63 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
                                   newIndex,
                                 );
                           },
-                          itemBuilder: (context, index) {
-                            final workout = orderedWorkouts[index];
-                            return _QueueWorkoutCard(
-                              key: ValueKey(workout.id),
-                              index: index,
-                              plan: activePlan,
-                              workout: workout,
-                              isStarting: _isStartingWorkout,
-                              onStart: () => _startWorkout(workout),
-                              onEdit: () => context.push(
-                                '/training/${activePlan.id}/workout/${workout.id}',
-                              ),
-                              onSkipToEnd: orderedWorkouts.length > 1
-                                  ? () {
-                                      HapticFeedback.selectionClick();
-                                      ref
-                                          .read(workoutQueueProvider.notifier)
-                                          .skipFirstToEnd(
-                                            activePlan.id,
-                                            orderedWorkouts,
-                                          );
-                                    }
-                                  : null,
-                            );
-                          },
                         ),
-
-                      const SizedBox(height: 10),
-                      Wrap(
-                        alignment: WrapAlignment.spaceBetween,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: [
-                          TextButton.icon(
-                            onPressed: () =>
-                                ExportPlanSheet.show(context, plan: activePlan),
-                            style: TextButton.styleFrom(
-                              minimumSize: const Size(48, 48),
-                              foregroundColor: colors.textSecondary,
-                            ),
-                            icon: Icon(Icons.adaptive.share, size: 17),
-                            label: const Text('Compartilhar programa'),
+                      if (orderedWorkouts.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          'Cada treino ganha uma cor de papel quando entra no programa. A cor identifica a ficha; o nome e a ordem continuam visíveis.',
+                          style: context.textTheme.bodyMedium?.copyWith(
+                            color: colors.textSecondary,
                           ),
-                          TextButton.icon(
-                            onPressed: () => context.push(
-                              '/training/${activePlan.id}/add-workout',
+                        ),
+                      ],
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => context.push(
+                                '/training/${activePlan.id}/add-workout',
+                              ),
+                              icon: const LiftrIcon(
+                                LiftrIconName.plus,
+                                size: 20,
+                              ),
+                              label: const Text('Nova ficha'),
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size.fromHeight(48),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                                textStyle: context.textTheme.bodyMedium
+                                    ?.copyWith(fontWeight: FontWeight.w600),
+                              ),
                             ),
-                            style: TextButton.styleFrom(
-                              minimumSize: const Size(48, 48),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => ExportPlanSheet.show(
+                                context,
+                                plan: activePlan,
+                              ),
+                              icon: const LiftrIcon(
+                                LiftrIconName.share,
+                                size: 20,
+                              ),
+                              label: const Text('Compartilhar'),
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size.fromHeight(48),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                                textStyle: context.textTheme.bodyMedium
+                                    ?.copyWith(fontWeight: FontWeight.w500),
+                              ),
                             ),
-                            icon: const Icon(Icons.add_rounded, size: 18),
-                            label: const Text('Adicionar sessão'),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-
-                      // Weekly muscle volume card
-                      WeeklyMuscleVolumeCard(plan: activePlan),
                     ],
                   ),
                 ),
@@ -405,191 +258,270 @@ class _TrainingListScreenState extends ConsumerState<TrainingListScreen> {
   }
 }
 
-class _QueueWorkoutCard extends StatelessWidget {
-  const _QueueWorkoutCard({
-    super.key,
-    required this.index,
-    required this.plan,
-    required this.workout,
-    required this.isStarting,
-    required this.onStart,
-    required this.onEdit,
-    this.onSkipToEnd,
+class _NoProgramState extends StatelessWidget {
+  const _NoProgramState({
+    required this.onCreate,
+    required this.onImport,
+    required this.onAi,
+    required this.onRefresh,
   });
 
-  final int index;
-  final TrainingPlan plan;
-  final Workout workout;
-  final bool isStarting;
-  final VoidCallback onStart;
-  final VoidCallback onEdit;
-  final VoidCallback? onSkipToEnd;
+  final VoidCallback onCreate;
+  final VoidCallback onImport;
+  final VoidCallback onAi;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final isNext = index == 0;
-    const ink = Color(0xFF17191E);
-    const secondaryInk = Color(0xFF3D4148);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 9),
-      child: LiftrWorkoutCard(
-        color: WorkoutCardPalette.forKey(workout.id),
-        onTap: onEdit,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isCompact =
-                constraints.maxWidth < 310 ||
-                MediaQuery.textScalerOf(context).scale(14) > 18;
-
-            final dragHandle = ReorderableDragStartListener(
-              index: index,
-              child: Semantics(
-                label: 'Reordenar ${workout.name}',
-                child: SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: Icon(
-                    Icons.drag_handle_rounded,
-                    color: secondaryInk,
-                    size: 20,
-                  ),
-                ),
-              ),
-            );
-
-            final orderBadge = isNext
-                ? const LiftrBadge(label: 'Próximo', tone: LiftrBadgeTone.brand)
-                : SizedBox(
-                    width: 36,
-                    child: Text(
-                      '${index + 1}º',
-                      textAlign: TextAlign.center,
-                      style: context.textTheme.labelMedium?.copyWith(
-                        color: secondaryInk,
-                        fontFeatures: AppTypography.tabularFeatures,
-                      ),
-                    ),
-                  );
-
-            final infoColumn = Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
+    return RefreshIndicator(
+      color: colors.primary,
+      onRefresh: onRefresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(0, 32, 0, 36),
+        children: [
+          ResponsiveContainer(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Text('Treino', style: context.textTheme.displayMedium),
+                const SizedBox(height: 8),
                 Text(
-                  workout.name,
-                  maxLines: isCompact ? 2 : 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.textTheme.titleSmall?.copyWith(color: ink),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '${workout.totalExercisesCount} exercícios · ${workout.totalWorkingSetsCount} séries',
-                  style: context.textTheme.labelSmall?.copyWith(
-                    color: secondaryInk,
-                    fontFeatures: AppTypography.tabularFeatures,
+                  'Nenhum programa ainda',
+                  style: context.textTheme.bodyMedium?.copyWith(
+                    color: colors.textSecondary,
                   ),
+                ),
+                const SizedBox(height: 32),
+                LiftrBlankFiche(
+                  title: 'Nenhuma ficha ainda',
+                  description:
+                      'Monte seu programa ou cole o código de um programa que alguém te mandou.',
+                ),
+                const LiftrBlankFicheDeck(),
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: onCreate,
+                  icon: const LiftrIcon(LiftrIconName.plus),
+                  label: const Text('Montar programa'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: onImport,
+                  icon: const LiftrIcon(LiftrIconName.copy),
+                  label: const Text('Colar código de programa'),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: onAi,
+                  child: const Text('Montar treino com IA'),
                 ),
               ],
-            );
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-            final startButton = ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 48),
-              child: ElevatedButton(
-                onPressed: isStarting ? null : onStart,
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(64, 48),
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  backgroundColor: ink,
-                  foregroundColor: const Color(0xFFF4F5F0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+class _EmptyQueue extends StatelessWidget {
+  const _EmptyQueue({required this.onAdd});
+
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      const LiftrBlankFiche(
+        title: 'Nenhuma ficha no baralho',
+        description:
+            'Adicione uma ficha para começar a preencher o seu programa.',
+      ),
+      const LiftrBlankFicheDeck(),
+      const SizedBox(height: 16),
+      OutlinedButton.icon(
+        onPressed: onAdd,
+        icon: const LiftrIcon(LiftrIconName.plus),
+        label: const Text('Nova ficha'),
+      ),
+    ],
+  );
+}
+
+class _WorkoutDeck extends StatelessWidget {
+  const _WorkoutDeck({
+    required this.plan,
+    required this.workouts,
+    required this.onReorder,
+  });
+
+  final TrainingPlan plan;
+  final List<Workout> workouts;
+  final void Function(int oldIndex, int newIndex) onReorder;
+
+  @override
+  Widget build(BuildContext context) {
+    const firstHeight = 96.0;
+    const cardHeight = 64.0;
+    const step = 56.0;
+    return SizedBox(
+      height: workouts.isEmpty ? 0 : firstHeight + step * (workouts.length - 1),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          for (var index = 0; index < workouts.length; index++)
+            Positioned(
+              top: index == 0 ? 0 : 88 + step * (index - 1),
+              left: 0,
+              right: 0,
+              height: index == 0 ? firstHeight : cardHeight,
+              child: _WorkoutDeckCard(
+                index: index,
+                workout: workouts[index],
+                isFirst: index == 0,
+                onTap: () => context.push(
+                  '/training/${plan.id}/workout/${workouts[index].id}',
                 ),
-                child: const Text('Iniciar'),
+                onReorder: onReorder,
               ),
-            );
+            ),
+        ],
+      ),
+    );
+  }
+}
 
-            final menuButton = PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert_rounded, color: secondaryInk),
-              color: colors.surfaceElevated,
-              onSelected: (value) {
-                if (value == 'edit') {
-                  onEdit();
-                } else if (value == 'skip') {
-                  onSkipToEnd?.call();
-                }
-              },
-              itemBuilder: (ctx) => [
-                const PopupMenuItem(
-                  value: 'edit',
-                  child: Text('Editar sessão'),
-                ),
-                if (onSkipToEnd != null)
-                  const PopupMenuItem(
-                    value: 'skip',
-                    child: Text('Pular para o fim da fila'),
+class _WorkoutDeckCard extends StatelessWidget {
+  const _WorkoutDeckCard({
+    required this.index,
+    required this.workout,
+    required this.isFirst,
+    required this.onTap,
+    required this.onReorder,
+  });
+
+  final int index;
+  final Workout workout;
+  final bool isFirst;
+  final VoidCallback onTap;
+  final void Function(int oldIndex, int newIndex) onReorder;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = WorkoutCardPalette.forIndex(workout.sortOrder);
+    final width = MediaQuery.sizeOf(context).width - 40;
+    final largeText = MediaQuery.textScalerOf(context).scale(14) >= 20;
+    final height = isFirst ? 96.0 : 64.0;
+    final bottomPadding = largeText ? 7.0 : 8.0;
+
+    return DragTarget<int>(
+      onAcceptWithDetails: (details) {
+        if (details.data == index) return;
+        final destination = details.data < index ? index + 1 : index;
+        onReorder(details.data, destination);
+      },
+      builder: (context, candidates, rejects) => Semantics(
+        label:
+            'Ficha ${index + 1}, ${workout.name}, ${workout.exercises.length} exercícios, ${workout.totalWorkingSetsCount} séries',
+        child: LiftrWorkoutCard(
+          color: color,
+          onTap: onTap,
+          padding: EdgeInsets.fromLTRB(16, isFirst ? 16 : 8, 16, bottomPadding),
+          child: Row(
+            crossAxisAlignment: isFirst
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 24,
+                child: Text(
+                  '${index + 1}',
+                  style: context.textTheme.displaySmall?.copyWith(
+                    color: WorkoutCardPalette.ink,
+                    fontWeight: FontWeight.w700,
                   ),
-              ],
-            );
-
-            final trailingChevron = Icon(
-              Icons.chevron_right_rounded,
-              color: secondaryInk,
-              size: 20,
-            );
-
-            if (isCompact) {
-              return ConstrainedBox(
-                constraints: BoxConstraints(minHeight: isNext ? 62 : 50),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Row(
-                      children: [
-                        dragHandle,
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              orderBadge,
-                              const SizedBox(height: 4),
-                              infoColumn,
-                            ],
-                          ),
-                        ),
-                        if (isNext) menuButton else trailingChevron,
-                      ],
+                    Text(
+                      workout.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style:
+                          (isFirst
+                                  ? context.textTheme.titleLarge
+                                  : context.textTheme.bodyLarge)
+                              ?.copyWith(
+                                color: WorkoutCardPalette.ink,
+                                fontWeight: FontWeight.w700,
+                              ),
                     ),
-                    if (isNext) ...[const SizedBox(height: 8), startButton],
+                    if (!largeText)
+                      Text(
+                        '${workout.exercises.length} exercícios, ${workout.totalWorkingSetsCount} séries${isFirst ? '. Próxima.' : ''}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: WorkoutCardPalette.secondaryInk,
+                          fontFeatures: AppTypography.tabularFeatures,
+                        ),
+                      ),
                   ],
                 ),
-              );
-            }
-
-            return ConstrainedBox(
-              constraints: BoxConstraints(minHeight: isNext ? 62 : 50),
-              child: Row(
-                children: [
-                  dragHandle,
-                  const SizedBox(width: 4),
-                  orderBadge,
-                  const SizedBox(width: 10),
-                  Expanded(child: infoColumn),
-                  if (isNext) ...[
-                    const SizedBox(width: 6),
-                    startButton,
-                    menuButton,
-                  ] else
-                    trailingChevron,
-                ],
               ),
-            );
-          },
+              const SizedBox(width: 8),
+              LongPressDraggable<int>(
+                data: index,
+                delay: const Duration(milliseconds: 250),
+                feedback: Material(
+                  color: Colors.transparent,
+                  child: SizedBox(
+                    width: width,
+                    height: height,
+                    child: LiftrWorkoutCard(
+                      color: color,
+                      padding: EdgeInsets.fromLTRB(
+                        16,
+                        isFirst ? 16 : 8,
+                        16,
+                        bottomPadding,
+                      ),
+                      child: Text(
+                        workout.name,
+                        style: context.textTheme.titleLarge?.copyWith(
+                          color: WorkoutCardPalette.ink,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                child: Semantics(
+                  label: 'Segure e arraste para reordenar ${workout.name}',
+                  button: true,
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Center(
+                      child: LiftrIcon(
+                        LiftrIconName.reorder,
+                        color: WorkoutCardPalette.secondaryInk.withValues(
+                          alpha: .7,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

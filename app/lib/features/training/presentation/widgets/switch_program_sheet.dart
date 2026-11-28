@@ -13,6 +13,7 @@ import 'package:personal_fitness_os/core/widgets/app_button.dart';
 import 'package:personal_fitness_os/core/widgets/app_card.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_badge.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_confirm_dialog.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_icon.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet.dart';
 import 'package:personal_fitness_os/core/widgets/liftr_sheet_header.dart';
 import 'package:personal_fitness_os/features/dashboard/presentation/providers/dashboard_providers.dart';
@@ -68,18 +69,16 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
         Navigator.pop(context);
       },
       (failure) => context.showSnackBar(
-        userFacingMessage(
-          failure,
-          context: 'SwitchProgramSheet._activatePlan',
-        ),
+        userFacingMessage(failure, context: 'SwitchProgramSheet._activatePlan'),
         isError: true,
       ),
     );
   }
 
   Future<void> _rollbackCreatedPlan(String planId) async {
-    final deleteResult =
-        await ref.read(deleteTrainingPlanUseCaseProvider).execute(planId);
+    final deleteResult = await ref
+        .read(deleteTrainingPlanUseCaseProvider)
+        .execute(planId);
     deleteResult.fold(
       (_) {},
       (deleteFailure) => appErrorLogger(
@@ -124,10 +123,7 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
             sortOrder: i,
             estimatedDurationMinutes: 50,
           );
-          addResult.fold(
-            (_) {},
-            (failure) => firstFailure ??= failure,
-          );
+          addResult.fold((_) {}, (failure) => firstFailure ??= failure);
           if (firstFailure != null) break;
         }
 
@@ -196,14 +192,8 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
             child: IconButton(
               tooltip: 'Fechar seleção de programa',
               onPressed: () => Navigator.pop(context),
-              constraints: const BoxConstraints(
-                minWidth: 48,
-                minHeight: 48,
-              ),
-              icon: Icon(
-                Icons.close_rounded,
-                color: colors.textSecondary,
-              ),
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+              icon: Icon(Icons.close_rounded, color: colors.textSecondary),
             ),
           ),
         ),
@@ -212,115 +202,269 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
           child: ListView(
             padding: const EdgeInsets.only(top: 4, bottom: 16),
             children: [
-                  // Preserved history banner
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: colors.primaryMuted,
-                      borderRadius: BorderRadius.circular(radius.medium),
-                      border: Border.all(
-                        color: colors.primary.withValues(alpha: 0.25),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline_rounded,
-                          size: 18,
-                          color: colors.primaryLight,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Seu histórico de cargas e progressões é 100% preservado ao trocar de programa.',
-                            style: context.textTheme.bodySmall?.copyWith(
-                              color: colors.textPrimary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Quick AI + Import actions
-                  Text(
-                    'Criar com IA ou importar',
-                    style: context.textTheme.labelMedium?.copyWith(
+              // Preserved history banner
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: colors.surfaceSubtle,
+                  borderRadius: BorderRadius.circular(radius.medium),
+                  border: Border.all(color: colors.divider),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 18,
                       color: colors.textSecondary,
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  AppCard(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      Navigator.pop(context);
-                      context.push('/training/ai-generator');
-                    },
-                    backgroundColor: colors.primary.withValues(alpha: 0.12),
-                    borderColor: colors.primary.withValues(alpha: 0.5),
-                    padding: const EdgeInsets.all(14),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.auto_awesome_rounded,
-                          color: colors.primaryLight,
-                          size: 22,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Seu histórico de cargas e progressões é 100% preservado ao trocar de programa.',
+                        style: context.textTheme.bodySmall?.copyWith(
+                          color: colors.textPrimary,
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Montar treino com IA',
-                                style: context.textTheme.titleSmall,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Estudo rápido com IA para criar as sessões e séries no seu perfil',
-                                style: context.textTheme.labelSmall?.copyWith(
-                                  color: colors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          color: colors.primaryLight,
-                        ),
-                      ],
+                      ),
                     ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Quick AI + Import actions
+              Text(
+                'Criar com IA ou importar',
+                style: context.textTheme.labelMedium?.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              AppCard(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  Navigator.pop(context);
+                  context.push('/training/ai-generator');
+                },
+                backgroundColor: colors.surfaceSubtle,
+                borderColor: colors.divider,
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      color: colors.textPrimary,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Montar treino com IA',
+                            style: context.textTheme.titleSmall,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Estudo rápido com IA para criar as sessões e séries no seu perfil',
+                            style: context.textTheme.labelSmall?.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: colors.textTertiary,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              AppCard(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  Navigator.pop(context);
+                  ImportPlanSheet.show(context);
+                },
+                backgroundColor: colors.surfaceElevated,
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.qr_code_scanner_rounded,
+                      color: colors.textSecondary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Importar treino por código',
+                            style: context.textTheme.titleSmall,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Cole um código LIFTR-PLAN-V1 compartilhado com você',
+                            style: context.textTheme.labelSmall?.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: colors.textTertiary,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              if (widget.plans.isNotEmpty) ...[
+                Text(
+                  'Seus programas',
+                  style: context.textTheme.labelMedium?.copyWith(
+                    color: colors.textSecondary,
                   ),
-                  const SizedBox(height: 8),
-                  AppCard(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      Navigator.pop(context);
-                      ImportPlanSheet.show(context);
-                    },
+                ),
+                const SizedBox(height: 8),
+                ...widget.plans.map((plan) {
+                  final busy = _busyKey == plan.id;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: AppCard(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        if (plan.isActive) {
+                          Navigator.pop(context);
+                          context.push('/training/${plan.id}');
+                        } else {
+                          _activatePlan(plan);
+                        }
+                      },
+                      backgroundColor: plan.isActive
+                          ? colors.surfaceSubtle
+                          : colors.surfaceElevated,
+                      borderColor: plan.isActive
+                          ? colors.textPrimary
+                          : colors.border,
+                      padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  plan.name,
+                                  style: context.textTheme.titleSmall,
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  '${pluralize(plan.totalWorkoutsCount, 'sessão', 'sessões')} · ${pluralize(plan.totalWeeklySetsCount, 'série', 'séries')}',
+                                  style: context.textTheme.labelSmall?.copyWith(
+                                    color: colors.textSecondary,
+                                    fontFeatures: AppTypography.tabularFeatures,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (busy)
+                            const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          else if (plan.isActive)
+                            const LiftrBadge(
+                              label: 'Ativo',
+                              tone: LiftrBadgeTone.neutral,
+                            )
+                          else
+                            Text(
+                              'Ativar',
+                              style: context.textTheme.labelMedium?.copyWith(
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                          Semantics(
+                            label: 'Compartilhar ${plan.name}',
+                            button: true,
+                            child: IconButton(
+                              tooltip: 'Compartilhar ${plan.name}',
+                              onPressed: () {
+                                HapticFeedback.selectionClick();
+                                ExportPlanSheet.show(context, plan: plan);
+                              },
+                              constraints: const BoxConstraints(
+                                minWidth: 48,
+                                minHeight: 48,
+                              ),
+                              icon: LiftrIcon(
+                                LiftrIconName.share,
+                                size: 18,
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+                const SizedBox(height: 16),
+              ],
+
+              Text(
+                'Modelos prontos (2 a 6 dias)',
+                style: context.textTheme.labelMedium?.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ...templates.map((tpl) {
+                final busy = _busyKey == tpl.id;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: AppCard(
+                    onTap: () => _createFromTemplate(tpl),
                     backgroundColor: colors.surfaceElevated,
                     padding: const EdgeInsets.all(14),
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.qr_code_scanner_rounded,
-                          color: colors.textSecondary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Importar treino por código',
-                                style: context.textTheme.titleSmall,
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 4,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  Text(
+                                    tpl.name,
+                                    style: context.textTheme.titleSmall,
+                                  ),
+                                  LiftrBadge(
+                                    label: '${tpl.daysPerWeek}×/sem',
+                                    tone: LiftrBadgeTone.neutral,
+                                  ),
+                                  if (tpl.focusTag != null)
+                                    LiftrBadge(
+                                      label: tpl.focusTag!,
+                                      tone: LiftrBadgeTone.neutral,
+                                    ),
+                                ],
                               ),
-                              const SizedBox(height: 2),
+                              const SizedBox(height: 4),
                               Text(
-                                'Cole um código LIFTR-PLAN-V1 compartilhado com você',
+                                tpl.queueDescription,
                                 style: context.textTheme.labelSmall?.copyWith(
                                   color: colors.textSecondary,
                                 ),
@@ -328,189 +472,23 @@ class _SwitchProgramSheetState extends ConsumerState<SwitchProgramSheet> {
                             ],
                           ),
                         ),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          color: colors.textTertiary,
-                        ),
+                        const SizedBox(width: 8),
+                        if (busy)
+                          const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        else
+                          Icon(
+                            Icons.add_circle_outline_rounded,
+                            color: colors.textPrimary,
+                          ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 18),
-
-                  if (widget.plans.isNotEmpty) ...[
-                    Text(
-                      'Seus programas',
-                      style: context.textTheme.labelMedium?.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ...widget.plans.map((plan) {
-                      final busy = _busyKey == plan.id;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: AppCard(
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            if (plan.isActive) {
-                              Navigator.pop(context);
-                              context.push('/training/${plan.id}');
-                            } else {
-                              _activatePlan(plan);
-                            }
-                          },
-                          backgroundColor: plan.isActive
-                              ? colors.primary.withValues(alpha: 0.1)
-                              : colors.surfaceElevated,
-                          borderColor: plan.isActive
-                              ? colors.primary.withValues(alpha: 0.5)
-                              : colors.border,
-                          padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      plan.name,
-                                      style: context.textTheme.titleSmall,
-                                    ),
-                                    const SizedBox(height: 3),
-                                    Text(
-                                      '${pluralize(plan.totalWorkoutsCount, 'sessão', 'sessões')} · ${pluralize(plan.totalWeeklySetsCount, 'série', 'séries')}',
-                                      style: context.textTheme.labelSmall
-                                          ?.copyWith(
-                                        color: colors.textSecondary,
-                                        fontFeatures:
-                                            AppTypography.tabularFeatures,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (busy)
-                                const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              else if (plan.isActive)
-                                const LiftrBadge(
-                                  label: 'Ativo',
-                                  tone: LiftrBadgeTone.success,
-                                )
-                              else
-                                Text(
-                                  'Ativar',
-                                  style: context.textTheme.labelMedium
-                                      ?.copyWith(color: colors.primaryLight),
-                                ),
-                              Semantics(
-                                label: 'Compartilhar ${plan.name}',
-                                button: true,
-                                child: IconButton(
-                                  tooltip: 'Compartilhar ${plan.name}',
-                                  onPressed: () {
-                                    HapticFeedback.selectionClick();
-                                    ExportPlanSheet.show(
-                                      context,
-                                      plan: plan,
-                                    );
-                                  },
-                                  constraints: const BoxConstraints(
-                                    minWidth: 48,
-                                    minHeight: 48,
-                                  ),
-                                  icon: Icon(
-                                    Icons.adaptive.share,
-                                    size: 18,
-                                    color: colors.textSecondary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
-                    const SizedBox(height: 16),
-                  ],
-
-                  Text(
-                    'Modelos prontos (2 a 6 dias)',
-                    style: context.textTheme.labelMedium?.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ...templates.map((tpl) {
-                    final busy = _busyKey == tpl.id;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: AppCard(
-                        onTap: () => _createFromTemplate(tpl),
-                        backgroundColor: colors.surfaceElevated,
-                        padding: const EdgeInsets.all(14),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 4,
-                                    crossAxisAlignment:
-                                        WrapCrossAlignment.center,
-                                    children: [
-                                      Text(
-                                        tpl.name,
-                                        style: context.textTheme.titleSmall,
-                                      ),
-                                      LiftrBadge(
-                                        label: '${tpl.daysPerWeek}×/sem',
-                                        tone: LiftrBadgeTone.neutral,
-                                      ),
-                                      if (tpl.focusTag != null)
-                                        LiftrBadge(
-                                          label: tpl.focusTag!,
-                                          tone: LiftrBadgeTone.brand,
-                                        ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    tpl.queueDescription,
-                                    style: context.textTheme.labelSmall
-                                        ?.copyWith(
-                                      color: colors.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            if (busy)
-                              const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            else
-                              Icon(
-                                Icons.add_circle_outline_rounded,
-                                color: colors.primaryLight,
-                              ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
+                );
+              }),
             ],
           ),
         ),

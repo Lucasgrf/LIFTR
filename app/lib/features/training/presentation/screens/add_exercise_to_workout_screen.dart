@@ -13,6 +13,7 @@ import 'package:personal_fitness_os/core/widgets/app_input.dart';
 import 'package:personal_fitness_os/core/widgets/empty_state_widget.dart';
 import 'package:personal_fitness_os/core/widgets/error_widget.dart';
 import 'package:personal_fitness_os/core/widgets/loading_widget.dart';
+import 'package:personal_fitness_os/core/widgets/liftr_editorial_page_header.dart';
 import 'package:personal_fitness_os/core/widgets/responsive_container.dart';
 import 'package:personal_fitness_os/features/exercise_library/domain/entities/exercise.dart';
 import 'package:personal_fitness_os/features/exercise_library/presentation/providers/exercise_providers.dart';
@@ -147,12 +148,17 @@ class _AddExerciseToWorkoutScreenState
     result.fold(
       (created) {
         ref.invalidate(trainingPlanDetailProvider(widget.planId));
-        context.showSnackBar('"${_selectedExercise!.name}" adicionado com sucesso!');
+        context.showSnackBar(
+          '"${_selectedExercise!.name}" adicionado com sucesso!',
+        );
         context.pop();
       },
       (failure) {
         context.showSnackBar(
-          userFacingMessage(failure, context: 'AddExerciseToWorkoutScreen._submit'),
+          userFacingMessage(
+            failure,
+            context: 'AddExerciseToWorkoutScreen._submit',
+          ),
           isError: true,
         );
       },
@@ -177,43 +183,55 @@ class _AddExerciseToWorkoutScreenState
 
     return Scaffold(
       backgroundColor: context.appColors.background,
-      appBar: AppBar(
-        title: const Text('Selecionar Exercício'),
-      ),
       body: SafeArea(
-        top: false,
-        child: ResponsiveContainer(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: AppInput(
-                  hint: 'Buscar exercício por nome...',
-                  controller: _searchController,
-                  prefix: Icon(Icons.search_rounded, color: context.appColors.textTertiary),
-                  suffix: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear_rounded, size: 18),
-                          tooltip: 'Limpar busca',
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _searchQuery = '');
-                          },
-                        )
-                      : null,
-                  onChanged: (value) {
-                    setState(() => _searchQuery = value);
-                  },
-                ),
+        child: Column(
+          children: [
+            ResponsiveContainer(
+              heightFactor: 1,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  LiftrEditorialPageHeader(
+                    title: 'Exercícios',
+                    onBack: () => context.pop(),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: AppInput(
+                      hint: 'Buscar exercício por nome...',
+                      controller: _searchController,
+                      prefix: Icon(
+                        Icons.search_rounded,
+                        color: context.appColors.textTertiary,
+                      ),
+                      suffix: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear_rounded, size: 18),
+                              tooltip: 'Limpar busca',
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                      onChanged: (value) {
+                        setState(() => _searchQuery = value);
+                      },
+                    ),
+                  ),
+                  MuscleFilterChips(
+                    horizontalPadding: 0,
+                    selectedMuscle: _selectedMuscle,
+                    onSelected: (value) =>
+                        setState(() => _selectedMuscle = value),
+                  ),
+                  const SizedBox(height: 8),
+                ],
               ),
-              MuscleFilterChips(
-                horizontalPadding: 0,
-                selectedMuscle: _selectedMuscle,
-                onSelected: (value) => setState(() => _selectedMuscle = value),
-              ),
-              const SizedBox(height: 8),
+            ),
 
-              Expanded(
+            Expanded(
+              child: ResponsiveContainer(
                 child: filteredExercisesAsync.when(
                   loading: () => const LoadingWidget(),
                   error: (err, st) => ErrorStateWidget(
@@ -236,8 +254,8 @@ class _AddExerciseToWorkoutScreenState
                             : 'Nenhum exercício disponível no catálogo.',
                         actionLabel: hasActiveFilter
                             ? (_searchQuery.isNotEmpty
-                                ? 'Limpar busca'
-                                : 'Limpar filtros')
+                                  ? 'Limpar busca'
+                                  : 'Limpar filtros')
                             : null,
                         onAction: hasActiveFilter ? _clearFilters : null,
                       );
@@ -258,7 +276,8 @@ class _AddExerciseToWorkoutScreenState
                                     targetRepsMin: _repsMin,
                                     targetRepsMax: _repsMax,
                                     movementPattern: exercise.movementPattern,
-                                    primaryMuscleGroup: exercise.primaryMuscleGroup,
+                                    primaryMuscleGroup:
+                                        exercise.primaryMuscleGroup,
                                     equipment: exercise.equipment,
                                   );
                             setState(() {
@@ -272,8 +291,8 @@ class _AddExerciseToWorkoutScreenState
                   },
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -291,170 +310,175 @@ class _AddExerciseToWorkoutScreenState
       },
       child: Scaffold(
         backgroundColor: context.appColors.background,
-        appBar: AppBar(
-          title: const Text('Prescrever Séries'),
-          leading: IconButton(
-            tooltip: 'Voltar',
-            icon: const Icon(Icons.arrow_back_rounded),
-            onPressed: () => setState(() => _selectedExercise = null),
-          ),
-        ),
         body: SafeArea(
-          top: false,
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(0, 12, 0, 40),
+            padding: const EdgeInsets.fromLTRB(0, 8, 0, 40),
             children: [
               ResponsiveContainer(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-            // Selected Exercise Card
-            ExerciseCard(
-              exercise: exercise,
-              margin: const EdgeInsets.symmetric(vertical: 8),
-            ),
-            const SizedBox(height: 16),
+                    LiftrEditorialPageHeader(
+                      title: 'Prescrever séries',
+                      onBack: () => setState(() => _selectedExercise = null),
+                    ),
+                    // Selected Exercise Card
+                    ExerciseCard(
+                      exercise: exercise,
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                    const SizedBox(height: 16),
 
-          // Working Sets count
-          AppCard(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Configuração de Séries',
-                  style: context.textTheme.titleMedium?.copyWith(
-                    color: context.appColors.textPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                // Warmup sets counter
-                _buildCounterRow(
-                  title: 'Séries de Aquecimento',
-                  subtitle: 'Não computam no volume semanal efetivo',
-                  value: _warmupSetsCount,
-                  onDecrement: _warmupSetsCount > 0
-                      ? () => setState(() => _warmupSetsCount--)
-                      : null,
-                  onIncrement: () => setState(() => _warmupSetsCount++),
-                ),
-                const Divider(height: 24),
-
-                // Working sets counter
-                _buildCounterRow(
-                  title: 'Séries Válidas (Trabalho)',
-                  subtitle: 'Séries levadas próximas até a falha (RIR 0-3)',
-                  value: _workingSetsCount,
-                  onDecrement: _workingSetsCount > 1
-                      ? () => setState(() => _workingSetsCount--)
-                      : null,
-                  onIncrement: () => setState(() => _workingSetsCount++),
-                ),
-                const Divider(height: 24),
-
-                // Rep Range
-                SizedBox(
-                  width: double.infinity,
-                  child: Wrap(
-                    alignment: WrapAlignment.spaceBetween,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      Text(
-                        'Faixa de Repetições',
-                        style: context.textTheme.bodyMedium?.copyWith(
-                          color: context.appColors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
+                    // Working Sets count
+                    AppCard(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildSmallNumberSelector(
-                            value: _repsMin,
-                            onChanged: (v) => setState(() => _repsMin = v),
-                            min: 1,
-                            max: _repsMax,
+                          Text(
+                            'Configuração de Séries',
+                            style: context.textTheme.titleMedium?.copyWith(
+                              color: context.appColors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8),
-                            child: Text('a'),
+                          const SizedBox(height: 14),
+
+                          // Warmup sets counter
+                          _buildCounterRow(
+                            title: 'Séries de Aquecimento',
+                            subtitle: 'Não computam no volume semanal efetivo',
+                            value: _warmupSetsCount,
+                            onDecrement: _warmupSetsCount > 0
+                                ? () => setState(() => _warmupSetsCount--)
+                                : null,
+                            onIncrement: () =>
+                                setState(() => _warmupSetsCount++),
                           ),
-                          _buildSmallNumberSelector(
-                            value: _repsMax,
-                            onChanged: (v) => setState(() => _repsMax = v),
-                            min: _repsMin,
-                            max: 50,
+                          const Divider(height: 24),
+
+                          // Working sets counter
+                          _buildCounterRow(
+                            title: 'Séries Válidas (Trabalho)',
+                            subtitle:
+                                'Séries levadas próximas até a falha (RIR 0-3)',
+                            value: _workingSetsCount,
+                            onDecrement: _workingSetsCount > 1
+                                ? () => setState(() => _workingSetsCount--)
+                                : null,
+                            onIncrement: () =>
+                                setState(() => _workingSetsCount++),
                           ),
-                          const SizedBox(width: 6),
-                          const Text('reps'),
+                          const Divider(height: 24),
+
+                          // Rep Range
+                          SizedBox(
+                            width: double.infinity,
+                            child: Wrap(
+                              alignment: WrapAlignment.spaceBetween,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                Text(
+                                  'Faixa de Repetições',
+                                  style: context.textTheme.bodyMedium?.copyWith(
+                                    color: context.appColors.textPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    _buildSmallNumberSelector(
+                                      value: _repsMin,
+                                      onChanged: (v) =>
+                                          setState(() => _repsMin = v),
+                                      min: 1,
+                                      max: _repsMax,
+                                    ),
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                      ),
+                                      child: Text('a'),
+                                    ),
+                                    _buildSmallNumberSelector(
+                                      value: _repsMax,
+                                      onChanged: (v) =>
+                                          setState(() => _repsMax = v),
+                                      min: _repsMin,
+                                      max: 50,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    const Text('reps'),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Divider(height: 24),
+
+                          // Rest seconds
+                          SizedBox(
+                            width: double.infinity,
+                            child: Wrap(
+                              alignment: WrapAlignment.spaceBetween,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                Text(
+                                  'Tempo de Descanso',
+                                  style: context.textTheme.bodyMedium?.copyWith(
+                                    color: context.appColors.textPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                DropdownButton<int>(
+                                  value: _restSeconds,
+                                  dropdownColor:
+                                      context.appColors.surfaceElevated,
+                                  items:
+                                      AddExerciseToWorkoutScreen.restDropdownValuesFor(
+                                            _restSeconds,
+                                          )
+                                          .map(
+                                            (v) => DropdownMenuItem<int>(
+                                              value: v,
+                                              child: Text(
+                                                AddExerciseToWorkoutScreen.formatRestOptionLabel(
+                                                  v,
+                                                ),
+                                              ),
+                                            ),
+                                          )
+                                          .toList(),
+                                  onChanged: (v) {
+                                    if (v != null) {
+                                      setState(() => _restSeconds = v);
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 24),
+                    ),
+                    const SizedBox(height: 32),
 
-                // Rest seconds
-                SizedBox(
-                  width: double.infinity,
-                  child: Wrap(
-                    alignment: WrapAlignment.spaceBetween,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      Text(
-                        'Tempo de Descanso',
-                        style: context.textTheme.bodyMedium?.copyWith(
-                          color: context.appColors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      DropdownButton<int>(
-                        value: _restSeconds,
-                        dropdownColor: context.appColors.surfaceElevated,
-                        items: AddExerciseToWorkoutScreen.restDropdownValuesFor(
-                          _restSeconds,
-                        )
-                            .map(
-                              (v) => DropdownMenuItem<int>(
-                                value: v,
-                                child: Text(
-                                  AddExerciseToWorkoutScreen
-                                      .formatRestOptionLabel(v),
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (v) {
-                          if (v != null) {
-                            setState(() => _restSeconds = v);
-                          }
-                        },
-                      ),
-                    ],
-                  ),
+                    AppButton.primary(
+                      label: 'Confirmar e Adicionar ao Treino',
+                      icon: Icons.check_rounded,
+                      isLoading: _isLoading,
+                      onPressed: _submit,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-
-          AppButton.primary(
-            label: 'Confirmar e Adicionar ao Treino',
-            icon: Icons.check_rounded,
-            isLoading: _isLoading,
-            onPressed: _submit,
-          ),
-                ],
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
         ),
       ),
     );
@@ -544,10 +568,8 @@ class _AddExerciseToWorkoutScreenState
           isDense: true,
           items: List.generate(
             max - min + 1,
-            (idx) => DropdownMenuItem(
-              value: min + idx,
-              child: Text('${min + idx}'),
-            ),
+            (idx) =>
+                DropdownMenuItem(value: min + idx, child: Text('${min + idx}')),
           ),
           onChanged: (v) {
             if (v != null) onChanged(v);
